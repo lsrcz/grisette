@@ -1,0 +1,1098 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveFunctor #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE DeriveLift #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE DerivingStrategies #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE PatternSynonyms #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Internal.Decl.Core.Data.UnionBase</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2024</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.UnionBase</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * The union data structure.</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><span class="hs-comment">-- | Please consider using 'Grisette.Core.Union' instead.</span></span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier">UnionBase</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier">ifWithLeftMost</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier">ifWithStrategy</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier">fullReconstruct</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Generic1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier">symIte</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.LogicalOp</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#LogicalOp"><span class="hs-identifier">LogicalOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#symNot"><span class="hs-identifier">symNot</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%26%26"><span class="hs-operator">(.&amp;&amp;)</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%7C%7C"><span class="hs-operator">(.||)</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.PlainUnion</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#PlainUnion"><span class="hs-identifier">PlainUnion</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#ifView"><span class="hs-identifier">ifView</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#singleView"><span class="hs-identifier">singleView</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Con"><span class="hs-identifier">Con</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier">Mergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier">rootStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable1"><span class="hs-identifier">Mergeable1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy"><span class="hs-identifier">liftRootStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#MergingStrategy"><span class="hs-identifier">MergingStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#NoStrategy"><span class="hs-identifier">NoStrategy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#SimpleStrategy"><span class="hs-identifier">SimpleStrategy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#SortedStrategy"><span class="hs-identifier">SortedStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#SimpleMergeable"><span class="hs-identifier">SimpleMergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIte"><span class="hs-identifier">mrgIte</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#SimpleMergeable1"><span class="hs-identifier">SimpleMergeable1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#liftMrgIte"><span class="hs-identifier">liftMrgIte</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#SymBranching"><span class="hs-identifier">SymBranching</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIfPropagatedStrategy"><span class="hs-identifier">mrgIfPropagatedStrategy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIfWithStrategy"><span class="hs-identifier">mrgIfWithStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier">mrgIf</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge</span></a></span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier">tryMergeWithStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier">SymBool</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Lift</span></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="annot"><span class="hs-comment">-- | The base union implementation, which is an if-then-else tree structure.</span></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">data</span><span> </span><span id="UnionBase"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-var">UnionBase</span></a></span></span><span> </span><span id="local-6989586621682280478"><span class="annot"><a href="#local-6989586621682280478"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-61"></span><span>  </span><span class="annot"><span class="hs-comment">-- | A single value</span></span><span>
+</span><span id="line-62"></span><span>  </span><span id="local-6989586621682280479"><span id="UnionSingle"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-var">UnionSingle</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682280479"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280479"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-63"></span><span>  </span><span class="annot"><span class="hs-comment">-- | A if value</span></span><span>
+</span><span id="line-64"></span><span>  </span><span id="local-6989586621682280400"><span id="UnionIf"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-var">UnionIf</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><span class="hs-comment">-- | Cached leftmost value</span></span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="#local-6989586621682280400"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><span class="hs-comment">-- | Is merged invariant already maintained?</span></span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="hs-comment">-- | If condition</span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-glyph">!</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="hs-comment">-- | True branch</span></span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280400"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><span class="hs-comment">-- | False branch</span></span><span>
+</span><span id="line-74"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280400"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280400"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682280483"><span id="local-6989586621682280485"><span class="annot"><span class="annottext">(forall x. UnionBase a -&gt; Rep (UnionBase a) x)
+-&gt; (forall x. Rep (UnionBase a) x -&gt; UnionBase a)
+-&gt; Generic (UnionBase a)
+forall x. Rep (UnionBase a) x -&gt; UnionBase a
+forall x. UnionBase a -&gt; Rep (UnionBase a) x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+forall a x. Rep (UnionBase a) x -&gt; UnionBase a
+forall a x. UnionBase a -&gt; Rep (UnionBase a) x
+$cfrom :: forall a x. UnionBase a -&gt; Rep (UnionBase a) x
+from :: forall x. UnionBase a -&gt; Rep (UnionBase a) x
+$cto :: forall a x. Rep (UnionBase a) x -&gt; UnionBase a
+to :: forall x. Rep (UnionBase a) x -&gt; UnionBase a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682280492"><span id="local-6989586621682280506"><span class="annot"><span class="annottext">UnionBase a -&gt; UnionBase a -&gt; Bool
+(UnionBase a -&gt; UnionBase a -&gt; Bool)
+-&gt; (UnionBase a -&gt; UnionBase a -&gt; Bool) -&gt; Eq (UnionBase a)
+forall a. Eq a =&gt; UnionBase a -&gt; UnionBase a -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: forall a. Eq a =&gt; UnionBase a -&gt; UnionBase a -&gt; Bool
+== :: UnionBase a -&gt; UnionBase a -&gt; Bool
+$c/= :: forall a. Eq a =&gt; UnionBase a -&gt; UnionBase a -&gt; Bool
+/= :: UnionBase a -&gt; UnionBase a -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682280511"><span id="local-6989586621682280531"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). Quote m =&gt; UnionBase a -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *).
+    Quote m =&gt;
+    UnionBase a -&gt; Code m (UnionBase a))
+-&gt; Lift (UnionBase a)
+forall a (m :: * -&gt; *). (Lift a, Quote m) =&gt; UnionBase a -&gt; m Exp
+forall a (m :: * -&gt; *).
+(Lift a, Quote m) =&gt;
+UnionBase a -&gt; Code m (UnionBase a)
+forall t.
+(forall (m :: * -&gt; *). Quote m =&gt; t -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *). Quote m =&gt; t -&gt; Code m t) -&gt; Lift t
+forall (m :: * -&gt; *). Quote m =&gt; UnionBase a -&gt; m Exp
+forall (m :: * -&gt; *).
+Quote m =&gt;
+UnionBase a -&gt; Code m (UnionBase a)
+$clift :: forall a (m :: * -&gt; *). (Lift a, Quote m) =&gt; UnionBase a -&gt; m Exp
+lift :: forall (m :: * -&gt; *). Quote m =&gt; UnionBase a -&gt; m Exp
+$cliftTyped :: forall a (m :: * -&gt; *).
+(Lift a, Quote m) =&gt;
+UnionBase a -&gt; Code m (UnionBase a)
+liftTyped :: forall (m :: * -&gt; *).
+Quote m =&gt;
+UnionBase a -&gt; Code m (UnionBase a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Lift</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682280549"><span id="local-6989586621682280551"><span class="annot"><span class="annottext">(forall a. UnionBase a -&gt; Rep1 UnionBase a)
+-&gt; (forall a. Rep1 UnionBase a -&gt; UnionBase a)
+-&gt; Generic1 UnionBase
+forall a. Rep1 UnionBase a -&gt; UnionBase a
+forall a. UnionBase a -&gt; Rep1 UnionBase a
+forall k (f :: k -&gt; *).
+(forall (a :: k). f a -&gt; Rep1 f a)
+-&gt; (forall (a :: k). Rep1 f a -&gt; f a) -&gt; Generic1 f
+$cfrom1 :: forall a. UnionBase a -&gt; Rep1 UnionBase a
+from1 :: forall a. UnionBase a -&gt; Rep1 UnionBase a
+$cto1 :: forall a. Rep1 UnionBase a -&gt; UnionBase a
+to1 :: forall a. Rep1 UnionBase a -&gt; UnionBase a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic1</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682280557"><span id="local-6989586621682280562"><span class="annot"><span class="annottext">(forall a b. (a -&gt; b) -&gt; UnionBase a -&gt; UnionBase b)
+-&gt; (forall a b. a -&gt; UnionBase b -&gt; UnionBase a)
+-&gt; Functor UnionBase
+forall a b. a -&gt; UnionBase b -&gt; UnionBase a
+forall a b. (a -&gt; b) -&gt; UnionBase a -&gt; UnionBase b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+$cfmap :: forall a b. (a -&gt; b) -&gt; UnionBase a -&gt; UnionBase b
+fmap :: forall a b. (a -&gt; b) -&gt; UnionBase a -&gt; UnionBase b
+$c&lt;$ :: forall a b. a -&gt; UnionBase b -&gt; UnionBase a
+&lt;$ :: forall a b. a -&gt; UnionBase b -&gt; UnionBase a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682280572"><span id="local-6989586621682280576"><span id="local-6989586621682280579"><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-80"></span><span>  </span><span id="local-6989586621682280582"><span class="annot"><span class="annottext">pure :: forall a. a -&gt; UnionBase a
+</span><span class="hs-identifier hs-var hs-var hs-var">pure</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; UnionBase a
+forall a. a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-var">UnionSingle</span></a></span><span>
+</span><span id="line-81"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><span class="hs-pragma hs-type">pure</span></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-82"></span><span>  </span><span id="local-6989586621682280585"><span class="annot"><span class="annottext">&lt;*&gt; :: forall a b. UnionBase (a -&gt; b) -&gt; UnionBase a -&gt; UnionBase b
+</span><span class="hs-operator hs-var hs-var hs-var">(&lt;*&gt;)</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase (a -&gt; b) -&gt; UnionBase a -&gt; UnionBase b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m (a -&gt; b) -&gt; m a -&gt; m b
+</span><span class="hs-identifier hs-var">ap</span></span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="hs-pragma">(</span><span class="hs-pragma">&lt;*&gt;</span><span class="hs-pragma">)</span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682280590"><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-86"></span><span>  </span><span id="local-6989586621682280595"><span class="annot"><span class="annottext">return :: forall a. a -&gt; UnionBase a
+</span><span class="hs-identifier hs-var hs-var hs-var">return</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; UnionBase a
+forall a. a -&gt; UnionBase a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-87"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><span class="hs-pragma hs-type">return</span></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-88"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682280598"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280598"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682280599"><span class="annot"><span class="annottext">&gt;&gt;= :: forall a b. UnionBase a -&gt; (a -&gt; UnionBase b) -&gt; UnionBase b
+</span><span class="hs-operator hs-var hs-var hs-var">&gt;&gt;=</span></span></span><span> </span><span id="local-6989586621682280600"><span class="annot"><span class="annottext">a -&gt; UnionBase b
+</span><a href="#local-6989586621682280600"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; UnionBase b
+</span><a href="#local-6989586621682280600"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280598"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-89"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682280601"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280601"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682280602"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280602"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682280603"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280603"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span id="local-6989586621682280604"><span class="annot"><span class="annottext">a -&gt; UnionBase b
+</span><a href="#local-6989586621682280604"><span class="hs-identifier hs-var">f'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase b -&gt; UnionBase b -&gt; UnionBase b
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280601"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280602"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; (a -&gt; UnionBase b) -&gt; UnionBase b
+forall a b. UnionBase a -&gt; (a -&gt; UnionBase b) -&gt; UnionBase b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; UnionBase b
+</span><a href="#local-6989586621682280604"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280603"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; (a -&gt; UnionBase b) -&gt; UnionBase b
+forall a b. UnionBase a -&gt; (a -&gt; UnionBase b) -&gt; UnionBase b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; UnionBase b
+</span><a href="#local-6989586621682280604"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="hs-pragma">(</span><span class="hs-pragma">&gt;&gt;=</span><span class="hs-pragma">)</span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-93"></span><span>  </span><span id="local-6989586621682280608"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+forall a. MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-var">fullReconstruct</span></a></span><span>
+</span><span id="line-94"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><span class="hs-comment">-- | Fully reconstruct a 'Grisette.Core.Union' to maintain the merged invariant.</span></span><span>
+</span><span id="line-97"></span><span id="local-6989586621682280609"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-type">fullReconstruct</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#MergingStrategy"><span class="hs-identifier hs-type">MergingStrategy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280609"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280609"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280609"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-98"></span><span id="fullReconstruct"><span class="annot"><span class="annottext">fullReconstruct :: forall a. MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-var hs-var">fullReconstruct</span></a></span></span><span> </span><span id="local-6989586621682280610"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280610"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span id="local-6989586621682280611"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280611"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280612"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280612"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682280613"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280613"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-99"></span><span>  </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span>
+</span><span id="line-100"></span><span>    </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280610"><span class="hs-identifier hs-var">strategy</span></a></span><span>
+</span><span id="line-101"></span><span>    </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280611"><span class="hs-identifier hs-var">cond</span></a></span><span>
+</span><span id="line-102"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+forall a. MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-var">fullReconstruct</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280610"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280612"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-103"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+forall a. MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-var">fullReconstruct</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280610"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280613"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-var">fullReconstruct</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682280615"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280615"><span class="hs-identifier hs-var">u</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280615"><span class="hs-identifier hs-var">u</span></a></span><span>
+</span><span id="line-105"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-pragma hs-type">fullReconstruct</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span id="local-6989586621682280396"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-type">leftMost</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280396"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682280396"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-108"></span><span id="leftMost"><span class="annot"><span class="annottext">leftMost :: forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var hs-var">leftMost</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682280617"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280617"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280617"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-109"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span id="local-6989586621682280618"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280618"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280618"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-110"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-pragma hs-type">leftMost</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="hs-comment">-- | Build 'UnionIf' with leftmost cache correctly maintained.</span><span>
+</span><span id="line-113"></span><span class="hs-comment">--</span><span>
+</span><span id="line-114"></span><span class="hs-comment">-- Usually you should never directly try to build a 'UnionIf' with its</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- constructor.</span><span>
+</span><span id="line-116"></span><span id="local-6989586621682280388"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-type">ifWithLeftMost</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280388"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280388"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280388"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-117"></span><span id="ifWithLeftMost"><span class="annot"><span class="annottext">ifWithLeftMost :: forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var hs-var">ifWithLeftMost</span></a></span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span id="local-6989586621682280621"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682280621"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682280622"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280622"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682280623"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280623"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><span id="line-118"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682280621"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280622"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-119"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280623"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-120"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span id="local-6989586621682280624"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682280624"><span class="hs-identifier hs-var">inv</span></a></span></span><span> </span><span id="local-6989586621682280625"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280625"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280626"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280626"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682280627"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280627"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+a -&gt; Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-var">UnionIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280626"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682280624"><span class="hs-identifier hs-var">inv</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280625"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280626"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280627"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-121"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-pragma hs-type">ifWithLeftMost</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span class="hs-comment">-- | Use a specific strategy to build a 'UnionIf' value.</span><span>
+</span><span id="line-124"></span><span class="hs-comment">--</span><span>
+</span><span id="line-125"></span><span class="hs-comment">-- The merged invariant will be maintained in the result.</span><span>
+</span><span id="line-126"></span><span id="local-6989586621682280628"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-type">ifWithStrategy</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-127"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#MergingStrategy"><span class="hs-identifier hs-type">MergingStrategy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280628"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-128"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-129"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280628"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-130"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280628"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-131"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280628"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-132"></span><span id="ifWithStrategy"><span class="annot"><span class="annottext">ifWithStrategy :: forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var hs-var">ifWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682280629"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280629"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span id="local-6989586621682280630"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280630"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280631"><span class="annot"><span class="annottext">t :: UnionBase a
+</span><a href="#local-6989586621682280631"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682280632"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280632"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-133"></span><span>  </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var">ifWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280629"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280630"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+forall a. MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-var">fullReconstruct</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280629"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280631"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280632"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var">ifWithStrategy</span></a></span><span> </span><span id="local-6989586621682280633"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280633"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span id="local-6989586621682280634"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280634"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280635"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280635"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682280636"><span class="annot"><span class="annottext">f :: UnionBase a
+</span><a href="#local-6989586621682280636"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-135"></span><span>  </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var">ifWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280633"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280634"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280635"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+forall a. MergingStrategy a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#fullReconstruct"><span class="hs-identifier hs-var">fullReconstruct</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280633"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280636"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var">ifWithStrategy</span></a></span><span> </span><span id="local-6989586621682280637"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280637"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span id="local-6989586621682280638"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280638"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280639"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280639"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682280640"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280640"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280637"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280638"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280639"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280640"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-137"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-pragma hs-type">ifWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span id="local-6989586621682280395"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-type">ifWithStrategyInv</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-140"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#MergingStrategy"><span class="hs-identifier hs-type">MergingStrategy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280395"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-141"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-142"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280395"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-143"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280395"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-144"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280395"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-145"></span><span id="ifWithStrategyInv"><span class="annot"><span class="annottext">ifWithStrategyInv :: forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var hs-var">ifWithStrategyInv</span></a></span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span id="local-6989586621682280646"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682280646"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682280647"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280647"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682280648"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280648"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><span id="line-146"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682280646"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280647"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-147"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280648"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-148"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span id="local-6989586621682280649"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280649"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span id="local-6989586621682280650"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280650"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span id="local-6989586621682280651"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280651"><span class="hs-identifier hs-var">condTrue</span></a></span></span><span> </span><span id="local-6989586621682280652"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280652"><span class="hs-identifier hs-var">tt</span></a></span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682280653"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280653"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><span id="line-149"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280650"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280651"><span class="hs-identifier hs-var">condTrue</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280649"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280650"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280652"><span class="hs-identifier hs-var">tt</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280653"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-150"></span><span class="hs-comment">-- {| symNot cond == condTrue || cond == symNot condTrue = ifWithStrategyInv strategy cond ft f</span><span>
+</span><span id="line-151"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span id="local-6989586621682280654"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280654"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span id="local-6989586621682280655"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280655"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280656"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280656"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span id="local-6989586621682280657"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280657"><span class="hs-identifier hs-var">condFalse</span></a></span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682280658"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280658"><span class="hs-identifier hs-var">ff</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-152"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280655"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280657"><span class="hs-identifier hs-var">condFalse</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280654"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280655"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280656"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280658"><span class="hs-identifier hs-var">ff</span></a></span><span>
+</span><span id="line-153"></span><span class="hs-comment">-- {| symNot cond == condTrue || cond == symNot condTrue = ifWithStrategyInv strategy cond t tf -- buggy here condTrue</span><span>
+</span><span id="line-154"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#SimpleStrategy"><span class="hs-identifier hs-type">SimpleStrategy</span></a></span><span> </span><span id="local-6989586621682280659"><span class="annot"><span class="annottext">SymBool -&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682280659"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682280660"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280660"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682280661"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280661"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682280662"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280662"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-155"></span><span>  </span><span class="annot"><span class="annottext">a -&gt; UnionBase a
+forall a. a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-var">UnionSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; UnionBase a) -&gt; a -&gt; UnionBase a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682280659"><span class="hs-identifier hs-var">m</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280660"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280661"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280662"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-156"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span>
+</span><span id="line-157"></span><span>  </span><span id="local-6989586621682280663"><span class="annot"><span class="annottext">strategy :: MergingStrategy a
+</span><a href="#local-6989586621682280663"><span class="hs-identifier hs-var">strategy</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#SortedStrategy"><span class="hs-identifier hs-type">SortedStrategy</span></a></span><span> </span><span id="local-6989586621682280701"><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span></span><span> </span><span id="local-6989586621682280702"><span class="annot"><span class="annottext">idx -&gt; MergingStrategy a
+</span><a href="#local-6989586621682280702"><span class="hs-identifier hs-var">substrategy</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-158"></span><span>  </span><span id="local-6989586621682280703"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280703"><span class="hs-identifier hs-var">cond</span></a></span></span><span>
+</span><span id="line-159"></span><span>  </span><span id="local-6989586621682280704"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280704"><span class="hs-identifier hs-var">ifTrue</span></a></span></span><span>
+</span><span id="line-160"></span><span>  </span><span id="local-6989586621682280705"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280705"><span class="hs-identifier hs-var">ifFalse</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280704"><span class="hs-identifier hs-var">ifTrue</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280705"><span class="hs-identifier hs-var">ifFalse</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-161"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280706"><span class="hs-identifier hs-var">ssUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280703"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280704"><span class="hs-identifier hs-var">ifTrue</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280705"><span class="hs-identifier hs-var">ifFalse</span></a></span><span>
+</span><span id="line-162"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280707"><span class="hs-identifier hs-var">sgUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280703"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280704"><span class="hs-identifier hs-var">ifTrue</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280705"><span class="hs-identifier hs-var">ifFalse</span></a></span><span>
+</span><span id="line-163"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280708"><span class="hs-identifier hs-var">gsUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280703"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280704"><span class="hs-identifier hs-var">ifTrue</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280705"><span class="hs-identifier hs-var">ifFalse</span></a></span><span>
+</span><span id="line-164"></span><span>    </span><span class="annot"><span class="annottext">(UnionBase a, UnionBase a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280709"><span class="hs-identifier hs-var">ggUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280703"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280704"><span class="hs-identifier hs-var">ifTrue</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280705"><span class="hs-identifier hs-var">ifFalse</span></a></span><span>
+</span><span id="line-165"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-166"></span><span>      </span><span id="local-6989586621682280706"><span class="annot"><span class="annottext">ssUnionIf :: SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280706"><span class="hs-identifier hs-var hs-var">ssUnionIf</span></a></span></span><span> </span><span id="local-6989586621682280710"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280710"><span class="hs-identifier hs-var">cond'</span></a></span></span><span> </span><span id="local-6989586621682280711"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280711"><span class="hs-identifier hs-var">ifTrue'</span></a></span></span><span> </span><span id="local-6989586621682280712"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280712"><span class="hs-identifier hs-var">ifFalse'</span></a></span></span><span>
+</span><span id="line-167"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280713"><span class="hs-identifier hs-var">idxt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280715"><span class="hs-identifier hs-var">idxf</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280710"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280711"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280712"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-168"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280713"><span class="hs-identifier hs-var">idxt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280715"><span class="hs-identifier hs-var">idxf</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-169"></span><span>            </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">idx -&gt; MergingStrategy a
+</span><a href="#local-6989586621682280702"><span class="hs-identifier hs-var">substrategy</span></a></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280713"><span class="hs-identifier hs-var">idxt</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280710"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280711"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280712"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-170"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#symNot"><span class="hs-identifier hs-var">symNot</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280710"><span class="hs-identifier hs-var">cond'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280712"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280711"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span>
+</span><span id="line-171"></span><span>        </span><span class="hs-keyword">where</span><span>
+</span><span id="line-172"></span><span>          </span><span id="local-6989586621682280713"><span class="annot"><span class="annottext">idxt :: idx
+</span><a href="#local-6989586621682280713"><span class="hs-identifier hs-var hs-var">idxt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280711"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span>
+</span><span id="line-173"></span><span>          </span><span id="local-6989586621682280715"><span class="annot"><span class="annottext">idxf :: idx
+</span><a href="#local-6989586621682280715"><span class="hs-identifier hs-var hs-var">idxf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280712"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-174"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682280706"><span class="hs-pragma hs-type">ssUnionIf</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-175"></span><span>      </span><span id="local-6989586621682280707"><span class="annot"><span class="annottext">sgUnionIf :: SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280707"><span class="hs-identifier hs-var hs-var">sgUnionIf</span></a></span></span><span> </span><span id="local-6989586621682280716"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280716"><span class="hs-identifier hs-var">cond'</span></a></span></span><span> </span><span id="local-6989586621682280717"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280717"><span class="hs-identifier hs-var">ifTrue'</span></a></span></span><span> </span><span id="local-6989586621682280718"><span class="annot"><span class="annottext">ifFalse' :: UnionBase a
+</span><a href="#local-6989586621682280718"><span class="hs-identifier hs-var">ifFalse'</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span id="local-6989586621682280719"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280719"><span class="hs-identifier hs-var">condf</span></a></span></span><span> </span><span id="local-6989586621682280720"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280720"><span class="hs-identifier hs-var">ft</span></a></span></span><span> </span><span id="local-6989586621682280721"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280721"><span class="hs-identifier hs-var">ff</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-176"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280722"><span class="hs-identifier hs-var">idxft</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280723"><span class="hs-identifier hs-var">idxff</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280706"><span class="hs-identifier hs-var">ssUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280716"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280717"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280718"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-177"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280724"><span class="hs-identifier hs-var">idxt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280722"><span class="hs-identifier hs-var">idxft</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280716"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280717"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280718"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-178"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280724"><span class="hs-identifier hs-var">idxt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280722"><span class="hs-identifier hs-var">idxft</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-179"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span>
+</span><span id="line-180"></span><span>              </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-181"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280716"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%7C%7C"><span class="hs-operator hs-var">.||</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280719"><span class="hs-identifier hs-var">condf</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-182"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">idx -&gt; MergingStrategy a
+</span><a href="#local-6989586621682280702"><span class="hs-identifier hs-var">substrategy</span></a></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280724"><span class="hs-identifier hs-var">idxt</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280716"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280717"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280720"><span class="hs-identifier hs-var">ft</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-183"></span><span>              </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280721"><span class="hs-identifier hs-var">ff</span></a></span><span>
+</span><span id="line-184"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-185"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span>
+</span><span id="line-186"></span><span>              </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-187"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#symNot"><span class="hs-identifier hs-var">symNot</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280716"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%26%26"><span class="hs-operator hs-var">.&amp;&amp;</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280719"><span class="hs-identifier hs-var">condf</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-188"></span><span>              </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280720"><span class="hs-identifier hs-var">ft</span></a></span><span>
+</span><span id="line-189"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280663"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280716"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280717"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280721"><span class="hs-identifier hs-var">ff</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-190"></span><span>        </span><span class="hs-keyword">where</span><span>
+</span><span id="line-191"></span><span>          </span><span id="local-6989586621682280722"><span class="annot"><span class="annottext">idxft :: idx
+</span><a href="#local-6989586621682280722"><span class="hs-identifier hs-var hs-var">idxft</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280720"><span class="hs-identifier hs-var">ft</span></a></span><span>
+</span><span id="line-192"></span><span>          </span><span id="local-6989586621682280723"><span class="annot"><span class="annottext">idxff :: idx
+</span><a href="#local-6989586621682280723"><span class="hs-identifier hs-var hs-var">idxff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280721"><span class="hs-identifier hs-var">ff</span></a></span><span>
+</span><span id="line-193"></span><span>          </span><span id="local-6989586621682280724"><span class="annot"><span class="annottext">idxt :: idx
+</span><a href="#local-6989586621682280724"><span class="hs-identifier hs-var hs-var">idxt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280717"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span>
+</span><span id="line-194"></span><span>      </span><span class="annot"><a href="#local-6989586621682280707"><span class="hs-identifier hs-var">sgUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span>
+</span><span id="line-195"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682280707"><span class="hs-pragma hs-type">sgUnionIf</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-196"></span><span>      </span><span id="local-6989586621682280708"><span class="annot"><span class="annottext">gsUnionIf :: SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280708"><span class="hs-identifier hs-var hs-var">gsUnionIf</span></a></span></span><span> </span><span id="local-6989586621682280726"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280726"><span class="hs-identifier hs-var">cond'</span></a></span></span><span> </span><span id="local-6989586621682280727"><span class="annot"><span class="annottext">ifTrue' :: UnionBase a
+</span><a href="#local-6989586621682280727"><span class="hs-identifier hs-var">ifTrue'</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span id="local-6989586621682280728"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280728"><span class="hs-identifier hs-var">condt</span></a></span></span><span> </span><span id="local-6989586621682280729"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280729"><span class="hs-identifier hs-var">tt</span></a></span></span><span> </span><span id="local-6989586621682280730"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280730"><span class="hs-identifier hs-var">tf</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682280731"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280731"><span class="hs-identifier hs-var">ifFalse'</span></a></span></span><span>
+</span><span id="line-197"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280732"><span class="hs-identifier hs-var">idxtt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280733"><span class="hs-identifier hs-var">idxtf</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280706"><span class="hs-identifier hs-var">ssUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280726"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280727"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280731"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-198"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280732"><span class="hs-identifier hs-var">idxtt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280734"><span class="hs-identifier hs-var">idxf</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-199"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280726"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%26%26"><span class="hs-operator hs-var">.&amp;&amp;</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280728"><span class="hs-identifier hs-var">condt</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280729"><span class="hs-identifier hs-var">tt</span></a></span><span> </span><span class="annot"><span class="annottext">(UnionBase a -&gt; UnionBase a) -&gt; UnionBase a -&gt; UnionBase a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-200"></span><span>              </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280663"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280726"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280730"><span class="hs-identifier hs-var">tf</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280731"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-201"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280732"><span class="hs-identifier hs-var">idxtt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280734"><span class="hs-identifier hs-var">idxf</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-202"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span>
+</span><span id="line-203"></span><span>              </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-204"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#symNot"><span class="hs-identifier hs-var">symNot</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280726"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%7C%7C"><span class="hs-operator hs-var">.||</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280728"><span class="hs-identifier hs-var">condt</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-205"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">idx -&gt; MergingStrategy a
+</span><a href="#local-6989586621682280702"><span class="hs-identifier hs-var">substrategy</span></a></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280734"><span class="hs-identifier hs-var">idxf</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280726"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280729"><span class="hs-identifier hs-var">tt</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280731"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-206"></span><span>              </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280730"><span class="hs-identifier hs-var">tf</span></a></span><span>
+</span><span id="line-207"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#symNot"><span class="hs-identifier hs-var">symNot</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280726"><span class="hs-identifier hs-var">cond'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280731"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280727"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span>
+</span><span id="line-208"></span><span>        </span><span class="hs-keyword">where</span><span>
+</span><span id="line-209"></span><span>          </span><span id="local-6989586621682280732"><span class="annot"><span class="annottext">idxtt :: idx
+</span><a href="#local-6989586621682280732"><span class="hs-identifier hs-var hs-var">idxtt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280729"><span class="hs-identifier hs-var">tt</span></a></span><span>
+</span><span id="line-210"></span><span>          </span><span id="local-6989586621682280733"><span class="annot"><span class="annottext">idxtf :: idx
+</span><a href="#local-6989586621682280733"><span class="hs-identifier hs-var hs-var">idxtf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280730"><span class="hs-identifier hs-var">tf</span></a></span><span>
+</span><span id="line-211"></span><span>          </span><span id="local-6989586621682280734"><span class="annot"><span class="annottext">idxf :: idx
+</span><a href="#local-6989586621682280734"><span class="hs-identifier hs-var hs-var">idxf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280731"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-212"></span><span>      </span><span class="annot"><a href="#local-6989586621682280708"><span class="hs-identifier hs-var">gsUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span>
+</span><span id="line-213"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682280708"><span class="hs-pragma hs-type">gsUnionIf</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-214"></span><span>      </span><span id="local-6989586621682280709"><span class="annot"><span class="annottext">ggUnionIf :: SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280709"><span class="hs-identifier hs-var hs-var">ggUnionIf</span></a></span></span><span>
+</span><span id="line-215"></span><span>        </span><span id="local-6989586621682280735"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span></span><span>
+</span><span id="line-216"></span><span>        </span><span id="local-6989586621682280736"><span class="annot"><span class="annottext">ifTrue' :: UnionBase a
+</span><a href="#local-6989586621682280736"><span class="hs-identifier hs-var">ifTrue'</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span id="local-6989586621682280737"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280737"><span class="hs-identifier hs-var">condt</span></a></span></span><span> </span><span id="local-6989586621682280738"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280738"><span class="hs-identifier hs-var">tt</span></a></span></span><span> </span><span id="local-6989586621682280739"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280739"><span class="hs-identifier hs-var">tf</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-217"></span><span>        </span><span id="local-6989586621682280740"><span class="annot"><span class="annottext">ifFalse' :: UnionBase a
+</span><a href="#local-6989586621682280740"><span class="hs-identifier hs-var">ifFalse'</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span id="local-6989586621682280741"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280741"><span class="hs-identifier hs-var">condf</span></a></span></span><span> </span><span id="local-6989586621682280742"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280742"><span class="hs-identifier hs-var">ft</span></a></span></span><span> </span><span id="local-6989586621682280743"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280743"><span class="hs-identifier hs-var">ff</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-218"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280744"><span class="hs-identifier hs-var">idxtt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280745"><span class="hs-identifier hs-var">idxtf</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280707"><span class="hs-identifier hs-var">sgUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280736"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280740"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-219"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280746"><span class="hs-identifier hs-var">idxft</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280747"><span class="hs-identifier hs-var">idxff</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="#local-6989586621682280708"><span class="hs-identifier hs-var">gsUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280736"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280740"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-220"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280744"><span class="hs-identifier hs-var">idxtt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280746"><span class="hs-identifier hs-var">idxft</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-221"></span><span>              </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%26%26"><span class="hs-operator hs-var">.&amp;&amp;</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280737"><span class="hs-identifier hs-var">condt</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280738"><span class="hs-identifier hs-var">tt</span></a></span><span> </span><span class="annot"><span class="annottext">(UnionBase a -&gt; UnionBase a) -&gt; UnionBase a -&gt; UnionBase a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-222"></span><span>                </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280663"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280739"><span class="hs-identifier hs-var">tf</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280740"><span class="hs-identifier hs-var">ifFalse'</span></a></span><span>
+</span><span id="line-223"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280744"><span class="hs-identifier hs-var">idxtt</span></a></span><span> </span><span class="annot"><span class="annottext">idx -&gt; idx -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280746"><span class="hs-identifier hs-var">idxft</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-224"></span><span>              </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682280748"><span class="annot"><span class="annottext">newCond :: SymBool
+</span><a href="#local-6989586621682280748"><span class="hs-identifier hs-var hs-var">newCond</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; SymBool -&gt; SymBool
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280737"><span class="hs-identifier hs-var">condt</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280741"><span class="hs-identifier hs-var">condf</span></a></span><span>
+</span><span id="line-225"></span><span>                  </span><span id="local-6989586621682280749"><span class="annot"><span class="annottext">newUnionIfTrue :: UnionBase a
+</span><a href="#local-6989586621682280749"><span class="hs-identifier hs-var hs-var">newUnionIfTrue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-226"></span><span>                    </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">idx -&gt; MergingStrategy a
+</span><a href="#local-6989586621682280702"><span class="hs-identifier hs-var">substrategy</span></a></span><span> </span><span class="annot"><span class="annottext">idx
+</span><a href="#local-6989586621682280744"><span class="hs-identifier hs-var">idxtt</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280738"><span class="hs-identifier hs-var">tt</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280742"><span class="hs-identifier hs-var">ft</span></a></span><span>
+</span><span id="line-227"></span><span>                  </span><span id="local-6989586621682280750"><span class="annot"><span class="annottext">newUnionIfFalse :: UnionBase a
+</span><a href="#local-6989586621682280750"><span class="hs-identifier hs-var hs-var">newUnionIfFalse</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280663"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280739"><span class="hs-identifier hs-var">tf</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280743"><span class="hs-identifier hs-var">ff</span></a></span><span>
+</span><span id="line-228"></span><span>               </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280748"><span class="hs-identifier hs-var">newCond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280749"><span class="hs-identifier hs-var">newUnionIfTrue</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280750"><span class="hs-identifier hs-var">newUnionIfFalse</span></a></span><span>
+</span><span id="line-229"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-230"></span><span>              </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#symNot"><span class="hs-identifier hs-var">symNot</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; SymBool
+forall b. LogicalOp b =&gt; b -&gt; b -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.LogicalOp.html#.%26%26"><span class="hs-operator hs-var">.&amp;&amp;</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280741"><span class="hs-identifier hs-var">condf</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280742"><span class="hs-identifier hs-var">ft</span></a></span><span> </span><span class="annot"><span class="annottext">(UnionBase a -&gt; UnionBase a) -&gt; UnionBase a -&gt; UnionBase a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-231"></span><span>                </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280663"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280735"><span class="hs-identifier hs-var">cond'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280736"><span class="hs-identifier hs-var">ifTrue'</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280743"><span class="hs-identifier hs-var">ff</span></a></span><span>
+</span><span id="line-232"></span><span>          </span><span class="hs-keyword">where</span><span>
+</span><span id="line-233"></span><span>            </span><span id="local-6989586621682280744"><span class="annot"><span class="annottext">idxtt :: idx
+</span><a href="#local-6989586621682280744"><span class="hs-identifier hs-var hs-var">idxtt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280738"><span class="hs-identifier hs-var">tt</span></a></span><span>
+</span><span id="line-234"></span><span>            </span><span id="local-6989586621682280745"><span class="annot"><span class="annottext">idxtf :: idx
+</span><a href="#local-6989586621682280745"><span class="hs-identifier hs-var hs-var">idxtf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280739"><span class="hs-identifier hs-var">tf</span></a></span><span>
+</span><span id="line-235"></span><span>            </span><span id="local-6989586621682280746"><span class="annot"><span class="annottext">idxft :: idx
+</span><a href="#local-6989586621682280746"><span class="hs-identifier hs-var hs-var">idxft</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280742"><span class="hs-identifier hs-var">ft</span></a></span><span>
+</span><span id="line-236"></span><span>            </span><span id="local-6989586621682280747"><span class="annot"><span class="annottext">idxff :: idx
+</span><a href="#local-6989586621682280747"><span class="hs-identifier hs-var hs-var">idxff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; idx
+</span><a href="#local-6989586621682280701"><span class="hs-identifier hs-var">idxFun</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; idx) -&gt; a -&gt; idx
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; a
+forall a. UnionBase a -&gt; a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#leftMost"><span class="hs-identifier hs-var">leftMost</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280743"><span class="hs-identifier hs-var">ff</span></a></span><span>
+</span><span id="line-237"></span><span>      </span><span class="annot"><a href="#local-6989586621682280709"><span class="hs-identifier hs-var">ggUnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span>
+</span><span id="line-238"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682280709"><span class="hs-pragma hs-type">ggUnionIf</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-239"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#NoStrategy"><span class="hs-identifier hs-var">NoStrategy</span></a></span><span> </span><span id="local-6989586621682280751"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280751"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280752"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280752"><span class="hs-identifier hs-var">ifTrue</span></a></span></span><span> </span><span id="local-6989586621682280753"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280753"><span class="hs-identifier hs-var">ifFalse</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-240"></span><span>  </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280751"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280752"><span class="hs-identifier hs-var">ifTrue</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280753"><span class="hs-identifier hs-var">ifFalse</span></a></span><span>
+</span><span id="line-241"></span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-identifier hs-var">ifWithStrategyInv</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; UnionBase a
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Invariant violated&quot;</span></span><span>
+</span><span id="line-242"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategyInv"><span class="hs-pragma hs-type">ifWithStrategyInv</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-243"></span><span>
+</span><span id="line-244"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682280421"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280421"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280421"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-245"></span><span>  </span><span id="local-6989586621682280760"><span class="annot"><span class="annottext">rootStrategy :: MergingStrategy (UnionBase a)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var hs-var hs-var">rootStrategy</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a)
+-&gt; MergingStrategy (UnionBase a)
+forall a. (SymBool -&gt; a -&gt; a -&gt; a) -&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#SimpleStrategy"><span class="hs-identifier hs-var">SimpleStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">((SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a)
+ -&gt; MergingStrategy (UnionBase a))
+-&gt; (SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a)
+-&gt; MergingStrategy (UnionBase a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var">ifWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span>
+</span><span id="line-246"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-pragma hs-type">rootStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-247"></span><span>
+</span><span id="line-248"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable1"><span class="hs-identifier hs-type">Mergeable1</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-249"></span><span>  </span><span id="local-6989586621682280766"><span class="annot"><span class="annottext">liftRootStrategy :: forall a. MergingStrategy a -&gt; MergingStrategy (UnionBase a)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy"><span class="hs-identifier hs-var hs-var hs-var">liftRootStrategy</span></a></span></span><span> </span><span id="local-6989586621682280767"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280767"><span class="hs-identifier hs-var">ms</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a)
+-&gt; MergingStrategy (UnionBase a)
+forall a. (SymBool -&gt; a -&gt; a -&gt; a) -&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#SimpleStrategy"><span class="hs-identifier hs-var">SimpleStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">((SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a)
+ -&gt; MergingStrategy (UnionBase a))
+-&gt; (SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a)
+-&gt; MergingStrategy (UnionBase a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var">ifWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682280767"><span class="hs-identifier hs-var">ms</span></a></span><span>
+</span><span id="line-250"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy"><span class="hs-pragma hs-type">liftRootStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-251"></span><span>
+</span><span id="line-252"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682280431"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280431"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#SimpleMergeable"><span class="hs-identifier hs-type">SimpleMergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682280431"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-253"></span><span>  </span><span id="local-6989586621682280777"><span class="annot"><span class="annottext">mrgIte :: SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIte"><span class="hs-identifier hs-var hs-var hs-var">mrgIte</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-254"></span><span>
+</span><span id="line-255"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#SimpleMergeable1"><span class="hs-identifier hs-type">SimpleMergeable1</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-256"></span><span>  </span><span id="local-6989586621682280786"><span class="annot"><span class="annottext">liftMrgIte :: forall a.
+(SymBool -&gt; a -&gt; a -&gt; a)
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#liftMrgIte"><span class="hs-identifier hs-var hs-var hs-var">liftMrgIte</span></a></span></span><span> </span><span id="local-6989586621682280787"><span class="annot"><span class="annottext">SymBool -&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682280787"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall (u :: * -&gt; *) a.
+SymBranching u =&gt;
+MergingStrategy a -&gt; SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIfWithStrategy"><span class="hs-identifier hs-var">mrgIfWithStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(SymBool -&gt; a -&gt; a -&gt; a) -&gt; MergingStrategy a
+forall a. (SymBool -&gt; a -&gt; a -&gt; a) -&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#SimpleStrategy"><span class="hs-identifier hs-var">SimpleStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682280787"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-257"></span><span>
+</span><span id="line-258"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#SymBranching"><span class="hs-identifier hs-type">SymBranching</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-259"></span><span>  </span><span id="local-6989586621682280797"><span class="annot"><span class="annottext">mrgIfWithStrategy :: forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIfWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">mrgIfWithStrategy</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+MergingStrategy a
+-&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithStrategy"><span class="hs-identifier hs-var">ifWithStrategy</span></a></span><span>
+</span><span id="line-260"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIfWithStrategy"><span class="hs-pragma hs-type">mrgIfWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-261"></span><span>
+</span><span id="line-262"></span><span>  </span><span id="local-6989586621682280798"><span class="annot"><span class="annottext">mrgIfPropagatedStrategy :: forall a. SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIfPropagatedStrategy"><span class="hs-identifier hs-var hs-var hs-var">mrgIfPropagatedStrategy</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+forall a.
+Bool -&gt; SymBool -&gt; UnionBase a -&gt; UnionBase a -&gt; UnionBase a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#ifWithLeftMost"><span class="hs-identifier hs-var">ifWithLeftMost</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-263"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIfPropagatedStrategy"><span class="hs-pragma hs-type">mrgIfPropagatedStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-264"></span><span>
+</span><span id="line-265"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682280806"><span id="local-6989586621682280810"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#PlainUnion"><span class="hs-identifier hs-type">PlainUnion</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-266"></span><span>  </span><span id="local-6989586621682280815"><span class="annot"><span class="annottext">singleView :: forall a. UnionBase a -&gt; Maybe a
+</span><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#singleView"><span class="hs-identifier hs-var hs-var hs-var">singleView</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682280816"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280816"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682280816"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-267"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#singleView"><span class="hs-identifier hs-var">singleView</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe a
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-268"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#singleView"><span class="hs-pragma hs-type">singleView</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-269"></span><span>  </span><span id="local-6989586621682280817"><span class="annot"><span class="annottext">ifView :: forall a. UnionBase a -&gt; Maybe (SymBool, UnionBase a, UnionBase a)
+</span><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#ifView"><span class="hs-identifier hs-var hs-var hs-var">ifView</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682280818"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280818"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682280819"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280819"><span class="hs-identifier hs-var">ifTrue</span></a></span></span><span> </span><span id="local-6989586621682280820"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280820"><span class="hs-identifier hs-var">ifFalse</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SymBool, UnionBase a, UnionBase a)
+-&gt; Maybe (SymBool, UnionBase a, UnionBase a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682280818"><span class="hs-identifier hs-var">cond</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280819"><span class="hs-identifier hs-var">ifTrue</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682280820"><span class="hs-identifier hs-var">ifFalse</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-270"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#ifView"><span class="hs-identifier hs-var">ifView</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (SymBool, UnionBase a, UnionBase a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-271"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#ifView"><span class="hs-pragma hs-type">ifView</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-272"></span></pre></body></html>

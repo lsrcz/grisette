@@ -1,0 +1,367 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE AllowAmbiguousTypes #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE FunctionalDependencies #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE PatternSynonyms #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-12"></span><span class="hs-pragma">{-# LANGUAGE ViewPatterns #-}</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Unified.Class.UnifiedSolvable</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-18"></span><span class="hs-comment">--</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html"><span class="hs-identifier">Grisette.Internal.Unified.Class.UnifiedSolvable</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier">withBaseSolvable</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#con"><span class="hs-identifier">con</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#Con"><span class="hs-identifier">Con</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#conView"><span class="hs-identifier">conView</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Type.Bool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">If</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeLits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier">Solvable</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Solvable</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><a href="Grisette.html"><span class="hs-identifier">Grisette</span></a></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymAlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier">SymAlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier">SymIntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier">SymWordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier">SymBool</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymFP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier">SymFP</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymInteger</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html#SymInteger"><span class="hs-identifier">SymInteger</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html"><span class="hs-identifier">Grisette.Internal.Unified.EvalModeTag</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#EvalModeTag"><span class="hs-identifier">EvalModeTag</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier">C</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier">S</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#IsConMode"><span class="hs-identifier">IsConMode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Util.html"><span class="hs-identifier">Grisette.Internal.Unified.Util</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Util.html#DecideEvalMode"><span class="hs-identifier">DecideEvalMode</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Util.html#withMode"><span class="hs-identifier">withMode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core (ssym)</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- | Wrap a concrete value in a symbolic value.</span><span>
+</span><span id="line-49"></span><span class="hs-comment">--</span><span>
+</span><span id="line-50"></span><span class="hs-comment">-- &gt;&gt;&gt; con True :: Bool</span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- True</span><span>
+</span><span id="line-52"></span><span class="hs-comment">--</span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- &gt;&gt;&gt; con True :: SymBool</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- true</span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#con"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682271888"><span class="annot"><a href="#local-6989586621682271888"><span class="hs-identifier hs-type">mode</span></a></span></span><span> </span><span id="local-6989586621682271889"><span class="annot"><a href="#local-6989586621682271889"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682271890"><span class="annot"><a href="#local-6989586621682271890"><span class="hs-identifier hs-type">con</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Util.html#DecideEvalMode"><span class="hs-identifier hs-type">DecideEvalMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271888"><span class="hs-identifier hs-type">mode</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271888"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271889"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271890"><span class="hs-identifier hs-type">con</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271890"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271889"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-57"></span><span id="con"><span class="annot"><span class="annottext">con :: forall (mode :: EvalModeTag) a con.
+(DecideEvalMode mode, UnifiedSolvable mode a con) =&gt;
+con -&gt; a
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#con"><span class="hs-identifier hs-var hs-var">con</span></a></span></span><span> </span><span id="local-6989586621682271987"><span class="annot"><span class="annottext">con
+</span><a href="#local-6989586621682271987"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-58"></span><span>  </span><span class="annot"><span class="annottext">forall (mode :: EvalModeTag) r.
+DecideEvalMode mode =&gt;
+((mode ~ 'C) =&gt; r) -&gt; ((mode ~ 'S) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.Unified.Util.html#withMode"><span class="hs-identifier hs-var">withMode</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271888"><span class="hs-identifier hs-type">mode</span></a></span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (mode :: EvalModeTag) a con r.
+UnifiedSolvable mode a con =&gt;
+(If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var">withBaseSolvable</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271888"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271889"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271890"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="annot"><span class="annottext">a
+con
+If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; a
+</span><a href="#local-6989586621682271987"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (mode :: EvalModeTag) a con r.
+UnifiedSolvable mode a con =&gt;
+(If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var">withBaseSolvable</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271888"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271889"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271890"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="annot"><span class="annottext">((If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; a) -&gt; a)
+-&gt; (If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; a) -&gt; a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">con -&gt; a
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">Grisette.con</span></a></span><span> </span><span class="annot"><span class="annottext">con
+</span><a href="#local-6989586621682271987"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- | Extract the concrete value from a symbolic value.</span><span>
+</span><span id="line-63"></span><span class="hs-comment">--</span><span>
+</span><span id="line-64"></span><span class="hs-comment">-- &gt;&gt;&gt; conView (con True :: SymBool)</span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- Just True</span><span>
+</span><span id="line-66"></span><span class="hs-comment">--</span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- &gt;&gt;&gt; conView (ssym &quot;a&quot; :: SymBool)</span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- Nothing</span><span>
+</span><span id="line-69"></span><span class="hs-comment">--</span><span>
+</span><span id="line-70"></span><span class="hs-comment">-- &gt;&gt;&gt; conView True</span><span>
+</span><span id="line-71"></span><span class="hs-comment">-- Just True</span><span>
+</span><span id="line-72"></span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#conView"><span class="hs-identifier hs-type">conView</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682271914"><span class="annot"><a href="#local-6989586621682271914"><span class="hs-identifier hs-type">mode</span></a></span></span><span> </span><span id="local-6989586621682271915"><span class="annot"><a href="#local-6989586621682271915"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682271916"><span class="annot"><a href="#local-6989586621682271916"><span class="hs-identifier hs-type">con</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Util.html#DecideEvalMode"><span class="hs-identifier hs-type">DecideEvalMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271914"><span class="hs-identifier hs-type">mode</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271914"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271915"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271916"><span class="hs-identifier hs-type">con</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-75"></span><span>  </span><span class="annot"><a href="#local-6989586621682271915"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-76"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621682271916"><span class="hs-identifier hs-type">con</span></a></span><span>
+</span><span id="line-77"></span><span id="conView"><span class="annot"><span class="annottext">conView :: forall (mode :: EvalModeTag) a con.
+(DecideEvalMode mode, UnifiedSolvable mode a con) =&gt;
+a -&gt; Maybe con
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#conView"><span class="hs-identifier hs-var hs-var">conView</span></a></span></span><span> </span><span id="local-6989586621682272006"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682272006"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><span class="annottext">forall (mode :: EvalModeTag) r.
+DecideEvalMode mode =&gt;
+((mode ~ 'C) =&gt; r) -&gt; ((mode ~ 'S) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.Unified.Util.html#withMode"><span class="hs-identifier hs-var">withMode</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271914"><span class="hs-identifier hs-type">mode</span></a></span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (mode :: EvalModeTag) a con r.
+UnifiedSolvable mode a con =&gt;
+(If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var">withBaseSolvable</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271914"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271915"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271916"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="annot"><span class="annottext">((If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; Maybe con)
+ -&gt; Maybe con)
+-&gt; (If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; Maybe con)
+-&gt; Maybe con
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">con -&gt; Maybe con
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
+con
+</span><a href="#local-6989586621682272006"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (mode :: EvalModeTag) a con r.
+UnifiedSolvable mode a con =&gt;
+(If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var">withBaseSolvable</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271914"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271915"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682271916"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="annot"><span class="annottext">((If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; Maybe con)
+ -&gt; Maybe con)
+-&gt; (If (IsConMode mode) (a ~ con) (Solvable con a) =&gt; Maybe con)
+-&gt; Maybe con
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe con
+forall c t. Solvable c t =&gt; t -&gt; Maybe c
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier hs-var">Grisette.conView</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682272006"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- | A pattern synonym for extracting the concrete value from a symbolic value.</span><span>
+</span><span id="line-83"></span><span class="hs-comment">--</span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- &gt;&gt;&gt; case con True :: SymBool of Con v -&gt; v</span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- True</span><span>
+</span><span id="line-86"></span><span class="hs-comment">--</span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- &gt;&gt;&gt; case ssym &quot;a&quot; :: SymBool of Con v -&gt; Just v; _ -&gt; Nothing</span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- Nothing</span><span>
+</span><span id="line-89"></span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621682271879"><span id="local-6989586621682271881"><span id="local-6989586621682271882"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Util.html#DecideEvalMode"><span class="hs-identifier hs-type">DecideEvalMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271879"><span class="hs-identifier hs-type">mode</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271879"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271881"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271882"><span class="hs-identifier hs-type">con</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271882"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271881"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-90"></span><span class="hs-keyword">pattern</span><span> </span><span id="Con"><span id="%24mCon"><span id="%24bCon"><span class="annot"><span class="annottext">$mCon :: forall {r} {mode :: EvalModeTag} {a} {con}.
+(DecideEvalMode mode, UnifiedSolvable mode a con) =&gt;
+a -&gt; (con -&gt; r) -&gt; ((# #) -&gt; r) -&gt; r
+$bCon :: forall (mode :: EvalModeTag) a con.
+(DecideEvalMode mode, UnifiedSolvable mode a con) =&gt;
+con -&gt; a
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#Con"><span class="hs-identifier hs-var hs-var hs-var">Con</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621682272024"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#conView"><span class="hs-identifier hs-type">conView</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682272024"><span class="annot"><a href="#local-6989586621682272024"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-93"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#Con"><span class="hs-identifier hs-var">Con</span></a></span><span> </span><span id="local-6989586621682272027"><span class="annot"><span class="annottext">con
+</span><a href="#local-6989586621682272027"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">con -&gt; a
+forall (mode :: EvalModeTag) a con.
+(DecideEvalMode mode, UnifiedSolvable mode a con) =&gt;
+con -&gt; a
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">con
+</span><a href="#local-6989586621682272027"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- | A class that provides the ability to extract/wrap the concrete value</span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- from/into a symbolic value.</span><span>
+</span><span id="line-97"></span><span class="hs-keyword">class</span><span> </span><span id="UnifiedSolvable"><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-var">UnifiedSolvable</span></a></span></span><span> </span><span id="local-6989586621682271905"><span class="annot"><a href="#local-6989586621682271905"><span class="hs-identifier hs-type">mode</span></a></span></span><span> </span><span id="local-6989586621682271906"><span class="annot"><a href="#local-6989586621682271906"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682271907"><span class="annot"><a href="#local-6989586621682271907"><span class="hs-identifier hs-type">con</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621682271906"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271905"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271907"><span class="hs-identifier hs-type">con</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621682271907"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271905"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271906"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-98"></span><span>  </span><span id="withBaseSolvable"><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-type">withBaseSolvable</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-99"></span><span>    </span><span id="local-6989586621682271904"><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">If</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#IsConMode"><span class="hs-identifier hs-type">IsConMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271905"><span class="hs-identifier hs-type">mode</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682271906"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="annot"><a href="#local-6989586621682271907"><span class="hs-identifier hs-type">con</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271907"><span class="hs-identifier hs-type">con</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271906"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271904"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682271904"><span class="hs-identifier hs-type">r</span></a></span></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-type">C</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682272033"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If (IsConMode 'C) (Bool ~ Bool) (Solvable Bool Bool) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272034"><span class="annot"><span class="annottext">If (IsConMode 'C) (Bool ~ Bool) (Solvable Bool Bool) =&gt; r
+</span><a href="#local-6989586621682272034"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If (IsConMode 'C) (Bool ~ Bool) (Solvable Bool Bool) =&gt; r
+</span><a href="#local-6989586621682272034"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-type">S</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-105"></span><span>  </span><span id="local-6989586621682272040"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If (IsConMode 'S) (SymBool ~ Bool) (Solvable Bool SymBool) =&gt; r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272041"><span class="annot"><span class="annottext">If (IsConMode 'S) (SymBool ~ Bool) (Solvable Bool SymBool) =&gt; r
+</span><a href="#local-6989586621682272041"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If (IsConMode 'S) (SymBool ~ Bool) (Solvable Bool SymBool) =&gt; r
+</span><a href="#local-6989586621682272041"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-type">C</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-108"></span><span>  </span><span id="local-6989586621682272046"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'C) (Integer ~ Integer) (Solvable Integer Integer) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272047"><span class="annot"><span class="annottext">If (IsConMode 'C) (Integer ~ Integer) (Solvable Integer Integer) =&gt;
+r
+</span><a href="#local-6989586621682272047"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If (IsConMode 'C) (Integer ~ Integer) (Solvable Integer Integer) =&gt;
+r
+</span><a href="#local-6989586621682272047"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-type">S</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html#SymInteger"><span class="hs-identifier hs-type">SymInteger</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-111"></span><span>  </span><span id="local-6989586621682272053"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'S)
+   (SymInteger ~ Integer)
+   (Solvable Integer SymInteger) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272054"><span class="annot"><span class="annottext">If
+  (IsConMode 'S)
+  (SymInteger ~ Integer)
+  (Solvable Integer SymInteger) =&gt;
+r
+</span><a href="#local-6989586621682272054"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If
+  (IsConMode 'S)
+  (SymInteger ~ Integer)
+  (Solvable Integer SymInteger) =&gt;
+r
+</span><a href="#local-6989586621682272054"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-type">C</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-114"></span><span>  </span><span id="local-6989586621682272059"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'C) (AlgReal ~ AlgReal) (Solvable AlgReal AlgReal) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272060"><span class="annot"><span class="annottext">If (IsConMode 'C) (AlgReal ~ AlgReal) (Solvable AlgReal AlgReal) =&gt;
+r
+</span><a href="#local-6989586621682272060"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If (IsConMode 'C) (AlgReal ~ AlgReal) (Solvable AlgReal AlgReal) =&gt;
+r
+</span><a href="#local-6989586621682272060"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-115"></span><span>
+</span><span id="line-116"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-type">S</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621682272066"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'S)
+   (SymAlgReal ~ AlgReal)
+   (Solvable AlgReal SymAlgReal) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272067"><span class="annot"><span class="annottext">If
+  (IsConMode 'S)
+  (SymAlgReal ~ AlgReal)
+  (Solvable AlgReal SymAlgReal) =&gt;
+r
+</span><a href="#local-6989586621682272067"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If
+  (IsConMode 'S)
+  (SymAlgReal ~ AlgReal)
+  (Solvable AlgReal SymAlgReal) =&gt;
+r
+</span><a href="#local-6989586621682272067"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682271936"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682271936"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682271936"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-type">C</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271936"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271936"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-120"></span><span>  </span><span id="local-6989586621682272074"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'C)
+   (WordN n ~ WordN n)
+   (Solvable (WordN n) (WordN n)) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272075"><span class="annot"><span class="annottext">If
+  (IsConMode 'C)
+  (WordN n ~ WordN n)
+  (Solvable (WordN n) (WordN n)) =&gt;
+r
+</span><a href="#local-6989586621682272075"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If
+  (IsConMode 'C)
+  (WordN n ~ WordN n)
+  (Solvable (WordN n) (WordN n)) =&gt;
+r
+</span><a href="#local-6989586621682272075"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682271940"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682271940"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682271940"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-type">S</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271940"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271940"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-123"></span><span>  </span><span id="local-6989586621682272086"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'S)
+   (SymWordN n ~ WordN n)
+   (Solvable (WordN n) (SymWordN n)) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272087"><span class="annot"><span class="annottext">If
+  (IsConMode 'S)
+  (SymWordN n ~ WordN n)
+  (Solvable (WordN n) (SymWordN n)) =&gt;
+r
+</span><a href="#local-6989586621682272087"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If
+  (IsConMode 'S)
+  (SymWordN n ~ WordN n)
+  (Solvable (WordN n) (SymWordN n)) =&gt;
+r
+</span><a href="#local-6989586621682272087"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682271947"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682271947"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682271947"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-type">C</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271947"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271947"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-126"></span><span>  </span><span id="local-6989586621682272094"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'C) (IntN n ~ IntN n) (Solvable (IntN n) (IntN n)) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272095"><span class="annot"><span class="annottext">If (IsConMode 'C) (IntN n ~ IntN n) (Solvable (IntN n) (IntN n)) =&gt;
+r
+</span><a href="#local-6989586621682272095"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If (IsConMode 'C) (IntN n ~ IntN n) (Solvable (IntN n) (IntN n)) =&gt;
+r
+</span><a href="#local-6989586621682272095"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-127"></span><span>
+</span><span id="line-128"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682271951"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682271951"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682271951"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-type">S</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271951"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271951"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-129"></span><span>  </span><span id="local-6989586621682272106"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'S)
+   (SymIntN n ~ IntN n)
+   (Solvable (IntN n) (SymIntN n)) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272107"><span class="annot"><span class="annottext">If
+  (IsConMode 'S)
+  (SymIntN n ~ IntN n)
+  (Solvable (IntN n) (SymIntN n)) =&gt;
+r
+</span><a href="#local-6989586621682272107"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If
+  (IsConMode 'S)
+  (SymIntN n ~ IntN n)
+  (Solvable (IntN n) (SymIntN n)) =&gt;
+r
+</span><a href="#local-6989586621682272107"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682271958"><span id="local-6989586621682271959"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271958"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271959"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-type">C</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271958"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271959"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271958"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271959"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-132"></span><span>  </span><span id="local-6989586621682272113"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'C)
+   (FP eb sb ~ FP eb sb)
+   (Solvable (FP eb sb) (FP eb sb)) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272114"><span class="annot"><span class="annottext">If
+  (IsConMode 'C)
+  (FP eb sb ~ FP eb sb)
+  (Solvable (FP eb sb) (FP eb sb)) =&gt;
+r
+</span><a href="#local-6989586621682272114"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If
+  (IsConMode 'C)
+  (FP eb sb ~ FP eb sb)
+  (Solvable (FP eb sb) (FP eb sb)) =&gt;
+r
+</span><a href="#local-6989586621682272114"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-133"></span><span>
+</span><span id="line-134"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682271964"><span id="local-6989586621682271965"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271964"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271965"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#UnifiedSolvable"><span class="hs-identifier hs-type">UnifiedSolvable</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-type">S</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271964"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271965"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271964"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682271965"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-135"></span><span>  </span><span id="local-6989586621682272123"><span class="annot"><span class="annottext">withBaseSolvable :: forall r.
+(If
+   (IsConMode 'S)
+   (SymFP eb sb ~ FP eb sb)
+   (Solvable (FP eb sb) (SymFP eb sb)) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.Unified.Class.UnifiedSolvable.html#withBaseSolvable"><span class="hs-identifier hs-var hs-var hs-var">withBaseSolvable</span></a></span></span><span> </span><span id="local-6989586621682272124"><span class="annot"><span class="annottext">If
+  (IsConMode 'S)
+  (SymFP eb sb ~ FP eb sb)
+  (Solvable (FP eb sb) (SymFP eb sb)) =&gt;
+r
+</span><a href="#local-6989586621682272124"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+If
+  (IsConMode 'S)
+  (SymFP eb sb ~ FP eb sb)
+  (Solvable (FP eb sb) (SymFP eb sb)) =&gt;
+r
+</span><a href="#local-6989586621682272124"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-136"></span></pre></body></html>

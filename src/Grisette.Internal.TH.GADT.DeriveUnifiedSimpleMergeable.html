@@ -1,0 +1,209 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# HLINT ignore &quot;Unused LANGUAGE pragma&quot; #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Module      :   Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable"><span class="hs-identifier">deriveGADTUnifiedSimpleMergeable</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable1"><span class="hs-identifier">deriveGADTUnifiedSimpleMergeable1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable2"><span class="hs-identifier">deriveGADTUnifiedSimpleMergeable2</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable.html#UnifiedSimpleMergeable"><span class="hs-identifier">UnifiedSimpleMergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable.html#withBaseSimpleMergeable"><span class="hs-identifier">withBaseSimpleMergeable</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable.html#UnifiedSimpleMergeable1"><span class="hs-identifier">UnifiedSimpleMergeable1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable.html#withBaseSimpleMergeable1"><span class="hs-identifier">withBaseSimpleMergeable1</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable.html#UnifiedSimpleMergeable2"><span class="hs-identifier">UnifiedSimpleMergeable2</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable.html#withBaseSimpleMergeable2"><span class="hs-identifier">withBaseSimpleMergeable2</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.Common</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier">DeriveConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#evalModeConfig"><span class="hs-identifier">evalModeConfig</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.UnaryOpCommon</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-29"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier">unaryOpAllowExistential</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier">unaryOpConfigs</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier">unaryOpContextNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier">unaryOpExtraVars</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier">unaryOpInstanceNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier">unaryOpInstanceTypeFromConfig</span></a></span><span>
+</span><span id="line-36"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier">genUnaryOpClass</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.UnifiedOpCommon</span></a></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html#UnaryOpUnifiedConfig"><span class="hs-identifier">UnaryOpUnifiedConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html#UnaryOpUnifiedConfig"><span class="hs-identifier">UnaryOpUnifiedConfig</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html#unifiedFun"><span class="hs-identifier">unifiedFun</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html#defaultUnaryOpUnifiedFun"><span class="hs-identifier">defaultUnaryOpUnifiedFun</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html"><span class="hs-identifier">Grisette.Internal.Unified.EvalModeTag</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#EvalModeTag"><span class="hs-identifier">EvalModeTag</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH</span></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Dec</span></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><span class="hs-identifier">Name</span></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="hs-identifier">Q</span></span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><span class="hs-identifier">Type</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ConT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">VarT</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="hs-identifier">appT</span></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><span class="hs-identifier">conT</span></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="hs-identifier">newName</span></span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#unifiedSimpleMergeableConfig"><span class="hs-identifier hs-type">unifiedSimpleMergeableConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-56"></span><span id="unifiedSimpleMergeableConfig"><span class="annot"><span class="annottext">unifiedSimpleMergeableConfig :: UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#unifiedSimpleMergeableConfig"><span class="hs-identifier hs-var hs-var">unifiedSimpleMergeableConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-57"></span><span>  </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unaryOpConfigs :: [UnaryOpConfig]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier hs-var">unaryOpConfigs</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-59"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">UnaryOpUnifiedConfig -&gt; [Name] -&gt; UnaryOpConfig
+forall config.
+UnaryOpFunConfig config =&gt;
+config -&gt; [Name] -&gt; UnaryOpConfig
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier hs-var">UnaryOpConfig</span></a></span><span>
+</span><span id="line-60"></span><span>            </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html#UnaryOpUnifiedConfig"><span class="hs-identifier hs-type">UnaryOpUnifiedConfig</span></a></span><span>
+</span><span id="line-61"></span><span>              </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unifiedFun :: Type -&gt; (Type, Type) -&gt; Q (Maybe Exp)
+</span><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html#unifiedFun"><span class="hs-identifier hs-var">unifiedFun</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-62"></span><span>                  </span><span class="annot"><span class="annottext">[Name] -&gt; Type -&gt; (Type, Type) -&gt; Q (Maybe Exp)
+</span><a href="Grisette.Internal.TH.GADT.UnifiedOpCommon.html#defaultUnaryOpUnifiedFun"><span class="hs-identifier hs-var">defaultUnaryOpUnifiedFun</span></a></span><span>
+</span><span id="line-63"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">withBaseSimpleMergeable</span><span class="hs-special">,</span><span>
+</span><span id="line-64"></span><span>                      </span><span class="hs-special">'</span><span class="hs-identifier">withBaseSimpleMergeable1</span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>                      </span><span class="hs-special">'</span><span class="hs-identifier">withBaseSimpleMergeable2</span><span>
+</span><span id="line-66"></span><span>                    </span><span class="hs-special">]</span><span>
+</span><span id="line-67"></span><span>              </span><span class="hs-special">}</span><span>
+</span><span id="line-68"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">withBaseSimpleMergeable</span><span class="hs-special">,</span><span>
+</span><span id="line-69"></span><span>              </span><span class="hs-special">'</span><span class="hs-identifier">withBaseSimpleMergeable1</span><span class="hs-special">,</span><span>
+</span><span id="line-70"></span><span>              </span><span class="hs-special">'</span><span class="hs-identifier">withBaseSimpleMergeable2</span><span>
+</span><span id="line-71"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-72"></span><span>        </span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-73"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceNames :: [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier hs-var">unaryOpInstanceNames</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-74"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">UnifiedSimpleMergeable</span><span class="hs-special">,</span><span>
+</span><span id="line-75"></span><span>          </span><span class="hs-special">''</span><span class="hs-identifier">UnifiedSimpleMergeable1</span><span class="hs-special">,</span><span>
+</span><span id="line-76"></span><span>          </span><span class="hs-special">''</span><span class="hs-identifier">UnifiedSimpleMergeable2</span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-78"></span><span>      </span><span class="annot"><span class="annottext">unaryOpExtraVars :: DeriveConfig -&gt; Q [(Type, Type)]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier hs-var">unaryOpExtraVars</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682279938"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279938"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-79"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682279939"><span class="annot"><span class="annottext">modeConfigs :: [(Int, EvalModeConfig)]
+</span><a href="#local-6989586621682279939"><span class="hs-identifier hs-var hs-var">modeConfigs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; [(Int, EvalModeConfig)]
+</span><a href="Grisette.Internal.TH.GADT.Common.html#evalModeConfig"><span class="hs-identifier hs-var">evalModeConfig</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279938"><span class="hs-identifier hs-var">config</span></a></span><span>
+</span><span id="line-80"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[(Int, EvalModeConfig)]
+</span><a href="#local-6989586621682279939"><span class="hs-identifier hs-var">modeConfigs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-81"></span><span>          </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-82"></span><span>            </span><span id="local-6989586621682279940"><span class="annot"><a href="#local-6989586621682279940"><span class="hs-identifier hs-var">nm</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; Q Name
+forall (m :: * -&gt; *). Quote m =&gt; String -&gt; m Name
+</span><span class="hs-identifier hs-var">newName</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;mode&quot;</span></span><span>
+</span><span id="line-83"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">VarT</span></span><span> </span><span class="annot"><a href="#local-6989586621682279940"><span class="hs-identifier hs-type">nm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ConT</span></span><span> </span><span class="hs-special">''</span><span class="hs-identifier">EvalModeTag</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-84"></span><span>          </span><span class="hs-special">[</span><span class="annot"><span class="annottext">(Int, EvalModeConfig)
+</span><span class="hs-identifier">_</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; Q [(Type, Type)]
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-85"></span><span>          </span><span class="annot"><span class="annottext">[(Int, EvalModeConfig)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Q [(Type, Type)]
+forall a. String -&gt; Q a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;UnifiedSimpleMergeable does not support multiple evaluation modes&quot;</span></span><span class="hs-special">,</span><span>
+</span><span id="line-86"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceTypeFromConfig :: DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">unaryOpInstanceTypeFromConfig</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-87"></span><span>        </span><span class="hs-glyph">\</span><span id="local-6989586621682279941"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279941"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621682279942"><span class="annot"><span class="annottext">[(Type, Type)]
+</span><a href="#local-6989586621682279942"><span class="hs-identifier hs-var">newModeVars</span></a></span></span><span> </span><span id="local-6989586621682279943"><span class="annot"><span class="annottext">[(Type, Type)]
+</span><a href="#local-6989586621682279943"><span class="hs-identifier hs-var">keptNewVars</span></a></span></span><span> </span><span id="local-6989586621682279944"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682279944"><span class="hs-identifier hs-var">con</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-88"></span><span>          </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682279945"><span class="annot"><span class="annottext">modeConfigs :: [(Int, EvalModeConfig)]
+</span><a href="#local-6989586621682279945"><span class="hs-identifier hs-var hs-var hs-var">modeConfigs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; [(Int, EvalModeConfig)]
+</span><a href="Grisette.Internal.TH.GADT.Common.html#evalModeConfig"><span class="hs-identifier hs-var">evalModeConfig</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279941"><span class="hs-identifier hs-var">config</span></a></span><span>
+</span><span id="line-89"></span><span>          </span><span id="local-6989586621682279946"><span class="annot"><a href="#local-6989586621682279946"><span class="hs-identifier hs-var">modeVar</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[(Int, EvalModeConfig)]
+</span><a href="#local-6989586621682279945"><span class="hs-identifier hs-var">modeConfigs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-90"></span><span>            </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Type, Type) -&gt; Q (Type, Type)
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">((Type, Type) -&gt; Q (Type, Type)) -&gt; (Type, Type) -&gt; Q (Type, Type)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; (Type, Type)
+forall a. HasCallStack =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><a href="#local-6989586621682279942"><span class="hs-identifier hs-var">newModeVars</span></a></span><span>
+</span><span id="line-91"></span><span>            </span><span class="hs-special">[</span><span class="hs-special">(</span><span id="local-6989586621682279948"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682279948"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">EvalModeConfig
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-92"></span><span>              </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682279948"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><a href="#local-6989586621682279943"><span class="hs-identifier hs-var">keptNewVars</span></a></span><span>
+</span><span id="line-93"></span><span>                </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String -&gt; Q (Type, Type)
+forall a. String -&gt; Q a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;UnifiedSimpleMergeable reference to a non-existent mode variable&quot;</span></span><span>
+</span><span id="line-94"></span><span>                </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">(Type, Type) -&gt; Q (Type, Type)
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">((Type, Type) -&gt; Q (Type, Type)) -&gt; (Type, Type) -&gt; Q (Type, Type)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><a href="#local-6989586621682279943"><span class="hs-identifier hs-var">keptNewVars</span></a></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; Int -&gt; (Type, Type)
+forall a. HasCallStack =&gt; [a] -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682279948"><span class="hs-identifier hs-var">i</span></a></span><span>
+</span><span id="line-95"></span><span>            </span><span class="annot"><span class="annottext">[(Int, EvalModeConfig)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Q (Type, Type)
+forall a. String -&gt; Q a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;UnifiedSimpleMergeable does not support multiple evaluation modes&quot;</span></span><span>
+</span><span id="line-96"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">appT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">conT</span></span><span> </span><span class="annot"><a href="#local-6989586621682279944"><span class="hs-identifier hs-type">con</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">fst</span></span><span> </span><span class="annot"><a href="#local-6989586621682279946"><span class="hs-identifier hs-type">modeVar</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-97"></span><span>      </span><span class="annot"><span class="annottext">unaryOpAllowExistential :: Bool
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier hs-var">unaryOpAllowExistential</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">,</span><span>
+</span><span id="line-98"></span><span>      </span><span class="annot"><span class="annottext">unaryOpContextNames :: Maybe [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier hs-var">unaryOpContextNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe [Name]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="annot"><span class="hs-comment">-- | Derive 'UnifiedSimpleMergeable' instance for a GADT.</span></span><span>
+</span><span id="line-102"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable"><span class="hs-identifier hs-type">deriveGADTUnifiedSimpleMergeable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-103"></span><span id="deriveGADTUnifiedSimpleMergeable"><span class="annot"><span class="annottext">deriveGADTUnifiedSimpleMergeable :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable"><span class="hs-identifier hs-var hs-var">deriveGADTUnifiedSimpleMergeable</span></a></span></span><span> </span><span id="local-6989586621682279952"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279952"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-104"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279952"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#unifiedSimpleMergeableConfig"><span class="hs-identifier hs-var">unifiedSimpleMergeableConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span class="annot"><span class="hs-comment">-- | Derive 'UnifiedSimpleMergeable1' instance for a GADT.</span></span><span>
+</span><span id="line-107"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable1"><span class="hs-identifier hs-type">deriveGADTUnifiedSimpleMergeable1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-108"></span><span id="deriveGADTUnifiedSimpleMergeable1"><span class="annot"><span class="annottext">deriveGADTUnifiedSimpleMergeable1 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable1"><span class="hs-identifier hs-var hs-var">deriveGADTUnifiedSimpleMergeable1</span></a></span></span><span> </span><span id="local-6989586621682279953"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279953"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-109"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279953"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#unifiedSimpleMergeableConfig"><span class="hs-identifier hs-var">unifiedSimpleMergeableConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="annot"><span class="hs-comment">-- | Derive 'UnifiedSimpleMergeable2' instance for a GADT.</span></span><span>
+</span><span id="line-112"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable2"><span class="hs-identifier hs-type">deriveGADTUnifiedSimpleMergeable2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-113"></span><span id="deriveGADTUnifiedSimpleMergeable2"><span class="annot"><span class="annottext">deriveGADTUnifiedSimpleMergeable2 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#deriveGADTUnifiedSimpleMergeable2"><span class="hs-identifier hs-var hs-var">deriveGADTUnifiedSimpleMergeable2</span></a></span></span><span> </span><span id="local-6989586621682279954"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279954"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-114"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682279954"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable.html#unifiedSimpleMergeableConfig"><span class="hs-identifier hs-var">unifiedSimpleMergeableConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-115"></span></pre></body></html>

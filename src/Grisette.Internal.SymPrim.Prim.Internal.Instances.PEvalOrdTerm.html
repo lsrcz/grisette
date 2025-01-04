@@ -1,0 +1,771 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# HLINT ignore &quot;Eta reduce&quot; #-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier">pevalGeneralLtOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier">pevalGeneralLeOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">msum</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.SBV</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SBV</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeNats</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier">FPRoundingMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#allFPRoundingMode"><span class="hs-identifier">allFPRoundingMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalNumTerm"><span class="hs-identifier">PEvalNumTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalNegNumTerm"><span class="hs-identifier">pevalNegNumTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier">PEvalOrdTerm</span></a></span><span>
+</span><span id="line-40"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier">pevalLeOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier">pevalLtOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvLeOrdTerm"><span class="hs-identifier">sbvLeOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvLtOrdTerm"><span class="hs-identifier">sbvLtOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvOrdTermConstraint"><span class="hs-identifier">withSbvOrdTermConstraint</span></a></span><span>
+</span><span id="line-45"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier">conSBVTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier">withPrim</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier">AddNumTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#leOrdTerm"><span class="hs-identifier">leOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ltOrdTerm"><span class="hs-identifier">ltOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSubNumTerm"><span class="hs-identifier">pevalSubNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier">binaryUnfoldOnce</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="annot"><span class="hs-comment">-- | General partially evaluation of less than operation.</span></span><span>
+</span><span id="line-56"></span><span id="local-6989586621682242013"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier hs-type">pevalGeneralLtOrdTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242013"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621682242013"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242013"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242013"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-57"></span><span id="pevalGeneralLtOrdTerm"><span class="annot"><span class="annottext">pevalGeneralLtOrdTerm :: forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier hs-var hs-var">pevalGeneralLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a a Bool
+-&gt; TotalRuleBinary a a Bool -&gt; TotalRuleBinary a a Bool
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a a Bool
+forall a.
+(PEvalOrdTerm a, Ord a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">doPevalGeneralLtOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ltOrdTerm"><span class="hs-identifier hs-var">ltOrdTerm</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span id="local-6989586621682242022"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLtOrdTerm"><span class="hs-identifier hs-type">doPevalGeneralLtOrdTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242022"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621682242022"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242022"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242022"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span></span><span>
+</span><span id="line-61"></span><span id="doPevalGeneralLtOrdTerm"><span class="annot"><span class="annottext">doPevalGeneralLtOrdTerm :: forall a.
+(PEvalOrdTerm a, Ord a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLtOrdTerm"><span class="hs-identifier hs-var hs-var">doPevalGeneralLtOrdTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242165"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242165"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242169"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242169"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Term Bool
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Term Bool) -&gt; Bool -&gt; Term Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242165"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242169"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">doPevalGeneralLtOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term Bool)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">-- | General partially evaluation of less than or equal to operation.</span></span><span>
+</span><span id="line-65"></span><span id="local-6989586621682242171"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier hs-type">pevalGeneralLeOrdTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242171"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621682242171"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242171"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242171"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-66"></span><span id="pevalGeneralLeOrdTerm"><span class="annot"><span class="annottext">pevalGeneralLeOrdTerm :: forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier hs-var hs-var">pevalGeneralLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a a Bool
+-&gt; TotalRuleBinary a a Bool -&gt; TotalRuleBinary a a Bool
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a a Bool
+forall a.
+(PEvalOrdTerm a, Ord a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">doPevalGeneralLeOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#leOrdTerm"><span class="hs-identifier hs-var">leOrdTerm</span></a></span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span id="local-6989586621682242179"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLeOrdTerm"><span class="hs-identifier hs-type">doPevalGeneralLeOrdTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242179"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621682242179"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242179"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242179"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span></span><span>
+</span><span id="line-70"></span><span id="doPevalGeneralLeOrdTerm"><span class="annot"><span class="annottext">doPevalGeneralLeOrdTerm :: forall a.
+(PEvalOrdTerm a, Ord a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLeOrdTerm"><span class="hs-identifier hs-var hs-var">doPevalGeneralLeOrdTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242183"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242183"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242187"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242187"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Term Bool
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Term Bool) -&gt; Bool -&gt; Term Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242183"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242187"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-71"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">doPevalGeneralLeOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term Bool)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242193"><span id="local-6989586621682242197"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-74"></span><span>  </span><span id="local-6989586621682242207"><span class="annot"><span class="annottext">pevalLtOrdTerm :: Term Integer -&gt; Term Integer -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary Integer Integer Bool
+-&gt; (Term Integer -&gt; Term Integer -&gt; Term Bool)
+-&gt; Term Integer
+-&gt; Term Integer
+-&gt; Term Bool
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary Integer Integer Bool
+forall {a}.
+(Ord a, PEvalOrdTerm a, PEvalNumTerm a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="#local-6989586621682242208"><span class="hs-identifier hs-var">doPevalLtOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Integer -&gt; Term Integer -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ltOrdTerm"><span class="hs-identifier hs-var">ltOrdTerm</span></a></span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-76"></span><span>      </span><span id="local-6989586621682242208"><span class="annot"><span class="annottext">doPevalLtOrdTerm :: Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="#local-6989586621682242208"><span class="hs-identifier hs-var hs-var">doPevalLtOrdTerm</span></a></span></span><span> </span><span id="local-6989586621682242222"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242222"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682242223"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242223"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-77"></span><span>        </span><span class="annot"><span class="annottext">[Maybe (Term Bool)] -&gt; Maybe (Term Bool)
+forall (t :: * -&gt; *) (m :: * -&gt; *) a.
+(Foldable t, MonadPlus m) =&gt;
+t (m a) -&gt; m a
+</span><span class="hs-identifier hs-var">msum</span></span><span>
+</span><span id="line-78"></span><span>          </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Maybe (Term Bool)
+forall a.
+(PEvalOrdTerm a, Ord a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">doPevalGeneralLtOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242222"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242223"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-79"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242222"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242223"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-80"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242225"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242225"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242233"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242233"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242234"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242234"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-81"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var">pevalLtOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242225"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242233"><span class="hs-identifier hs-var">j</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242234"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-82"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242239"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242239"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242240"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242240"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242245"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242245"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-83"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var">pevalLtOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242240"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242245"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242239"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>              </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242252"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242252"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242253"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242253"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span id="local-6989586621682242254"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242254"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-85"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-86"></span><span>                  </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var">pevalLtOrdTerm</span></a></span><span>
+</span><span id="line-87"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242252"><span class="hs-identifier hs-var">j</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term a
+forall a. PEvalNumTerm a =&gt; Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSubNumTerm"><span class="hs-identifier hs-var">pevalSubNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242254"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242253"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>              </span><span class="hs-special">(</span><span id="local-6989586621682242255"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242255"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242264"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242264"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242265"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242265"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-90"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var">pevalLtOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242264"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term a
+forall a. PEvalNumTerm a =&gt; Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSubNumTerm"><span class="hs-identifier hs-var">pevalSubNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242265"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242255"><span class="hs-identifier hs-var">j</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-91"></span><span>              </span><span class="hs-special">(</span><span id="local-6989586621682242266"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242266"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242273"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242273"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-92"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var">pevalLtOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242273"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a -&gt; Term a
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalNegNumTerm"><span class="hs-identifier hs-var">pevalNegNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242266"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span>              </span><span class="annot"><span class="annottext">(Term a, Term a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term Bool)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-94"></span><span>          </span><span class="hs-special">]</span><span>
+</span><span id="line-95"></span><span>  </span><span id="local-6989586621682242279"><span class="annot"><span class="annottext">pevalLeOrdTerm :: Term Integer -&gt; Term Integer -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary Integer Integer Bool
+-&gt; (Term Integer -&gt; Term Integer -&gt; Term Bool)
+-&gt; Term Integer
+-&gt; Term Integer
+-&gt; Term Bool
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary Integer Integer Bool
+forall {a}.
+(Ord a, PEvalOrdTerm a, PEvalNumTerm a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="#local-6989586621682242280"><span class="hs-identifier hs-var">doPevalLeOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Integer -&gt; Term Integer -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#leOrdTerm"><span class="hs-identifier hs-var">leOrdTerm</span></a></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-97"></span><span>      </span><span id="local-6989586621682242280"><span class="annot"><span class="annottext">doPevalLeOrdTerm :: Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="#local-6989586621682242280"><span class="hs-identifier hs-var hs-var">doPevalLeOrdTerm</span></a></span></span><span> </span><span id="local-6989586621682242291"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242291"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682242292"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242292"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-98"></span><span>        </span><span class="annot"><span class="annottext">[Maybe (Term Bool)] -&gt; Maybe (Term Bool)
+forall (t :: * -&gt; *) (m :: * -&gt; *) a.
+(Foldable t, MonadPlus m) =&gt;
+t (m a) -&gt; m a
+</span><span class="hs-identifier hs-var">msum</span></span><span>
+</span><span id="line-99"></span><span>          </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Maybe (Term Bool)
+forall a.
+(PEvalOrdTerm a, Ord a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term Bool)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#doPevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">doPevalGeneralLeOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242291"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242292"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-100"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242291"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242292"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-101"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242294"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242294"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242302"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242302"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242303"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242303"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-102"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var">pevalLeOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242294"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242302"><span class="hs-identifier hs-var">j</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242303"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-103"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242308"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242308"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242309"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242309"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242314"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242314"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-104"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var">pevalLeOrdTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242309"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242314"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242308"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242321"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242321"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242322"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242322"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682242323"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242323"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-106"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var">pevalLeOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242321"><span class="hs-identifier hs-var">j</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term a
+forall a. PEvalNumTerm a =&gt; Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSubNumTerm"><span class="hs-identifier hs-var">pevalSubNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242323"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242322"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-107"></span><span>              </span><span class="hs-special">(</span><span id="local-6989586621682242324"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242324"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242333"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242333"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242334"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242334"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var">pevalLeOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242333"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term a
+forall a. PEvalNumTerm a =&gt; Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSubNumTerm"><span class="hs-identifier hs-var">pevalSubNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242334"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242324"><span class="hs-identifier hs-var">j</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-109"></span><span>              </span><span class="hs-special">(</span><span id="local-6989586621682242335"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242335"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682242342"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242342"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-110"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Maybe (Term Bool)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; Maybe (Term Bool)) -&gt; Term Bool -&gt; Maybe (Term Bool)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall a. PEvalOrdTerm a =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var">pevalLeOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682242342"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a -&gt; Term a
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalNegNumTerm"><span class="hs-identifier hs-var">pevalNegNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682242335"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>              </span><span class="annot"><span class="annottext">(Term a, Term a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term Bool)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-112"></span><span>          </span><span class="hs-special">]</span><span>
+</span><span id="line-113"></span><span>  </span><span id="local-6989586621682242349"><span class="annot"><span class="annottext">withSbvOrdTermConstraint :: forall r. (OrdSymbolic (SBVType Integer) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvOrdTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvOrdTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682242350"><span class="annot"><span class="annottext">OrdSymbolic (SBVType Integer) =&gt; r
+</span><a href="#local-6989586621682242350"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">r
+OrdSymbolic (SBVType Integer) =&gt; r
+</span><a href="#local-6989586621682242350"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242059"><span id="local-6989586621682242357"><span id="local-6989586621682242362"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682242059"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682242059"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242059"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621682242373"><span class="annot"><span class="annottext">pevalLtOrdTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n) -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLtOrdTerm</span></a></span><span>
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621682242378"><span class="annot"><span class="annottext">pevalLeOrdTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n) -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLeOrdTerm</span></a></span><span>
+</span><span id="line-118"></span><span>  </span><span id="local-6989586621682242383"><span class="annot"><span class="annottext">withSbvOrdTermConstraint :: forall r. (OrdSymbolic (SBVType (WordN n)) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvOrdTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvOrdTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682242384"><span class="annot"><span class="annottext">OrdSymbolic (SBVType (WordN n)) =&gt; r
+</span><a href="#local-6989586621682242384"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242059"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
+OrdSymbolic (SBVType (WordN n)) =&gt; r
+(PrimConstraint (WordN n), SMTDefinable (SBVType (WordN n)),
+ Mergeable (SBVType (WordN n)), Typeable (SBVType (WordN n))) =&gt;
+r
+</span><a href="#local-6989586621682242384"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242076"><span id="local-6989586621682242404"><span id="local-6989586621682242409"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682242076"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682242076"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242076"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-121"></span><span>  </span><span id="local-6989586621682242422"><span class="annot"><span class="annottext">pevalLtOrdTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n) -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLtOrdTerm</span></a></span><span>
+</span><span id="line-122"></span><span>  </span><span id="local-6989586621682242429"><span class="annot"><span class="annottext">pevalLeOrdTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n) -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLeOrdTerm</span></a></span><span>
+</span><span id="line-123"></span><span>  </span><span id="local-6989586621682242434"><span class="annot"><span class="annottext">withSbvOrdTermConstraint :: forall r. (OrdSymbolic (SBVType (IntN n)) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvOrdTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvOrdTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682242435"><span class="annot"><span class="annottext">OrdSymbolic (SBVType (IntN n)) =&gt; r
+</span><a href="#local-6989586621682242435"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242076"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
+OrdSymbolic (SBVType (IntN n)) =&gt; r
+(PrimConstraint (IntN n), SMTDefinable (SBVType (IntN n)),
+ Mergeable (SBVType (IntN n)), Typeable (SBVType (IntN n))) =&gt;
+r
+</span><a href="#local-6989586621682242435"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242092"><span id="local-6989586621682242093"><span id="local-6989586621682242454"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242092"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242093"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242092"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242093"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-126"></span><span>  </span><span id="local-6989586621682242465"><span class="annot"><span class="annottext">pevalLtOrdTerm :: Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLtOrdTerm</span></a></span><span>
+</span><span id="line-127"></span><span>  </span><span id="local-6989586621682242470"><span class="annot"><span class="annottext">pevalLeOrdTerm :: Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLeOrdTerm</span></a></span><span>
+</span><span id="line-128"></span><span>  </span><span id="local-6989586621682242474"><span class="annot"><span class="annottext">withSbvOrdTermConstraint :: forall r. (OrdSymbolic (SBVType (FP eb sb)) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvOrdTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvOrdTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682242475"><span class="annot"><span class="annottext">OrdSymbolic (SBVType (FP eb sb)) =&gt; r
+</span><a href="#local-6989586621682242475"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242092"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242093"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
+OrdSymbolic (SBVType (FP eb sb)) =&gt; r
+(PrimConstraint (FP eb sb), SMTDefinable (SBVType (FP eb sb)),
+ Mergeable (SBVType (FP eb sb)), Typeable (SBVType (FP eb sb))) =&gt;
+r
+</span><a href="#local-6989586621682242475"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-129"></span><span>  </span><span id="local-6989586621682242495"><span class="annot"><span class="annottext">sbvLeOrdTerm :: SBVType (FP eb sb) -&gt; SBVType (FP eb sb) -&gt; SBV Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvLeOrdTerm</span></a></span></span><span> </span><span id="local-6989586621682242496"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682242496"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621682242497"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682242497"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-130"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV Bool -&gt; SBV Bool
+</span><span class="hs-identifier hs-var">SBV.sNot</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBV Bool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBV Bool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242496"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SBV Bool -&gt; SBV Bool -&gt; SBV Bool
+</span><span class="hs-operator hs-var">SBV..&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">SBV Bool -&gt; SBV Bool
+</span><span class="hs-identifier hs-var">SBV.sNot</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBV Bool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBV Bool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242497"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-131"></span><span>      </span><span class="annot"><span class="annottext">SBV Bool -&gt; SBV Bool -&gt; SBV Bool
+</span><span class="hs-operator hs-var">SBV..&amp;&amp;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242496"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBV (FloatingPoint eb sb) -&gt; SBV Bool
+forall a. OrdSymbolic a =&gt; a -&gt; a -&gt; SBV Bool
+</span><span class="hs-operator hs-var">SBV..&lt;=</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242497"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="hs-comment">-- Use this table to avoid accidental breakage introduced by sbv.</span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#fpRoundingModeLtTable"><span class="hs-identifier hs-type">fpRoundingModeLtTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-135"></span><span id="fpRoundingModeLtTable"><span class="annot"><span class="annottext">fpRoundingModeLtTable :: [(SRoundingMode, SRoundingMode)]
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#fpRoundingModeLtTable"><span class="hs-identifier hs-var hs-var">fpRoundingModeLtTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-136"></span><span>  </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242503"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-137"></span><span>      </span><span class="annot"><span class="annottext">forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242504"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621682242503"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242503"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[FPRoundingMode]
+</span><a href="Grisette.Internal.SymPrim.FP.html#allFPRoundingMode"><span class="hs-identifier hs-var">allFPRoundingMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-140"></span><span>      </span><span id="local-6989586621682242504"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242504"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[FPRoundingMode]
+</span><a href="Grisette.Internal.SymPrim.FP.html#allFPRoundingMode"><span class="hs-identifier hs-var">allFPRoundingMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-141"></span><span>      </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242503"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode -&gt; FPRoundingMode -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242504"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-142"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-143"></span><span>
+</span><span id="line-144"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#fpRoundingModeLeTable"><span class="hs-identifier hs-type">fpRoundingModeLeTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-145"></span><span id="fpRoundingModeLeTable"><span class="annot"><span class="annottext">fpRoundingModeLeTable :: [(SRoundingMode, SRoundingMode)]
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#fpRoundingModeLeTable"><span class="hs-identifier hs-var hs-var">fpRoundingModeLeTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-146"></span><span>  </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242506"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-147"></span><span>      </span><span class="annot"><span class="annottext">forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242507"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-149"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621682242506"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242506"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[FPRoundingMode]
+</span><a href="Grisette.Internal.SymPrim.FP.html#allFPRoundingMode"><span class="hs-identifier hs-var">allFPRoundingMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-150"></span><span>      </span><span id="local-6989586621682242507"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242507"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[FPRoundingMode]
+</span><a href="Grisette.Internal.SymPrim.FP.html#allFPRoundingMode"><span class="hs-identifier hs-var">allFPRoundingMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-151"></span><span>      </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242506"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode -&gt; FPRoundingMode -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242507"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-152"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-153"></span><span>
+</span><span id="line-154"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#sbvTableLookup"><span class="hs-identifier hs-type">sbvTableLookup</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-155"></span><span>  </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-156"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-157"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-159"></span><span id="sbvTableLookup"><span class="annot"><span class="annottext">sbvTableLookup :: [(SRoundingMode, SRoundingMode)]
+-&gt; SRoundingMode -&gt; SRoundingMode -&gt; SBV Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#sbvTableLookup"><span class="hs-identifier hs-var hs-var">sbvTableLookup</span></a></span></span><span> </span><span id="local-6989586621682242509"><span class="annot"><span class="annottext">[(SRoundingMode, SRoundingMode)]
+</span><a href="#local-6989586621682242509"><span class="hs-identifier hs-var">tbl</span></a></span></span><span> </span><span id="local-6989586621682242510"><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242510"><span class="hs-identifier hs-var">lhs</span></a></span></span><span> </span><span id="local-6989586621682242511"><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242511"><span class="hs-identifier hs-var">rhs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-160"></span><span>  </span><span class="annot"><span class="annottext">(SBV Bool -&gt; (SRoundingMode, SRoundingMode) -&gt; SBV Bool)
+-&gt; SBV Bool -&gt; [(SRoundingMode, SRoundingMode)] -&gt; SBV Bool
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span>
+</span><span id="line-161"></span><span>    </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621682242513"><span class="annot"><span class="annottext">SBV Bool
+</span><a href="#local-6989586621682242513"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682242514"><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242514"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682242515"><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242515"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SBV Bool
+</span><a href="#local-6989586621682242513"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">SBV Bool -&gt; SBV Bool -&gt; SBV Bool
+</span><span class="hs-operator hs-var">SBV..||</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242510"><span class="hs-identifier hs-var">lhs</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SRoundingMode -&gt; SBV Bool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBV Bool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242514"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SBV Bool -&gt; SBV Bool -&gt; SBV Bool
+</span><span class="hs-operator hs-var">SBV..&amp;&amp;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242511"><span class="hs-identifier hs-var">rhs</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SRoundingMode -&gt; SBV Bool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBV Bool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242515"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-162"></span><span>    </span><span class="annot"><span class="annottext">SBV Bool
+</span><span class="hs-identifier hs-var">SBV.sFalse</span></span><span>
+</span><span id="line-163"></span><span>    </span><span class="annot"><span class="annottext">[(SRoundingMode, SRoundingMode)]
+</span><a href="#local-6989586621682242509"><span class="hs-identifier hs-var">tbl</span></a></span><span>
+</span><span id="line-164"></span><span>
+</span><span id="line-165"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-166"></span><span>  </span><span id="local-6989586621682242527"><span class="annot"><span class="annottext">pevalLtOrdTerm :: Term FPRoundingMode -&gt; Term FPRoundingMode -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term FPRoundingMode -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLtOrdTerm</span></a></span><span>
+</span><span id="line-167"></span><span>  </span><span id="local-6989586621682242530"><span class="annot"><span class="annottext">pevalLeOrdTerm :: Term FPRoundingMode -&gt; Term FPRoundingMode -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term FPRoundingMode -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLeOrdTerm</span></a></span><span>
+</span><span id="line-168"></span><span>  </span><span id="local-6989586621682242532"><span class="annot"><span class="annottext">withSbvOrdTermConstraint :: forall r. (OrdSymbolic (SBVType FPRoundingMode) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvOrdTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvOrdTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682242533"><span class="annot"><span class="annottext">OrdSymbolic (SBVType FPRoundingMode) =&gt; r
+</span><a href="#local-6989586621682242533"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><span class="annottext">r
+OrdSymbolic (SBVType FPRoundingMode) =&gt; r
+(PrimConstraint FPRoundingMode,
+ SMTDefinable (SBVType FPRoundingMode),
+ Mergeable (SBVType FPRoundingMode),
+ Typeable (SBVType FPRoundingMode)) =&gt;
+r
+</span><a href="#local-6989586621682242533"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-169"></span><span>  </span><span id="local-6989586621682242542"><span class="annot"><span class="annottext">sbvLtOrdTerm :: SBVType FPRoundingMode -&gt; SBVType FPRoundingMode -&gt; SBV Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvLtOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(SRoundingMode, SRoundingMode)]
+-&gt; SRoundingMode -&gt; SRoundingMode -&gt; SBV Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#sbvTableLookup"><span class="hs-identifier hs-var">sbvTableLookup</span></a></span><span> </span><span class="annot"><span class="annottext">[(SRoundingMode, SRoundingMode)]
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#fpRoundingModeLtTable"><span class="hs-identifier hs-var">fpRoundingModeLtTable</span></a></span><span>
+</span><span id="line-170"></span><span>  </span><span id="local-6989586621682242543"><span class="annot"><span class="annottext">sbvLeOrdTerm :: SBVType FPRoundingMode -&gt; SBVType FPRoundingMode -&gt; SBV Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(SRoundingMode, SRoundingMode)]
+-&gt; SRoundingMode -&gt; SRoundingMode -&gt; SBV Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#sbvTableLookup"><span class="hs-identifier hs-var">sbvTableLookup</span></a></span><span> </span><span class="annot"><span class="annottext">[(SRoundingMode, SRoundingMode)]
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#fpRoundingModeLeTable"><span class="hs-identifier hs-var">fpRoundingModeLeTable</span></a></span><span>
+</span><span id="line-171"></span><span>
+</span><span id="line-172"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242548"><span id="local-6989586621682242552"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalOrdTerm"><span class="hs-identifier hs-type">PEvalOrdTerm</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-173"></span><span>  </span><span id="local-6989586621682242557"><span class="annot"><span class="annottext">pevalLtOrdTerm :: Term AlgReal -&gt; Term AlgReal -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLtOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLtOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLtOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLtOrdTerm</span></a></span><span>
+</span><span id="line-174"></span><span>  </span><span id="local-6989586621682242560"><span class="annot"><span class="annottext">pevalLeOrdTerm :: Term AlgReal -&gt; Term AlgReal -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalLeOrdTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalLeOrdTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term Bool
+forall a. (PEvalOrdTerm a, Ord a) =&gt; Term a -&gt; Term a -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm.html#pevalGeneralLeOrdTerm"><span class="hs-identifier hs-var">pevalGeneralLeOrdTerm</span></a></span><span>
+</span><span id="line-175"></span><span>  </span><span id="local-6989586621682242563"><span class="annot"><span class="annottext">withSbvOrdTermConstraint :: forall r. (OrdSymbolic (SBVType AlgReal) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvOrdTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvOrdTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682242564"><span class="annot"><span class="annottext">OrdSymbolic (SBVType AlgReal) =&gt; r
+</span><a href="#local-6989586621682242564"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">r
+OrdSymbolic (SBVType AlgReal) =&gt; r
+(PrimConstraint AlgReal, SMTDefinable (SBVType AlgReal),
+ Mergeable (SBVType AlgReal), Typeable (SBVType AlgReal)) =&gt;
+r
+</span><a href="#local-6989586621682242564"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-176"></span></pre></body></html>

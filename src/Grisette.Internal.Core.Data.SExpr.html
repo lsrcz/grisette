@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveAnyClass #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DeriveLift #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE DerivingStrategies #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# HLINT ignore &quot;Unused LANGUAGE pragma&quot; #-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.SExpr</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html"><span class="hs-identifier">Grisette.Internal.Core.Data.SExpr</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier">SExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#showsSExprWithParens"><span class="hs-identifier">showsSExprWithParens</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#parseFileLocation"><span class="hs-identifier">parseFileLocation</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#fileLocation"><span class="hs-identifier">fileLocation</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Binary</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Binary</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bytes.Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">deserialize</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">serialize</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Hashable</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Serialize</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Cereal</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Serialize.Text</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Debug.Trace.LocationTH</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">__LOCATION__</span></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Lift</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unsafeTExpCoerce</span></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax.Compat</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SpliceQ</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">liftSplice</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="annot"><span class="hs-comment">-- | S-expression data type. Used for symbol metadata.</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">data</span><span> </span><span id="SExpr"><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-var">SExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Atom"><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#Atom"><span class="hs-identifier hs-var">Atom</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="List"><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#List"><span class="hs-identifier hs-var">List</span></a></span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="NumberAtom"><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#NumberAtom"><span class="hs-identifier hs-var">NumberAtom</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="BoolAtom"><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#BoolAtom"><span class="hs-identifier hs-var">BoolAtom</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682211360"><span id="local-6989586621682211374"><span class="annot"><span class="annottext">SExpr -&gt; SExpr -&gt; Bool
+(SExpr -&gt; SExpr -&gt; Bool) -&gt; (SExpr -&gt; SExpr -&gt; Bool) -&gt; Eq SExpr
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: SExpr -&gt; SExpr -&gt; Bool
+== :: SExpr -&gt; SExpr -&gt; Bool
+$c/= :: SExpr -&gt; SExpr -&gt; Bool
+/= :: SExpr -&gt; SExpr -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211381"><span id="local-6989586621682211392"><span id="local-6989586621682211396"><span id="local-6989586621682211399"><span id="local-6989586621682211402"><span id="local-6989586621682211405"><span id="local-6989586621682211408"><span class="annot"><span class="annottext">Eq SExpr
+Eq SExpr =&gt;
+(SExpr -&gt; SExpr -&gt; Ordering)
+-&gt; (SExpr -&gt; SExpr -&gt; Bool)
+-&gt; (SExpr -&gt; SExpr -&gt; Bool)
+-&gt; (SExpr -&gt; SExpr -&gt; Bool)
+-&gt; (SExpr -&gt; SExpr -&gt; Bool)
+-&gt; (SExpr -&gt; SExpr -&gt; SExpr)
+-&gt; (SExpr -&gt; SExpr -&gt; SExpr)
+-&gt; Ord SExpr
+SExpr -&gt; SExpr -&gt; Bool
+SExpr -&gt; SExpr -&gt; Ordering
+SExpr -&gt; SExpr -&gt; SExpr
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: SExpr -&gt; SExpr -&gt; Ordering
+compare :: SExpr -&gt; SExpr -&gt; Ordering
+$c&lt; :: SExpr -&gt; SExpr -&gt; Bool
+&lt; :: SExpr -&gt; SExpr -&gt; Bool
+$c&lt;= :: SExpr -&gt; SExpr -&gt; Bool
+&lt;= :: SExpr -&gt; SExpr -&gt; Bool
+$c&gt; :: SExpr -&gt; SExpr -&gt; Bool
+&gt; :: SExpr -&gt; SExpr -&gt; Bool
+$c&gt;= :: SExpr -&gt; SExpr -&gt; Bool
+&gt;= :: SExpr -&gt; SExpr -&gt; Bool
+$cmax :: SExpr -&gt; SExpr -&gt; SExpr
+max :: SExpr -&gt; SExpr -&gt; SExpr
+$cmin :: SExpr -&gt; SExpr -&gt; SExpr
+min :: SExpr -&gt; SExpr -&gt; SExpr
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211413"><span id="local-6989586621682211415"><span class="annot"><span class="annottext">(forall x. SExpr -&gt; Rep SExpr x)
+-&gt; (forall x. Rep SExpr x -&gt; SExpr) -&gt; Generic SExpr
+forall x. Rep SExpr x -&gt; SExpr
+forall x. SExpr -&gt; Rep SExpr x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. SExpr -&gt; Rep SExpr x
+from :: forall x. SExpr -&gt; Rep SExpr x
+$cto :: forall x. Rep SExpr x -&gt; SExpr
+to :: forall x. Rep SExpr x -&gt; SExpr
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211421"><span id="local-6989586621682211441"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; Code m SExpr)
+-&gt; Lift SExpr
+forall t.
+(forall (m :: * -&gt; *). Quote m =&gt; t -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *). Quote m =&gt; t -&gt; Code m t) -&gt; Lift t
+forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; m Exp
+forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; Code m SExpr
+$clift :: forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; m Exp
+lift :: forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; m Exp
+$cliftTyped :: forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; Code m SExpr
+liftTyped :: forall (m :: * -&gt; *). Quote m =&gt; SExpr -&gt; Code m SExpr
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Lift</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682211461"><span id="local-6989586621682211468"><span class="annot"><span class="annottext">Eq SExpr
+Eq SExpr =&gt;
+(Int -&gt; SExpr -&gt; Int) -&gt; (SExpr -&gt; Int) -&gt; Hashable SExpr
+Int -&gt; SExpr -&gt; Int
+SExpr -&gt; Int
+forall a. Eq a =&gt; (Int -&gt; a -&gt; Int) -&gt; (a -&gt; Int) -&gt; Hashable a
+$chashWithSalt :: Int -&gt; SExpr -&gt; Int
+hashWithSalt :: Int -&gt; SExpr -&gt; Int
+$chash :: SExpr -&gt; Int
+hash :: SExpr -&gt; Int
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Hashable</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211500"><span class="annot"><span class="annottext">SExpr -&gt; ()
+(SExpr -&gt; ()) -&gt; NFData SExpr
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: SExpr -&gt; ()
+rnf :: SExpr -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211534"><span id="local-6989586621682211543"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). MonadPut m =&gt; SExpr -&gt; m ())
+-&gt; (forall (m :: * -&gt; *). MonadGet m =&gt; m SExpr) -&gt; Serial SExpr
+forall a.
+(forall (m :: * -&gt; *). MonadPut m =&gt; a -&gt; m ())
+-&gt; (forall (m :: * -&gt; *). MonadGet m =&gt; m a) -&gt; Serial a
+forall (m :: * -&gt; *). MonadGet m =&gt; m SExpr
+forall (m :: * -&gt; *). MonadPut m =&gt; SExpr -&gt; m ()
+$cserialize :: forall (m :: * -&gt; *). MonadPut m =&gt; SExpr -&gt; m ()
+serialize :: forall (m :: * -&gt; *). MonadPut m =&gt; SExpr -&gt; m ()
+$cdeserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m SExpr
+deserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m SExpr
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Serial</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-45"></span><span>  </span><span id="local-6989586621682211603"><span class="annot"><span class="annottext">put :: Putter SExpr
+</span><a href="#local-6989586621682211603"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter SExpr
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; SExpr -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-46"></span><span>  </span><span id="local-6989586621682211608"><span class="annot"><span class="annottext">get :: Get SExpr
+</span><a href="#local-6989586621682211608"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SExpr
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m SExpr
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682211613"><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-49"></span><span>  </span><span id="local-6989586621682211620"><span class="annot"><span class="annottext">put :: SExpr -&gt; Put
+</span><a href="#local-6989586621682211620"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SExpr -&gt; Put
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; SExpr -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-50"></span><span>  </span><span id="local-6989586621682211625"><span class="annot"><span class="annottext">get :: Get SExpr
+</span><a href="#local-6989586621682211625"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SExpr
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m SExpr
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682211629"><span id="local-6989586621682211632"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-53"></span><span>  </span><span id="local-6989586621682211635"><span class="annot"><span class="annottext">showsPrec :: Int -&gt; SExpr -&gt; ShowS
+</span><a href="#local-6989586621682211635"><span class="hs-identifier hs-var hs-var hs-var">showsPrec</span></a></span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; SExpr -&gt; ShowS
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#showsSExprWithParens"><span class="hs-identifier hs-var">showsSExprWithParens</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'('</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">')'</span></span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#unwordsS"><span class="hs-identifier hs-type">unwordsS</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">ShowS</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ShowS</span></span><span>
+</span><span id="line-56"></span><span id="unwordsS"><span class="annot"><span class="annottext">unwordsS :: [ShowS] -&gt; ShowS
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#unwordsS"><span class="hs-identifier hs-var hs-var">unwordsS</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-57"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#unwordsS"><span class="hs-identifier hs-var">unwordsS</span></a></span><span> </span><span class="hs-special">[</span><span id="local-6989586621682211639"><span class="annot"><span class="annottext">ShowS
+</span><a href="#local-6989586621682211639"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ShowS
+</span><a href="#local-6989586621682211639"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-58"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#unwordsS"><span class="hs-identifier hs-var">unwordsS</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682211640"><span class="annot"><span class="annottext">ShowS
+</span><a href="#local-6989586621682211640"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682211641"><span class="annot"><span class="annottext">[ShowS]
+</span><a href="#local-6989586621682211641"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ShowS
+</span><a href="#local-6989586621682211640"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-identifier hs-var">showString</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[ShowS] -&gt; ShowS
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#unwordsS"><span class="hs-identifier hs-var">unwordsS</span></a></span><span> </span><span class="annot"><span class="annottext">[ShowS]
+</span><a href="#local-6989586621682211641"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="annot"><span class="hs-comment">-- | Show an S-expression with specific parentheses.</span></span><span>
+</span><span id="line-61"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#showsSExprWithParens"><span class="hs-identifier hs-type">showsSExprWithParens</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ShowS</span></span><span>
+</span><span id="line-62"></span><span id="showsSExprWithParens"><span class="annot"><span class="annottext">showsSExprWithParens :: Char -&gt; Char -&gt; SExpr -&gt; ShowS
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#showsSExprWithParens"><span class="hs-identifier hs-var hs-var">showsSExprWithParens</span></a></span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#Atom"><span class="hs-identifier hs-type">Atom</span></a></span><span> </span><span id="local-6989586621682211644"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621682211644"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-identifier hs-var">showString</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ShowS) -&gt; String -&gt; ShowS
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621682211644"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#showsSExprWithParens"><span class="hs-identifier hs-var">showsSExprWithParens</span></a></span><span> </span><span id="local-6989586621682211646"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621682211646"><span class="hs-identifier hs-var">lp</span></a></span></span><span> </span><span id="local-6989586621682211647"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621682211647"><span class="hs-identifier hs-var">rp</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#List"><span class="hs-identifier hs-type">List</span></a></span><span> </span><span id="local-6989586621682211648"><span class="annot"><span class="annottext">[SExpr]
+</span><a href="#local-6989586621682211648"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-identifier hs-var">showString</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621682211646"><span class="hs-identifier hs-var">lp</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[ShowS] -&gt; ShowS
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#unwordsS"><span class="hs-identifier hs-var">unwordsS</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(SExpr -&gt; ShowS) -&gt; [SExpr] -&gt; [ShowS]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">SExpr -&gt; ShowS
+forall a. Show a =&gt; a -&gt; ShowS
+</span><span class="hs-identifier hs-var">shows</span></span><span> </span><span class="annot"><span class="annottext">[SExpr]
+</span><a href="#local-6989586621682211648"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-identifier hs-var">showString</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621682211647"><span class="hs-identifier hs-var">rp</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#showsSExprWithParens"><span class="hs-identifier hs-var">showsSExprWithParens</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#NumberAtom"><span class="hs-identifier hs-type">NumberAtom</span></a></span><span> </span><span id="local-6989586621682211650"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621682211650"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; ShowS
+forall a. Show a =&gt; a -&gt; ShowS
+</span><span class="hs-identifier hs-var">shows</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621682211650"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-66"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#showsSExprWithParens"><span class="hs-identifier hs-var">showsSExprWithParens</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#BoolAtom"><span class="hs-identifier hs-type">BoolAtom</span></a></span><span> </span><span id="local-6989586621682211651"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682211651"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-identifier hs-var">showString</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ShowS) -&gt; String -&gt; ShowS
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682211651"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;#t&quot;</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;#f&quot;</span></span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span class="annot"><span class="hs-comment">-- | Parse a file location string into an S-expression.</span></span><span>
+</span><span id="line-69"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#parseFileLocation"><span class="hs-identifier hs-type">parseFileLocation</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span>
+</span><span id="line-70"></span><span id="parseFileLocation"><span class="annot"><span class="annottext">parseFileLocation :: String -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#parseFileLocation"><span class="hs-identifier hs-var hs-var">parseFileLocation</span></a></span></span><span> </span><span id="local-6989586621682211652"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211652"><span class="hs-identifier hs-var">str</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682211653"><span class="annot"><span class="annottext">r :: String
+</span><a href="#local-6989586621682211653"><span class="hs-identifier hs-var hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211652"><span class="hs-identifier hs-var">str</span></a></span><span>
+</span><span id="line-72"></span><span>      </span><span class="hs-special">(</span><span id="local-6989586621682211657"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211657"><span class="hs-identifier hs-var">s2</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211658"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211658"><span class="hs-identifier hs-var">r1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; String -&gt; (String, String)
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+</span><span class="hs-identifier hs-var">break</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'-'</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211653"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-73"></span><span>      </span><span class="hs-special">(</span><span id="local-6989586621682211663"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211663"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211664"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211664"><span class="hs-identifier hs-var">r2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; String -&gt; (String, String)
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+</span><span class="hs-identifier hs-var">break</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">':'</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; (String, String)) -&gt; String -&gt; (String, String)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. HasCallStack =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">tail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211658"><span class="hs-identifier hs-var">r1</span></a></span><span>
+</span><span id="line-74"></span><span>      </span><span class="hs-special">(</span><span id="local-6989586621682211669"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211669"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682211670"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211670"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; String -&gt; (String, String)
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+</span><span class="hs-identifier hs-var">break</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">':'</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; (String, String)) -&gt; String -&gt; (String, String)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. HasCallStack =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">tail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211664"><span class="hs-identifier hs-var">r2</span></a></span><span>
+</span><span id="line-75"></span><span>   </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[SExpr] -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#List"><span class="hs-identifier hs-var">List</span></a></span><span>
+</span><span id="line-76"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#Atom"><span class="hs-identifier hs-var">Atom</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;grisette-file-location&quot;</span></span><span class="hs-special">,</span><span>
+</span><span id="line-77"></span><span>          </span><span class="annot"><span class="annottext">Text -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#Atom"><span class="hs-identifier hs-var">Atom</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; SExpr) -&gt; Text -&gt; SExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. HasCallStack =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">tail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211670"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-78"></span><span>          </span><span class="annot"><span class="annottext">Integer -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#NumberAtom"><span class="hs-identifier hs-var">NumberAtom</span></a></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; SExpr) -&gt; Integer -&gt; SExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Integer
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Integer) -&gt; String -&gt; Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211669"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-79"></span><span>          </span><span class="annot"><span class="annottext">[SExpr] -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#List"><span class="hs-identifier hs-var">List</span></a></span><span>
+</span><span id="line-80"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#NumberAtom"><span class="hs-identifier hs-var">NumberAtom</span></a></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; SExpr) -&gt; Integer -&gt; SExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Integer
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Integer) -&gt; String -&gt; Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211663"><span class="hs-identifier hs-var">s1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-81"></span><span>              </span><span class="annot"><span class="annottext">Integer -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#NumberAtom"><span class="hs-identifier hs-var">NumberAtom</span></a></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; SExpr) -&gt; Integer -&gt; SExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Integer
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Integer) -&gt; String -&gt; Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ShowS
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682211657"><span class="hs-identifier hs-var">s2</span></a></span><span>
+</span><span id="line-82"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-83"></span><span>        </span><span class="hs-special">]</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="annot"><span class="hs-comment">-- | Get the file location of the splice.</span></span><span>
+</span><span id="line-86"></span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#fileLocation"><span class="hs-identifier hs-type">fileLocation</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SpliceQ</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span>
+</span><span id="line-87"></span><span id="fileLocation"><span class="annot"><span class="annottext">fileLocation :: SpliceQ SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#fileLocation"><span class="hs-identifier hs-var hs-var">fileLocation</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-special">[||</span><span class="annot"><span class="annottext">String -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#parseFileLocation"><span class="hs-identifier hs-var">parseFileLocation</span></a></span><span> </span><span class="hs-special">$$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Q (TExp String) -&gt; Splice Q String
+forall a (m :: * -&gt; *). m (TExp a) -&gt; Splice m a
+</span><span class="hs-identifier hs-var">liftSplice</span></span><span> </span><span class="annot"><span class="annottext">(Q (TExp String) -&gt; Splice Q String)
+-&gt; Q (TExp String) -&gt; Splice Q String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Q Exp -&gt; Q (TExp String)
+forall a (m :: * -&gt; *). Quote m =&gt; m Exp -&gt; m (TExp a)
+</span><span class="hs-identifier hs-var">unsafeTExpCoerce</span></span><span> </span><span class="annot"><span class="annottext">Q Exp
+</span><span class="hs-identifier hs-var">__LOCATION__</span></span><span class="hs-special">)</span><span class="hs-special">||]</span><span>
+</span><span id="line-89"></span></pre></body></html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveLift #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE KindSignatures #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilyDependencies #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Unified.EvalModeTag</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html"><span class="hs-identifier">Grisette.Internal.Unified.EvalModeTag</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#EvalModeTag"><span class="hs-identifier">EvalModeTag</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#IsConMode"><span class="hs-identifier">IsConMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Lift</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- | Evaluation mode for unified types. 'C' means concrete evaluation, 'S'</span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- means symbolic evaluation.</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">data</span><span> </span><span id="EvalModeTag"><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#EvalModeTag"><span class="hs-identifier hs-var">EvalModeTag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="C"><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-var">C</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="S"><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-var">S</span></a></span></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682214088"><span id="local-6989586621682214093"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). Quote m =&gt; EvalModeTag -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *).
+    Quote m =&gt;
+    EvalModeTag -&gt; Code m EvalModeTag)
+-&gt; Lift EvalModeTag
+forall t.
+(forall (m :: * -&gt; *). Quote m =&gt; t -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *). Quote m =&gt; t -&gt; Code m t) -&gt; Lift t
+forall (m :: * -&gt; *). Quote m =&gt; EvalModeTag -&gt; m Exp
+forall (m :: * -&gt; *). Quote m =&gt; EvalModeTag -&gt; Code m EvalModeTag
+$clift :: forall (m :: * -&gt; *). Quote m =&gt; EvalModeTag -&gt; m Exp
+lift :: forall (m :: * -&gt; *). Quote m =&gt; EvalModeTag -&gt; m Exp
+$cliftTyped :: forall (m :: * -&gt; *). Quote m =&gt; EvalModeTag -&gt; Code m EvalModeTag
+liftTyped :: forall (m :: * -&gt; *). Quote m =&gt; EvalModeTag -&gt; Code m EvalModeTag
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Lift</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682214100"><span id="local-6989586621682214102"><span id="local-6989586621682214106"><span class="annot"><span class="annottext">Int -&gt; EvalModeTag -&gt; ShowS
+[EvalModeTag] -&gt; ShowS
+EvalModeTag -&gt; String
+(Int -&gt; EvalModeTag -&gt; ShowS)
+-&gt; (EvalModeTag -&gt; String)
+-&gt; ([EvalModeTag] -&gt; ShowS)
+-&gt; Show EvalModeTag
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; EvalModeTag -&gt; ShowS
+showsPrec :: Int -&gt; EvalModeTag -&gt; ShowS
+$cshow :: EvalModeTag -&gt; String
+show :: EvalModeTag -&gt; String
+$cshowList :: [EvalModeTag] -&gt; ShowS
+showList :: [EvalModeTag] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682214111"><span id="local-6989586621682214116"><span class="annot"><span class="annottext">EvalModeTag -&gt; EvalModeTag -&gt; Bool
+(EvalModeTag -&gt; EvalModeTag -&gt; Bool)
+-&gt; (EvalModeTag -&gt; EvalModeTag -&gt; Bool) -&gt; Eq EvalModeTag
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: EvalModeTag -&gt; EvalModeTag -&gt; Bool
+== :: EvalModeTag -&gt; EvalModeTag -&gt; Bool
+$c/= :: EvalModeTag -&gt; EvalModeTag -&gt; Bool
+/= :: EvalModeTag -&gt; EvalModeTag -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="annot"><span class="hs-comment">-- | Type family to check if a mode is 'C'.</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">type</span><span> </span><span class="hs-keyword">family</span><span> </span><span id="IsConMode"><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#IsConMode"><span class="hs-identifier hs-var">IsConMode</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682214120"><span class="annot"><a href="#local-6989586621682214120"><span class="hs-identifier hs-type">mode</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#EvalModeTag"><span class="hs-identifier hs-type">EvalModeTag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682214121"><span class="annot"><a href="#local-6989586621682214121"><span class="hs-identifier hs-type">r</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621682214121"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682214120"><span class="hs-identifier hs-type">mode</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-28"></span><span>  </span><span id="IsConMode"><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#IsConMode"><span class="hs-identifier hs-var">IsConMode</span></a></span></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#C"><span class="hs-identifier hs-type">C</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span>
+</span><span id="line-29"></span><span>  </span><span id="IsConMode"><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#IsConMode"><span class="hs-identifier hs-var">IsConMode</span></a></span></span><span> </span><span class="hs-special">'</span><span class="annot"><a href="Grisette.Internal.Unified.EvalModeTag.html#S"><span class="hs-identifier hs-type">S</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">False</span></span><span>
+</span><span id="line-30"></span></pre></body></html>

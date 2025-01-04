@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- |</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Unified.Theories</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html"><span class="hs-identifier">Grisette.Internal.Unified.Theories</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#TheoryToUnify"><span class="hs-identifier">TheoryToUnify</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#isUFun"><span class="hs-identifier">isUFun</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- | This data type is used to represent the theories that is unified.</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- The 'UFun' constructor is used to represent a specific uninterpreted function</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- type. The type is uncurried.</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">data</span><span> </span><span id="TheoryToUnify"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#TheoryToUnify"><span class="hs-identifier hs-var">TheoryToUnify</span></a></span></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="UBool"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UBool"><span class="hs-identifier hs-var">UBool</span></a></span></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UIntN"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UIntN"><span class="hs-identifier hs-var">UIntN</span></a></span></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UWordN"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UWordN"><span class="hs-identifier hs-var">UWordN</span></a></span></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UInteger"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UInteger"><span class="hs-identifier hs-var">UInteger</span></a></span></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UAlgReal"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UAlgReal"><span class="hs-identifier hs-var">UAlgReal</span></a></span></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UFP"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UFP"><span class="hs-identifier hs-var">UFP</span></a></span></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UFun"><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UFun"><span class="hs-identifier hs-var">UFun</span></a></span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#TheoryToUnify"><span class="hs-identifier hs-type">TheoryToUnify</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682214559"><span id="local-6989586621682214567"><span class="annot"><span class="annottext">TheoryToUnify -&gt; TheoryToUnify -&gt; Bool
+(TheoryToUnify -&gt; TheoryToUnify -&gt; Bool)
+-&gt; (TheoryToUnify -&gt; TheoryToUnify -&gt; Bool) -&gt; Eq TheoryToUnify
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: TheoryToUnify -&gt; TheoryToUnify -&gt; Bool
+== :: TheoryToUnify -&gt; TheoryToUnify -&gt; Bool
+$c/= :: TheoryToUnify -&gt; TheoryToUnify -&gt; Bool
+/= :: TheoryToUnify -&gt; TheoryToUnify -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682214572"><span id="local-6989586621682214579"><span id="local-6989586621682214583"><span class="annot"><span class="annottext">Int -&gt; TheoryToUnify -&gt; ShowS
+[TheoryToUnify] -&gt; ShowS
+TheoryToUnify -&gt; String
+(Int -&gt; TheoryToUnify -&gt; ShowS)
+-&gt; (TheoryToUnify -&gt; String)
+-&gt; ([TheoryToUnify] -&gt; ShowS)
+-&gt; Show TheoryToUnify
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; TheoryToUnify -&gt; ShowS
+showsPrec :: Int -&gt; TheoryToUnify -&gt; ShowS
+$cshow :: TheoryToUnify -&gt; String
+show :: TheoryToUnify -&gt; String
+$cshowList :: [TheoryToUnify] -&gt; ShowS
+showList :: [TheoryToUnify] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="annot"><span class="hs-comment">-- | Check if the theory is a uninterpreted function.</span></span><span>
+</span><span id="line-26"></span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#isUFun"><span class="hs-identifier hs-type">isUFun</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#TheoryToUnify"><span class="hs-identifier hs-type">TheoryToUnify</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-27"></span><span id="isUFun"><span class="annot"><span class="annottext">isUFun :: TheoryToUnify -&gt; Bool
+</span><a href="Grisette.Internal.Unified.Theories.html#isUFun"><span class="hs-identifier hs-var hs-var">isUFun</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#UFun"><span class="hs-identifier hs-type">UFun</span></a></span><span> </span><span class="annot"><span class="annottext">[TheoryToUnify]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-28"></span><span class="annot"><a href="Grisette.Internal.Unified.Theories.html#isUFun"><span class="hs-identifier hs-var">isUFun</span></a></span><span> </span><span class="annot"><span class="annottext">TheoryToUnify
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-29"></span></pre></body></html>

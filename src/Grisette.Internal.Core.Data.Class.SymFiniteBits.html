@@ -1,0 +1,752 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE InstanceSigs #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.SymFiniteBits</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SymFiniteBits</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#lsb"><span class="hs-identifier">lsb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#msb"><span class="hs-identifier">msb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#setBitTo"><span class="hs-identifier">setBitTo</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#bitBlast"><span class="hs-identifier">bitBlast</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier">FromBits</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier">SymFiniteBits</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symBitBlast"><span class="hs-identifier">symBitBlast</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symLsb"><span class="hs-identifier">symLsb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symMsb"><span class="hs-identifier">symMsb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symPopCount"><span class="hs-identifier">symPopCount</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symCountLeadingZeros"><span class="hs-identifier">symCountLeadingZeros</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symCountTrailingZeros"><span class="hs-identifier">symCountTrailingZeros</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bits</span></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">bit</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">clearBit</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">setBit</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">testBit</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">zeroBits</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(.|.)</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><span class="hs-identifier">FiniteBits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">finiteBitSize</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeLits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitVector.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.BitVector</span></a></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitVector.html#BV"><span class="hs-identifier">BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitVector.html#bv"><span class="hs-identifier">bv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitVector.html#bvSelect"><span class="hs-identifier">bvSelect</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier">symIte</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymEq.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SymEq</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#SymEq"><span class="hs-identifier">SymEq</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator">(.==)</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SomeBV</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeBV"><span class="hs-identifier">SomeBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeBV"><span class="hs-identifier">SomeBV</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeIntN"><span class="hs-identifier">SomeIntN</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeWordN"><span class="hs-identifier">SomeWordN</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#unsafeSomeBV"><span class="hs-identifier">unsafeSomeBV</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier">SymIntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier">SymWordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier">SymBool</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="annot"><span class="hs-comment">-- | Set a bit in a concrete value to a specific value.</span></span><span>
+</span><span id="line-57"></span><span id="local-6989586621682394597"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#setBitTo"><span class="hs-identifier hs-type">setBitTo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682394597"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394597"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394597"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-58"></span><span id="setBitTo"><span class="annot"><span class="annottext">setBitTo :: forall a. Bits a =&gt; a -&gt; Int -&gt; Bool -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#setBitTo"><span class="hs-identifier hs-var hs-var">setBitTo</span></a></span></span><span> </span><span id="local-6989586621682394739"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394739"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682394740"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394740"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span id="local-6989586621682394741"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682394741"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682394741"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">setBit</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394739"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394740"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">clearBit</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394739"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394740"><span class="hs-identifier hs-var">i</span></a></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- | Bit-blast a concrete value into a list of concrete bits. The first element</span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- in the resulting list corresponds to the least significant bit.</span><span>
+</span><span id="line-62"></span><span id="local-6989586621682394601"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#bitBlast"><span class="hs-identifier hs-type">bitBlast</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682394601"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394601"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">]</span></span><span>
+</span><span id="line-63"></span><span id="bitBlast"><span class="annot"><span class="annottext">bitBlast :: forall a. FiniteBits a =&gt; a -&gt; [Bool]
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#bitBlast"><span class="hs-identifier hs-var hs-var">bitBlast</span></a></span></span><span> </span><span id="local-6989586621682394753"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394753"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Bool) -&gt; [Int] -&gt; [Bool]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int -&gt; Bool
+forall a. Bits a =&gt; a -&gt; Int -&gt; Bool
+</span><span class="hs-identifier hs-var">testBit</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394753"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394753"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">]</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="annot"><span class="hs-comment">-- | Extract the least significant bit of a concrete value.</span></span><span>
+</span><span id="line-66"></span><span id="local-6989586621682394609"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#lsb"><span class="hs-identifier hs-type">lsb</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682394609"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394609"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-67"></span><span id="lsb"><span class="annot"><span class="annottext">lsb :: forall a. Bits a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#lsb"><span class="hs-identifier hs-var hs-var">lsb</span></a></span></span><span> </span><span id="local-6989586621682394756"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394756"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; Bool
+forall a. Bits a =&gt; a -&gt; Int -&gt; Bool
+</span><span class="hs-identifier hs-var">testBit</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394756"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="annot"><span class="hs-comment">-- | Extract the most significant bit of a concrete value.</span></span><span>
+</span><span id="line-70"></span><span id="local-6989586621682394611"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#msb"><span class="hs-identifier hs-type">msb</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682394611"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394611"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-71"></span><span id="msb"><span class="annot"><span class="annottext">msb :: forall a. FiniteBits a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#msb"><span class="hs-identifier hs-var hs-var">msb</span></a></span></span><span> </span><span id="local-6989586621682394763"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394763"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; Bool
+forall a. Bits a =&gt; a -&gt; Int -&gt; Bool
+</span><span class="hs-identifier hs-var">testBit</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394763"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394763"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="annot"><span class="hs-comment">-- | Type class for assembling concrete bits to a bit-vector.</span></span><span>
+</span><span id="line-74"></span><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682394613"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="FromBits"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-var">FromBits</span></a></span></span><span> </span><span id="local-6989586621682394613"><span class="annot"><a href="#local-6989586621682394613"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-comment">-- | Assembling concrete bits to a bit-vector. The first boolean value in the</span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-comment">-- list corresponding to the least signification value.</span><span>
+</span><span id="line-77"></span><span>  </span><span id="fromBits"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-type">fromBits</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394613"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-78"></span><span>  </span><span id="local-6989586621682394767"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-var hs-var">fromBits</span></a></span><span> </span><span id="local-6989586621682394787"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394787"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394787"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682394613"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-80"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; a
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;fromBits: length mismatch&quot;</span></span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; a -&gt; a) -&gt; [a] -&gt; a
+forall a. (a -&gt; a -&gt; a) -&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; a -&gt; a) -&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">foldl1</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(.|.)</span></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621682394793"><span class="hs-identifier hs-var">lst</span></a></span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-83"></span><span>      </span><span class="annot"><a href="#local-6989586621682394793"><span class="hs-identifier hs-type">lst</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621682394613"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-84"></span><span>      </span><span id="local-6989586621682394793"><span class="annot"><span class="annottext">lst :: [a]
+</span><a href="#local-6989586621682394793"><span class="hs-identifier hs-var hs-var">lst</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621682394794"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394794"><span class="hs-identifier hs-var">pos</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682394795"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682394795"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682394795"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a. Bits a =&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">bit</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394794"><span class="hs-identifier hs-var">pos</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a
+forall a. Bits a =&gt; a
+</span><span class="hs-identifier hs-var">zeroBits</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((Int, Bool) -&gt; a) -&gt; [(Int, Bool)] -&gt; [a]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; [Bool] -&gt; [(Int, Bool)]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394787"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394801"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394809"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int8</span></span></span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394816"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394823"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394830"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394837"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word</span></span></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394844"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394851"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span></span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394858"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394865"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span></span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394635"><span id="local-6989586621682394875"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682394635"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682394635"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394635"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-107"></span><span>
+</span><span id="line-108"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394638"><span id="local-6989586621682394889"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682394638"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682394638"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394638"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeIntN"><span class="hs-identifier hs-type">SomeIntN</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-111"></span><span>  </span><span id="local-6989586621682394911"><span class="annot"><span class="annottext">fromBits :: [Bool] -&gt; SomeIntN
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-var hs-var hs-var">fromBits</span></a></span></span><span> </span><span id="local-6989586621682394912"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394912"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-112"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394912"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-113"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SomeIntN
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Cannot create a SomeBV from an empty list of bits.&quot;</span></span><span>
+</span><span id="line-114"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-var">fromBits</span></a></span><span> </span><span id="local-6989586621682394914"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394914"><span class="hs-identifier hs-var">bits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; IntN n)
+-&gt; SomeIntN
+forall (bv :: Nat -&gt; *).
+Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; bv n)
+-&gt; SomeBV bv
+</span><a href="Grisette.Internal.SymPrim.SomeBV.html#unsafeSomeBV"><span class="hs-identifier hs-var">unsafeSomeBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Bool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394914"><span class="hs-identifier hs-var">bits</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((forall (proxy :: Nat -&gt; *) (n :: Nat).
+  (KnownNat n, 1 &lt;= n) =&gt;
+  proxy n -&gt; IntN n)
+ -&gt; SomeIntN)
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; IntN n)
+-&gt; SomeIntN
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">proxy n
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; IntN n
+forall a. FromBits a =&gt; [Bool] -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-var">fromBits</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394914"><span class="hs-identifier hs-var">bits</span></a></span><span>
+</span><span id="line-115"></span><span>
+</span><span id="line-116"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#FromBits"><span class="hs-identifier hs-type">FromBits</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeWordN"><span class="hs-identifier hs-type">SomeWordN</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621682394935"><span class="annot"><span class="annottext">fromBits :: [Bool] -&gt; SomeWordN
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-var hs-var hs-var">fromBits</span></a></span></span><span> </span><span id="local-6989586621682394936"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394936"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-118"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394936"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-119"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SomeWordN
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Cannot create a SomeBV from an empty list of bits.&quot;</span></span><span>
+</span><span id="line-120"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-var">fromBits</span></a></span><span> </span><span id="local-6989586621682394937"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394937"><span class="hs-identifier hs-var">bits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; WordN n)
+-&gt; SomeWordN
+forall (bv :: Nat -&gt; *).
+Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; bv n)
+-&gt; SomeBV bv
+</span><a href="Grisette.Internal.SymPrim.SomeBV.html#unsafeSomeBV"><span class="hs-identifier hs-var">unsafeSomeBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Bool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394937"><span class="hs-identifier hs-var">bits</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((forall (proxy :: Nat -&gt; *) (n :: Nat).
+  (KnownNat n, 1 &lt;= n) =&gt;
+  proxy n -&gt; WordN n)
+ -&gt; SomeWordN)
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; WordN n)
+-&gt; SomeWordN
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">proxy n
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; WordN n
+forall a. FromBits a =&gt; [Bool] -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#fromBits"><span class="hs-identifier hs-var">fromBits</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621682394937"><span class="hs-identifier hs-var">bits</span></a></span><span>
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span class="annot"><span class="hs-comment">-- | A class for symbolic finite bit operations.</span></span><span>
+</span><span id="line-123"></span><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682394662"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394662"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="SymFiniteBits"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-var">SymFiniteBits</span></a></span></span><span> </span><span id="local-6989586621682394662"><span class="annot"><a href="#local-6989586621682394662"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-124"></span><span>  </span><span class="hs-comment">-- | Test a symbolic bit in a symbolic bit-vector.</span><span>
+</span><span id="line-125"></span><span>  </span><span id="symTestBit"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-type">symTestBit</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682394662"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span>
+</span><span id="line-126"></span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-comment">-- | Set a bit in a symbolic value to a specific value.</span><span>
+</span><span id="line-128"></span><span>  </span><span id="symSetBitTo"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symSetBitTo"><span class="hs-identifier hs-type">symSetBitTo</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682394662"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394662"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-129"></span><span>  </span><span id="local-6989586621682394949"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symSetBitTo"><span class="hs-identifier hs-var hs-var">symSetBitTo</span></a></span><span> </span><span id="local-6989586621682394956"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394956"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682394957"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394957"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span id="local-6989586621682394958"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682394958"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; a -&gt; a -&gt; a
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682394958"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">setBit</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394956"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394957"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">clearBit</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682394956"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682394957"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span>  </span><span class="hs-comment">-- | Assembling symbolic bits to a symbolic bit-vector. The first symbolic</span><span>
+</span><span id="line-132"></span><span>  </span><span class="hs-comment">-- boolean value in the list corresponding to the least signification value.</span><span>
+</span><span id="line-133"></span><span>  </span><span id="symFromBits"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-type">symFromBits</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394662"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-134"></span><span>
+</span><span id="line-135"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394973"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeBV"><span class="hs-identifier hs-type">SomeBV</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-136"></span><span>  </span><span id="local-6989586621682395008"><span class="annot"><span class="annottext">symTestBit :: SomeBV SymIntN -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var hs-var hs-var">symTestBit</span></a></span></span><span> </span><span id="local-6989586621682395009"><span class="annot"><span class="annottext">SomeBV SymIntN
+</span><a href="#local-6989586621682395009"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682395010"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395010"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; SomeBV SymIntN -&gt; SomeBV SymIntN
+forall bv. BV bv =&gt; Int -&gt; Int -&gt; bv -&gt; bv
+</span><a href="Grisette.Internal.Core.Data.Class.BitVector.html#bvSelect"><span class="hs-identifier hs-var">bvSelect</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395010"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">SomeBV SymIntN
+</span><a href="#local-6989586621682395009"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">SomeBV SymIntN -&gt; SomeBV SymIntN -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer -&gt; SomeBV SymIntN
+forall a. Integral a =&gt; Int -&gt; a -&gt; SomeBV SymIntN
+forall bv a. (BV bv, Integral a) =&gt; Int -&gt; a -&gt; bv
+</span><a href="Grisette.Internal.Core.Data.Class.BitVector.html#bv"><span class="hs-identifier hs-var">bv</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-137"></span><span>  </span><span id="local-6989586621682395015"><span class="annot"><span class="annottext">symFromBits :: [SymBool] -&gt; SomeBV SymIntN
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var hs-var hs-var">symFromBits</span></a></span></span><span> </span><span id="local-6989586621682395016"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395016"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395016"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-139"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SomeBV SymIntN
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Cannot create a SomeBV from an empty list of bits.&quot;</span></span><span>
+</span><span id="line-140"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var">symFromBits</span></a></span><span> </span><span id="local-6989586621682395017"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395017"><span class="hs-identifier hs-var">bits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; SymIntN n)
+-&gt; SomeBV SymIntN
+forall (bv :: Nat -&gt; *).
+Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; bv n)
+-&gt; SomeBV bv
+</span><a href="Grisette.Internal.SymPrim.SomeBV.html#unsafeSomeBV"><span class="hs-identifier hs-var">unsafeSomeBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[SymBool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395017"><span class="hs-identifier hs-var">bits</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((forall (proxy :: Nat -&gt; *) (n :: Nat).
+  (KnownNat n, 1 &lt;= n) =&gt;
+  proxy n -&gt; SymIntN n)
+ -&gt; SomeBV SymIntN)
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; SymIntN n)
+-&gt; SomeBV SymIntN
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">proxy n
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; SymIntN n
+forall a. SymFiniteBits a =&gt; [SymBool] -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var">symFromBits</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395017"><span class="hs-identifier hs-var">bits</span></a></span><span>
+</span><span id="line-141"></span><span>
+</span><span id="line-142"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682395037"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeBV"><span class="hs-identifier hs-type">SomeBV</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-143"></span><span>  </span><span id="local-6989586621682395063"><span class="annot"><span class="annottext">symTestBit :: SomeBV SymWordN -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var hs-var hs-var">symTestBit</span></a></span></span><span> </span><span id="local-6989586621682395064"><span class="annot"><span class="annottext">SomeBV SymWordN
+</span><a href="#local-6989586621682395064"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682395065"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395065"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; SomeBV SymWordN -&gt; SomeBV SymWordN
+forall bv. BV bv =&gt; Int -&gt; Int -&gt; bv -&gt; bv
+</span><a href="Grisette.Internal.Core.Data.Class.BitVector.html#bvSelect"><span class="hs-identifier hs-var">bvSelect</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395065"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">SomeBV SymWordN
+</span><a href="#local-6989586621682395064"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">SomeBV SymWordN -&gt; SomeBV SymWordN -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer -&gt; SomeBV SymWordN
+forall a. Integral a =&gt; Int -&gt; a -&gt; SomeBV SymWordN
+forall bv a. (BV bv, Integral a) =&gt; Int -&gt; a -&gt; bv
+</span><a href="Grisette.Internal.Core.Data.Class.BitVector.html#bv"><span class="hs-identifier hs-var">bv</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-144"></span><span>  </span><span id="local-6989586621682395070"><span class="annot"><span class="annottext">symFromBits :: [SymBool] -&gt; SomeBV SymWordN
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var hs-var hs-var">symFromBits</span></a></span></span><span> </span><span id="local-6989586621682395071"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395071"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-145"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395071"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-146"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SomeBV SymWordN
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Cannot create a SomeBV from an empty list of bits.&quot;</span></span><span>
+</span><span id="line-147"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var">symFromBits</span></a></span><span> </span><span id="local-6989586621682395072"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395072"><span class="hs-identifier hs-var">bits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; SymWordN n)
+-&gt; SomeBV SymWordN
+forall (bv :: Nat -&gt; *).
+Int
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; bv n)
+-&gt; SomeBV bv
+</span><a href="Grisette.Internal.SymPrim.SomeBV.html#unsafeSomeBV"><span class="hs-identifier hs-var">unsafeSomeBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[SymBool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395072"><span class="hs-identifier hs-var">bits</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((forall (proxy :: Nat -&gt; *) (n :: Nat).
+  (KnownNat n, 1 &lt;= n) =&gt;
+  proxy n -&gt; SymWordN n)
+ -&gt; SomeBV SymWordN)
+-&gt; (forall (proxy :: Nat -&gt; *) (n :: Nat).
+    (KnownNat n, 1 &lt;= n) =&gt;
+    proxy n -&gt; SymWordN n)
+-&gt; SomeBV SymWordN
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">proxy n
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; SymWordN n
+forall a. SymFiniteBits a =&gt; [SymBool] -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var">symFromBits</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395072"><span class="hs-identifier hs-var">bits</span></a></span><span>
+</span><span id="line-148"></span><span>
+</span><span id="line-149"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394685"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682394685"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682394685"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394685"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-150"></span><span>  </span><span id="local-6989586621682395100"><span class="annot"><span class="annottext">symTestBit :: SymIntN n -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var hs-var hs-var">symTestBit</span></a></span></span><span> </span><span id="local-6989586621682395101"><span class="annot"><span class="annottext">SymIntN n
+</span><a href="#local-6989586621682395101"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SomeBV SymIntN -&gt; Int -&gt; SymBool
+forall a. SymFiniteBits a =&gt; a -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var">symTestBit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n -&gt; SomeBV SymIntN
+forall (n :: Nat) (bv :: Nat -&gt; *).
+(KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; SomeBV bv
+</span><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeBV"><span class="hs-identifier hs-var">SomeBV</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><a href="#local-6989586621682395101"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-151"></span><span>  </span><span id="local-6989586621682395110"><span class="annot"><span class="annottext">symSetBitTo :: SymIntN n -&gt; Int -&gt; SymBool -&gt; SymIntN n
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symSetBitTo"><span class="hs-identifier hs-var hs-var hs-var">symSetBitTo</span></a></span></span><span> </span><span id="local-6989586621682395111"><span class="annot"><span class="annottext">SymIntN n
+</span><a href="#local-6989586621682395111"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682395112"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395112"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span id="local-6989586621682395113"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395113"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymIntN n -&gt; SymIntN n -&gt; SymIntN n
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395113"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n -&gt; Int -&gt; SymIntN n
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">setBit</span></span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><a href="#local-6989586621682395111"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395112"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n -&gt; Int -&gt; SymIntN n
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">clearBit</span></span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><a href="#local-6989586621682395111"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395112"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-152"></span><span>  </span><span id="local-6989586621682395140"><span class="annot"><span class="annottext">symFromBits :: [SymBool] -&gt; SymIntN n
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var hs-var hs-var">symFromBits</span></a></span></span><span> </span><span id="local-6989586621682395141"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395141"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-153"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395141"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394685"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-154"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SymIntN n
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;symFromBits: length mismatch&quot;</span></span><span>
+</span><span id="line-155"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SymIntN n -&gt; SymIntN n -&gt; SymIntN n) -&gt; [SymIntN n] -&gt; SymIntN n
+forall a. (a -&gt; a -&gt; a) -&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; a -&gt; a) -&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">foldl1</span></span><span> </span><span class="annot"><span class="annottext">SymIntN n -&gt; SymIntN n -&gt; SymIntN n
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(.|.)</span></span><span> </span><span class="annot"><span class="annottext">[SymIntN n]
+</span><a href="#local-6989586621682395142"><span class="hs-identifier hs-var">lst</span></a></span><span>
+</span><span id="line-156"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-157"></span><span>      </span><span class="annot"><a href="#local-6989586621682395142"><span class="hs-identifier hs-type">lst</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394685"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-158"></span><span>      </span><span id="local-6989586621682395142"><span class="annot"><span class="annottext">lst :: [SymIntN n]
+</span><a href="#local-6989586621682395142"><span class="hs-identifier hs-var hs-var">lst</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621682395143"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395143"><span class="hs-identifier hs-var">pos</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682395144"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395144"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymIntN n -&gt; SymIntN n -&gt; SymIntN n
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395144"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n -&gt; Int -&gt; SymIntN n
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">setBit</span></span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395143"><span class="hs-identifier hs-var">pos</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((Int, SymBool) -&gt; SymIntN n) -&gt; [(Int, SymBool)] -&gt; [SymIntN n]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; [SymBool] -&gt; [(Int, SymBool)]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395141"><span class="hs-identifier hs-var">bits</span></a></span><span>
+</span><span id="line-159"></span><span>
+</span><span id="line-160"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682394691"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682394691"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682394691"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394691"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-161"></span><span>  </span><span id="local-6989586621682395164"><span class="annot"><span class="annottext">symTestBit :: SymWordN n -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var hs-var hs-var">symTestBit</span></a></span></span><span> </span><span id="local-6989586621682395165"><span class="annot"><span class="annottext">SymWordN n
+</span><a href="#local-6989586621682395165"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SomeBV SymWordN -&gt; Int -&gt; SymBool
+forall a. SymFiniteBits a =&gt; a -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var">symTestBit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n -&gt; SomeBV SymWordN
+forall (n :: Nat) (bv :: Nat -&gt; *).
+(KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; SomeBV bv
+</span><a href="Grisette.Internal.SymPrim.SomeBV.html#SomeBV"><span class="hs-identifier hs-var">SomeBV</span></a></span><span> </span><span class="annot"><span class="annottext">SymWordN n
+</span><a href="#local-6989586621682395165"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-162"></span><span>  </span><span id="local-6989586621682395174"><span class="annot"><span class="annottext">symSetBitTo :: SymWordN n -&gt; Int -&gt; SymBool -&gt; SymWordN n
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symSetBitTo"><span class="hs-identifier hs-var hs-var hs-var">symSetBitTo</span></a></span></span><span> </span><span id="local-6989586621682395175"><span class="annot"><span class="annottext">SymWordN n
+</span><a href="#local-6989586621682395175"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682395176"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395176"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span id="local-6989586621682395177"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395177"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymWordN n -&gt; SymWordN n -&gt; SymWordN n
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395177"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n -&gt; Int -&gt; SymWordN n
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">setBit</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n
+</span><a href="#local-6989586621682395175"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395176"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n -&gt; Int -&gt; SymWordN n
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">clearBit</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n
+</span><a href="#local-6989586621682395175"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395176"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>  </span><span id="local-6989586621682395203"><span class="annot"><span class="annottext">symFromBits :: [SymBool] -&gt; SymWordN n
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symFromBits"><span class="hs-identifier hs-var hs-var hs-var">symFromBits</span></a></span></span><span> </span><span id="local-6989586621682395204"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395204"><span class="hs-identifier hs-var">bits</span></a></span></span><span>
+</span><span id="line-164"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395204"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394691"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-165"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SymWordN n
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;symFromBits: length mismatch&quot;</span></span><span>
+</span><span id="line-166"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SymWordN n -&gt; SymWordN n -&gt; SymWordN n)
+-&gt; [SymWordN n] -&gt; SymWordN n
+forall a. (a -&gt; a -&gt; a) -&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; a -&gt; a) -&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">foldl1</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n -&gt; SymWordN n -&gt; SymWordN n
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(.|.)</span></span><span> </span><span class="annot"><span class="annottext">[SymWordN n]
+</span><a href="#local-6989586621682395205"><span class="hs-identifier hs-var">lst</span></a></span><span>
+</span><span id="line-167"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-168"></span><span>      </span><span class="annot"><a href="#local-6989586621682395205"><span class="hs-identifier hs-type">lst</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394691"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-169"></span><span>      </span><span id="local-6989586621682395205"><span class="annot"><span class="annottext">lst :: [SymWordN n]
+</span><a href="#local-6989586621682395205"><span class="hs-identifier hs-var hs-var">lst</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621682395206"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395206"><span class="hs-identifier hs-var">pos</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682395207"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395207"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymWordN n -&gt; SymWordN n -&gt; SymWordN n
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395207"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n -&gt; Int -&gt; SymWordN n
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">setBit</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682395206"><span class="hs-identifier hs-var">pos</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymWordN n
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((Int, SymBool) -&gt; SymWordN n) -&gt; [(Int, SymBool)] -&gt; [SymWordN n]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; [SymBool] -&gt; [(Int, SymBool)]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395204"><span class="hs-identifier hs-var">bits</span></a></span><span>
+</span><span id="line-170"></span><span>
+</span><span id="line-171"></span><span class="hs-comment">-- | Bit-blast a symbolic value into a list of symbolic bits. The first element</span><span>
+</span><span id="line-172"></span><span class="hs-comment">-- in the resulting list corresponds to the least significant bit.</span><span>
+</span><span id="line-173"></span><span id="local-6989586621682394698"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symBitBlast"><span class="hs-identifier hs-type">symBitBlast</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394698"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394698"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-174"></span><span id="symBitBlast"><span class="annot"><span class="annottext">symBitBlast :: forall a. SymFiniteBits a =&gt; a -&gt; [SymBool]
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symBitBlast"><span class="hs-identifier hs-var hs-var">symBitBlast</span></a></span></span><span> </span><span id="local-6989586621682395216"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395216"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; SymBool) -&gt; [Int] -&gt; [SymBool]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int -&gt; SymBool
+forall a. SymFiniteBits a =&gt; a -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var">symTestBit</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395216"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395216"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">]</span><span>
+</span><span id="line-175"></span><span>
+</span><span id="line-176"></span><span class="annot"><span class="hs-comment">-- | Extract the least significant bit of a symbolic value.</span></span><span>
+</span><span id="line-177"></span><span id="local-6989586621682394700"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symLsb"><span class="hs-identifier hs-type">symLsb</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394700"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394700"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span>
+</span><span id="line-178"></span><span id="symLsb"><span class="annot"><span class="annottext">symLsb :: forall a. SymFiniteBits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symLsb"><span class="hs-identifier hs-var hs-var">symLsb</span></a></span></span><span> </span><span id="local-6989586621682395219"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395219"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; SymBool
+forall a. SymFiniteBits a =&gt; a -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var">symTestBit</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395219"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-179"></span><span>
+</span><span id="line-180"></span><span class="annot"><span class="hs-comment">-- | Extract the most significant bit of a symbolic value.</span></span><span>
+</span><span id="line-181"></span><span id="local-6989586621682395220"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symMsb"><span class="hs-identifier hs-type">symMsb</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682395220"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682395220"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span>
+</span><span id="line-182"></span><span id="symMsb"><span class="annot"><span class="annottext">symMsb :: forall a. SymFiniteBits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symMsb"><span class="hs-identifier hs-var hs-var">symMsb</span></a></span></span><span> </span><span id="local-6989586621682395227"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395227"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; SymBool
+forall a. SymFiniteBits a =&gt; a -&gt; Int -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symTestBit"><span class="hs-identifier hs-var">symTestBit</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395227"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395227"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-183"></span><span>
+</span><span id="line-184"></span><span class="annot"><span class="hs-comment">-- | Count the number of set bits in a symbolic value.</span></span><span>
+</span><span id="line-185"></span><span id="local-6989586621682394703"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symPopCount"><span class="hs-identifier hs-type">symPopCount</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621682394703"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394703"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682394703"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394703"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682394703"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-186"></span><span class="hs-comment">-- Node: v - v + is a trick to assign the correct bit-width to the result.</span><span>
+</span><span id="line-187"></span><span id="symPopCount"><span class="annot"><span class="annottext">symPopCount :: forall a. (Num a, ITEOp a, SymFiniteBits a) =&gt; a -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symPopCount"><span class="hs-identifier hs-var hs-var">symPopCount</span></a></span></span><span> </span><span id="local-6989586621682395240"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395240"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395240"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395240"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; a
+forall a. Num a =&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">sum</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621682395243"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395243"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; a -&gt; a -&gt; a
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395243"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SymBool -&gt; a) -&gt; [SymBool] -&gt; [a]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; [SymBool]
+forall a. SymFiniteBits a =&gt; a -&gt; [SymBool]
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symBitBlast"><span class="hs-identifier hs-var">symBitBlast</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395240"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-188"></span><span>
+</span><span id="line-189"></span><span class="annot"><span class="hs-comment">-- | Count the number of leading zeros in a symbolic value.</span></span><span>
+</span><span id="line-190"></span><span id="local-6989586621682395244"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symCountLeadingZeros"><span class="hs-identifier hs-type">symCountLeadingZeros</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621682395244"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682395244"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682395244"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682395244"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682395244"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-191"></span><span class="hs-comment">-- Node: v - v + is a trick to assign the correct bit-width to the result.</span><span>
+</span><span id="line-192"></span><span id="symCountLeadingZeros"><span class="annot"><span class="annottext">symCountLeadingZeros :: forall a. (Num a, ITEOp a, SymFiniteBits a) =&gt; a -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symCountLeadingZeros"><span class="hs-identifier hs-var hs-var">symCountLeadingZeros</span></a></span></span><span> </span><span id="local-6989586621682395252"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395252"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395252"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395252"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; [a] -&gt; a
+forall {t}. ITEOp t =&gt; [SymBool] -&gt; [t] -&gt; t
+</span><a href="#local-6989586621682395253"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395254"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621682395255"><span class="hs-identifier hs-var">rs</span></a></span><span>
+</span><span id="line-193"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-194"></span><span>    </span><span id="local-6989586621682395254"><span class="annot"><span class="annottext">bits :: [SymBool]
+</span><a href="#local-6989586621682395254"><span class="hs-identifier hs-var hs-var">bits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; [SymBool]
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">([SymBool] -&gt; [SymBool]) -&gt; [SymBool] -&gt; [SymBool]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; [SymBool]
+forall a. SymFiniteBits a =&gt; a -&gt; [SymBool]
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symBitBlast"><span class="hs-identifier hs-var">symBitBlast</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395252"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-195"></span><span>    </span><span id="local-6989586621682395255"><span class="annot"><span class="annottext">rs :: [a]
+</span><a href="#local-6989586621682395255"><span class="hs-identifier hs-var hs-var">rs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; a) -&gt; [Integer] -&gt; [a]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span>
+</span><span id="line-196"></span><span>    </span><span id="local-6989586621682395253"><span class="annot"><span class="annottext">go :: [SymBool] -&gt; [t] -&gt; t
+</span><a href="#local-6989586621682395253"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682395271"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395271"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[t]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395271"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-197"></span><span>    </span><span class="annot"><a href="#local-6989586621682395253"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682395272"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395272"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682395273"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395273"><span class="hs-identifier hs-var">bs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682395274"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395274"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682395275"><span class="annot"><span class="annottext">[t]
+</span><a href="#local-6989586621682395275"><span class="hs-identifier hs-var">rs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; t -&gt; t -&gt; t
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395272"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395274"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[SymBool] -&gt; [t] -&gt; t
+</span><a href="#local-6989586621682395253"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395273"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="annot"><span class="annottext">[t]
+</span><a href="#local-6989586621682395275"><span class="hs-identifier hs-var">rs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-198"></span><span>    </span><span class="annot"><a href="#local-6989586621682395253"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; t
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Should not happen&quot;</span></span><span>
+</span><span id="line-199"></span><span>
+</span><span id="line-200"></span><span class="annot"><span class="hs-comment">-- | Count the number of trailing zeros in a symbolic value.</span></span><span>
+</span><span id="line-201"></span><span id="local-6989586621682395276"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symCountTrailingZeros"><span class="hs-identifier hs-type">symCountTrailingZeros</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621682395276"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682395276"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#SymFiniteBits"><span class="hs-identifier hs-type">SymFiniteBits</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682395276"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682395276"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682395276"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-202"></span><span class="hs-comment">-- Node: v - v + is a trick to assign the correct bit-width to the result.</span><span>
+</span><span id="line-203"></span><span id="symCountTrailingZeros"><span class="annot"><span class="annottext">symCountTrailingZeros :: forall a. (Num a, ITEOp a, SymFiniteBits a) =&gt; a -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symCountTrailingZeros"><span class="hs-identifier hs-var hs-var">symCountTrailingZeros</span></a></span></span><span> </span><span id="local-6989586621682395284"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395284"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395284"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395284"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">[SymBool] -&gt; [a] -&gt; a
+forall {t}. ITEOp t =&gt; [SymBool] -&gt; [t] -&gt; t
+</span><a href="#local-6989586621682395285"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395286"><span class="hs-identifier hs-var">bits</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621682395287"><span class="hs-identifier hs-var">rs</span></a></span><span>
+</span><span id="line-204"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-205"></span><span>    </span><span id="local-6989586621682395286"><span class="annot"><span class="annottext">bits :: [SymBool]
+</span><a href="#local-6989586621682395286"><span class="hs-identifier hs-var hs-var">bits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; [SymBool]
+forall a. SymFiniteBits a =&gt; a -&gt; [SymBool]
+</span><a href="Grisette.Internal.Core.Data.Class.SymFiniteBits.html#symBitBlast"><span class="hs-identifier hs-var">symBitBlast</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682395284"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-206"></span><span>    </span><span id="local-6989586621682395287"><span class="annot"><span class="annottext">rs :: [a]
+</span><a href="#local-6989586621682395287"><span class="hs-identifier hs-var hs-var">rs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; a) -&gt; [Integer] -&gt; [a]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span>
+</span><span id="line-207"></span><span>    </span><span id="local-6989586621682395285"><span class="annot"><span class="annottext">go :: [SymBool] -&gt; [t] -&gt; t
+</span><a href="#local-6989586621682395285"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682395302"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395302"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[t]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395302"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-208"></span><span>    </span><span class="annot"><a href="#local-6989586621682395285"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682395303"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395303"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682395304"><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395304"><span class="hs-identifier hs-var">bs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682395305"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395305"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682395306"><span class="annot"><span class="annottext">[t]
+</span><a href="#local-6989586621682395306"><span class="hs-identifier hs-var">rs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; t -&gt; t -&gt; t
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682395303"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682395305"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[SymBool] -&gt; [t] -&gt; t
+</span><a href="#local-6989586621682395285"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><a href="#local-6989586621682395304"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="annot"><span class="annottext">[t]
+</span><a href="#local-6989586621682395306"><span class="hs-identifier hs-var">rs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-209"></span><span>    </span><span class="annot"><a href="#local-6989586621682395285"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[SymBool]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; t
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Should not happen&quot;</span></span><span>
+</span><span id="line-210"></span></pre></body></html>

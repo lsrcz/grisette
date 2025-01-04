@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FunctionalDependencies #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE PatternSynonyms #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE ViewPatterns #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# HLINT ignore &quot;Unused LANGUAGE pragma&quot; #-}</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.Solvable</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2023</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Solvable</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Solvable type interface</span></span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier">Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Con"><span class="hs-identifier">Con</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#slocsym"><span class="hs-identifier">slocsym</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ilocsym"><span class="hs-identifier">ilocsym</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IsString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Symbol</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#Identifier"><span class="hs-identifier">Identifier</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#Symbol"><span class="hs-identifier">Symbol</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#IndexedSymbol"><span class="hs-identifier">IndexedSymbol</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#SimpleSymbol"><span class="hs-identifier">SimpleSymbol</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#withLocation"><span class="hs-identifier">withLocation</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax.Compat</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SpliceQ</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- | The class defines the creation and pattern matching of solvable type</span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- values.</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IsString</span></span><span> </span><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="Solvable"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-var">Solvable</span></a></span></span><span> </span><span id="local-6989586621682212246"><span class="annot"><a href="#local-6989586621682212246"><span class="hs-identifier hs-type">c</span></a></span></span><span> </span><span id="local-6989586621682212247"><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682212246"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-comment">-- | Wrap a concrete value in a symbolic value.</span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; con True :: SymBool</span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-comment">-- true</span><span>
+</span><span id="line-50"></span><span>  </span><span id="con"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-type">con</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682212246"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-comment">-- | Extract the concrete value from a symbolic value.</span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; conView (con True :: SymBool)</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-comment">-- Just True</span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; conView (ssym &quot;a&quot; :: SymBool)</span><span>
+</span><span id="line-58"></span><span>  </span><span class="hs-comment">-- Nothing</span><span>
+</span><span id="line-59"></span><span>  </span><span id="conView"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier hs-type">conView</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621682212246"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-comment">-- | Generate symbolic constants.</span><span>
+</span><span id="line-62"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-comment">-- Two symbolic constants with the same symbol are the same symbolic constant,</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-comment">-- and will always be assigned with the same value by the solver.</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; sym &quot;a&quot; :: SymBool</span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-comment">-- a</span><span>
+</span><span id="line-68"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; (sym &quot;a&quot; :: SymBool) == sym &quot;a&quot;</span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-comment">-- True</span><span>
+</span><span id="line-70"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; (sym &quot;a&quot; :: SymBool) == sym &quot;b&quot;</span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-comment">-- False</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; (sym &quot;a&quot; :: SymBool) .&amp;&amp; sym &quot;a&quot;</span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-comment">-- a</span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; (sym &quot;a&quot; :: SymBool) == isym &quot;a&quot; 1</span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-comment">-- False</span><span>
+</span><span id="line-76"></span><span>  </span><span id="sym"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#sym"><span class="hs-identifier hs-type">sym</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#Symbol"><span class="hs-identifier hs-type">Symbol</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span>  </span><span class="hs-comment">-- | Generate simply-named symbolic constants.</span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-comment">-- Two symbolic constants with the same identifier are the same symbolic</span><span>
+</span><span id="line-81"></span><span>  </span><span class="hs-comment">-- constant, and will always be assigned with the same value by the solver.</span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; ssym &quot;a&quot; :: SymBool</span><span>
+</span><span id="line-84"></span><span>  </span><span class="hs-comment">-- a</span><span>
+</span><span id="line-85"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; (ssym &quot;a&quot; :: SymBool) == ssym &quot;a&quot;</span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-comment">-- True</span><span>
+</span><span id="line-87"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; (ssym &quot;a&quot; :: SymBool) == ssym &quot;b&quot;</span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-comment">-- False</span><span>
+</span><span id="line-89"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; (ssym &quot;a&quot; :: SymBool) .&amp;&amp; ssym &quot;a&quot;</span><span>
+</span><span id="line-90"></span><span>  </span><span class="hs-comment">-- a</span><span>
+</span><span id="line-91"></span><span>  </span><span id="ssym"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ssym"><span class="hs-identifier hs-type">ssym</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-92"></span><span>  </span><span id="local-6989586621682212288"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ssym"><span class="hs-identifier hs-var hs-var">ssym</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Symbol -&gt; t
+forall c t. Solvable c t =&gt; Symbol -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#sym"><span class="hs-identifier hs-var">sym</span></a></span><span> </span><span class="annot"><span class="annottext">(Symbol -&gt; t) -&gt; (Identifier -&gt; Symbol) -&gt; Identifier -&gt; t
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; Symbol
+</span><a href="Grisette.Internal.Core.Data.Symbol.html#SimpleSymbol"><span class="hs-identifier hs-var">SimpleSymbol</span></a></span></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span>  </span><span class="hs-comment">-- | Generate indexed symbolic constants.</span><span>
+</span><span id="line-95"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-96"></span><span>  </span><span class="hs-comment">-- Two symbolic constants with the same identifier but different indices are</span><span>
+</span><span id="line-97"></span><span>  </span><span class="hs-comment">-- not the same symbolic constants.</span><span>
+</span><span id="line-98"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-comment">-- &gt;&gt;&gt; isym &quot;a&quot; 1 :: SymBool</span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-comment">-- a@1</span><span>
+</span><span id="line-101"></span><span>  </span><span id="isym"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#isym"><span class="hs-identifier hs-type">isym</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682212247"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682212292"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#isym"><span class="hs-identifier hs-var hs-var">isym</span></a></span><span> </span><span id="local-6989586621682212294"><span class="annot"><span class="annottext">Identifier
+</span><a href="#local-6989586621682212294"><span class="hs-identifier hs-var">nm</span></a></span></span><span> </span><span id="local-6989586621682212295"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682212295"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Symbol -&gt; t
+forall c t. Solvable c t =&gt; Symbol -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#sym"><span class="hs-identifier hs-var">sym</span></a></span><span> </span><span class="annot"><span class="annottext">(Symbol -&gt; t) -&gt; Symbol -&gt; t
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; Int -&gt; Symbol
+</span><a href="Grisette.Internal.Core.Data.Symbol.html#IndexedSymbol"><span class="hs-identifier hs-var">IndexedSymbol</span></a></span><span> </span><span class="annot"><span class="annottext">Identifier
+</span><a href="#local-6989586621682212294"><span class="hs-identifier hs-var">nm</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682212295"><span class="hs-identifier hs-var">idx</span></a></span></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- | Extract the concrete value from a solvable value with 'conView'.</span><span>
+</span><span id="line-105"></span><span class="hs-comment">--</span><span>
+</span><span id="line-106"></span><span class="hs-comment">-- &gt;&gt;&gt; case con True :: SymBool of Con v -&gt; v</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- True</span><span>
+</span><span id="line-108"></span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621682212241"><span id="local-6989586621682212242"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682212241"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682212242"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682212241"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682212242"><span class="hs-identifier hs-type">t</span></a></span></span></span><span>
+</span><span id="line-109"></span><span class="hs-keyword">pattern</span><span> </span><span id="Con"><span id="%24mCon"><span id="%24bCon"><span class="annot"><span class="annottext">$mCon :: forall {r} {c} {t}.
+Solvable c t =&gt;
+t -&gt; (c -&gt; r) -&gt; ((# #) -&gt; r) -&gt; r
+$bCon :: forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Con"><span class="hs-identifier hs-var hs-var hs-var">Con</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621682212298"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-110"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier hs-type">conView</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682212298"><span class="annot"><a href="#local-6989586621682212298"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-112"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Con"><span class="hs-identifier hs-var">Con</span></a></span><span> </span><span id="local-6989586621682212300"><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621682212300"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">c -&gt; t
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621682212300"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="hs-comment">-- | Generate simply-named symbolic variables. The file location will be</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- attached to the identifier.</span><span>
+</span><span id="line-116"></span><span class="hs-comment">--</span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- &gt;&gt;&gt; $$(slocsym &quot;a&quot;) :: SymBool</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- a:[grisette-file-location &lt;interactive&gt;...]</span><span>
+</span><span id="line-119"></span><span class="hs-comment">--</span><span>
+</span><span id="line-120"></span><span class="hs-comment">-- Calling 'slocsym' with the same name at different location will always</span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- generate different symbolic constants. Calling 'slocsym' at the same</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- location for multiple times will generate the same symbolic constants.</span><span>
+</span><span id="line-123"></span><span class="hs-comment">--</span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- &gt;&gt;&gt; ($$(slocsym &quot;a&quot;) :: SymBool) == $$(slocsym &quot;a&quot;)</span><span>
+</span><span id="line-125"></span><span class="hs-comment">-- False</span><span>
+</span><span id="line-126"></span><span class="hs-comment">-- &gt;&gt;&gt; let f _ = $$(slocsym &quot;a&quot;) :: SymBool</span><span>
+</span><span id="line-127"></span><span class="hs-comment">-- &gt;&gt;&gt; f () == f ()</span><span>
+</span><span id="line-128"></span><span class="hs-comment">-- True</span><span>
+</span><span id="line-129"></span><span id="local-6989586621682212259"><span id="local-6989586621682212260"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#slocsym"><span class="hs-identifier hs-type">slocsym</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682212259"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682212260"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SpliceQ</span></span><span> </span><span class="annot"><a href="#local-6989586621682212260"><span class="hs-identifier hs-type">s</span></a></span></span></span><span>
+</span><span id="line-130"></span><span id="slocsym"><span class="annot"><span class="annottext">slocsym :: forall c s. Solvable c s =&gt; Text -&gt; SpliceQ s
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#slocsym"><span class="hs-identifier hs-var hs-var">slocsym</span></a></span></span><span> </span><span id="local-6989586621682212305"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621682212305"><span class="hs-identifier hs-var">nm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[||</span><span class="annot"><span class="annottext">Identifier -&gt; t
+forall c t. Solvable c t =&gt; Identifier -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ssym"><span class="hs-identifier hs-var">ssym</span></a></span><span> </span><span class="hs-special">$$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; SpliceQ Identifier
+</span><a href="Grisette.Internal.Core.Data.Symbol.html#withLocation"><span class="hs-identifier hs-var">withLocation</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621682212305"><span class="hs-identifier hs-var">nm</span></a></span><span class="hs-special">)</span><span class="hs-special">||]</span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span class="hs-comment">-- | Generate indexed symbolic variables. The file location will be attached to</span><span>
+</span><span id="line-133"></span><span class="hs-comment">-- the identifier.</span><span>
+</span><span id="line-134"></span><span class="hs-comment">--</span><span>
+</span><span id="line-135"></span><span class="hs-comment">-- &gt;&gt;&gt; $$(ilocsym &quot;a&quot; 1) :: SymBool</span><span>
+</span><span id="line-136"></span><span class="hs-comment">-- a:[grisette-file-location &lt;interactive&gt;...]@1</span><span>
+</span><span id="line-137"></span><span class="hs-comment">--</span><span>
+</span><span id="line-138"></span><span class="hs-comment">-- Calling 'ilocsym' with the same name and index at different location will</span><span>
+</span><span id="line-139"></span><span class="hs-comment">-- always generate different symbolic constants. Calling 'slocsym' at the same</span><span>
+</span><span id="line-140"></span><span class="hs-comment">-- location for multiple times will generate the same symbolic constants.</span><span>
+</span><span id="line-141"></span><span id="local-6989586621682212267"><span id="local-6989586621682212268"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ilocsym"><span class="hs-identifier hs-type">ilocsym</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682212267"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682212268"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SpliceQ</span></span><span> </span><span class="annot"><a href="#local-6989586621682212268"><span class="hs-identifier hs-type">s</span></a></span></span></span><span>
+</span><span id="line-142"></span><span id="ilocsym"><span class="annot"><span class="annottext">ilocsym :: forall c s. Solvable c s =&gt; Text -&gt; Int -&gt; SpliceQ s
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ilocsym"><span class="hs-identifier hs-var hs-var">ilocsym</span></a></span></span><span> </span><span id="local-6989586621682212311"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621682212311"><span class="hs-identifier hs-var">nm</span></a></span></span><span> </span><span id="local-6989586621682212312"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682212312"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[||</span><span class="annot"><span class="annottext">Identifier -&gt; Int -&gt; t
+forall c t. Solvable c t =&gt; Identifier -&gt; Int -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#isym"><span class="hs-identifier hs-var">isym</span></a></span><span> </span><span class="hs-special">$$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; SpliceQ Identifier
+</span><a href="Grisette.Internal.Core.Data.Symbol.html#withLocation"><span class="hs-identifier hs-var">withLocation</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621682212311"><span class="hs-identifier hs-var">nm</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682212312"><span class="hs-identifier hs-var">idx</span></a></span><span class="hs-special">||]</span><span>
+</span><span id="line-143"></span></pre></body></html>

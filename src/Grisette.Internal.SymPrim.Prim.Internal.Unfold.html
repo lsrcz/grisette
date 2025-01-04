@@ -1,0 +1,557 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.PartialEval.Unfold</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2023</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier">unaryUnfoldOnce</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier">binaryUnfoldOnce</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalUnaryUnfolded"><span class="hs-identifier">generalUnaryUnfolded</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalBinaryUnfolded"><span class="hs-identifier">generalBinaryUnfolded</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Except</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadError</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">catchError</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Typeable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.PartialEval</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier">PartialRuleBinary</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleUnary"><span class="hs-identifier">PartialRuleUnary</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleBinary"><span class="hs-identifier">TotalRuleBinary</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleUnary"><span class="hs-identifier">TotalRuleUnary</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize"><span class="hs-identifier">totalize</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize2"><span class="hs-identifier">totalize2</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier">pevalITETerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier">ITETerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryPartialUnfoldOnce"><span class="hs-identifier hs-type">unaryPartialUnfoldOnce</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682232746"><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682232744"><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-41"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleUnary"><span class="hs-identifier hs-type">PartialRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-42"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleUnary"><span class="hs-identifier hs-type">TotalRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleUnary"><span class="hs-identifier hs-type">PartialRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-44"></span><span id="unaryPartialUnfoldOnce"><span class="annot"><span class="annottext">unaryPartialUnfoldOnce :: forall a b.
+SupportedPrim b =&gt;
+PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; PartialRuleUnary a b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryPartialUnfoldOnce"><span class="hs-identifier hs-var hs-var">unaryPartialUnfoldOnce</span></a></span></span><span> </span><span id="local-6989586621682232830"><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232830"><span class="hs-identifier hs-var">partial</span></a></span></span><span> </span><span id="local-6989586621682232831"><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232831"><span class="hs-identifier hs-var">fallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232832"><span class="hs-identifier hs-var">ret</span></a></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="#local-6989586621682232833"><span class="hs-identifier hs-type">oneLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleUnary"><span class="hs-identifier hs-type">TotalRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleUnary"><span class="hs-identifier hs-type">PartialRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-47"></span><span>    </span><span id="local-6989586621682232833"><span class="annot"><span class="annottext">oneLevel :: TotalRuleUnary a b -&gt; PartialRuleUnary a b
+</span><a href="#local-6989586621682232833"><span class="hs-identifier hs-var hs-var">oneLevel</span></a></span></span><span> </span><span id="local-6989586621682232834"><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232834"><span class="hs-identifier hs-var">fallback'</span></a></span></span><span> </span><span id="local-6989586621682232835"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232835"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232835"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232830"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232835"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-48"></span><span>      </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682232845"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232845"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682232846"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232846"><span class="hs-identifier hs-var">vt</span></a></span></span><span> </span><span id="local-6989586621682232847"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232847"><span class="hs-identifier hs-var">vf</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682232848"><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232848"><span class="hs-identifier hs-var">pr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-49"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682232849"><span class="annot"><span class="annottext">pt :: Maybe (Term b)
+</span><a href="#local-6989586621682232849"><span class="hs-identifier hs-var hs-var">pt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232830"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232846"><span class="hs-identifier hs-var">vt</span></a></span><span>
+</span><span id="line-50"></span><span>            </span><span id="local-6989586621682232850"><span class="annot"><span class="annottext">pf :: Maybe (Term b)
+</span><a href="#local-6989586621682232850"><span class="hs-identifier hs-var hs-var">pf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232830"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232847"><span class="hs-identifier hs-var">vf</span></a></span><span>
+</span><span id="line-51"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232849"><span class="hs-identifier hs-var">pt</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232850"><span class="hs-identifier hs-var">pf</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-52"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232848"><span class="hs-identifier hs-var">pr</span></a></span><span>
+</span><span id="line-53"></span><span>              </span><span class="hs-special">(</span><span id="local-6989586621682232851"><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232851"><span class="hs-identifier hs-var">mt</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682232852"><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232852"><span class="hs-identifier hs-var">mf</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-54"></span><span>                </span><span class="annot"><span class="annottext">Term Bool -&gt; Term b -&gt; Term b -&gt; Term b
+forall t.
+SupportedPrim t =&gt;
+Term Bool -&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier hs-var">pevalITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232845"><span class="hs-identifier hs-var">cond</span></a></span><span>
+</span><span id="line-55"></span><span>                  </span><span class="annot"><span class="annottext">(Term b -&gt; Term b -&gt; Term b)
+-&gt; Maybe (Term b) -&gt; Maybe (Term b -&gt; Term b)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term b) -&gt; (() -&gt; Maybe (Term b)) -&gt; Maybe (Term b)
+forall a. Maybe a -&gt; (() -&gt; Maybe a) -&gt; Maybe a
+forall e (m :: * -&gt; *) a.
+MonadError e m =&gt;
+m a -&gt; (e -&gt; m a) -&gt; m a
+</span><span class="hs-identifier hs-var">catchError</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232851"><span class="hs-identifier hs-var">mt</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; Maybe (Term b)) -&gt; Term b -&gt; Maybe (Term b)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+forall a b. PartialFun a b -&gt; (a -&gt; b) -&gt; a -&gt; b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize"><span class="hs-identifier hs-var">totalize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TotalRuleUnary a b -&gt; PartialRuleUnary a b
+</span><a href="#local-6989586621682232833"><span class="hs-identifier hs-var">oneLevel</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232834"><span class="hs-identifier hs-var">fallback'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232834"><span class="hs-identifier hs-var">fallback'</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232846"><span class="hs-identifier hs-var">vt</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>                  </span><span class="annot"><span class="annottext">Maybe (Term b -&gt; Term b) -&gt; Maybe (Term b) -&gt; Maybe (Term b)
+forall a b. Maybe (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term b) -&gt; (() -&gt; Maybe (Term b)) -&gt; Maybe (Term b)
+forall a. Maybe a -&gt; (() -&gt; Maybe a) -&gt; Maybe a
+forall e (m :: * -&gt; *) a.
+MonadError e m =&gt;
+m a -&gt; (e -&gt; m a) -&gt; m a
+</span><span class="hs-identifier hs-var">catchError</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232852"><span class="hs-identifier hs-var">mf</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; Maybe (Term b)) -&gt; Term b -&gt; Maybe (Term b)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+forall a b. PartialFun a b -&gt; (a -&gt; b) -&gt; a -&gt; b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize"><span class="hs-identifier hs-var">totalize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TotalRuleUnary a b -&gt; PartialRuleUnary a b
+</span><a href="#local-6989586621682232833"><span class="hs-identifier hs-var">oneLevel</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232834"><span class="hs-identifier hs-var">fallback'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232831"><span class="hs-identifier hs-var">fallback</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232847"><span class="hs-identifier hs-var">vf</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682232854"><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232854"><span class="hs-identifier hs-var">pr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+</span><a href="#local-6989586621682232854"><span class="hs-identifier hs-var">pr</span></a></span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><a href="#local-6989586621682232832"><span class="hs-identifier hs-type">ret</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleUnary"><span class="hs-identifier hs-type">PartialRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-59"></span><span>    </span><span id="local-6989586621682232832"><span class="annot"><span class="annottext">ret :: PartialRuleUnary a b
+</span><a href="#local-6989586621682232832"><span class="hs-identifier hs-var hs-var">ret</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b -&gt; PartialRuleUnary a b
+</span><a href="#local-6989586621682232833"><span class="hs-identifier hs-var">oneLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. PartialFun a b -&gt; (a -&gt; b) -&gt; a -&gt; b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize"><span class="hs-identifier hs-var">totalize</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232746"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232744"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232830"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232831"><span class="hs-identifier hs-var">fallback</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="annot"><span class="hs-comment">-- | Unfold a unary operation once.</span></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier hs-type">unaryUnfoldOnce</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682232775"><span class="annot"><a href="#local-6989586621682232775"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682232774"><span class="annot"><a href="#local-6989586621682232774"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232774"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-65"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleUnary"><span class="hs-identifier hs-type">PartialRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232775"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232774"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleUnary"><span class="hs-identifier hs-type">TotalRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232775"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232774"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-67"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleUnary"><span class="hs-identifier hs-type">TotalRuleUnary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232775"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232774"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-68"></span><span id="unaryUnfoldOnce"><span class="annot"><span class="annottext">unaryUnfoldOnce :: forall a b.
+SupportedPrim b =&gt;
+PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier hs-var hs-var">unaryUnfoldOnce</span></a></span></span><span> </span><span id="local-6989586621682232857"><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232857"><span class="hs-identifier hs-var">partial</span></a></span></span><span> </span><span id="local-6989586621682232858"><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232858"><span class="hs-identifier hs-var">fallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+forall a b. PartialFun a b -&gt; (a -&gt; b) -&gt; a -&gt; b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize"><span class="hs-identifier hs-var">totalize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; PartialRuleUnary a b
+forall a b.
+SupportedPrim b =&gt;
+PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; PartialRuleUnary a b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryPartialUnfoldOnce"><span class="hs-identifier hs-var">unaryPartialUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b
+</span><a href="#local-6989586621682232857"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232858"><span class="hs-identifier hs-var">fallback</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682232858"><span class="hs-identifier hs-var">fallback</span></a></span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryPartialUnfoldOnce"><span class="hs-identifier hs-type">binaryPartialUnfoldOnce</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682232779"><span class="annot"><a href="#local-6989586621682232779"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682232780"><span class="annot"><a href="#local-6989586621682232780"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span id="local-6989586621682232778"><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier hs-type">PartialRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232779"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232780"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleBinary"><span class="hs-identifier hs-type">TotalRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232779"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232780"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-75"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier hs-type">PartialRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232779"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232780"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-76"></span><span id="binaryPartialUnfoldOnce"><span class="annot"><span class="annottext">binaryPartialUnfoldOnce :: forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; PartialRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryPartialUnfoldOnce"><span class="hs-identifier hs-var hs-var">binaryPartialUnfoldOnce</span></a></span></span><span> </span><span id="local-6989586621682232861"><span class="annot"><span class="annottext">PartialRuleBinary a b c
+</span><a href="#local-6989586621682232861"><span class="hs-identifier hs-var">partial</span></a></span></span><span> </span><span id="local-6989586621682232862"><span class="annot"><span class="annottext">TotalRuleBinary a b c
+</span><a href="#local-6989586621682232862"><span class="hs-identifier hs-var">fallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+</span><a href="#local-6989586621682232863"><span class="hs-identifier hs-var">ret</span></a></span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-78"></span><span>    </span><span id="local-6989586621682232786"><span id="local-6989586621682232787"><span class="annot"><a href="#local-6989586621682232864"><span class="hs-identifier hs-type">oneLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier hs-type">PartialRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232786"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232787"><span class="hs-identifier hs-type">y</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleBinary"><span class="hs-identifier hs-type">TotalRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232786"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232787"><span class="hs-identifier hs-type">y</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier hs-type">PartialRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232786"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232787"><span class="hs-identifier hs-type">y</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span></span></span><span>
+</span><span id="line-79"></span><span>    </span><span id="local-6989586621682232864"><span class="annot"><span class="annottext">oneLevel :: forall x y.
+PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; PartialRuleBinary x y c
+</span><a href="#local-6989586621682232864"><span class="hs-identifier hs-var hs-var">oneLevel</span></a></span></span><span> </span><span id="local-6989586621682232866"><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232866"><span class="hs-identifier hs-var">partial'</span></a></span></span><span> </span><span id="local-6989586621682232867"><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232867"><span class="hs-identifier hs-var">fallback'</span></a></span></span><span> </span><span id="local-6989586621682232868"><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232868"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621682232869"><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232869"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-80"></span><span>      </span><span class="annot"><span class="annottext">Maybe (Term c) -&gt; (() -&gt; Maybe (Term c)) -&gt; Maybe (Term c)
+forall a. Maybe a -&gt; (() -&gt; Maybe a) -&gt; Maybe a
+forall e (m :: * -&gt; *) a.
+MonadError e m =&gt;
+m a -&gt; (e -&gt; m a) -&gt; m a
+</span><span class="hs-identifier hs-var">catchError</span></span><span>
+</span><span id="line-81"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232866"><span class="hs-identifier hs-var">partial'</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232868"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232869"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-83"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232868"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232869"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-84"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="annot"><span class="annottext">Term x
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-85"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-86"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="annot"><span class="annottext">Term y
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-87"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-88"></span><span>              </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682232883"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232883"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682232884"><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232884"><span class="hs-identifier hs-var">vt</span></a></span></span><span> </span><span id="local-6989586621682232885"><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232885"><span class="hs-identifier hs-var">vf</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term y
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-89"></span><span>                </span><span class="annot"><span class="annottext">Term Bool
+-&gt; Term x
+-&gt; Term x
+-&gt; Term y
+-&gt; PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c
+-&gt; Maybe (Term c)
+forall x y.
+Term Bool
+-&gt; Term x
+-&gt; Term x
+-&gt; Term y
+-&gt; PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c
+-&gt; Maybe (Term c)
+</span><a href="#local-6989586621682232886"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232883"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232884"><span class="hs-identifier hs-var">vt</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232885"><span class="hs-identifier hs-var">vf</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232869"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232866"><span class="hs-identifier hs-var">partial'</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232867"><span class="hs-identifier hs-var">fallback'</span></a></span><span>
+</span><span id="line-90"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term x
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682232888"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232888"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682232889"><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232889"><span class="hs-identifier hs-var">vt</span></a></span></span><span> </span><span id="local-6989586621682232890"><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232890"><span class="hs-identifier hs-var">vf</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-91"></span><span>                </span><span class="annot"><span class="annottext">Term Bool
+-&gt; Term y
+-&gt; Term y
+-&gt; Term x
+-&gt; PartialRuleBinary y x c
+-&gt; TotalRuleBinary y x c
+-&gt; Maybe (Term c)
+forall x y.
+Term Bool
+-&gt; Term x
+-&gt; Term x
+-&gt; Term y
+-&gt; PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c
+-&gt; Maybe (Term c)
+</span><a href="#local-6989586621682232886"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232888"><span class="hs-identifier hs-var">cond</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232889"><span class="hs-identifier hs-var">vt</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232890"><span class="hs-identifier hs-var">vf</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232868"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">PartialRuleBinary x y c -&gt; PartialRuleBinary y x c
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232866"><span class="hs-identifier hs-var">partial'</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TotalRuleBinary x y c -&gt; TotalRuleBinary y x c
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232867"><span class="hs-identifier hs-var">fallback'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>              </span><span class="annot"><span class="annottext">(Term x, Term y)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-93"></span><span>        </span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>    </span><span id="local-6989586621682232790"><span id="local-6989586621682232791"><span class="annot"><a href="#local-6989586621682232886"><span class="hs-identifier hs-type">left</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-95"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-96"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232790"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-97"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232790"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-98"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232791"><span class="hs-identifier hs-type">y</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-99"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier hs-type">PartialRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232790"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232791"><span class="hs-identifier hs-type">y</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-100"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleBinary"><span class="hs-identifier hs-type">TotalRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232790"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232791"><span class="hs-identifier hs-type">y</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-101"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-102"></span><span>    </span><span id="local-6989586621682232886"><span class="annot"><span class="annottext">left :: forall x y.
+Term Bool
+-&gt; Term x
+-&gt; Term x
+-&gt; Term y
+-&gt; PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c
+-&gt; Maybe (Term c)
+</span><a href="#local-6989586621682232886"><span class="hs-identifier hs-var hs-var">left</span></a></span></span><span> </span><span id="local-6989586621682232897"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232897"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682232898"><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232898"><span class="hs-identifier hs-var">vt</span></a></span></span><span> </span><span id="local-6989586621682232899"><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232899"><span class="hs-identifier hs-var">vf</span></a></span></span><span> </span><span id="local-6989586621682232900"><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232900"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621682232901"><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232901"><span class="hs-identifier hs-var">partial'</span></a></span></span><span> </span><span id="local-6989586621682232902"><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232902"><span class="hs-identifier hs-var">fallback'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-103"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682232903"><span class="annot"><span class="annottext">pt :: Maybe (Term c)
+</span><a href="#local-6989586621682232903"><span class="hs-identifier hs-var hs-var">pt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232901"><span class="hs-identifier hs-var">partial'</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232898"><span class="hs-identifier hs-var">vt</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232900"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-104"></span><span>          </span><span id="local-6989586621682232904"><span class="annot"><span class="annottext">pf :: Maybe (Term c)
+</span><a href="#local-6989586621682232904"><span class="hs-identifier hs-var hs-var">pf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232901"><span class="hs-identifier hs-var">partial'</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232899"><span class="hs-identifier hs-var">vf</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232900"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-105"></span><span>       </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe (Term c)
+</span><a href="#local-6989586621682232903"><span class="hs-identifier hs-var">pt</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+</span><a href="#local-6989586621682232904"><span class="hs-identifier hs-var">pf</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-106"></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe (Term c)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-107"></span><span>            </span><span class="hs-special">(</span><span id="local-6989586621682232905"><span class="annot"><span class="annottext">Maybe (Term c)
+</span><a href="#local-6989586621682232905"><span class="hs-identifier hs-var">mt</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682232906"><span class="annot"><span class="annottext">Maybe (Term c)
+</span><a href="#local-6989586621682232906"><span class="hs-identifier hs-var">mf</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>              </span><span class="annot"><span class="annottext">Term Bool -&gt; Term c -&gt; Term c -&gt; Term c
+forall t.
+SupportedPrim t =&gt;
+Term Bool -&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier hs-var">pevalITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682232897"><span class="hs-identifier hs-var">cond</span></a></span><span>
+</span><span id="line-109"></span><span>                </span><span class="annot"><span class="annottext">(Term c -&gt; Term c -&gt; Term c)
+-&gt; Maybe (Term c) -&gt; Maybe (Term c -&gt; Term c)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term c) -&gt; (() -&gt; Maybe (Term c)) -&gt; Maybe (Term c)
+forall a. Maybe a -&gt; (() -&gt; Maybe a) -&gt; Maybe a
+forall e (m :: * -&gt; *) a.
+MonadError e m =&gt;
+m a -&gt; (e -&gt; m a) -&gt; m a
+</span><span class="hs-identifier hs-var">catchError</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+</span><a href="#local-6989586621682232905"><span class="hs-identifier hs-var">mt</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term c -&gt; Maybe (Term c)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term c -&gt; Maybe (Term c)) -&gt; Term c -&gt; Maybe (Term c)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; TotalRuleBinary x y c
+forall a b c. (a -&gt; PartialFun b c) -&gt; (a -&gt; b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize2"><span class="hs-identifier hs-var">totalize2</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; PartialRuleBinary x y c
+forall x y.
+PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; PartialRuleBinary x y c
+</span><a href="#local-6989586621682232864"><span class="hs-identifier hs-var">oneLevel</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232901"><span class="hs-identifier hs-var">partial'</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232902"><span class="hs-identifier hs-var">fallback'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232902"><span class="hs-identifier hs-var">fallback'</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232898"><span class="hs-identifier hs-var">vt</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232900"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span>                </span><span class="annot"><span class="annottext">Maybe (Term c -&gt; Term c) -&gt; Maybe (Term c) -&gt; Maybe (Term c)
+forall a b. Maybe (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term c) -&gt; (() -&gt; Maybe (Term c)) -&gt; Maybe (Term c)
+forall a. Maybe a -&gt; (() -&gt; Maybe a) -&gt; Maybe a
+forall e (m :: * -&gt; *) a.
+MonadError e m =&gt;
+m a -&gt; (e -&gt; m a) -&gt; m a
+</span><span class="hs-identifier hs-var">catchError</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+</span><a href="#local-6989586621682232906"><span class="hs-identifier hs-var">mf</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term c -&gt; Maybe (Term c)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term c -&gt; Maybe (Term c)) -&gt; Term c -&gt; Maybe (Term c)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; TotalRuleBinary x y c
+forall a b c. (a -&gt; PartialFun b c) -&gt; (a -&gt; b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize2"><span class="hs-identifier hs-var">totalize2</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; PartialRuleBinary x y c
+forall x y.
+PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; PartialRuleBinary x y c
+</span><a href="#local-6989586621682232864"><span class="hs-identifier hs-var">oneLevel</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary x y c
+</span><a href="#local-6989586621682232901"><span class="hs-identifier hs-var">partial'</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232902"><span class="hs-identifier hs-var">fallback'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary x y c
+</span><a href="#local-6989586621682232902"><span class="hs-identifier hs-var">fallback'</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><a href="#local-6989586621682232899"><span class="hs-identifier hs-var">vf</span></a></span><span> </span><span class="annot"><span class="annottext">Term y
+</span><a href="#local-6989586621682232900"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>    </span><span class="annot"><a href="#local-6989586621682232863"><span class="hs-identifier hs-type">ret</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier hs-type">PartialRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232779"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232780"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-112"></span><span>    </span><span id="local-6989586621682232863"><span class="annot"><span class="annottext">ret :: PartialRuleBinary a b c
+</span><a href="#local-6989586621682232863"><span class="hs-identifier hs-var hs-var">ret</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; PartialRuleBinary a b c
+forall x y.
+PartialRuleBinary x y c
+-&gt; TotalRuleBinary x y c -&gt; PartialRuleBinary x y c
+</span><a href="#local-6989586621682232864"><span class="hs-identifier hs-var">oneLevel</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+</span><a href="#local-6989586621682232861"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b c. (a -&gt; PartialFun b c) -&gt; (a -&gt; b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize2"><span class="hs-identifier hs-var">totalize2</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232779"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232780"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232778"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+</span><a href="#local-6989586621682232861"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a b c
+</span><a href="#local-6989586621682232862"><span class="hs-identifier hs-var">fallback</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><span class="hs-comment">-- | Unfold a binary operation once.</span></span><span>
+</span><span id="line-115"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-type">binaryUnfoldOnce</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-116"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682232801"><span class="annot"><a href="#local-6989586621682232801"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682232802"><span class="annot"><a href="#local-6989586621682232802"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span id="local-6989586621682232800"><span class="annot"><a href="#local-6989586621682232800"><span class="hs-identifier hs-type">c</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-117"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232800"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#PartialRuleBinary"><span class="hs-identifier hs-type">PartialRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232801"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232802"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232800"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-119"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleBinary"><span class="hs-identifier hs-type">TotalRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232801"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232802"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232800"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-120"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#TotalRuleBinary"><span class="hs-identifier hs-type">TotalRuleBinary</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232801"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232802"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232800"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-121"></span><span id="binaryUnfoldOnce"><span class="annot"><span class="annottext">binaryUnfoldOnce :: forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var hs-var">binaryUnfoldOnce</span></a></span></span><span> </span><span id="local-6989586621682232909"><span class="annot"><span class="annottext">PartialRuleBinary a b c
+</span><a href="#local-6989586621682232909"><span class="hs-identifier hs-var">partial</span></a></span></span><span> </span><span id="local-6989586621682232910"><span class="annot"><span class="annottext">TotalRuleBinary a b c
+</span><a href="#local-6989586621682232910"><span class="hs-identifier hs-var">fallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+forall a b c. (a -&gt; PartialFun b c) -&gt; (a -&gt; b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize2"><span class="hs-identifier hs-var">totalize2</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; PartialRuleBinary a b c
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; PartialRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryPartialUnfoldOnce"><span class="hs-identifier hs-var">binaryPartialUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+</span><a href="#local-6989586621682232909"><span class="hs-identifier hs-var">partial</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a b c
+</span><a href="#local-6989586621682232910"><span class="hs-identifier hs-var">fallback</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a b c
+</span><a href="#local-6989586621682232910"><span class="hs-identifier hs-var">fallback</span></a></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span class="annot"><span class="hs-comment">-- | Unfold a unary operation once.</span></span><span>
+</span><span id="line-124"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalUnaryUnfolded"><span class="hs-identifier hs-type">generalUnaryUnfolded</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-125"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682232806"><span class="annot"><a href="#local-6989586621682232806"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682232807"><span class="annot"><a href="#local-6989586621682232807"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682232806"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232807"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682232806"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682232807"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-128"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232806"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232807"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-129"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232806"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-130"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232807"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-131"></span><span id="generalUnaryUnfolded"><span class="annot"><span class="annottext">generalUnaryUnfolded :: forall a b.
+(Typeable a, SupportedPrim b) =&gt;
+(a -&gt; b) -&gt; (Term a -&gt; Term b) -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalUnaryUnfolded"><span class="hs-identifier hs-var hs-var">generalUnaryUnfolded</span></a></span></span><span> </span><span id="local-6989586621682232914"><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621682232914"><span class="hs-identifier hs-var">compute</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-132"></span><span>  </span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+forall a b.
+SupportedPrim b =&gt;
+PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier hs-var">unaryUnfoldOnce</span></a></span><span>
+</span><span id="line-133"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-134"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682232917"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682232917"><span class="hs-identifier hs-var">lv</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; Maybe (Term b)) -&gt; Term b -&gt; Maybe (Term b)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Term b
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(b -&gt; Term b) -&gt; b -&gt; Term b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621682232914"><span class="hs-identifier hs-var">compute</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682232917"><span class="hs-identifier hs-var">lv</span></a></span><span>
+</span><span id="line-135"></span><span>        </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-137"></span><span>
+</span><span id="line-138"></span><span class="annot"><span class="hs-comment">-- | Unfold a binary operation once.</span></span><span>
+</span><span id="line-139"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalBinaryUnfolded"><span class="hs-identifier hs-type">generalBinaryUnfolded</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-140"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682232811"><span class="annot"><a href="#local-6989586621682232811"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682232812"><span class="annot"><a href="#local-6989586621682232812"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span id="local-6989586621682232813"><span class="annot"><a href="#local-6989586621682232813"><span class="hs-identifier hs-type">c</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-141"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682232811"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682232812"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232813"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-142"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682232811"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682232812"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682232813"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-143"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232811"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232812"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232813"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-144"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232811"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-145"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232812"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-146"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682232813"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-147"></span><span id="generalBinaryUnfolded"><span class="annot"><span class="annottext">generalBinaryUnfolded :: forall a b c.
+(Typeable a, Typeable b, SupportedPrim c) =&gt;
+(a -&gt; b -&gt; c)
+-&gt; (Term a -&gt; Term b -&gt; Term c) -&gt; Term a -&gt; Term b -&gt; Term c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalBinaryUnfolded"><span class="hs-identifier hs-var hs-var">generalBinaryUnfolded</span></a></span></span><span> </span><span id="local-6989586621682232922"><span class="annot"><span class="annottext">a -&gt; b -&gt; c
+</span><a href="#local-6989586621682232922"><span class="hs-identifier hs-var">compute</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-148"></span><span>  </span><span class="annot"><span class="annottext">PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span>
+</span><span id="line-149"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682232923"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232923"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682232924"><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682232924"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682232923"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682232924"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-150"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682232926"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682232926"><span class="hs-identifier hs-var">lv</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682232929"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682232929"><span class="hs-identifier hs-var">rv</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term c -&gt; Maybe (Term c)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term c -&gt; Maybe (Term c)) -&gt; Term c -&gt; Maybe (Term c)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; Term c
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(c -&gt; Term c) -&gt; c -&gt; Term c
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b -&gt; c
+</span><a href="#local-6989586621682232922"><span class="hs-identifier hs-var">compute</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682232926"><span class="hs-identifier hs-var">lv</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682232929"><span class="hs-identifier hs-var">rv</span></a></span><span>
+</span><span id="line-151"></span><span>        </span><span class="annot"><span class="annottext">(Term a, Term b)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Term c)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-152"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-153"></span></pre></body></html>

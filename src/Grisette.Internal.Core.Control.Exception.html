@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveAnyClass #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DerivingVia #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Control.Exception</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2023</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html"><span class="hs-identifier">Grisette.Internal.Core.Control.Exception</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Predefined exceptions</span></span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html#AssertionError"><span class="hs-identifier">AssertionError</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html#VerificationConditions"><span class="hs-identifier">VerificationConditions</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Lib.Base</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- &gt;&gt;&gt; import Control.Monad.Trans.Except</span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="annot"><span class="hs-comment">-- | Assertion error.</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">data</span><span> </span><span id="AssertionError"><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html#AssertionError"><span class="hs-identifier hs-var">AssertionError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="AssertionError"><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html#AssertionError"><span class="hs-identifier hs-var">AssertionError</span></a></span></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682209203"><span id="local-6989586621682209205"><span id="local-6989586621682209209"><span class="annot"><span class="annottext">Int -&gt; AssertionError -&gt; ShowS
+[AssertionError] -&gt; ShowS
+AssertionError -&gt; String
+(Int -&gt; AssertionError -&gt; ShowS)
+-&gt; (AssertionError -&gt; String)
+-&gt; ([AssertionError] -&gt; ShowS)
+-&gt; Show AssertionError
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; AssertionError -&gt; ShowS
+showsPrec :: Int -&gt; AssertionError -&gt; ShowS
+$cshow :: AssertionError -&gt; String
+show :: AssertionError -&gt; String
+$cshowList :: [AssertionError] -&gt; ShowS
+showList :: [AssertionError] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209214"><span id="local-6989586621682209216"><span class="annot"><span class="annottext">AssertionError -&gt; AssertionError -&gt; Bool
+(AssertionError -&gt; AssertionError -&gt; Bool)
+-&gt; (AssertionError -&gt; AssertionError -&gt; Bool) -&gt; Eq AssertionError
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: AssertionError -&gt; AssertionError -&gt; Bool
+== :: AssertionError -&gt; AssertionError -&gt; Bool
+$c/= :: AssertionError -&gt; AssertionError -&gt; Bool
+/= :: AssertionError -&gt; AssertionError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209223"><span id="local-6989586621682209225"><span id="local-6989586621682209227"><span id="local-6989586621682209231"><span id="local-6989586621682209234"><span id="local-6989586621682209237"><span id="local-6989586621682209240"><span class="annot"><span class="annottext">Eq AssertionError
+Eq AssertionError =&gt;
+(AssertionError -&gt; AssertionError -&gt; Ordering)
+-&gt; (AssertionError -&gt; AssertionError -&gt; Bool)
+-&gt; (AssertionError -&gt; AssertionError -&gt; Bool)
+-&gt; (AssertionError -&gt; AssertionError -&gt; Bool)
+-&gt; (AssertionError -&gt; AssertionError -&gt; Bool)
+-&gt; (AssertionError -&gt; AssertionError -&gt; AssertionError)
+-&gt; (AssertionError -&gt; AssertionError -&gt; AssertionError)
+-&gt; Ord AssertionError
+AssertionError -&gt; AssertionError -&gt; Bool
+AssertionError -&gt; AssertionError -&gt; Ordering
+AssertionError -&gt; AssertionError -&gt; AssertionError
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: AssertionError -&gt; AssertionError -&gt; Ordering
+compare :: AssertionError -&gt; AssertionError -&gt; Ordering
+$c&lt; :: AssertionError -&gt; AssertionError -&gt; Bool
+&lt; :: AssertionError -&gt; AssertionError -&gt; Bool
+$c&lt;= :: AssertionError -&gt; AssertionError -&gt; Bool
+&lt;= :: AssertionError -&gt; AssertionError -&gt; Bool
+$c&gt; :: AssertionError -&gt; AssertionError -&gt; Bool
+&gt; :: AssertionError -&gt; AssertionError -&gt; Bool
+$c&gt;= :: AssertionError -&gt; AssertionError -&gt; Bool
+&gt;= :: AssertionError -&gt; AssertionError -&gt; Bool
+$cmax :: AssertionError -&gt; AssertionError -&gt; AssertionError
+max :: AssertionError -&gt; AssertionError -&gt; AssertionError
+$cmin :: AssertionError -&gt; AssertionError -&gt; AssertionError
+min :: AssertionError -&gt; AssertionError -&gt; AssertionError
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209248"><span id="local-6989586621682209250"><span class="annot"><span class="annottext">(forall x. AssertionError -&gt; Rep AssertionError x)
+-&gt; (forall x. Rep AssertionError x -&gt; AssertionError)
+-&gt; Generic AssertionError
+forall x. Rep AssertionError x -&gt; AssertionError
+forall x. AssertionError -&gt; Rep AssertionError x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. AssertionError -&gt; Rep AssertionError x
+from :: forall x. AssertionError -&gt; Rep AssertionError x
+$cto :: forall x. Rep AssertionError x -&gt; AssertionError
+to :: forall x. Rep AssertionError x -&gt; AssertionError
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209256"><span class="annot"><span class="annottext">AssertionError -&gt; ()
+(AssertionError -&gt; ()) -&gt; NFData AssertionError
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: AssertionError -&gt; ()
+rnf :: AssertionError -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- | Verification conditions.</span><span>
+</span><span id="line-38"></span><span class="hs-comment">-- A crashed program path can terminate with either assertion violation errors or assumption violation errors.</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">data</span><span> </span><span id="VerificationConditions"><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html#VerificationConditions"><span class="hs-identifier hs-var">VerificationConditions</span></a></span></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="AssertionViolation"><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html#AssertionViolation"><span class="hs-identifier hs-var">AssertionViolation</span></a></span></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="AssumptionViolation"><span class="annot"><a href="Grisette.Internal.Core.Control.Exception.html#AssumptionViolation"><span class="hs-identifier hs-var">AssumptionViolation</span></a></span></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682209270"><span id="local-6989586621682209272"><span id="local-6989586621682209276"><span class="annot"><span class="annottext">Int -&gt; VerificationConditions -&gt; ShowS
+[VerificationConditions] -&gt; ShowS
+VerificationConditions -&gt; String
+(Int -&gt; VerificationConditions -&gt; ShowS)
+-&gt; (VerificationConditions -&gt; String)
+-&gt; ([VerificationConditions] -&gt; ShowS)
+-&gt; Show VerificationConditions
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; VerificationConditions -&gt; ShowS
+showsPrec :: Int -&gt; VerificationConditions -&gt; ShowS
+$cshow :: VerificationConditions -&gt; String
+show :: VerificationConditions -&gt; String
+$cshowList :: [VerificationConditions] -&gt; ShowS
+showList :: [VerificationConditions] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209279"><span id="local-6989586621682209284"><span class="annot"><span class="annottext">VerificationConditions -&gt; VerificationConditions -&gt; Bool
+(VerificationConditions -&gt; VerificationConditions -&gt; Bool)
+-&gt; (VerificationConditions -&gt; VerificationConditions -&gt; Bool)
+-&gt; Eq VerificationConditions
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+== :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+$c/= :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+/= :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209290"><span id="local-6989586621682209292"><span id="local-6989586621682209294"><span id="local-6989586621682209298"><span id="local-6989586621682209301"><span id="local-6989586621682209304"><span id="local-6989586621682209307"><span class="annot"><span class="annottext">Eq VerificationConditions
+Eq VerificationConditions =&gt;
+(VerificationConditions -&gt; VerificationConditions -&gt; Ordering)
+-&gt; (VerificationConditions -&gt; VerificationConditions -&gt; Bool)
+-&gt; (VerificationConditions -&gt; VerificationConditions -&gt; Bool)
+-&gt; (VerificationConditions -&gt; VerificationConditions -&gt; Bool)
+-&gt; (VerificationConditions -&gt; VerificationConditions -&gt; Bool)
+-&gt; (VerificationConditions
+    -&gt; VerificationConditions -&gt; VerificationConditions)
+-&gt; (VerificationConditions
+    -&gt; VerificationConditions -&gt; VerificationConditions)
+-&gt; Ord VerificationConditions
+VerificationConditions -&gt; VerificationConditions -&gt; Bool
+VerificationConditions -&gt; VerificationConditions -&gt; Ordering
+VerificationConditions
+-&gt; VerificationConditions -&gt; VerificationConditions
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: VerificationConditions -&gt; VerificationConditions -&gt; Ordering
+compare :: VerificationConditions -&gt; VerificationConditions -&gt; Ordering
+$c&lt; :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+&lt; :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+$c&lt;= :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+&lt;= :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+$c&gt; :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+&gt; :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+$c&gt;= :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+&gt;= :: VerificationConditions -&gt; VerificationConditions -&gt; Bool
+$cmax :: VerificationConditions
+-&gt; VerificationConditions -&gt; VerificationConditions
+max :: VerificationConditions
+-&gt; VerificationConditions -&gt; VerificationConditions
+$cmin :: VerificationConditions
+-&gt; VerificationConditions -&gt; VerificationConditions
+min :: VerificationConditions
+-&gt; VerificationConditions -&gt; VerificationConditions
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209310"><span id="local-6989586621682209312"><span class="annot"><span class="annottext">(forall x. VerificationConditions -&gt; Rep VerificationConditions x)
+-&gt; (forall x.
+    Rep VerificationConditions x -&gt; VerificationConditions)
+-&gt; Generic VerificationConditions
+forall x. Rep VerificationConditions x -&gt; VerificationConditions
+forall x. VerificationConditions -&gt; Rep VerificationConditions x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. VerificationConditions -&gt; Rep VerificationConditions x
+from :: forall x. VerificationConditions -&gt; Rep VerificationConditions x
+$cto :: forall x. Rep VerificationConditions x -&gt; VerificationConditions
+to :: forall x. Rep VerificationConditions x -&gt; VerificationConditions
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682209315"><span class="annot"><span class="annottext">VerificationConditions -&gt; ()
+(VerificationConditions -&gt; ()) -&gt; NFData VerificationConditions
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: VerificationConditions -&gt; ()
+rnf :: VerificationConditions -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span></pre></body></html>

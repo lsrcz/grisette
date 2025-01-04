@@ -1,0 +1,564 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveAnyClass #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DeriveLift #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# HLINT ignore &quot;Eta reduce&quot; #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE InstanceSigs #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE QuantifiedConstraints #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-12"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-13"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-14"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-15"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-16"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-pragma">{-# HLINT ignore &quot;Avoid lambda&quot; #-}</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.TabularFun</span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2024</span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-24"></span><span class="hs-comment">--</span><span>
+</span><span id="line-25"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html"><span class="hs-identifier">Grisette.Internal.SymPrim.TabularFun</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator">(=-&gt;)</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">NFData1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bifunctor</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Bifunctor</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">second</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Binary</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Binary</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bytes.Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">deserialize</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">serialize</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Hashable</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.SBV</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SBV</span></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.SBV.Dynamic</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SBVD</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Serialize</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Cereal</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Generic1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Function</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Apply"><span class="hs-identifier">Apply</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#FunType"><span class="hs-identifier">FunType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#apply"><span class="hs-identifier">apply</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Function"><span class="hs-identifier">Function</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#%23"><span class="hs-operator">(#)</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FunInstanceGen.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FunInstanceGen</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FunInstanceGen.html#supportedPrimFunUpTo"><span class="hs-identifier">supportedPrimFunUpTo</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.PartialEval</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize2"><span class="hs-identifier">totalize2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NonFuncPrimConstraint"><span class="hs-identifier">NonFuncPrimConstraint</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NonFuncSBVRep"><span class="hs-identifier">NonFuncSBVRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NonFuncSBVBaseType"><span class="hs-identifier">NonFuncSBVBaseType</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalApplyTerm"><span class="hs-identifier">PEvalApplyTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalApplyTerm"><span class="hs-identifier">pevalApplyTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvApplyTerm"><span class="hs-identifier">sbvApplyTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVRep"><span class="hs-identifier">SBVRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier">SBVType</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier">SupportedNonFuncPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conNonFuncSBVTerm"><span class="hs-identifier">conNonFuncSBVTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier">withNonFuncPrim</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span>
+</span><span id="line-55"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier">conSBVTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#defaultValue"><span class="hs-identifier">defaultValue</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#parseSMTModelResult"><span class="hs-identifier">parseSMTModelResult</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier">pevalITETerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier">withPrim</span></a></span><span>
+</span><span id="line-60"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrimConstraint"><span class="hs-identifier">SupportedPrimConstraint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PrimConstraint"><span class="hs-identifier">PrimConstraint</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#applyTerm"><span class="hs-identifier">applyTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-64"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#partitionCVArg"><span class="hs-identifier">partitionCVArg</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalEqTerm"><span class="hs-identifier">pevalEqTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITEBasicTerm"><span class="hs-identifier">pevalITEBasicTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-68"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Lift</span></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-72"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-73"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-76"></span><span class="hs-comment">-- Functions as a table. Use the `#` operator to apply the function.</span><span>
+</span><span id="line-77"></span><span class="hs-comment">--</span><span>
+</span><span id="line-78"></span><span class="hs-comment">-- &gt;&gt;&gt; let f = TabularFun [(1, 2), (3, 4)] 0 :: Int =-&gt; Int</span><span>
+</span><span id="line-79"></span><span class="hs-comment">-- &gt;&gt;&gt; f # 1</span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- 2</span><span>
+</span><span id="line-81"></span><span class="hs-comment">-- &gt;&gt;&gt; f # 2</span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- 0</span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- &gt;&gt;&gt; f # 3</span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- 4</span><span>
+</span><span id="line-85"></span><span class="hs-keyword">data</span><span> </span><span id="%3D-%3E"><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-var">(=-&gt;)</span></a></span></span><span> </span><span id="local-6989586621682233235"><span class="annot"><a href="#local-6989586621682233235"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682233236"><span class="annot"><a href="#local-6989586621682233236"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TabularFun"><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#TabularFun"><span class="hs-identifier hs-var">TabularFun</span></a></span></span><span> </span><span class="hs-special">{</span><span id="funcTable"><span class="annot"><span class="annottext">forall a b. (a =-&gt; b) -&gt; [(a, b)]
+</span><a href="Grisette.Internal.SymPrim.TabularFun.html#funcTable"><span class="hs-identifier hs-var hs-var">funcTable</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233235"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621682233236"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span id="defaultFuncValue"><span class="annot"><span class="annottext">forall a b. (a =-&gt; b) -&gt; b
+</span><a href="Grisette.Internal.SymPrim.TabularFun.html#defaultFuncValue"><span class="hs-identifier hs-var hs-var">defaultFuncValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682233236"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682233697"><span id="local-6989586621682233705"><span id="local-6989586621682233709"><span class="annot"><span class="annottext">Int -&gt; (a =-&gt; b) -&gt; ShowS
+[a =-&gt; b] -&gt; ShowS
+(a =-&gt; b) -&gt; String
+(Int -&gt; (a =-&gt; b) -&gt; ShowS)
+-&gt; ((a =-&gt; b) -&gt; String) -&gt; ([a =-&gt; b] -&gt; ShowS) -&gt; Show (a =-&gt; b)
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+forall a b. (Show a, Show b) =&gt; Int -&gt; (a =-&gt; b) -&gt; ShowS
+forall a b. (Show a, Show b) =&gt; [a =-&gt; b] -&gt; ShowS
+forall a b. (Show a, Show b) =&gt; (a =-&gt; b) -&gt; String
+$cshowsPrec :: forall a b. (Show a, Show b) =&gt; Int -&gt; (a =-&gt; b) -&gt; ShowS
+showsPrec :: Int -&gt; (a =-&gt; b) -&gt; ShowS
+$cshow :: forall a b. (Show a, Show b) =&gt; (a =-&gt; b) -&gt; String
+show :: (a =-&gt; b) -&gt; String
+$cshowList :: forall a b. (Show a, Show b) =&gt; [a =-&gt; b] -&gt; ShowS
+showList :: [a =-&gt; b] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233717"><span id="local-6989586621682233723"><span class="annot"><span class="annottext">(a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool
+((a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool)
+-&gt; ((a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool) -&gt; Eq (a =-&gt; b)
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+forall a b. (Eq a, Eq b) =&gt; (a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool
+$c== :: forall a b. (Eq a, Eq b) =&gt; (a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool
+== :: (a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool
+$c/= :: forall a b. (Eq a, Eq b) =&gt; (a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool
+/= :: (a =-&gt; b) -&gt; (a =-&gt; b) -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233729"><span id="local-6989586621682233731"><span class="annot"><span class="annottext">(forall x. (a =-&gt; b) -&gt; Rep (a =-&gt; b) x)
+-&gt; (forall x. Rep (a =-&gt; b) x -&gt; a =-&gt; b) -&gt; Generic (a =-&gt; b)
+forall x. Rep (a =-&gt; b) x -&gt; a =-&gt; b
+forall x. (a =-&gt; b) -&gt; Rep (a =-&gt; b) x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+forall a b x. Rep (a =-&gt; b) x -&gt; a =-&gt; b
+forall a b x. (a =-&gt; b) -&gt; Rep (a =-&gt; b) x
+$cfrom :: forall a b x. (a =-&gt; b) -&gt; Rep (a =-&gt; b) x
+from :: forall x. (a =-&gt; b) -&gt; Rep (a =-&gt; b) x
+$cto :: forall a b x. Rep (a =-&gt; b) x -&gt; a =-&gt; b
+to :: forall x. Rep (a =-&gt; b) x -&gt; a =-&gt; b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233737"><span id="local-6989586621682233741"><span class="annot"><span class="annottext">(forall a. (a =-&gt; a) -&gt; Rep1 ((=-&gt;) a) a)
+-&gt; (forall a. Rep1 ((=-&gt;) a) a -&gt; a =-&gt; a) -&gt; Generic1 ((=-&gt;) a)
+forall a. Rep1 ((=-&gt;) a) a -&gt; a =-&gt; a
+forall a. (a =-&gt; a) -&gt; Rep1 ((=-&gt;) a) a
+forall a a. Rep1 ((=-&gt;) a) a -&gt; a =-&gt; a
+forall a a. (a =-&gt; a) -&gt; Rep1 ((=-&gt;) a) a
+forall k (f :: k -&gt; *).
+(forall (a :: k). f a -&gt; Rep1 f a)
+-&gt; (forall (a :: k). Rep1 f a -&gt; f a) -&gt; Generic1 f
+$cfrom1 :: forall a a. (a =-&gt; a) -&gt; Rep1 ((=-&gt;) a) a
+from1 :: forall a. (a =-&gt; a) -&gt; Rep1 ((=-&gt;) a) a
+$cto1 :: forall a a. Rep1 ((=-&gt;) a) a -&gt; a =-&gt; a
+to1 :: forall a. Rep1 ((=-&gt;) a) a -&gt; a =-&gt; a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic1</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233750"><span id="local-6989586621682233760"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). Quote m =&gt; (a =-&gt; b) -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *). Quote m =&gt; (a =-&gt; b) -&gt; Code m (a =-&gt; b))
+-&gt; Lift (a =-&gt; b)
+forall a b (m :: * -&gt; *).
+(Lift a, Lift b, Quote m) =&gt;
+(a =-&gt; b) -&gt; m Exp
+forall a b (m :: * -&gt; *).
+(Lift a, Lift b, Quote m) =&gt;
+(a =-&gt; b) -&gt; Code m (a =-&gt; b)
+forall t.
+(forall (m :: * -&gt; *). Quote m =&gt; t -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *). Quote m =&gt; t -&gt; Code m t) -&gt; Lift t
+forall (m :: * -&gt; *). Quote m =&gt; (a =-&gt; b) -&gt; m Exp
+forall (m :: * -&gt; *). Quote m =&gt; (a =-&gt; b) -&gt; Code m (a =-&gt; b)
+$clift :: forall a b (m :: * -&gt; *).
+(Lift a, Lift b, Quote m) =&gt;
+(a =-&gt; b) -&gt; m Exp
+lift :: forall (m :: * -&gt; *). Quote m =&gt; (a =-&gt; b) -&gt; m Exp
+$cliftTyped :: forall a b (m :: * -&gt; *).
+(Lift a, Lift b, Quote m) =&gt;
+(a =-&gt; b) -&gt; Code m (a =-&gt; b)
+liftTyped :: forall (m :: * -&gt; *). Quote m =&gt; (a =-&gt; b) -&gt; Code m (a =-&gt; b)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Lift</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233774"><span class="annot"><span class="annottext">(a =-&gt; b) -&gt; ()
+((a =-&gt; b) -&gt; ()) -&gt; NFData (a =-&gt; b)
+forall a. (a -&gt; ()) -&gt; NFData a
+forall a b. (NFData a, NFData b) =&gt; (a =-&gt; b) -&gt; ()
+$crnf :: forall a b. (NFData a, NFData b) =&gt; (a =-&gt; b) -&gt; ()
+rnf :: (a =-&gt; b) -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233798"><span class="annot"><span class="annottext">(forall a. NFData a =&gt; NFData (a =-&gt; a)) =&gt;
+(forall a. (a -&gt; ()) -&gt; (a =-&gt; a) -&gt; ()) -&gt; NFData1 ((=-&gt;) a)
+forall a. NFData a =&gt; NFData (a =-&gt; a)
+forall a a. (NFData a, NFData a) =&gt; NFData (a =-&gt; a)
+forall a a. NFData a =&gt; (a -&gt; ()) -&gt; (a =-&gt; a) -&gt; ()
+forall a. (a -&gt; ()) -&gt; (a =-&gt; a) -&gt; ()
+forall (f :: * -&gt; *).
+(forall a. NFData a =&gt; NFData (f a)) =&gt;
+(forall a. (a -&gt; ()) -&gt; f a -&gt; ()) -&gt; NFData1 f
+$cliftRnf :: forall a a. NFData a =&gt; (a -&gt; ()) -&gt; (a =-&gt; a) -&gt; ()
+liftRnf :: forall a. (a -&gt; ()) -&gt; (a =-&gt; a) -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">NFData1</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233822"><span id="local-6989586621682233831"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). MonadPut m =&gt; (a =-&gt; b) -&gt; m ())
+-&gt; (forall (m :: * -&gt; *). MonadGet m =&gt; m (a =-&gt; b))
+-&gt; Serial (a =-&gt; b)
+forall a.
+(forall (m :: * -&gt; *). MonadPut m =&gt; a -&gt; m ())
+-&gt; (forall (m :: * -&gt; *). MonadGet m =&gt; m a) -&gt; Serial a
+forall a b (m :: * -&gt; *).
+(Serial a, Serial b, MonadGet m) =&gt;
+m (a =-&gt; b)
+forall a b (m :: * -&gt; *).
+(Serial a, Serial b, MonadPut m) =&gt;
+(a =-&gt; b) -&gt; m ()
+forall (m :: * -&gt; *). MonadGet m =&gt; m (a =-&gt; b)
+forall (m :: * -&gt; *). MonadPut m =&gt; (a =-&gt; b) -&gt; m ()
+$cserialize :: forall a b (m :: * -&gt; *).
+(Serial a, Serial b, MonadPut m) =&gt;
+(a =-&gt; b) -&gt; m ()
+serialize :: forall (m :: * -&gt; *). MonadPut m =&gt; (a =-&gt; b) -&gt; m ()
+$cdeserialize :: forall a b (m :: * -&gt; *).
+(Serial a, Serial b, MonadGet m) =&gt;
+m (a =-&gt; b)
+deserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m (a =-&gt; b)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Serial</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682233347"><span id="local-6989586621682233348"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682233347"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682233348"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233347"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233348"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-89"></span><span>  </span><span id="local-6989586621682233869"><span class="annot"><span class="annottext">put :: Putter (a =-&gt; b)
+</span><a href="#local-6989586621682233869"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter (a =-&gt; b)
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; (a =-&gt; b) -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-90"></span><span>  </span><span id="local-6989586621682233874"><span class="annot"><span class="annottext">get :: Get (a =-&gt; b)
+</span><a href="#local-6989586621682233874"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get (a =-&gt; b)
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m (a =-&gt; b)
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682233356"><span id="local-6989586621682233357"><span id="local-6989586621682233881"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682233356"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682233357"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233356"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233357"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-93"></span><span>  </span><span id="local-6989586621682233888"><span class="annot"><span class="annottext">put :: (a =-&gt; b) -&gt; Put
+</span><a href="#local-6989586621682233888"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a =-&gt; b) -&gt; Put
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; (a =-&gt; b) -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-94"></span><span>  </span><span id="local-6989586621682233893"><span class="annot"><span class="annottext">get :: Get (a =-&gt; b)
+</span><a href="#local-6989586621682233893"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get (a =-&gt; b)
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m (a =-&gt; b)
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="hs-keyword">infixr</span><span> </span><span class="hs-number">0</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682233365"><span id="local-6989586621682233366"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682233365"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Function"><span class="hs-identifier hs-type">Function</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233365"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233366"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682233365"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233366"><span class="hs-identifier hs-type">b</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#TabularFun"><span class="hs-identifier hs-type">TabularFun</span></a></span><span> </span><span id="local-6989586621682233900"><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233900"><span class="hs-identifier hs-var">table</span></a></span></span><span> </span><span id="local-6989586621682233901"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233901"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682233902"><span class="annot"><span class="annottext"># :: (a =-&gt; b) -&gt; a -&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.Function.html#%23"><span class="hs-operator hs-var hs-var hs-var">#</span></a></span></span><span> </span><span id="local-6989586621682233903"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233903"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(a, b)] -&gt; b
+</span><a href="#local-6989586621682233904"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233900"><span class="hs-identifier hs-var">table</span></a></span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-101"></span><span>      </span><span id="local-6989586621682233904"><span class="annot"><span class="annottext">go :: [(a, b)] -&gt; b
+</span><a href="#local-6989586621682233904"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233901"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-102"></span><span>      </span><span class="annot"><a href="#local-6989586621682233904"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span id="local-6989586621682233905"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233905"><span class="hs-identifier hs-var">av</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233906"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233906"><span class="hs-identifier hs-var">bv</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682233907"><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233907"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-103"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233903"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233905"><span class="hs-identifier hs-var">av</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233906"><span class="hs-identifier hs-var">bv</span></a></span><span>
+</span><span id="line-104"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(a, b)] -&gt; b
+</span><a href="#local-6989586621682233904"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233907"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682233386"><span id="local-6989586621682233387"><span id="local-6989586621682233915"><span id="local-6989586621682233922"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="#local-6989586621682233386"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="#local-6989586621682233387"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233386"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233387"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span></span></span><span>
+</span><span id="line-107"></span><span>
+</span><span id="line-108"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-109"></span><span>  </span><span id="local-6989586621682233394"><span id="local-6989586621682233395"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier hs-type">SupportedNonFuncPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233394"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233395"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-110"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrimConstraint"><span class="hs-identifier hs-type">SupportedPrimConstraint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233394"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233395"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-111"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-112"></span><span>  </span><span class="hs-keyword">type</span><span>
+</span><span id="line-113"></span><span>    </span><span id="PrimConstraint"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PrimConstraint"><span class="hs-identifier hs-var">PrimConstraint</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233394"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233395"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-114"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier hs-type">SupportedNonFuncPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233394"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-115"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233395"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-116"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NonFuncPrimConstraint"><span class="hs-identifier hs-type">NonFuncPrimConstraint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233394"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-117"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PrimConstraint"><span class="hs-identifier hs-type">PrimConstraint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233395"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-118"></span><span>      </span><span class="hs-special">)</span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682233400"><span id="local-6989586621682233401"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier hs-type">SupportedNonFuncPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233400"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233401"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVRep"><span class="hs-identifier hs-type">SBVRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233400"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233401"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-121"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="SBVType"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-var">SBVType</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233400"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233401"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NonFuncSBVBaseType"><span class="hs-identifier hs-type">NonFuncSBVBaseType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233400"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233401"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-124"></span><span>  </span><span id="local-6989586621682233410"><span id="local-6989586621682233411"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-125"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalApplyTerm"><span class="hs-identifier hs-type">PEvalApplyTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-127"></span><span>  </span><span id="local-6989586621682233959"><span class="annot"><span class="annottext">pevalApplyTerm :: Term (a =-&gt; b) -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalApplyTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalApplyTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term (a =-&gt; b) -&gt; PartialFun (Term a) (Term b))
+-&gt; (Term (a =-&gt; b) -&gt; Term a -&gt; Term b)
+-&gt; Term (a =-&gt; b)
+-&gt; Term a
+-&gt; Term b
+forall a b c. (a -&gt; PartialFun b c) -&gt; (a -&gt; b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.PartialEval.html#totalize2"><span class="hs-identifier hs-var">totalize2</span></a></span><span> </span><span class="annot"><span class="annottext">Term (a =-&gt; b) -&gt; PartialFun (Term a) (Term b)
+(SupportedPrim a, SupportedPrim b) =&gt;
+Term (a =-&gt; b) -&gt; PartialFun (Term a) (Term b)
+</span><a href="#local-6989586621682233960"><span class="hs-identifier hs-var">doPevalApplyTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (a =-&gt; b) -&gt; Term a -&gt; Term b
+forall f a b.
+(PEvalApplyTerm f a b, SupportedPrim b) =&gt;
+Term f -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#applyTerm"><span class="hs-identifier hs-var">applyTerm</span></a></span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-129"></span><span>      </span><span class="annot"><a href="#local-6989586621682233960"><span class="hs-identifier hs-type">doPevalApplyTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-130"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-131"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-132"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-133"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>      </span><span id="local-6989586621682233960"><span class="annot"><span class="annottext">doPevalApplyTerm :: (SupportedPrim a, SupportedPrim b) =&gt;
+Term (a =-&gt; b) -&gt; PartialFun (Term a) (Term b)
+</span><a href="#local-6989586621682233960"><span class="hs-identifier hs-var hs-var">doPevalApplyTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682233964"><span class="annot"><span class="annottext">a =-&gt; b
+</span><a href="#local-6989586621682233964"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682233968"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233968"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; Maybe (Term b)) -&gt; Term b -&gt; Maybe (Term b)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Term b
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(b -&gt; Term b) -&gt; b -&gt; Term b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a =-&gt; b
+</span><a href="#local-6989586621682233964"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(a =-&gt; b) -&gt; a -&gt; b
+forall f arg ret. Function f arg ret =&gt; f -&gt; arg -&gt; ret
+</span><a href="Grisette.Internal.Core.Data.Class.Function.html#%23"><span class="hs-operator hs-var">#</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233968"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-135"></span><span>      </span><span class="annot"><a href="#local-6989586621682233960"><span class="hs-identifier hs-var">doPevalApplyTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#TabularFun"><span class="hs-identifier hs-type">TabularFun</span></a></span><span> </span><span id="local-6989586621682233975"><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233975"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682233976"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233976"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span id="local-6989586621682233977"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682233977"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; Maybe (Term b)) -&gt; Term b -&gt; Maybe (Term b)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(a, b)] -&gt; Term b
+</span><a href="#local-6989586621682233978"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233975"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-136"></span><span>        </span><span class="hs-keyword">where</span><span>
+</span><span id="line-137"></span><span>          </span><span id="local-6989586621682233978"><span class="annot"><span class="annottext">go :: [(a, b)] -&gt; Term b
+</span><a href="#local-6989586621682233978"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">b -&gt; Term b
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233976"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-138"></span><span>          </span><span class="annot"><a href="#local-6989586621682233978"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span id="local-6989586621682233979"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233979"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682233980"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233980"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682233981"><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233981"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-139"></span><span>            </span><span class="annot"><span class="annottext">Term Bool -&gt; Term b -&gt; Term b -&gt; Term b
+forall t.
+SupportedPrim t =&gt;
+Term Bool -&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier hs-var">pevalITETerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term a -&gt; Term a -&gt; Term Bool
+forall t. SupportedPrim t =&gt; Term t -&gt; Term t -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalEqTerm"><span class="hs-identifier hs-var">pevalEqTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682233977"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682233979"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">b -&gt; Term b
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682233980"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[(a, b)] -&gt; Term b
+</span><a href="#local-6989586621682233978"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682233981"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-140"></span><span>      </span><span class="annot"><a href="#local-6989586621682233960"><span class="hs-identifier hs-var">doPevalApplyTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (a =-&gt; b)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-141"></span><span>  </span><span id="local-6989586621682233983"><span class="annot"><span class="annottext">sbvApplyTerm :: SBVType (a =-&gt; b) -&gt; SBVType a -&gt; SBVType b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvApplyTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvApplyTerm</span></a></span></span><span> </span><span id="local-6989586621682233984"><span class="annot"><span class="annottext">SBVType (a =-&gt; b)
+</span><a href="#local-6989586621682233984"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682233985"><span class="annot"><span class="annottext">SBVType a
+</span><a href="#local-6989586621682233985"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-142"></span><span>    </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233411"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(((PrimConstraint (a =-&gt; b), SMTDefinable (SBVType (a =-&gt; b)),
+   Mergeable (SBVType (a =-&gt; b)), Typeable (SBVType (a =-&gt; b))) =&gt;
+  SBVType b)
+ -&gt; SBVType b)
+-&gt; ((PrimConstraint (a =-&gt; b), SMTDefinable (SBVType (a =-&gt; b)),
+     Mergeable (SBVType (a =-&gt; b)), Typeable (SBVType (a =-&gt; b))) =&gt;
+    SBVType b)
+-&gt; SBVType b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a r.
+SupportedNonFuncPrim a =&gt;
+(NonFuncPrimConstraint a =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682233410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><span class="annottext">(((SymVal (NonFuncSBVBaseType a), EqSymbolic (SBVType a),
+   Mergeable (SBVType a), SMTDefinable (SBVType a),
+   Mergeable (SBVType a), SBVType a ~ SBV (NonFuncSBVBaseType a),
+   PrimConstraint a) =&gt;
+  SBVType b)
+ -&gt; SBVType b)
+-&gt; ((SymVal (NonFuncSBVBaseType a), EqSymbolic (SBVType a),
+     Mergeable (SBVType a), SMTDefinable (SBVType a),
+     Mergeable (SBVType a), SBVType a ~ SBV (NonFuncSBVBaseType a),
+     PrimConstraint a) =&gt;
+    SBVType b)
+-&gt; SBVType b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBVType (a =-&gt; b)
+SBV (NonFuncSBVBaseType a) -&gt; SBVType b
+</span><a href="#local-6989586621682233984"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (NonFuncSBVBaseType a)
+SBVType a
+</span><a href="#local-6989586621682233985"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-143"></span><span>
+</span><span id="line-144"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682233452"><span id="local-6989586621682233453"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Apply"><span class="hs-identifier hs-type">Apply</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233452"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682233453"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Apply"><span class="hs-identifier hs-type">Apply</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233453"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233452"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-145"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="FunType"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#FunType"><span class="hs-identifier hs-var">FunType</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233453"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233452"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="#local-6989586621682233453"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#FunType"><span class="hs-identifier hs-type">FunType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233452"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-146"></span><span>  </span><span id="local-6989586621682234004"><span class="annot"><span class="annottext">apply :: (a =-&gt; t) -&gt; FunType (a =-&gt; t)
+</span><a href="Grisette.Internal.Core.Data.Class.Function.html#apply"><span class="hs-identifier hs-var hs-var hs-var">apply</span></a></span></span><span> </span><span id="local-6989586621682234005"><span class="annot"><span class="annottext">a =-&gt; t
+</span><a href="#local-6989586621682234005"><span class="hs-identifier hs-var">uf</span></a></span></span><span> </span><span id="local-6989586621682234006"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682234006"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">t -&gt; FunType t
+forall uf. Apply uf =&gt; uf -&gt; FunType uf
+</span><a href="Grisette.Internal.Core.Data.Class.Function.html#apply"><span class="hs-identifier hs-var">apply</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a =-&gt; t
+</span><a href="#local-6989586621682234005"><span class="hs-identifier hs-var">uf</span></a></span><span> </span><span class="annot"><span class="annottext">(a =-&gt; t) -&gt; a -&gt; t
+forall f arg ret. Function f arg ret =&gt; f -&gt; arg -&gt; ret
+</span><a href="Grisette.Internal.Core.Data.Class.Function.html#%23"><span class="hs-operator hs-var">#</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682234006"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-147"></span><span>
+</span><span id="line-148"></span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#lowerTFunCon"><span class="hs-identifier hs-type">lowerTFunCon</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-149"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682233454"><span class="annot"><a href="#local-6989586621682233454"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682233455"><span class="annot"><a href="#local-6989586621682233455"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-150"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier hs-type">SupportedNonFuncPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233454"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-151"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233455"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-152"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">SBV.Mergeable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233455"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-153"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-154"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682233454"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233455"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-155"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NonFuncSBVBaseType"><span class="hs-identifier hs-type">NonFuncSBVBaseType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233454"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-156"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233455"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-157"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-158"></span><span id="lowerTFunCon"><span class="annot"><span class="annottext">lowerTFunCon :: forall a b.
+(SupportedNonFuncPrim a, SupportedPrim b, Mergeable (SBVType b)) =&gt;
+(a =-&gt; b) -&gt; SBV (NonFuncSBVBaseType a) -&gt; SBVType b
+</span><a href="Grisette.Internal.SymPrim.TabularFun.html#lowerTFunCon"><span class="hs-identifier hs-var hs-var">lowerTFunCon</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#TabularFun"><span class="hs-identifier hs-type">TabularFun</span></a></span><span> </span><span id="local-6989586621682234012"><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682234012"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682234013"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682234013"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a r.
+SupportedNonFuncPrim a =&gt;
+(NonFuncPrimConstraint a =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682233454"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint a =&gt;
+  SBV (NonFuncSBVBaseType a) -&gt; SBVType b)
+ -&gt; SBV (NonFuncSBVBaseType a) -&gt; SBVType b)
+-&gt; (NonFuncPrimConstraint a =&gt;
+    SBV (NonFuncSBVBaseType a) -&gt; SBVType b)
+-&gt; SBV (NonFuncSBVBaseType a)
+-&gt; SBVType b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(a, b)] -&gt; b -&gt; SBV (NonFuncSBVBaseType a) -&gt; SBVType b
+forall {t} {t} {a}.
+(SBVType t ~ SBVType t, Mergeable (SBVType t),
+ SymVal (NonFuncSBVBaseType a), SupportedNonFuncPrim a,
+ SupportedPrim t, SupportedPrim t) =&gt;
+[(a, t)] -&gt; t -&gt; SBV (NonFuncSBVBaseType a) -&gt; SBVType t
+</span><a href="#local-6989586621682234022"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[(a, b)]
+</span><a href="#local-6989586621682234012"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682234013"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-159"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-160"></span><span>    </span><span id="local-6989586621682234022"><span class="annot"><span class="annottext">go :: [(a, t)] -&gt; t -&gt; SBV (NonFuncSBVBaseType a) -&gt; SBVType t
+</span><a href="#local-6989586621682234022"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span id="local-6989586621682234084"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682234084"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="annot"><span class="annottext">SBV (NonFuncSBVBaseType a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">t -&gt; SBVType t
+forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682234084"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-161"></span><span>    </span><span class="annot"><a href="#local-6989586621682234022"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span id="local-6989586621682234085"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682234085"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682234086"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682234086"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621682234087"><span class="annot"><span class="annottext">[(a, t)]
+</span><a href="#local-6989586621682234087"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682234088"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682234088"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682234089"><span class="annot"><span class="annottext">SBV (NonFuncSBVBaseType a)
+</span><a href="#local-6989586621682234089"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-162"></span><span>      </span><span class="annot"><span class="annottext">SBool -&gt; SBVType t -&gt; SBVType t -&gt; SBVType t
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; SBV (NonFuncSBVBaseType a)
+forall a. SupportedNonFuncPrim a =&gt; a -&gt; SBV (NonFuncSBVBaseType a)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conNonFuncSBVTerm"><span class="hs-identifier hs-var">conNonFuncSBVTerm</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682234085"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (NonFuncSBVBaseType a) -&gt; SBV (NonFuncSBVBaseType a) -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SBV (NonFuncSBVBaseType a)
+</span><a href="#local-6989586621682234089"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t -&gt; SBVType t
+forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682234086"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[(a, t)] -&gt; t -&gt; SBV (NonFuncSBVBaseType a) -&gt; SBVType t
+</span><a href="#local-6989586621682234022"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[(a, t)]
+</span><a href="#local-6989586621682234087"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682234088"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (NonFuncSBVBaseType a)
+</span><a href="#local-6989586621682234089"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>
+</span><span id="line-164"></span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#parseTabularFunSMTModelResult"><span class="hs-identifier hs-type">parseTabularFunSMTModelResult</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-165"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682233470"><span class="annot"><a href="#local-6989586621682233470"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682233471"><span class="annot"><a href="#local-6989586621682233471"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-166"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier hs-type">SupportedNonFuncPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233470"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233471"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-167"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-168"></span><span>  </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">SBVD.CV</span></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBVD.CV</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBVD.CV</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-169"></span><span>  </span><span class="annot"><a href="#local-6989586621682233470"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.TabularFun.html#%3D-%3E"><span class="hs-operator hs-type">=-&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682233471"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-170"></span><span id="parseTabularFunSMTModelResult"><span class="annot"><span class="annottext">parseTabularFunSMTModelResult :: forall a b.
+(SupportedNonFuncPrim a, SupportedPrim b) =&gt;
+Int -&gt; ([([CV], CV)], CV) -&gt; a =-&gt; b
+</span><a href="Grisette.Internal.SymPrim.TabularFun.html#parseTabularFunSMTModelResult"><span class="hs-identifier hs-var hs-var">parseTabularFunSMTModelResult</span></a></span></span><span> </span><span id="local-6989586621682234109"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682234109"><span class="hs-identifier hs-var">level</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682234110"><span class="annot"><span class="annottext">[([CV], CV)]
+</span><a href="#local-6989586621682234110"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682234111"><span class="annot"><span class="annottext">CV
+</span><a href="#local-6989586621682234111"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-171"></span><span>  </span><span class="annot"><span class="annottext">[(a, b)] -&gt; b -&gt; a =-&gt; b
+forall a b. [(a, b)] -&gt; b -&gt; a =-&gt; b
+</span><a href="Grisette.Internal.SymPrim.TabularFun.html#TabularFun"><span class="hs-identifier hs-var">TabularFun</span></a></span><span>
+</span><span id="line-172"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">([([CV], CV)] -&gt; b) -&gt; (a, [([CV], CV)]) -&gt; (a, b)
+forall b c a. (b -&gt; c) -&gt; (a, b) -&gt; (a, c)
+forall (p :: * -&gt; * -&gt; *) b c a.
+Bifunctor p =&gt;
+(b -&gt; c) -&gt; p a b -&gt; p a c
+</span><span class="hs-identifier hs-var">second</span></span><span>
+</span><span id="line-173"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682234112"><span class="annot"><span class="annottext">[([CV], CV)]
+</span><a href="#local-6989586621682234112"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-174"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[([CV], CV)]
+</span><a href="#local-6989586621682234112"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-175"></span><span>              </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span id="local-6989586621682234113"><span class="annot"><span class="annottext">CV
+</span><a href="#local-6989586621682234113"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ([([CV], CV)], CV) -&gt; b
+forall t. SupportedPrim t =&gt; Int -&gt; ([([CV], CV)], CV) -&gt; t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#parseSMTModelResult"><span class="hs-identifier hs-var">parseSMTModelResult</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682234109"><span class="hs-identifier hs-var">level</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">CV
+</span><a href="#local-6989586621682234113"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-176"></span><span>              </span><span class="annot"><span class="annottext">[([CV], CV)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ([([CV], CV)], CV) -&gt; b
+forall t. SupportedPrim t =&gt; Int -&gt; ([([CV], CV)], CV) -&gt; t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#parseSMTModelResult"><span class="hs-identifier hs-var">parseSMTModelResult</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682234109"><span class="hs-identifier hs-var">level</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[([CV], CV)]
+</span><a href="#local-6989586621682234112"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">CV
+</span><a href="#local-6989586621682234111"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-177"></span><span>        </span><span class="hs-special">)</span><span>
+</span><span id="line-178"></span><span>        </span><span class="annot"><span class="annottext">((a, [([CV], CV)]) -&gt; (a, b)) -&gt; [(a, [([CV], CV)])] -&gt; [(a, b)]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a.
+SupportedNonFuncPrim a =&gt;
+[([CV], CV)] -&gt; [(a, [([CV], CV)])]
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#partitionCVArg"><span class="hs-identifier hs-var">partitionCVArg</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682233470"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><span class="annottext">[([CV], CV)]
+</span><a href="#local-6989586621682234110"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-179"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-180"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; ([([CV], CV)], CV) -&gt; b
+forall t. SupportedPrim t =&gt; Int -&gt; ([([CV], CV)], CV) -&gt; t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#parseSMTModelResult"><span class="hs-identifier hs-var">parseSMTModelResult</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682234109"><span class="hs-identifier hs-var">level</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">CV
+</span><a href="#local-6989586621682234111"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-181"></span><span>
+</span><span id="line-182"></span><span id="local-6989586621682233528"><span id="local-6989586621682233529"><span id="local-6989586621682233530"><span id="local-6989586621682233531"><span id="local-6989586621682233532"><span id="local-6989586621682233533"><span id="local-6989586621682233534"><span id="local-6989586621682233535"><span id="local-6989586621682233536"><span id="local-6989586621682233537"><span id="local-6989586621682233538"><span id="local-6989586621682233539"><span id="local-6989586621682233540"><span id="local-6989586621682233541"><span id="local-6989586621682233568"><span id="local-6989586621682233569"><span id="local-6989586621682233570"><span id="local-6989586621682233571"><span id="local-6989586621682233572"><span id="local-6989586621682233573"><span id="local-6989586621682233574"><span id="local-6989586621682233575"><span id="local-6989586621682233576"><span id="local-6989586621682233577"><span id="local-6989586621682233578"><span id="local-6989586621682233579"><span id="local-6989586621682233580"><span id="local-6989586621682233581"><span id="local-6989586621682233582"><span id="local-6989586621682233583"><span id="local-6989586621682233584"><span id="local-6989586621682233585"><span id="local-6989586621682233586"><span id="local-6989586621682233587"><span id="local-6989586621682233588"><span id="local-6989586621682233589"><span id="local-6989586621682233590"><span id="local-6989586621682233591"><span id="local-6989586621682233592"><span id="local-6989586621682233593"><span id="local-6989586621682233594"><span id="local-6989586621682233595"><span id="local-6989586621682233596"><span id="local-6989586621682233597"><span id="local-6989586621682233598"><span id="local-6989586621682233599"><span id="local-6989586621682233600"><span id="local-6989586621682233601"><span id="local-6989586621682233602"><span id="local-6989586621682234171"><span id="local-6989586621682234178"><span id="local-6989586621682234182"><span id="local-6989586621682234187"><span id="local-6989586621682234192"><span id="local-6989586621682234196"><span id="local-6989586621682234199"><span id="local-6989586621682234206"><span id="local-6989586621682234213"><span id="local-6989586621682234216"><span id="local-6989586621682234222"><span id="local-6989586621682234226"><span id="local-6989586621682234229"><span id="local-6989586621682234232"><span id="local-6989586621682234239"><span id="local-6989586621682234246"><span id="local-6989586621682234252"><span id="local-6989586621682234256"><span id="local-6989586621682234308"><span id="local-6989586621682234314"><span id="local-6989586621682234318"><span id="local-6989586621682234323"><span id="local-6989586621682234328"><span id="local-6989586621682234332"><span id="local-6989586621682234335"><span id="local-6989586621682234342"><span id="local-6989586621682234349"><span id="local-6989586621682234352"><span id="local-6989586621682234356"><span id="local-6989586621682234360"><span id="local-6989586621682234363"><span id="local-6989586621682234366"><span id="local-6989586621682234373"><span id="local-6989586621682234380"><span id="local-6989586621682234386"><span id="local-6989586621682234390"><span id="local-6989586621682234437"><span id="local-6989586621682234443"><span id="local-6989586621682234447"><span id="local-6989586621682234452"><span id="local-6989586621682234457"><span id="local-6989586621682234461"><span id="local-6989586621682234464"><span id="local-6989586621682234471"><span id="local-6989586621682234478"><span id="local-6989586621682234481"><span id="local-6989586621682234485"><span id="local-6989586621682234489"><span id="local-6989586621682234492"><span id="local-6989586621682234495"><span id="local-6989586621682234502"><span id="local-6989586621682234509"><span id="local-6989586621682234515"><span id="local-6989586621682234519"><span id="local-6989586621682234561"><span id="local-6989586621682234567"><span id="local-6989586621682234571"><span id="local-6989586621682234576"><span id="local-6989586621682234581"><span id="local-6989586621682234585"><span id="local-6989586621682234588"><span id="local-6989586621682234595"><span id="local-6989586621682234602"><span id="local-6989586621682234605"><span id="local-6989586621682234609"><span id="local-6989586621682234613"><span id="local-6989586621682234616"><span id="local-6989586621682234619"><span id="local-6989586621682234626"><span id="local-6989586621682234633"><span id="local-6989586621682234639"><span id="local-6989586621682234643"><span id="local-6989586621682234680"><span id="local-6989586621682234686"><span id="local-6989586621682234690"><span id="local-6989586621682234695"><span id="local-6989586621682234700"><span id="local-6989586621682234704"><span id="local-6989586621682234707"><span id="local-6989586621682234714"><span id="local-6989586621682234721"><span id="local-6989586621682234724"><span id="local-6989586621682234728"><span id="local-6989586621682234732"><span id="local-6989586621682234735"><span id="local-6989586621682234738"><span id="local-6989586621682234745"><span id="local-6989586621682234752"><span id="local-6989586621682234758"><span id="local-6989586621682234762"><span id="local-6989586621682234794"><span id="local-6989586621682234800"><span id="local-6989586621682234804"><span id="local-6989586621682234809"><span id="local-6989586621682234814"><span id="local-6989586621682234818"><span id="local-6989586621682234821"><span id="local-6989586621682234828"><span id="local-6989586621682234835"><span id="local-6989586621682234838"><span id="local-6989586621682234842"><span id="local-6989586621682234846"><span id="local-6989586621682234849"><span id="local-6989586621682234852"><span id="local-6989586621682234859"><span id="local-6989586621682234866"><span id="local-6989586621682234872"><span id="local-6989586621682234876"><span id="local-6989586621682234902"><span id="local-6989586621682234907"><span id="local-6989586621682234910"><span id="local-6989586621682234914"><span id="local-6989586621682234918"><span id="local-6989586621682234921"><span id="local-6989586621682234924"><span id="local-6989586621682234930"><span id="local-6989586621682234936"><span id="local-6989586621682234939"><span id="local-6989586621682234943"><span id="local-6989586621682234947"><span id="local-6989586621682234950"><span id="local-6989586621682234953"><span id="local-6989586621682234959"><span id="local-6989586621682234965"><span id="local-6989586621682234971"><span id="local-6989586621682234975"><span class="hs-identifier">supportedPrimFunUpTo</span><span>
+</span><span id="line-183"></span><span>  </span><span class="hs-special">[|</span><span class="hs-identifier">TabularFun</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-identifier">defaultValue</span><span class="hs-special">|]</span><span>
+</span><span id="line-184"></span><span>  </span><span class="hs-special">[|</span><span class="hs-identifier">pevalITEBasicTerm</span><span class="hs-special">|]</span><span>
+</span><span id="line-185"></span><span>  </span><span class="hs-special">[|</span><span class="hs-identifier">parseTabularFunSMTModelResult</span><span class="hs-special">|]</span><span>
+</span><span id="line-186"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-identifier">tyVars</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-187"></span><span>      </span><span class="hs-special">[|</span><span>
+</span><span id="line-188"></span><span>        </span><span class="hs-glyph">\</span><span class="hs-identifier">f</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-189"></span><span>          </span><span class="hs-identifier">withNonFuncPrim</span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="hs-identifier">last</span><span> </span><span class="hs-identifier">tyVars</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-operator">$</span><span>
+</span><span id="line-190"></span><span>            </span><span class="hs-identifier">lowerTFunCon</span><span> </span><span class="hs-identifier">f</span><span>
+</span><span id="line-191"></span><span>        </span><span class="hs-special">|]</span><span>
+</span><span id="line-192"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-193"></span><span>  </span><span class="hs-string">&quot;TabularFun&quot;</span><span>
+</span><span id="line-194"></span><span>  </span><span class="hs-string">&quot;tfunc&quot;</span><span>
+</span><span id="line-195"></span><span>  </span><span class="hs-special">''</span><span class="hs-special">(</span><span class="hs-operator">=-&gt;</span><span class="hs-special">)</span><span>
+</span><span id="line-196"></span><span>  </span><span class="hs-number">8</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-197"></span></pre></body></html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE DeriveAnyClass #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE DeriveLift #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE DerivingVia #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE FunctionalDependencies #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-12"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-13"></span><span class="hs-pragma">{-# LANGUAGE PolyKinds #-}</span><span>
+</span><span id="line-14"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-15"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-16"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-17"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-18"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-19"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Internal.Impl.Core.Data.Class.Solver</span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2023</span><span>
+</span><span id="line-24"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-25"></span><span class="hs-comment">--</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Impl.Core.Data.Class.Solver.html"><span class="hs-identifier">Grisette.Internal.Internal.Impl.Core.Data.Class.Solver</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Binary</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Binary</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bytes.Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">deserialize</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">serialize</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Hashable</span></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Serialize</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Cereal</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint"><span class="hs-identifier">PPrint</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Solver.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.Solver</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Solver.html#SolvingFailure"><span class="hs-identifier">SolvingFailure</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint.html"><span class="hs-identifier">Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveGADT.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.DeriveGADT</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveGADT.html#deriveGADT"><span class="hs-identifier">deriveGADT</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-45"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Backend</span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span id="local-6989586621682330702"><span id="local-6989586621682330706"><span id="local-6989586621682330710"><span id="local-6989586621682330714"><span id="local-6989586621682330724"><span id="local-6989586621682330727"><span id="local-6989586621682330737"><span id="local-6989586621682330740"><span id="local-6989586621682330748"><span id="local-6989586621682330752"><span id="local-6989586621682330755"><span id="local-6989586621682330759"><span id="local-6989586621682330784"><span class="hs-identifier">deriveGADT</span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">[</span><span class="hs-special">''</span><span class="hs-identifier">SolvingFailure</span><span class="hs-special">]</span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-special">[</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Show</span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-special">''</span><span class="hs-identifier">Eq</span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-special">''</span><span class="hs-identifier">PPrint</span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-special">''</span><span class="hs-identifier">NFData</span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-special">''</span><span class="hs-identifier">Hashable</span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-special">''</span><span class="hs-identifier">Serial</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">]</span></span></span></span></span></span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Solver.html#SolvingFailure"><span class="hs-identifier hs-type">SolvingFailure</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-58"></span><span>  </span><span id="local-6989586621682330865"><span class="annot"><span class="annottext">put :: Putter SolvingFailure
+</span><a href="#local-6989586621682330865"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter SolvingFailure
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; SolvingFailure -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-59"></span><span>  </span><span id="local-6989586621682330870"><span class="annot"><span class="annottext">get :: Get SolvingFailure
+</span><a href="#local-6989586621682330870"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SolvingFailure
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m SolvingFailure
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682330875"><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Solver.html#SolvingFailure"><span class="hs-identifier hs-type">SolvingFailure</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-62"></span><span>  </span><span id="local-6989586621682330882"><span class="annot"><span class="annottext">put :: SolvingFailure -&gt; Put
+</span><a href="#local-6989586621682330882"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SolvingFailure -&gt; Put
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; SolvingFailure -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-63"></span><span>  </span><span id="local-6989586621682330887"><span class="annot"><span class="annottext">get :: Get SolvingFailure
+</span><a href="#local-6989586621682330887"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SolvingFailure
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m SolvingFailure
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-64"></span></pre></body></html>

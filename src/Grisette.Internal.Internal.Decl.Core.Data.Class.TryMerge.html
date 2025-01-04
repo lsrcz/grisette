@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2023-2024</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier">tryMerge</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#MonadTryMerge"><span class="hs-identifier">MonadTryMerge</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier">mrgSingle</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingleWithStrategy"><span class="hs-identifier">mrgSingleWithStrategy</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgToSym"><span class="hs-identifier">mrgToSym</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#toUnionSym"><span class="hs-identifier">toUnionSym</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier">Mergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier">rootStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#MergingStrategy"><span class="hs-identifier">MergingStrategy</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym.html#ToSym"><span class="hs-identifier">ToSym</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym.html#toSym"><span class="hs-identifier">toSym</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- | A class for containers that may or may not be merged.</span><span>
+</span><span id="line-34"></span><span class="hs-comment">--</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- If the container is capable of multi-path execution, then the</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- `tryMergeWithStrategy` function should merge the paths according to the</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- supplied strategy.</span><span>
+</span><span id="line-38"></span><span class="hs-comment">--</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- If the container is not capable of multi-path execution, then the</span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- `tryMergeWithStrategy` function should be equivalent to `id`.</span><span>
+</span><span id="line-41"></span><span class="hs-comment">--</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- Note that this will not necessarily do a recursive merge for the elements.</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">class</span><span> </span><span id="TryMerge"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-var">TryMerge</span></a></span></span><span> </span><span id="local-6989586621682279327"><span class="annot"><a href="#local-6989586621682279327"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-44"></span><span>  </span><span id="tryMergeWithStrategy"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-type">tryMergeWithStrategy</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621682279326"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#MergingStrategy"><span class="hs-identifier hs-type">MergingStrategy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279326"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682279327"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279326"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682279327"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279326"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="annot"><span class="hs-comment">-- | Try to merge the container with the root strategy.</span></span><span>
+</span><span id="line-47"></span><span id="local-6989586621682279319"><span id="local-6989586621682279321"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-type">tryMerge</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279319"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279321"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682279319"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279321"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682279319"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279321"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-48"></span><span id="tryMerge"><span class="annot"><span class="annottext">tryMerge :: forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var hs-var">tryMerge</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; m a -&gt; m a
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span>
+</span><span id="line-49"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-pragma hs-type">tryMerge</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- | Wrap a value in the applicative functor and capture the 'Mergeable'</span><span>
+</span><span id="line-52"></span><span class="hs-comment">-- knowledge.</span><span>
+</span><span id="line-53"></span><span class="hs-comment">--</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- &gt;&gt;&gt; mrgSingleWithStrategy rootStrategy &quot;a&quot; :: Union SymInteger</span><span>
+</span><span id="line-55"></span><span class="hs-comment">-- {a}</span><span>
+</span><span id="line-56"></span><span class="hs-comment">--</span><span>
+</span><span id="line-57"></span><span class="hs-comment">-- __Note:__ Be careful to call this directly from your code.</span><span>
+</span><span id="line-58"></span><span class="hs-comment">-- The supplied merge strategy should be consistent with the type's root merge</span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- strategy, or some internal invariants would be broken and the program can</span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- crash.</span><span>
+</span><span id="line-61"></span><span class="hs-comment">--</span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- This function is to be called when the 'Mergeable' constraint can not be</span><span>
+</span><span id="line-63"></span><span class="hs-comment">-- resolved, e.g., the merge strategy for the contained type is given with</span><span>
+</span><span id="line-64"></span><span class="hs-comment">-- 'Grisette.Mergeable1'. In other cases,</span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- 'Grisette.Lib.Control.Applicative.mrgPure' is usually a better alternative.</span><span>
+</span><span id="line-66"></span><span id="local-6989586621682279329"><span id="local-6989586621682279330"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingleWithStrategy"><span class="hs-identifier hs-type">mrgSingleWithStrategy</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279329"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="#local-6989586621682279329"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#MergingStrategy"><span class="hs-identifier hs-type">MergingStrategy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279330"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-69"></span><span>  </span><span class="annot"><a href="#local-6989586621682279330"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-70"></span><span>  </span><span class="annot"><a href="#local-6989586621682279329"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279330"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-71"></span><span id="mrgSingleWithStrategy"><span class="annot"><span class="annottext">mrgSingleWithStrategy :: forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m) =&gt;
+MergingStrategy a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingleWithStrategy"><span class="hs-identifier hs-var hs-var">mrgSingleWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682279372"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682279372"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; m a -&gt; m a
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682279372"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; (a -&gt; m a) -&gt; a -&gt; m a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; m a
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-72"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingleWithStrategy"><span class="hs-pragma hs-type">mrgSingleWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span class="hs-comment">-- | Wrap a value in the applicative functor and propagate the type's root merge</span><span>
+</span><span id="line-75"></span><span class="hs-comment">-- strategy.</span><span>
+</span><span id="line-76"></span><span class="hs-comment">--</span><span>
+</span><span id="line-77"></span><span class="hs-comment">-- Equivalent to @'mrgSingleWithStrategy' 'rootStrategy'@.</span><span>
+</span><span id="line-78"></span><span class="hs-comment">--</span><span>
+</span><span id="line-79"></span><span class="hs-comment">-- &gt;&gt;&gt; mrgSingle &quot;a&quot; :: Union SymInteger</span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- {a}</span><span>
+</span><span id="line-81"></span><span id="local-6989586621682279338"><span id="local-6989586621682279339"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-type">mrgSingle</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279338"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="#local-6989586621682279338"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279339"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682279339"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682279338"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279339"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-82"></span><span id="mrgSingle"><span class="annot"><span class="annottext">mrgSingle :: forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var hs-var">mrgSingle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; a -&gt; m a
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m) =&gt;
+MergingStrategy a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingleWithStrategy"><span class="hs-identifier hs-var">mrgSingleWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span>
+</span><span id="line-83"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-pragma hs-type">mrgSingle</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="annot"><span class="hs-comment">-- | Alias for a monad type that has 'TryMerge'.</span></span><span>
+</span><span id="line-86"></span><span class="hs-keyword">type</span><span> </span><span id="MonadTryMerge"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#MonadTryMerge"><span class="hs-identifier hs-var">MonadTryMerge</span></a></span></span><span> </span><span id="local-6989586621682279380"><span class="annot"><a href="#local-6989586621682279380"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279380"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621682279380"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- | Convert a value to symbolic value and wrap it with a mergeable container.</span><span>
+</span><span id="line-89"></span><span class="hs-comment">--</span><span>
+</span><span id="line-90"></span><span class="hs-comment">-- This is a synonym for 'toUnionSym'.</span><span>
+</span><span id="line-91"></span><span id="local-6989586621682279342"><span id="local-6989586621682279343"><span id="local-6989586621682279345"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgToSym"><span class="hs-identifier hs-type">mrgToSym</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym.html#ToSym"><span class="hs-identifier hs-type">ToSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279342"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279343"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279343"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279345"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="#local-6989586621682279345"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-93"></span><span>  </span><span class="annot"><a href="#local-6989586621682279342"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-94"></span><span>  </span><span class="annot"><a href="#local-6989586621682279345"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279343"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-95"></span><span id="mrgToSym"><span class="annot"><span class="annottext">mrgToSym :: forall a b (m :: * -&gt; *).
+(ToSym a b, Mergeable b, TryMerge m, Applicative m) =&gt;
+a -&gt; m b
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgToSym"><span class="hs-identifier hs-var hs-var">mrgToSym</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; m b
+forall a b (m :: * -&gt; *).
+(ToSym a b, Mergeable b, TryMerge m, Applicative m) =&gt;
+a -&gt; m b
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#toUnionSym"><span class="hs-identifier hs-var">toUnionSym</span></a></span><span>
+</span><span id="line-96"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgToSym"><span class="hs-pragma hs-type">mrgToSym</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="hs-comment">-- | Convert a value to symbolic value and wrap it with a mergeable container.</span><span>
+</span><span id="line-99"></span><span class="hs-comment">--</span><span>
+</span><span id="line-100"></span><span class="hs-comment">-- This is a synonym for 'toUnionSym'.</span><span>
+</span><span id="line-101"></span><span id="local-6989586621682279389"><span id="local-6989586621682279390"><span id="local-6989586621682279391"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#toUnionSym"><span class="hs-identifier hs-type">toUnionSym</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-102"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym.html#ToSym"><span class="hs-identifier hs-type">ToSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279389"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279390"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279390"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279391"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="#local-6989586621682279391"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-103"></span><span>  </span><span class="annot"><a href="#local-6989586621682279389"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-104"></span><span>  </span><span class="annot"><a href="#local-6989586621682279391"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682279390"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-105"></span><span id="toUnionSym"><span class="annot"><span class="annottext">toUnionSym :: forall a b (m :: * -&gt; *).
+(ToSym a b, Mergeable b, TryMerge m, Applicative m) =&gt;
+a -&gt; m b
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#toUnionSym"><span class="hs-identifier hs-var hs-var">toUnionSym</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m b -&gt; m b
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m b -&gt; m b) -&gt; (a -&gt; m b) -&gt; a -&gt; m b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; m b
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(b -&gt; m b) -&gt; (a -&gt; b) -&gt; a -&gt; m b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b
+forall a b. ToSym a b =&gt; a -&gt; b
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym.html#toSym"><span class="hs-identifier hs-var">toSym</span></a></span><span>
+</span><span id="line-106"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#toUnionSym"><span class="hs-pragma hs-type">toUnionSym</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-107"></span></pre></body></html>

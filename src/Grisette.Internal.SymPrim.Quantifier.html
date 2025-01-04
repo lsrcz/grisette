@@ -1,0 +1,362 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Quantifier</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Quantifier</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSet"><span class="hs-identifier">forallSet</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSym"><span class="hs-identifier">forallSym</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSet"><span class="hs-identifier">existsSet</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSym"><span class="hs-identifier">existsSym</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#forallFresh"><span class="hs-identifier">forallFresh</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#existsFresh"><span class="hs-identifier">existsFresh</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bifunctor</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Bifunctor</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">first</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">HS</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">sort</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Stack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HasCallStack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Union.html"><span class="hs-identifier">Grisette.Internal.Core.Control.Monad.Union</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Control.Monad.Union.html#Union"><span class="hs-identifier">Union</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Impl.Core.Control.Monad.Union.html#liftUnion"><span class="hs-identifier">liftUnion</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ExtractSym.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.ExtractSym</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#ExtractSym"><span class="hs-identifier">ExtractSym</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#extractSymMaybe"><span class="hs-identifier">extractSymMaybe</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.GenSym</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#Fresh"><span class="hs-identifier">Fresh</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#FreshT"><span class="hs-identifier">FreshT</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#FreshT"><span class="hs-identifier">FreshT</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#GenSym"><span class="hs-identifier">GenSym</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#fresh"><span class="hs-identifier">fresh</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#MonadFresh"><span class="hs-identifier">MonadFresh</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#liftFresh"><span class="hs-identifier">liftFresh</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Mergeable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Mergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier">Mergeable</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.PlainUnion</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#simpleMerge"><span class="hs-identifier">simpleMerge</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.TryMerge.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier">TryMerge</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier">mrgSingle</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedSymbol"><span class="hs-identifier">SomeTypedSymbol</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedSymbol"><span class="hs-identifier">SomeTypedSymbol</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#existsTerm"><span class="hs-identifier">existsTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#forallTerm"><span class="hs-identifier">forallTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Model</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#ConstantSymbolSet"><span class="hs-identifier">ConstantSymbolSet</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#SymbolSet"><span class="hs-identifier">SymbolSet</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#SymbolSet"><span class="hs-identifier">SymbolSet</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier">SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier">SymBool</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-55"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-56"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Backend</span><span>
+</span><span id="line-57"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Lib.Base</span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- | Forall quantifier over a set of constant symbols. Quantifier over functions</span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- is not supported.</span><span>
+</span><span id="line-61"></span><span class="hs-comment">--</span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- &gt;&gt;&gt; let xsym = &quot;x&quot; :: TypedConstantSymbol Integer</span><span>
+</span><span id="line-63"></span><span class="hs-comment">-- &gt;&gt;&gt; let ysym = &quot;y&quot; :: TypedConstantSymbol Integer</span><span>
+</span><span id="line-64"></span><span class="hs-comment">-- &gt;&gt;&gt; let x = &quot;x&quot; :: SymInteger</span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- &gt;&gt;&gt; let y = &quot;y&quot; :: SymInteger</span><span>
+</span><span id="line-66"></span><span class="hs-comment">-- &gt;&gt;&gt; forallSet (buildSymbolSet [xsym, ysym]) (x .== y)</span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- (forall x :: Integer (forall y :: Integer (= x y)))</span><span>
+</span><span id="line-68"></span><span class="hs-comment">--</span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- Only available with SBV 10.1.0 or later.</span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSet"><span class="hs-identifier hs-type">forallSet</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#ConstantSymbolSet"><span class="hs-identifier hs-type">ConstantSymbolSet</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span>
+</span><span id="line-71"></span><span id="forallSet"><span class="annot"><span class="annottext">forallSet :: ConstantSymbolSet -&gt; SymBool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSet"><span class="hs-identifier hs-var hs-var">forallSet</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#SymbolSet"><span class="hs-identifier hs-type">SymbolSet</span></a></span><span> </span><span id="local-6989586621682367520"><span class="annot"><span class="annottext">HashSet (SomeTypedSymbol 'ConstantKind)
+</span><a href="#local-6989586621682367520"><span class="hs-identifier hs-var">set</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682367521"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367521"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>  </span><span class="annot"><span class="annottext">(SomeTypedSymbol 'ConstantKind -&gt; SymBool -&gt; SymBool)
+-&gt; SymBool -&gt; [SomeTypedSymbol 'ConstantKind] -&gt; SymBool
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedSymbol"><span class="hs-identifier hs-type">SomeTypedSymbol</span></a></span><span> </span><span id="local-6989586621682367523"><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t
+</span><a href="#local-6989586621682367523"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682367524"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682367524"><span class="hs-identifier hs-var">b'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>        </span><span class="annot"><span class="annottext">Term Bool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; SymBool) -&gt; Term Bool -&gt; SymBool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t -&gt; Term Bool -&gt; Term Bool
+forall t. TypedSymbol 'ConstantKind t -&gt; Term Bool -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#forallTerm"><span class="hs-identifier hs-var">forallTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t
+</span><a href="#local-6989586621682367523"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682367524"><span class="hs-identifier hs-var">b'</span></a></span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>    </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367521"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[SomeTypedSymbol 'ConstantKind] -&gt; [SomeTypedSymbol 'ConstantKind]
+forall a. Ord a =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">sort</span></span><span> </span><span class="annot"><span class="annottext">([SomeTypedSymbol 'ConstantKind]
+ -&gt; [SomeTypedSymbol 'ConstantKind])
+-&gt; [SomeTypedSymbol 'ConstantKind]
+-&gt; [SomeTypedSymbol 'ConstantKind]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashSet (SomeTypedSymbol 'ConstantKind)
+-&gt; [SomeTypedSymbol 'ConstantKind]
+forall a. HashSet a -&gt; [a]
+</span><span class="hs-identifier hs-var">HS.toList</span></span><span> </span><span class="annot"><span class="annottext">HashSet (SomeTypedSymbol 'ConstantKind)
+</span><a href="#local-6989586621682367520"><span class="hs-identifier hs-var">set</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="hs-comment">-- | Forall quantifier over all symbolic constants in a value. Quantifier over</span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- functions is not supported.</span><span>
+</span><span id="line-81"></span><span class="hs-comment">--</span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- &gt;&gt;&gt; let a = [&quot;x&quot;, &quot;y&quot;] :: [SymInteger]</span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- &gt;&gt;&gt; forallSym a $ sum a .== 0</span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- (forall x :: Integer (forall y :: Integer (= (+ x y) 0)))</span><span>
+</span><span id="line-85"></span><span class="hs-comment">--</span><span>
+</span><span id="line-86"></span><span class="hs-comment">-- Only available with sbv 10.1.0 or later.</span><span>
+</span><span id="line-87"></span><span id="local-6989586621682367419"><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSym"><span class="hs-identifier hs-type">forallSym</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#ExtractSym"><span class="hs-identifier hs-type">ExtractSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367419"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682367419"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span>
+</span><span id="line-88"></span><span id="forallSym"><span class="annot"><span class="annottext">forallSym :: forall a. (HasCallStack, ExtractSym a) =&gt; a -&gt; SymBool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSym"><span class="hs-identifier hs-var hs-var">forallSym</span></a></span></span><span> </span><span id="local-6989586621682367533"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682367533"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621682367534"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367534"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-89"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe ConstantSymbolSet
+forall a (knd :: SymbolKind).
+(ExtractSym a, IsSymbolKind knd) =&gt;
+a -&gt; Maybe (SymbolSet knd)
+forall (knd :: SymbolKind).
+IsSymbolKind knd =&gt;
+a -&gt; Maybe (SymbolSet knd)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#extractSymMaybe"><span class="hs-identifier hs-var">extractSymMaybe</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682367533"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-90"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682367535"><span class="annot"><span class="annottext">ConstantSymbolSet
+</span><a href="#local-6989586621682367535"><span class="hs-identifier hs-var">s'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstantSymbolSet -&gt; SymBool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSet"><span class="hs-identifier hs-var">forallSet</span></a></span><span> </span><span class="annot"><span class="annottext">ConstantSymbolSet
+</span><a href="#local-6989586621682367535"><span class="hs-identifier hs-var">s'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367534"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><span class="annottext">Maybe ConstantSymbolSet
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-92"></span><span>      </span><span class="annot"><span class="annottext">[Char] -&gt; SymBool
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span>
+</span><span id="line-93"></span><span>        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Cannot use forall here. Only non-function symbols can be quantified.&quot;</span></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- | Exists quantifier over a set of constant symbols. Quantifier over functions</span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- is not supported.</span><span>
+</span><span id="line-97"></span><span class="hs-comment">--</span><span>
+</span><span id="line-98"></span><span class="hs-comment">-- &gt;&gt;&gt; let xsym = &quot;x&quot; :: TypedConstantSymbol Integer</span><span>
+</span><span id="line-99"></span><span class="hs-comment">-- &gt;&gt;&gt; let ysym = &quot;y&quot; :: TypedConstantSymbol Integer</span><span>
+</span><span id="line-100"></span><span class="hs-comment">-- &gt;&gt;&gt; let x = &quot;x&quot; :: SymInteger</span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- &gt;&gt;&gt; let y = &quot;y&quot; :: SymInteger</span><span>
+</span><span id="line-102"></span><span class="hs-comment">-- &gt;&gt;&gt; existsSet (buildSymbolSet [xsym, ysym]) (x .== y)</span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- (exists x :: Integer (exists y :: Integer (= x y)))</span><span>
+</span><span id="line-104"></span><span class="hs-comment">--</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- Only available with SBV 10.1.0 or later.</span><span>
+</span><span id="line-106"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSet"><span class="hs-identifier hs-type">existsSet</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#ConstantSymbolSet"><span class="hs-identifier hs-type">ConstantSymbolSet</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span>
+</span><span id="line-107"></span><span id="existsSet"><span class="annot"><span class="annottext">existsSet :: ConstantSymbolSet -&gt; SymBool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSet"><span class="hs-identifier hs-var hs-var">existsSet</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#SymbolSet"><span class="hs-identifier hs-type">SymbolSet</span></a></span><span> </span><span id="local-6989586621682367537"><span class="annot"><span class="annottext">HashSet (SomeTypedSymbol 'ConstantKind)
+</span><a href="#local-6989586621682367537"><span class="hs-identifier hs-var">set</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682367538"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367538"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="annottext">(SomeTypedSymbol 'ConstantKind -&gt; SymBool -&gt; SymBool)
+-&gt; SymBool -&gt; [SomeTypedSymbol 'ConstantKind] -&gt; SymBool
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedSymbol"><span class="hs-identifier hs-type">SomeTypedSymbol</span></a></span><span> </span><span id="local-6989586621682367539"><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t
+</span><a href="#local-6989586621682367539"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682367540"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682367540"><span class="hs-identifier hs-var">b'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-110"></span><span>        </span><span class="annot"><span class="annottext">Term Bool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; SymBool) -&gt; Term Bool -&gt; SymBool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t -&gt; Term Bool -&gt; Term Bool
+forall t. TypedSymbol 'ConstantKind t -&gt; Term Bool -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#existsTerm"><span class="hs-identifier hs-var">existsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t
+</span><a href="#local-6989586621682367539"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682367540"><span class="hs-identifier hs-var">b'</span></a></span><span>
+</span><span id="line-111"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-112"></span><span>    </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367538"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[SomeTypedSymbol 'ConstantKind] -&gt; [SomeTypedSymbol 'ConstantKind]
+forall a. Ord a =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">sort</span></span><span> </span><span class="annot"><span class="annottext">([SomeTypedSymbol 'ConstantKind]
+ -&gt; [SomeTypedSymbol 'ConstantKind])
+-&gt; [SomeTypedSymbol 'ConstantKind]
+-&gt; [SomeTypedSymbol 'ConstantKind]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashSet (SomeTypedSymbol 'ConstantKind)
+-&gt; [SomeTypedSymbol 'ConstantKind]
+forall a. HashSet a -&gt; [a]
+</span><span class="hs-identifier hs-var">HS.toList</span></span><span> </span><span class="annot"><span class="annottext">HashSet (SomeTypedSymbol 'ConstantKind)
+</span><a href="#local-6989586621682367537"><span class="hs-identifier hs-var">set</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- | Exists quantifier over all symbolic constants in a value. Quantifier over</span><span>
+</span><span id="line-116"></span><span class="hs-comment">-- functions is not supported.</span><span>
+</span><span id="line-117"></span><span class="hs-comment">--</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- &gt;&gt;&gt; let a = [&quot;x&quot;, &quot;y&quot;] :: [SymInteger]</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- &gt;&gt;&gt; existsSym a $ sum a .== 0</span><span>
+</span><span id="line-120"></span><span class="hs-comment">-- (exists x :: Integer (exists y :: Integer (= (+ x y) 0)))</span><span>
+</span><span id="line-121"></span><span class="hs-comment">--</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- Only available with sbv 10.1.0 or later.</span><span>
+</span><span id="line-123"></span><span id="local-6989586621682367541"><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSym"><span class="hs-identifier hs-type">existsSym</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#ExtractSym"><span class="hs-identifier hs-type">ExtractSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367541"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682367541"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span>
+</span><span id="line-124"></span><span id="existsSym"><span class="annot"><span class="annottext">existsSym :: forall a. (HasCallStack, ExtractSym a) =&gt; a -&gt; SymBool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSym"><span class="hs-identifier hs-var hs-var">existsSym</span></a></span></span><span> </span><span id="local-6989586621682367548"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682367548"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621682367549"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367549"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-125"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe ConstantSymbolSet
+forall a (knd :: SymbolKind).
+(ExtractSym a, IsSymbolKind knd) =&gt;
+a -&gt; Maybe (SymbolSet knd)
+forall (knd :: SymbolKind).
+IsSymbolKind knd =&gt;
+a -&gt; Maybe (SymbolSet knd)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#extractSymMaybe"><span class="hs-identifier hs-var">extractSymMaybe</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682367548"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-126"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682367550"><span class="annot"><span class="annottext">ConstantSymbolSet
+</span><a href="#local-6989586621682367550"><span class="hs-identifier hs-var">s'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstantSymbolSet -&gt; SymBool -&gt; SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSet"><span class="hs-identifier hs-var">existsSet</span></a></span><span> </span><span class="annot"><span class="annottext">ConstantSymbolSet
+</span><a href="#local-6989586621682367550"><span class="hs-identifier hs-var">s'</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682367549"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-127"></span><span>    </span><span class="annot"><span class="annottext">Maybe ConstantSymbolSet
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-128"></span><span>      </span><span class="annot"><span class="annottext">[Char] -&gt; SymBool
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span>
+</span><span id="line-129"></span><span>        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Cannot use exists here. Only non-function symbols can be quantified.&quot;</span></span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#freshTUnionToFreshUnion"><span class="hs-identifier hs-type">freshTUnionToFreshUnion</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-132"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682367430"><span class="annot"><a href="#local-6989586621682367430"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-133"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367430"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-134"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#FreshT"><span class="hs-identifier hs-type">FreshT</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Control.Monad.Union.html#Union"><span class="hs-identifier hs-type">Union</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367430"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-135"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#Fresh"><span class="hs-identifier hs-type">Fresh</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Control.Monad.Union.html#Union"><span class="hs-identifier hs-type">Union</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367430"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span id="freshTUnionToFreshUnion"><span class="annot"><span class="annottext">freshTUnionToFreshUnion :: forall a. Mergeable a =&gt; FreshT Union a -&gt; Fresh (Union a)
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#freshTUnionToFreshUnion"><span class="hs-identifier hs-var hs-var">freshTUnionToFreshUnion</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#FreshT"><span class="hs-identifier hs-type">FreshT</span></a></span><span> </span><span id="local-6989586621682367572"><span class="annot"><span class="annottext">Identifier -&gt; FreshIndex -&gt; Union (a, FreshIndex)
+</span><a href="#local-6989586621682367572"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-137"></span><span>  </span><span class="annot"><span class="annottext">(Identifier -&gt; FreshIndex -&gt; Identity (Union a, FreshIndex))
+-&gt; FreshT Identity (Union a)
+forall (m :: * -&gt; *) a.
+(Identifier -&gt; FreshIndex -&gt; m (a, FreshIndex)) -&gt; FreshT m a
+</span><a href="Grisette.Internal.Core.Data.Class.GenSym.html#FreshT"><span class="hs-identifier hs-var">FreshT</span></a></span><span> </span><span class="annot"><span class="annottext">((Identifier -&gt; FreshIndex -&gt; Identity (Union a, FreshIndex))
+ -&gt; FreshT Identity (Union a))
+-&gt; (Identifier -&gt; FreshIndex -&gt; Identity (Union a, FreshIndex))
+-&gt; FreshT Identity (Union a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682367573"><span class="annot"><span class="annottext">Identifier
+</span><a href="#local-6989586621682367573"><span class="hs-identifier hs-var">ident</span></a></span></span><span> </span><span id="local-6989586621682367574"><span class="annot"><span class="annottext">FreshIndex
+</span><a href="#local-6989586621682367574"><span class="hs-identifier hs-var">index</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-138"></span><span>    </span><span class="annot"><span class="annottext">(Union a, FreshIndex) -&gt; Identity (Union a, FreshIndex)
+forall a. a -&gt; Identity a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">((Union a, FreshIndex) -&gt; Identity (Union a, FreshIndex))
+-&gt; (Union a, FreshIndex) -&gt; Identity (Union a, FreshIndex)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Union (Union a, FreshIndex) -&gt; (Union a, FreshIndex)
+forall (u :: * -&gt; *) a.
+(SimpleMergeable a, PlainUnion u) =&gt;
+u a -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#simpleMerge"><span class="hs-identifier hs-var">simpleMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(Union (Union a, FreshIndex) -&gt; (Union a, FreshIndex))
+-&gt; Union (Union a, FreshIndex) -&gt; (Union a, FreshIndex)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Union a) -&gt; (a, FreshIndex) -&gt; (Union a, FreshIndex)
+forall a b c. (a -&gt; b) -&gt; (a, c) -&gt; (b, c)
+forall (p :: * -&gt; * -&gt; *) a b c.
+Bifunctor p =&gt;
+(a -&gt; b) -&gt; p a c -&gt; p b c
+</span><span class="hs-identifier hs-var">first</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Union a
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">((a, FreshIndex) -&gt; (Union a, FreshIndex))
+-&gt; Union (a, FreshIndex) -&gt; Union (Union a, FreshIndex)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; FreshIndex -&gt; Union (a, FreshIndex)
+</span><a href="#local-6989586621682367572"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Identifier
+</span><a href="#local-6989586621682367573"><span class="hs-identifier hs-var">ident</span></a></span><span> </span><span class="annot"><span class="annottext">FreshIndex
+</span><a href="#local-6989586621682367574"><span class="hs-identifier hs-var">index</span></a></span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span class="hs-comment">-- | Forall quantifier over symbolic constants in a freshly generated value.</span><span>
+</span><span id="line-141"></span><span class="hs-comment">-- Quantifier over functions is not supported.</span><span>
+</span><span id="line-142"></span><span class="hs-comment">--</span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- &gt;&gt;&gt; :{</span><span>
+</span><span id="line-144"></span><span class="hs-comment">-- x :: Fresh SymBool</span><span>
+</span><span id="line-145"></span><span class="hs-comment">-- x = forallFresh () $ \(a :: SymBool) -&gt;</span><span>
+</span><span id="line-146"></span><span class="hs-comment">--       existsFresh () $ \(b :: SymBool) -&gt;</span><span>
+</span><span id="line-147"></span><span class="hs-comment">--         mrgReturn $ a .== b</span><span>
+</span><span id="line-148"></span><span class="hs-comment">-- :}</span><span>
+</span><span id="line-149"></span><span class="hs-comment">--</span><span>
+</span><span id="line-150"></span><span class="hs-comment">-- &gt;&gt;&gt; runFresh x &quot;x&quot;</span><span>
+</span><span id="line-151"></span><span class="hs-comment">-- (forall x@0 :: Bool (exists x@1 :: Bool (= x@0 x@1)))</span><span>
+</span><span id="line-152"></span><span class="hs-comment">--</span><span>
+</span><span id="line-153"></span><span class="hs-comment">-- Only available with sbv 10.1.0 or later.</span><span>
+</span><span id="line-154"></span><span id="local-6989586621682367461"><span id="local-6989586621682367462"><span id="local-6989586621682367464"><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#forallFresh"><span class="hs-identifier hs-type">forallFresh</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-155"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span class="hs-special">,</span><span>
+</span><span id="line-156"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#ExtractSym"><span class="hs-identifier hs-type">ExtractSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367461"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-157"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#MonadFresh"><span class="hs-identifier hs-type">MonadFresh</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367462"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-158"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#GenSym"><span class="hs-identifier hs-type">GenSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367464"><span class="hs-identifier hs-type">spec</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367461"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-159"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367462"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-160"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-161"></span><span>  </span><span class="annot"><a href="#local-6989586621682367464"><span class="hs-identifier hs-type">spec</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-162"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682367461"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#FreshT"><span class="hs-identifier hs-type">FreshT</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Control.Monad.Union.html#Union"><span class="hs-identifier hs-type">Union</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-163"></span><span>  </span><span class="annot"><a href="#local-6989586621682367462"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span></span></span><span>
+</span><span id="line-164"></span><span id="forallFresh"><span class="annot"><span class="annottext">forallFresh :: forall v (m :: * -&gt; *) spec.
+(HasCallStack, ExtractSym v, MonadFresh m, GenSym spec v,
+ TryMerge m) =&gt;
+spec -&gt; (v -&gt; FreshT Union SymBool) -&gt; m SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#forallFresh"><span class="hs-identifier hs-var hs-var">forallFresh</span></a></span></span><span> </span><span id="local-6989586621682367620"><span class="annot"><span class="annottext">spec
+</span><a href="#local-6989586621682367620"><span class="hs-identifier hs-var">spec</span></a></span></span><span> </span><span id="local-6989586621682367621"><span class="annot"><span class="annottext">v -&gt; FreshT Union SymBool
+</span><a href="#local-6989586621682367621"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-165"></span><span>  </span><span id="local-6989586621682367622"><span class="annot"><a href="#local-6989586621682367622"><span class="hs-identifier hs-var">u</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">spec -&gt; m (Union v)
+forall spec a (m :: * -&gt; *).
+(GenSym spec a, MonadFresh m) =&gt;
+spec -&gt; m (Union a)
+forall (m :: * -&gt; *). MonadFresh m =&gt; spec -&gt; m (Union v)
+</span><a href="Grisette.Internal.Core.Data.Class.GenSym.html#fresh"><span class="hs-identifier hs-var">fresh</span></a></span><span> </span><span class="annot"><span class="annottext">spec
+</span><a href="#local-6989586621682367620"><span class="hs-identifier hs-var">spec</span></a></span><span>
+</span><span id="line-166"></span><span>  </span><span id="local-6989586621682367623"><span class="annot"><a href="#local-6989586621682367623"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#liftFresh"><span class="hs-identifier hs-type">liftFresh</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">.</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">fmap</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#simpleMerge"><span class="hs-identifier hs-type">simpleMerge</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">.</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#freshTUnionToFreshUnion"><span class="hs-identifier hs-type">freshTUnionToFreshUnion</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-167"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Impl.Core.Control.Monad.Union.html#liftUnion"><span class="hs-identifier hs-type">liftUnion</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367622"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&gt;&gt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682367621"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-168"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-type">mrgSingle</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#forallSym"><span class="hs-identifier hs-type">forallSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367622"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367623"><span class="hs-identifier hs-type">p</span></a></span><span>
+</span><span id="line-169"></span><span>
+</span><span id="line-170"></span><span class="hs-comment">-- | Exists quantifier over symbolic constants in a freshly generated value.</span><span>
+</span><span id="line-171"></span><span class="hs-comment">-- Quantifier over functions is not supported.</span><span>
+</span><span id="line-172"></span><span class="hs-comment">--</span><span>
+</span><span id="line-173"></span><span class="hs-comment">-- &gt;&gt;&gt; :{</span><span>
+</span><span id="line-174"></span><span class="hs-comment">-- x :: Fresh SymBool</span><span>
+</span><span id="line-175"></span><span class="hs-comment">-- x = forallFresh () $ \(a :: SymBool) -&gt;</span><span>
+</span><span id="line-176"></span><span class="hs-comment">--       existsFresh () $ \(b :: SymBool) -&gt;</span><span>
+</span><span id="line-177"></span><span class="hs-comment">--         mrgReturn $ a .== b</span><span>
+</span><span id="line-178"></span><span class="hs-comment">-- :}</span><span>
+</span><span id="line-179"></span><span class="hs-comment">--</span><span>
+</span><span id="line-180"></span><span class="hs-comment">-- &gt;&gt;&gt; runFresh x &quot;x&quot;</span><span>
+</span><span id="line-181"></span><span class="hs-comment">-- (forall x@0 :: Bool (exists x@1 :: Bool (= x@0 x@1)))</span><span>
+</span><span id="line-182"></span><span class="hs-comment">--</span><span>
+</span><span id="line-183"></span><span class="hs-comment">-- Only available with sbv 10.1.0 or later.</span><span>
+</span><span id="line-184"></span><span id="local-6989586621682367625"><span id="local-6989586621682367626"><span id="local-6989586621682367627"><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#existsFresh"><span class="hs-identifier hs-type">existsFresh</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-185"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span class="hs-special">,</span><span>
+</span><span id="line-186"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym.html#ExtractSym"><span class="hs-identifier hs-type">ExtractSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367625"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-187"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#MonadFresh"><span class="hs-identifier hs-type">MonadFresh</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367626"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-188"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#GenSym"><span class="hs-identifier hs-type">GenSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367627"><span class="hs-identifier hs-type">spec</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367625"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-189"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367626"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-190"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-191"></span><span>  </span><span class="annot"><a href="#local-6989586621682367627"><span class="hs-identifier hs-type">spec</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-192"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682367625"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#FreshT"><span class="hs-identifier hs-type">FreshT</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Control.Monad.Union.html#Union"><span class="hs-identifier hs-type">Union</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-193"></span><span>  </span><span class="annot"><a href="#local-6989586621682367626"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span></span></span><span>
+</span><span id="line-194"></span><span id="existsFresh"><span class="annot"><span class="annottext">existsFresh :: forall v (m :: * -&gt; *) spec.
+(HasCallStack, ExtractSym v, MonadFresh m, GenSym spec v,
+ TryMerge m) =&gt;
+spec -&gt; (v -&gt; FreshT Union SymBool) -&gt; m SymBool
+</span><a href="Grisette.Internal.SymPrim.Quantifier.html#existsFresh"><span class="hs-identifier hs-var hs-var">existsFresh</span></a></span></span><span> </span><span id="local-6989586621682367659"><span class="annot"><span class="annottext">spec
+</span><a href="#local-6989586621682367659"><span class="hs-identifier hs-var">spec</span></a></span></span><span> </span><span id="local-6989586621682367660"><span class="annot"><span class="annottext">v -&gt; FreshT Union SymBool
+</span><a href="#local-6989586621682367660"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-195"></span><span>  </span><span id="local-6989586621682367661"><span class="annot"><a href="#local-6989586621682367661"><span class="hs-identifier hs-var">u</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">spec -&gt; m (Union v)
+forall spec a (m :: * -&gt; *).
+(GenSym spec a, MonadFresh m) =&gt;
+spec -&gt; m (Union a)
+forall (m :: * -&gt; *). MonadFresh m =&gt; spec -&gt; m (Union v)
+</span><a href="Grisette.Internal.Core.Data.Class.GenSym.html#fresh"><span class="hs-identifier hs-var">fresh</span></a></span><span> </span><span class="annot"><span class="annottext">spec
+</span><a href="#local-6989586621682367659"><span class="hs-identifier hs-var">spec</span></a></span><span>
+</span><span id="line-196"></span><span>  </span><span id="local-6989586621682367662"><span class="annot"><a href="#local-6989586621682367662"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.GenSym.html#liftFresh"><span class="hs-identifier hs-type">liftFresh</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">.</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">fmap</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PlainUnion.html#simpleMerge"><span class="hs-identifier hs-type">simpleMerge</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">.</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#freshTUnionToFreshUnion"><span class="hs-identifier hs-type">freshTUnionToFreshUnion</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-197"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Impl.Core.Control.Monad.Union.html#liftUnion"><span class="hs-identifier hs-type">liftUnion</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367661"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&gt;&gt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682367660"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-198"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-type">mrgSingle</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Quantifier.html#existsSym"><span class="hs-identifier hs-type">existsSym</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367661"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682367662"><span class="hs-identifier hs-type">p</span></a></span><span>
+</span><span id="line-199"></span></pre></body></html>

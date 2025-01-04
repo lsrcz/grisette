@@ -1,0 +1,539 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveAnyClass #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DeriveLift #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE DerivingStrategies #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.SymAlgReal</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymAlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier">SymAlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier">SymAlgReal</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Binary</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Binary</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bytes.Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">deserialize</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">serialize</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">hashWithSalt</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Serialize</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Cereal</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IsString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromString</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Function</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Apply"><span class="hs-identifier">Apply</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#FunType"><span class="hs-identifier">FunType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#apply"><span class="hs-identifier">apply</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Solvable</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier">Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier">con</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier">conView</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ssym"><span class="hs-identifier">ssym</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#sym"><span class="hs-identifier">sym</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.SymPrim.AllSyms</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier">AllSyms</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier">allSymsS</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#SomeSym"><span class="hs-identifier">SomeSym</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#SomeSym"><span class="hs-identifier">SomeSym</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingUnaryOp"><span class="hs-identifier">FloatingUnaryOp</span></a></span><span>
+</span><span id="line-36"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAcos"><span class="hs-identifier">FloatingAcos</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAsin"><span class="hs-identifier">FloatingAsin</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAtan"><span class="hs-identifier">FloatingAtan</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingCos"><span class="hs-identifier">FloatingCos</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingCosh"><span class="hs-identifier">FloatingCosh</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingExp"><span class="hs-identifier">FloatingExp</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingLog"><span class="hs-identifier">FloatingLog</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSin"><span class="hs-identifier">FloatingSin</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSinh"><span class="hs-identifier">FloatingSinh</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSqrt"><span class="hs-identifier">FloatingSqrt</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingTan"><span class="hs-identifier">FloatingTan</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingTanh"><span class="hs-identifier">FloatingTanh</span></a></span><span>
+</span><span id="line-48"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFloatingTerm"><span class="hs-identifier">PEvalFloatingTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier">pevalFloatingUnaryTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalPowerTerm"><span class="hs-identifier">pevalPowerTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalNumTerm"><span class="hs-identifier">PEvalNumTerm</span></a></span><span>
+</span><span id="line-51"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalAbsNumTerm"><span class="hs-identifier">pevalAbsNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalMulNumTerm"><span class="hs-identifier">pevalMulNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalNegNumTerm"><span class="hs-identifier">pevalNegNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSignumNumTerm"><span class="hs-identifier">pevalSignumNumTerm</span></a></span><span>
+</span><span id="line-55"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSubNumTerm"><span class="hs-identifier">pevalSubNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#typedConstantSymbol"><span class="hs-identifier">typedConstantSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Term</span></a></span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConRep"><span class="hs-identifier">ConRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConType"><span class="hs-identifier">ConType</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LinkedRep"><span class="hs-identifier">LinkedRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#underlyingTerm"><span class="hs-identifier">underlyingTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#wrapTerm"><span class="hs-identifier">wrapTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalNumTerm"><span class="hs-identifier">PEvalNumTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalAddNumTerm"><span class="hs-identifier">pevalAddNumTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymRep"><span class="hs-identifier">SymRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymType"><span class="hs-identifier">SymType</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-64"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pformatTerm"><span class="hs-identifier">pformatTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#symTerm"><span class="hs-identifier">symTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-68"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Lift</span></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="annot"><span class="hs-comment">-- | Symbolic representation of algebraic real numbers.</span></span><span>
+</span><span id="line-72"></span><span class="hs-keyword">newtype</span><span> </span><span id="SymAlgReal"><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SymAlgReal"><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span></span><span> </span><span class="hs-special">{</span><span id="underlyingAlgRealTerm"><span class="annot"><span class="annottext">SymAlgReal -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#underlyingAlgRealTerm"><span class="hs-identifier hs-var hs-var">underlyingAlgRealTerm</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682267981"><span id="local-6989586621682267988"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). Quote m =&gt; SymAlgReal -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *).
+    Quote m =&gt;
+    SymAlgReal -&gt; Code m SymAlgReal)
+-&gt; Lift SymAlgReal
+forall t.
+(forall (m :: * -&gt; *). Quote m =&gt; t -&gt; m Exp)
+-&gt; (forall (m :: * -&gt; *). Quote m =&gt; t -&gt; Code m t) -&gt; Lift t
+forall (m :: * -&gt; *). Quote m =&gt; SymAlgReal -&gt; m Exp
+forall (m :: * -&gt; *). Quote m =&gt; SymAlgReal -&gt; Code m SymAlgReal
+$clift :: forall (m :: * -&gt; *). Quote m =&gt; SymAlgReal -&gt; m Exp
+lift :: forall (m :: * -&gt; *). Quote m =&gt; SymAlgReal -&gt; m Exp
+$cliftTyped :: forall (m :: * -&gt; *). Quote m =&gt; SymAlgReal -&gt; Code m SymAlgReal
+liftTyped :: forall (m :: * -&gt; *). Quote m =&gt; SymAlgReal -&gt; Code m SymAlgReal
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Lift</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682267996"><span id="local-6989586621682267998"><span class="annot"><span class="annottext">(forall x. SymAlgReal -&gt; Rep SymAlgReal x)
+-&gt; (forall x. Rep SymAlgReal x -&gt; SymAlgReal) -&gt; Generic SymAlgReal
+forall x. Rep SymAlgReal x -&gt; SymAlgReal
+forall x. SymAlgReal -&gt; Rep SymAlgReal x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. SymAlgReal -&gt; Rep SymAlgReal x
+from :: forall x. SymAlgReal -&gt; Rep SymAlgReal x
+$cto :: forall x. Rep SymAlgReal x -&gt; SymAlgReal
+to :: forall x. Rep SymAlgReal x -&gt; SymAlgReal
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682268004"><span class="annot"><span class="annottext">SymAlgReal -&gt; ()
+(SymAlgReal -&gt; ()) -&gt; NFData SymAlgReal
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: SymAlgReal -&gt; ()
+rnf :: SymAlgReal -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConRep"><span class="hs-identifier hs-type">ConRep</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="ConType"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConType"><span class="hs-identifier hs-var">ConType</span></a></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymRep"><span class="hs-identifier hs-type">SymRep</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="SymType"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymType"><span class="hs-identifier hs-var">SymType</span></a></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LinkedRep"><span class="hs-identifier hs-type">LinkedRep</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-83"></span><span>  </span><span id="local-6989586621682268039"><span class="annot"><span class="annottext">underlyingTerm :: SymAlgReal -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#underlyingTerm"><span class="hs-identifier hs-var hs-var hs-var">underlyingTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymAlgReal -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#underlyingAlgRealTerm"><span class="hs-identifier hs-var">underlyingAlgRealTerm</span></a></span><span>
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621682268040"><span class="annot"><span class="annottext">wrapTerm :: Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#wrapTerm"><span class="hs-identifier hs-var hs-var hs-var">wrapTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Apply"><span class="hs-identifier hs-type">Apply</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-87"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="FunType"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#FunType"><span class="hs-identifier hs-var">FunType</span></a></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span>
+</span><span id="line-88"></span><span>  </span><span id="local-6989586621682268044"><span class="annot"><span class="annottext">apply :: SymAlgReal -&gt; FunType SymAlgReal
+</span><a href="Grisette.Internal.Core.Data.Class.Function.html#apply"><span class="hs-identifier hs-var hs-var hs-var">apply</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymAlgReal -&gt; FunType SymAlgReal
+SymAlgReal -&gt; SymAlgReal
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268048"><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268055"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268055"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682268056"><span class="annot"><span class="annottext">== :: SymAlgReal -&gt; SymAlgReal -&gt; Bool
+</span><span class="hs-operator hs-var hs-var hs-var">==</span></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268057"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268057"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268055"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268057"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268062"><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-94"></span><span>  </span><span id="local-6989586621682268069"><span class="annot"><span class="annottext">hashWithSalt :: Int -&gt; SymAlgReal -&gt; Int
+</span><span class="hs-identifier hs-var hs-var hs-var">hashWithSalt</span></span></span><span> </span><span id="local-6989586621682268070"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682268070"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268071"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268071"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Term AlgReal -&gt; Int
+forall a. Hashable a =&gt; Int -&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">hashWithSalt</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682268070"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268071"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IsString</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-97"></span><span>  </span><span id="local-6989586621682268079"><span class="annot"><span class="annottext">fromString :: String -&gt; SymAlgReal
+</span><span class="hs-identifier hs-var hs-var hs-var">fromString</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; SymAlgReal
+forall c t. Solvable c t =&gt; Identifier -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ssym"><span class="hs-identifier hs-var">ssym</span></a></span><span> </span><span class="annot"><span class="annottext">(Identifier -&gt; SymAlgReal)
+-&gt; (String -&gt; Identifier) -&gt; String -&gt; SymAlgReal
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Identifier
+forall a. IsString a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">fromString</span></span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268087"><span id="local-6989586621682268090"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-100"></span><span>  </span><span id="local-6989586621682268094"><span class="annot"><span class="annottext">con :: AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var hs-var hs-var">con</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal)
+-&gt; (AlgReal -&gt; Term AlgReal) -&gt; AlgReal -&gt; SymAlgReal
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">AlgReal -&gt; Term AlgReal
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span>
+</span><span id="line-101"></span><span>  </span><span id="local-6989586621682268097"><span class="annot"><span class="annottext">sym :: Symbol -&gt; SymAlgReal
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#sym"><span class="hs-identifier hs-var hs-var hs-var">sym</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal)
+-&gt; (Symbol -&gt; Term AlgReal) -&gt; Symbol -&gt; SymAlgReal
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind AlgReal -&gt; Term AlgReal
+forall (knd :: SymbolKind) t. TypedSymbol knd t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#symTerm"><span class="hs-identifier hs-var">symTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(TypedSymbol 'ConstantKind AlgReal -&gt; Term AlgReal)
+-&gt; (Symbol -&gt; TypedSymbol 'ConstantKind AlgReal)
+-&gt; Symbol
+-&gt; Term AlgReal
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Symbol -&gt; TypedSymbol 'ConstantKind AlgReal
+forall t.
+SupportedNonFuncPrim t =&gt;
+Symbol -&gt; TypedSymbol 'ConstantKind t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#typedConstantSymbol"><span class="hs-identifier hs-var">typedConstantSymbol</span></a></span><span>
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682268098"><span class="annot"><span class="annottext">conView :: SymAlgReal -&gt; Maybe AlgReal
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier hs-var hs-var hs-var">conView</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682268100"><span class="annot"><span class="annottext">AlgReal
+</span><a href="#local-6989586621682268100"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AlgReal -&gt; Maybe AlgReal
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">AlgReal
+</span><a href="#local-6989586621682268100"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-103"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier hs-var">conView</span></a></span><span> </span><span class="annot"><span class="annottext">SymAlgReal
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe AlgReal
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-104"></span><span>
+</span><span id="line-105"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268102"><span id="local-6989586621682268107"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-106"></span><span>  </span><span id="local-6989586621682268110"><span class="annot"><span class="annottext">show :: SymAlgReal -&gt; String
+</span><a href="#local-6989586621682268110"><span class="hs-identifier hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268112"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268112"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; String
+forall t. Term t -&gt; String
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pformatTerm"><span class="hs-identifier hs-var">pformatTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268112"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-107"></span><span>
+</span><span id="line-108"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268115"><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier hs-type">AllSyms</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-109"></span><span>  </span><span id="local-6989586621682268120"><span class="annot"><span class="annottext">allSymsS :: SymAlgReal -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var hs-var hs-var">allSymsS</span></a></span></span><span> </span><span id="local-6989586621682268121"><span class="annot"><span class="annottext">SymAlgReal
+</span><a href="#local-6989586621682268121"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymAlgReal -&gt; SomeSym
+forall con sym. LinkedRep con sym =&gt; sym -&gt; SomeSym
+</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#SomeSym"><span class="hs-identifier hs-var">SomeSym</span></a></span><span> </span><span class="annot"><span class="annottext">SymAlgReal
+</span><a href="#local-6989586621682268121"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">SomeSym -&gt; [SomeSym] -&gt; [SomeSym]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-112"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268133"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268133"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682268134"><span class="annot"><span class="annottext">+ :: SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268134"><span class="hs-operator hs-var hs-var hs-var">+</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268136"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268136"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalAddNumTerm"><span class="hs-identifier hs-var">pevalAddNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268133"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268136"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-113"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268138"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268138"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682268139"><span class="annot"><span class="annottext">- :: SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+</span><span class="hs-glyph hs-var hs-var hs-var">-</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268140"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268140"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSubNumTerm"><span class="hs-identifier hs-var">pevalSubNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268138"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268140"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-114"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268142"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268142"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682268143"><span class="annot"><span class="annottext">* :: SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268143"><span class="hs-operator hs-var hs-var hs-var">*</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268145"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268145"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalMulNumTerm"><span class="hs-identifier hs-var">pevalMulNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268142"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268145"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-115"></span><span>  </span><span id="local-6989586621682268147"><span class="annot"><span class="annottext">negate :: SymAlgReal -&gt; SymAlgReal
+</span><span class="hs-identifier hs-var hs-var hs-var">negate</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268148"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268148"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalNegNumTerm"><span class="hs-identifier hs-var">pevalNegNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268148"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621682268150"><span class="annot"><span class="annottext">abs :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268150"><span class="hs-identifier hs-var hs-var hs-var">abs</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268152"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268152"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalAbsNumTerm"><span class="hs-identifier hs-var">pevalAbsNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268152"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621682268154"><span class="annot"><span class="annottext">signum :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268154"><span class="hs-identifier hs-var hs-var hs-var">signum</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268156"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268156"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal
+forall t. PEvalNumTerm t =&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalSignumNumTerm"><span class="hs-identifier hs-var">pevalSignumNumTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268156"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-118"></span><span>  </span><span id="local-6989586621682268160"><span class="annot"><span class="annottext">fromInteger :: Integer -&gt; SymAlgReal
+</span><span class="hs-identifier hs-var hs-var hs-var">fromInteger</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AlgReal -&gt; SymAlgReal
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(AlgReal -&gt; SymAlgReal)
+-&gt; (Integer -&gt; AlgReal) -&gt; Integer -&gt; SymAlgReal
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; AlgReal
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Fractional</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-121"></span><span>  </span><span id="local-6989586621682268171"><span class="annot"><span class="annottext">fromRational :: Rational -&gt; SymAlgReal
+</span><span class="hs-identifier hs-var hs-var hs-var">fromRational</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AlgReal -&gt; SymAlgReal
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(AlgReal -&gt; SymAlgReal)
+-&gt; (Rational -&gt; AlgReal) -&gt; Rational -&gt; SymAlgReal
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Rational -&gt; AlgReal
+forall a. Fractional a =&gt; Rational -&gt; a
+</span><span class="hs-identifier hs-var">fromRational</span></span><span>
+</span><span id="line-122"></span><span>  </span><span id="local-6989586621682268174"><span class="annot"><span class="annottext">/ :: SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268174"><span class="hs-operator hs-var hs-var hs-var">(/)</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;consider using safeFdiv instead of (/) for SymAlgReal&quot;</span></span><span>
+</span><span id="line-123"></span><span>  </span><span id="local-6989586621682268179"><span class="annot"><span class="annottext">recip :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268179"><span class="hs-identifier hs-var hs-var hs-var">recip</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; SymAlgReal -&gt; SymAlgReal
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;consider using safeRecip instead of recip for SymAlgReal&quot;</span></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268202"><span id="local-6989586621682268206"><span id="local-6989586621682268209"><span id="local-6989586621682268212"><span class="annot"><span class="hs-identifier hs-type">Floating</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-126"></span><span>  </span><span id="local-6989586621682268229"><span class="annot"><span class="annottext">pi :: SymAlgReal
+</span><a href="#local-6989586621682268229"><span class="hs-identifier hs-var hs-var hs-var">pi</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Rational -&gt; SymAlgReal
+forall a. Fractional a =&gt; Rational -&gt; a
+</span><span class="hs-identifier hs-var">fromRational</span></span><span> </span><span class="annot"><span class="annottext">(Rational -&gt; SymAlgReal) -&gt; Rational -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Double -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">Double
+forall a. Floating a =&gt; a
+</span><span class="hs-identifier hs-var">pi</span></span><span>
+</span><span id="line-127"></span><span>  </span><span id="local-6989586621682268233"><span class="annot"><span class="annottext">exp :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268233"><span class="hs-identifier hs-var hs-var hs-var">exp</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268235"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268235"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingExp"><span class="hs-identifier hs-var">FloatingExp</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268235"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-128"></span><span>  </span><span id="local-6989586621682268237"><span class="annot"><span class="annottext">log :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268237"><span class="hs-identifier hs-var hs-var hs-var">log</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268239"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268239"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingLog"><span class="hs-identifier hs-var">FloatingLog</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268239"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-129"></span><span>  </span><span id="local-6989586621682268241"><span class="annot"><span class="annottext">sqrt :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268241"><span class="hs-identifier hs-var hs-var hs-var">sqrt</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268243"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268243"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSqrt"><span class="hs-identifier hs-var">FloatingSqrt</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268243"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-130"></span><span>  </span><span id="local-6989586621682268245"><span class="annot"><span class="annottext">sin :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268245"><span class="hs-identifier hs-var hs-var hs-var">sin</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268247"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268247"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSin"><span class="hs-identifier hs-var">FloatingSin</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268247"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-131"></span><span>  </span><span id="local-6989586621682268249"><span class="annot"><span class="annottext">cos :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268249"><span class="hs-identifier hs-var hs-var hs-var">cos</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268251"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268251"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingCos"><span class="hs-identifier hs-var">FloatingCos</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268251"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-132"></span><span>  </span><span id="local-6989586621682268253"><span class="annot"><span class="annottext">tan :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268253"><span class="hs-identifier hs-var hs-var hs-var">tan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268255"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268255"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingTan"><span class="hs-identifier hs-var">FloatingTan</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268255"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-133"></span><span>  </span><span id="local-6989586621682268257"><span class="annot"><span class="annottext">sinh :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268257"><span class="hs-identifier hs-var hs-var hs-var">sinh</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268259"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268259"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSinh"><span class="hs-identifier hs-var">FloatingSinh</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268259"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-134"></span><span>  </span><span id="local-6989586621682268261"><span class="annot"><span class="annottext">cosh :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268261"><span class="hs-identifier hs-var hs-var hs-var">cosh</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268263"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268263"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingCosh"><span class="hs-identifier hs-var">FloatingCosh</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268263"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-135"></span><span>  </span><span id="local-6989586621682268265"><span class="annot"><span class="annottext">tanh :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268265"><span class="hs-identifier hs-var hs-var hs-var">tanh</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268267"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268267"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingTanh"><span class="hs-identifier hs-var">FloatingTanh</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268267"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-136"></span><span>  </span><span id="local-6989586621682268269"><span class="annot"><span class="annottext">asin :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268269"><span class="hs-identifier hs-var hs-var hs-var">asin</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268271"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268271"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAsin"><span class="hs-identifier hs-var">FloatingAsin</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268271"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-137"></span><span>  </span><span id="local-6989586621682268273"><span class="annot"><span class="annottext">acos :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268273"><span class="hs-identifier hs-var hs-var hs-var">acos</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268275"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268275"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAcos"><span class="hs-identifier hs-var">FloatingAcos</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268275"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-138"></span><span>  </span><span id="local-6989586621682268277"><span class="annot"><span class="annottext">atan :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268277"><span class="hs-identifier hs-var hs-var hs-var">atan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268279"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268279"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+forall t.
+PEvalFloatingTerm t =&gt;
+FloatingUnaryOp -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var">pevalFloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAtan"><span class="hs-identifier hs-var">FloatingAtan</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268279"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-139"></span><span>  </span><span id="local-6989586621682268282"><span class="annot"><span class="annottext">asinh :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268282"><span class="hs-identifier hs-var hs-var hs-var">asinh</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; SymAlgReal -&gt; SymAlgReal
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;asinh isn't supported by the underlying sbv library&quot;</span></span><span>
+</span><span id="line-140"></span><span>  </span><span id="local-6989586621682268286"><span class="annot"><span class="annottext">acosh :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268286"><span class="hs-identifier hs-var hs-var hs-var">acosh</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; SymAlgReal -&gt; SymAlgReal
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;acosh isn't supported by the underlying sbv library&quot;</span></span><span>
+</span><span id="line-141"></span><span>  </span><span id="local-6989586621682268290"><span class="annot"><span class="annottext">atanh :: SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268290"><span class="hs-identifier hs-var hs-var hs-var">atanh</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; SymAlgReal -&gt; SymAlgReal
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;atanh isn't supported by the underlying sbv library&quot;</span></span><span>
+</span><span id="line-142"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268293"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268293"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682268294"><span class="annot"><span class="annottext">** :: SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268294"><span class="hs-operator hs-var hs-var hs-var">**</span></a></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span id="local-6989586621682268296"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268296"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; Term AlgReal -&gt; SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
+forall t. PEvalFloatingTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalPowerTerm"><span class="hs-identifier hs-var">pevalPowerTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268293"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682268296"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-143"></span><span>  </span><span id="local-6989586621682268299"><span class="annot"><span class="annottext">logBase :: SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+</span><a href="#local-6989586621682268299"><span class="hs-identifier hs-var hs-var hs-var">logBase</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; SymAlgReal -&gt; SymAlgReal -&gt; SymAlgReal
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;consider using safeLogBase instead of logBase for AlgReal&quot;</span></span><span>
+</span><span id="line-144"></span><span>
+</span><span id="line-145"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-146"></span><span>  </span><span id="local-6989586621682268310"><span class="annot"><span class="annottext">serialize :: forall (m :: * -&gt; *). MonadPut m =&gt; SymAlgReal -&gt; m ()
+</span><span class="hs-identifier hs-var hs-var hs-var">serialize</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; m ()
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; Term AlgReal -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; m ())
+-&gt; (SymAlgReal -&gt; Term AlgReal) -&gt; SymAlgReal -&gt; m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SymAlgReal -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#underlyingAlgRealTerm"><span class="hs-identifier hs-var">underlyingAlgRealTerm</span></a></span><span>
+</span><span id="line-147"></span><span>  </span><span id="local-6989586621682268320"><span class="annot"><span class="annottext">deserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m SymAlgReal
+</span><span class="hs-identifier hs-var hs-var hs-var">deserialize</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; SymAlgReal
+</span><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-var">SymAlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">(Term AlgReal -&gt; SymAlgReal) -&gt; m (Term AlgReal) -&gt; m SymAlgReal
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">m (Term AlgReal)
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m (Term AlgReal)
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-148"></span><span>
+</span><span id="line-149"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-150"></span><span>  </span><span id="local-6989586621682268329"><span class="annot"><span class="annottext">put :: Putter SymAlgReal
+</span><a href="#local-6989586621682268329"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter SymAlgReal
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; SymAlgReal -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-151"></span><span>  </span><span id="local-6989586621682268334"><span class="annot"><span class="annottext">get :: Get SymAlgReal
+</span><a href="#local-6989586621682268334"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SymAlgReal
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m SymAlgReal
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-152"></span><span>
+</span><span id="line-153"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268339"><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-154"></span><span>  </span><span id="local-6989586621682268346"><span class="annot"><span class="annottext">put :: SymAlgReal -&gt; Put
+</span><a href="#local-6989586621682268346"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymAlgReal -&gt; Put
+forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
+forall (m :: * -&gt; *). MonadPut m =&gt; SymAlgReal -&gt; m ()
+</span><span class="hs-identifier hs-var">serialize</span></span><span>
+</span><span id="line-155"></span><span>  </span><span id="local-6989586621682268351"><span class="annot"><span class="annottext">get :: Get SymAlgReal
+</span><a href="#local-6989586621682268351"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SymAlgReal
+forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
+forall (m :: * -&gt; *). MonadGet m =&gt; m SymAlgReal
+</span><span class="hs-identifier hs-var">deserialize</span></span><span>
+</span><span id="line-156"></span></pre></body></html>

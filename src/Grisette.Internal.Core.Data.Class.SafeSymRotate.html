@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.SafeSymRotate</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2023-2024</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SafeSymRotate</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#SafeSymRotate"><span class="hs-identifier">SafeSymRotate</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ArithException</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Overflow</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Error.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadError</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">throwError</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">rotateL</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">rotateR</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">FiniteBits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">finiteBitSize</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeLits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html"><span class="hs-identifier">Grisette.Internal.Core.Control.Monad.Class.Union</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html#MonadUnion"><span class="hs-identifier">MonadUnion</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Mergeable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Mergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier">Mergeable</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SimpleMergeable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SimpleMergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier">mrgIf</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymOrd.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SymOrd</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#SymOrd"><span class="hs-identifier">SymOrd</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3C"><span class="hs-operator">(.&lt;)</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.TryMerge.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.TryMerge</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier">TryMerge</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier">mrgSingle</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier">tryMerge</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Term</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalRotateTerm"><span class="hs-identifier">PEvalRotateTerm</span></a></span><span>
+</span><span id="line-39"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRotateLeftTerm"><span class="hs-identifier">pevalRotateLeftTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRotateRightTerm"><span class="hs-identifier">pevalRotateRightTerm</span></a></span><span>
+</span><span id="line-41"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBV</span></a></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier">SymIntN</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier">SymIntN</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier">SymWordN</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier">SymWordN</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><span class="hs-comment">-- | Safe rotation operations. The operators will reject negative shift amounts.</span></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="#local-6989586621682350237"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350239"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350239"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="SafeSymRotate"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#SafeSymRotate"><span class="hs-identifier hs-var">SafeSymRotate</span></a></span></span><span> </span><span id="local-6989586621682350237"><span class="annot"><a href="#local-6989586621682350237"><span class="hs-identifier hs-type">e</span></a></span></span><span> </span><span id="local-6989586621682350238"><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682350239"><span class="annot"><a href="#local-6989586621682350239"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-50"></span><span>  </span><span id="safeSymRotateL"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateL"><span class="hs-identifier hs-type">safeSymRotateL</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682350239"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-51"></span><span>  </span><span id="safeSymRotateR"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateR"><span class="hs-identifier hs-type">safeSymRotateR</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682350239"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350238"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- | This function handles the case when the shift amount is out the range of</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- `Int` correctly.</span><span>
+</span><span id="line-55"></span><span id="local-6989586621682350245"><span id="local-6989586621682350246"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateLConcreteNum"><span class="hs-identifier hs-type">safeSymRotateLConcreteNum</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="annot"><a href="#local-6989586621682350245"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350245"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621682350246"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682350246"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350246"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-62"></span><span>  </span><span class="annot"><a href="#local-6989586621682350246"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-63"></span><span>  </span><span class="annot"><a href="#local-6989586621682350246"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><a href="#local-6989586621682350245"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350246"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-65"></span><span id="safeSymRotateLConcreteNum"><span class="annot"><span class="annottext">safeSymRotateLConcreteNum :: forall (m :: * -&gt; *) a.
+(MonadError ArithException m, TryMerge m, Integral a, FiniteBits a,
+ Mergeable a) =&gt;
+a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateLConcreteNum"><span class="hs-identifier hs-var hs-var">safeSymRotateLConcreteNum</span></a></span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682350397"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350397"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350397"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m a -&gt; m a
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; m a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ArithException -&gt; m a
+forall a. ArithException -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">ArithException
+</span><span class="hs-identifier hs-var">Overflow</span></span><span>
+</span><span id="line-66"></span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateLConcreteNum"><span class="hs-identifier hs-var">safeSymRotateLConcreteNum</span></a></span><span> </span><span id="local-6989586621682350399"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350399"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682350400"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350400"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-67"></span><span>  </span><span class="annot"><span class="annottext">a -&gt; m a
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; m a) -&gt; a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateL</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350399"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Int) -&gt; a -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350400"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350400"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- | This function handles the case when the shift amount is out the range of</span><span>
+</span><span id="line-70"></span><span class="hs-comment">-- `Int` correctly.</span><span>
+</span><span id="line-71"></span><span id="local-6989586621682350402"><span id="local-6989586621682350403"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateRConcreteNum"><span class="hs-identifier hs-type">safeSymRotateRConcreteNum</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="annot"><a href="#local-6989586621682350402"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350402"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-74"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621682350403"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682350403"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-76"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350403"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><a href="#local-6989586621682350403"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-79"></span><span>  </span><span class="annot"><a href="#local-6989586621682350403"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-80"></span><span>  </span><span class="annot"><a href="#local-6989586621682350402"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350403"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-81"></span><span id="safeSymRotateRConcreteNum"><span class="annot"><span class="annottext">safeSymRotateRConcreteNum :: forall (m :: * -&gt; *) a.
+(MonadError ArithException m, TryMerge m, Integral a, FiniteBits a,
+ Mergeable a) =&gt;
+a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateRConcreteNum"><span class="hs-identifier hs-var hs-var">safeSymRotateRConcreteNum</span></a></span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682350431"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350431"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350431"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m a -&gt; m a
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; m a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ArithException -&gt; m a
+forall a. ArithException -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">ArithException
+</span><span class="hs-identifier hs-var">Overflow</span></span><span>
+</span><span id="line-82"></span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateRConcreteNum"><span class="hs-identifier hs-var">safeSymRotateRConcreteNum</span></a></span><span> </span><span id="local-6989586621682350432"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350432"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682350433"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350433"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-83"></span><span>  </span><span class="annot"><span class="annottext">a -&gt; m a
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; m a) -&gt; a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350432"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Int) -&gt; a -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350433"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682350433"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-cpp">
+
+#define SAFE_SYM_ROTATE_CONCRETE(T) \
+  instance (MonadError ArithException m, TryMerge m) =&gt; \
+    SafeSymRotate ArithException T m where \
+    safeSymRotateL = safeSymRotateLConcreteNum; \
+    safeSymRotateR = safeSymRotateRConcreteNum \
+
+</span><span class="hs-cpp">#if 1
+</span><span id="local-6989586621682350274"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Word8</span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span id="local-6989586621682350276"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Word16</span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span id="local-6989586621682350278"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Word32</span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span id="local-6989586621682350280"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Word64</span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span id="local-6989586621682350282"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Word</span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span id="local-6989586621682350284"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Int8</span><span class="hs-special">)</span><span>
+</span><span id="line-98"></span><span id="local-6989586621682350286"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Int16</span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span id="local-6989586621682350288"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Int32</span><span class="hs-special">)</span><span>
+</span><span id="line-100"></span><span id="local-6989586621682350290"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Int64</span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span id="local-6989586621682350292"></span><span class="hs-identifier">SAFE_SYM_ROTATE_CONCRETE</span><span class="hs-special">(</span><span class="hs-identifier">Int</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-104"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-105"></span><span>  </span><span id="local-6989586621682350301"><span id="local-6989586621682350302"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="annot"><a href="#local-6989586621682350301"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350301"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682350302"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682350302"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-106"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#SafeSymRotate"><span class="hs-identifier hs-type">SafeSymRotate</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350302"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682350301"><span class="hs-identifier hs-type">m</span></a></span></span></span><span>
+</span><span id="line-107"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-108"></span><span>  </span><span id="local-6989586621682350724"><span class="annot"><span class="annottext">safeSymRotateL :: WordN n -&gt; WordN n -&gt; m (WordN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateL"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateL</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WordN n -&gt; WordN n -&gt; m (WordN n)
+forall (m :: * -&gt; *) a.
+(MonadError ArithException m, TryMerge m, Integral a, FiniteBits a,
+ Mergeable a) =&gt;
+a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateLConcreteNum"><span class="hs-identifier hs-var">safeSymRotateLConcreteNum</span></a></span><span>
+</span><span id="line-109"></span><span>  </span><span id="local-6989586621682350736"><span class="annot"><span class="annottext">safeSymRotateR :: WordN n -&gt; WordN n -&gt; m (WordN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateR"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateR</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WordN n -&gt; WordN n -&gt; m (WordN n)
+forall (m :: * -&gt; *) a.
+(MonadError ArithException m, TryMerge m, Integral a, FiniteBits a,
+ Mergeable a) =&gt;
+a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateRConcreteNum"><span class="hs-identifier hs-var">safeSymRotateRConcreteNum</span></a></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-112"></span><span>  </span><span id="local-6989586621682350309"><span id="local-6989586621682350310"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="annot"><a href="#local-6989586621682350309"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350309"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682350310"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682350310"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#SafeSymRotate"><span class="hs-identifier hs-type">SafeSymRotate</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350310"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682350309"><span class="hs-identifier hs-type">m</span></a></span></span></span><span>
+</span><span id="line-114"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-115"></span><span>  </span><span id="local-6989586621682350767"><span class="annot"><span class="annottext">safeSymRotateL :: IntN n -&gt; IntN n -&gt; m (IntN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateL"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateL</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IntN n -&gt; IntN n -&gt; m (IntN n)
+forall (m :: * -&gt; *) a.
+(MonadError ArithException m, TryMerge m, Integral a, FiniteBits a,
+ Mergeable a) =&gt;
+a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateLConcreteNum"><span class="hs-identifier hs-var">safeSymRotateLConcreteNum</span></a></span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621682350779"><span class="annot"><span class="annottext">safeSymRotateR :: IntN n -&gt; IntN n -&gt; m (IntN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateR"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateR</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IntN n -&gt; IntN n -&gt; m (IntN n)
+forall (m :: * -&gt; *) a.
+(MonadError ArithException m, TryMerge m, Integral a, FiniteBits a,
+ Mergeable a) =&gt;
+a -&gt; a -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateRConcreteNum"><span class="hs-identifier hs-var">safeSymRotateRConcreteNum</span></a></span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-119"></span><span>  </span><span id="local-6989586621682350317"><span id="local-6989586621682350318"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="annot"><a href="#local-6989586621682350317"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350317"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682350318"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682350318"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-120"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#SafeSymRotate"><span class="hs-identifier hs-type">SafeSymRotate</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350318"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682350317"><span class="hs-identifier hs-type">m</span></a></span></span></span><span>
+</span><span id="line-121"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-122"></span><span>  </span><span id="local-6989586621682350808"><span class="annot"><span class="annottext">safeSymRotateL :: SymWordN n -&gt; SymWordN n -&gt; m (SymWordN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateL"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateL</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span id="local-6989586621682350809"><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350809"><span class="hs-identifier hs-var">ta</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span id="local-6989586621682350810"><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350810"><span class="hs-identifier hs-var">tr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-123"></span><span>    </span><span class="annot"><span class="annottext">SymWordN n -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(SymWordN n -&gt; m (SymWordN n)) -&gt; SymWordN n -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; SymWordN n
+forall (n :: Nat). Term (WordN n) -&gt; SymWordN n
+</span><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-var">SymWordN</span></a></span><span> </span><span class="annot"><span class="annottext">(Term (WordN n) -&gt; SymWordN n) -&gt; Term (WordN n) -&gt; SymWordN n
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
+forall t. PEvalRotateTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRotateLeftTerm"><span class="hs-identifier hs-var">pevalRotateLeftTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350809"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350810"><span class="hs-identifier hs-var">tr</span></a></span><span>
+</span><span id="line-124"></span><span>  </span><span id="local-6989586621682350819"><span class="annot"><span class="annottext">safeSymRotateR :: SymWordN n -&gt; SymWordN n -&gt; m (SymWordN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateR"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateR</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span id="local-6989586621682350820"><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350820"><span class="hs-identifier hs-var">ta</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span id="local-6989586621682350821"><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350821"><span class="hs-identifier hs-var">tr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-125"></span><span>    </span><span class="annot"><span class="annottext">SymWordN n -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(SymWordN n -&gt; m (SymWordN n)) -&gt; SymWordN n -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; SymWordN n
+forall (n :: Nat). Term (WordN n) -&gt; SymWordN n
+</span><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-var">SymWordN</span></a></span><span> </span><span class="annot"><span class="annottext">(Term (WordN n) -&gt; SymWordN n) -&gt; Term (WordN n) -&gt; SymWordN n
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
+forall t. PEvalRotateTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRotateRightTerm"><span class="hs-identifier hs-var">pevalRotateRightTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350820"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="annot"><span class="annottext">Term (WordN n)
+</span><a href="#local-6989586621682350821"><span class="hs-identifier hs-var">tr</span></a></span><span>
+</span><span id="line-126"></span><span>
+</span><span id="line-127"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-128"></span><span>  </span><span id="local-6989586621682350333"><span id="local-6989586621682350334"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="annot"><a href="#local-6989586621682350333"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html#MonadUnion"><span class="hs-identifier hs-type">MonadUnion</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350333"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682350334"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682350334"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-129"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#SafeSymRotate"><span class="hs-identifier hs-type">SafeSymRotate</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ArithException</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682350334"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682350333"><span class="hs-identifier hs-type">m</span></a></span></span></span><span>
+</span><span id="line-130"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-131"></span><span>  </span><span id="local-6989586621682350864"><span class="annot"><span class="annottext">safeSymRotateL :: SymIntN n -&gt; SymIntN n -&gt; m (SymIntN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateL"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateL</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span id="local-6989586621682350865"><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350865"><span class="hs-identifier hs-var">ta</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682350866"><span class="annot"><span class="annottext">r :: SymIntN n
+</span><a href="#local-6989586621682350866"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span id="local-6989586621682350867"><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350867"><span class="hs-identifier hs-var">tr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-132"></span><span>    </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymIntN n) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-133"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n
+</span><a href="#local-6989586621682350866"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n -&gt; SymIntN n -&gt; SymBool
+forall a. SymOrd a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3C"><span class="hs-operator hs-var">.&lt;</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ArithException -&gt; m (SymIntN n)
+forall a. ArithException -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">ArithException
+</span><span class="hs-identifier hs-var">Overflow</span></span><span class="hs-special">)</span><span>
+</span><span id="line-135"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(SymIntN n -&gt; m (SymIntN n)) -&gt; SymIntN n -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; SymIntN n
+forall (n :: Nat). Term (IntN n) -&gt; SymIntN n
+</span><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-var">SymIntN</span></a></span><span> </span><span class="annot"><span class="annottext">(Term (IntN n) -&gt; SymIntN n) -&gt; Term (IntN n) -&gt; SymIntN n
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
+forall t. PEvalRotateTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRotateLeftTerm"><span class="hs-identifier hs-var">pevalRotateLeftTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350865"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350867"><span class="hs-identifier hs-var">tr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span>  </span><span id="local-6989586621682350885"><span class="annot"><span class="annottext">safeSymRotateR :: SymIntN n -&gt; SymIntN n -&gt; m (SymIntN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeSymRotate.html#safeSymRotateR"><span class="hs-identifier hs-var hs-var hs-var">safeSymRotateR</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span id="local-6989586621682350886"><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350886"><span class="hs-identifier hs-var">ta</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682350887"><span class="annot"><span class="annottext">r :: SymIntN n
+</span><a href="#local-6989586621682350887"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span id="local-6989586621682350888"><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350888"><span class="hs-identifier hs-var">tr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymIntN n) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-138"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n
+</span><a href="#local-6989586621682350887"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n -&gt; SymIntN n -&gt; SymBool
+forall a. SymOrd a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3C"><span class="hs-operator hs-var">.&lt;</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ArithException -&gt; m (SymIntN n)
+forall a. ArithException -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">ArithException
+</span><span class="hs-identifier hs-var">Overflow</span></span><span class="hs-special">)</span><span>
+</span><span id="line-140"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(SymIntN n -&gt; m (SymIntN n)) -&gt; SymIntN n -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; SymIntN n
+forall (n :: Nat). Term (IntN n) -&gt; SymIntN n
+</span><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-var">SymIntN</span></a></span><span> </span><span class="annot"><span class="annottext">(Term (IntN n) -&gt; SymIntN n) -&gt; Term (IntN n) -&gt; SymIntN n
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
+forall t. PEvalRotateTerm t =&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRotateRightTerm"><span class="hs-identifier hs-var">pevalRotateRightTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350886"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="annot"><span class="annottext">Term (IntN n)
+</span><a href="#local-6989586621682350888"><span class="hs-identifier hs-var">tr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-141"></span></pre></body></html>

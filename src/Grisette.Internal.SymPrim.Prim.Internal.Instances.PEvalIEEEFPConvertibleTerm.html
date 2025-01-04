@@ -1,0 +1,1304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE AllowAmbiguousTypes #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE InstanceSigs #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE KindSignatures #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#genericFPCast"><span class="hs-identifier">genericFPCast</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Proxy</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.SBV</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SBV</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.SBV.Internals</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SBVI</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeLits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Nat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.IEEEFP</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConstants"><span class="hs-identifier">IEEEFPConstants</span></a></span><span>
+</span><span id="line-31"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNaN"><span class="hs-identifier">fpNaN</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>        </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNegativeInfinite"><span class="hs-identifier">fpNegativeInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>        </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNegativeZero"><span class="hs-identifier">fpNegativeZero</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>        </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpPositiveInfinite"><span class="hs-identifier">fpPositiveInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>        </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpPositiveZero"><span class="hs-identifier">fpPositiveZero</span></a></span><span>
+</span><span id="line-36"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier">IEEEFPConvertible</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier">fromFPOr</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#toFP"><span class="hs-identifier">toFP</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsInfinite"><span class="hs-identifier">fpIsInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNaN"><span class="hs-identifier">fpIsNaN</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNegativeInfinite"><span class="hs-identifier">fpIsNegativeInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNegativeZero"><span class="hs-identifier">fpIsNegativeZero</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsPositiveInfinite"><span class="hs-identifier">fpIsPositiveInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsPositiveZero"><span class="hs-identifier">fpIsPositiveZero</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ConvertibleBound"><span class="hs-identifier">ConvertibleBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier">convertibleLowerBound</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier">convertibleUpperBound</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier">FPRoundingMode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#RNA"><span class="hs-identifier">RNA</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#RNE"><span class="hs-identifier">RNE</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#RTN"><span class="hs-identifier">RTN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#RTP"><span class="hs-identifier">RTP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#RTZ"><span class="hs-identifier">RTZ</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim</span></a></span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier">bvIsNonZeroFromGEq1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier">PEvalIEEEFPConvertibleTerm</span></a></span><span>
+</span><span id="line-58"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromFPOrTerm"><span class="hs-identifier">pevalFromFPOrTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalToFPTerm"><span class="hs-identifier">pevalToFPTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromFPOrTerm"><span class="hs-identifier">sbvFromFPOrTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvToFPTerm"><span class="hs-identifier">sbvToFPTerm</span></a></span><span>
+</span><span id="line-62"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVRep"><span class="hs-identifier">SBVRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier">SBVType</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-64"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier">conSBVTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fromFPOrTerm"><span class="hs-identifier">fromFPOrTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#toFPTerm"><span class="hs-identifier">toFPTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier">binaryUnfoldOnce</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">-- | Generic implementation for floating-point casting operators for sbv.</span></span><span>
+</span><span id="line-73"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#genericFPCast"><span class="hs-identifier hs-type">genericFPCast</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682242575"><span class="annot"><a href="#local-6989586621682242575"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682242577"><span class="annot"><a href="#local-6989586621682242577"><span class="hs-identifier hs-type">r</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBV.HasKind</span></span><span> </span><span class="annot"><a href="#local-6989586621682242575"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.HasKind</span></span><span> </span><span class="annot"><a href="#local-6989586621682242577"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-76"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682242575"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682242577"><span class="hs-identifier hs-type">r</span></a></span><span>
+</span><span id="line-79"></span><span id="genericFPCast"><span class="annot"><span class="annottext">genericFPCast :: forall a r.
+(HasKind a, HasKind r) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#genericFPCast"><span class="hs-identifier hs-var hs-var">genericFPCast</span></a></span></span><span> </span><span id="local-6989586621682242901"><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242901"><span class="hs-identifier hs-var">rm</span></a></span></span><span> </span><span id="local-6989586621682242902"><span class="annot"><span class="annottext">SBV a
+</span><a href="#local-6989586621682242902"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SVal -&gt; SBV r
+forall a. SVal -&gt; SBV a
+</span><span class="hs-identifier hs-var">SBVI.SBV</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Kind -&gt; Either CV (Cached SV) -&gt; SVal
+</span><span class="hs-identifier hs-var">SBVI.SVal</span></span><span> </span><span class="annot"><span class="annottext">Kind
+</span><a href="#local-6989586621682242905"><span class="hs-identifier hs-var">kTo</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Cached SV -&gt; Either CV (Cached SV)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(State -&gt; IO SV) -&gt; Cached SV
+forall a. (State -&gt; IO a) -&gt; Cached a
+</span><span class="hs-identifier hs-var">SBVI.cache</span></span><span> </span><span class="annot"><span class="annottext">State -&gt; IO SV
+</span><a href="#local-6989586621682242907"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>    </span><span id="local-6989586621682242908"><span class="annot"><span class="annottext">kFrom :: Kind
+</span><a href="#local-6989586621682242908"><span class="hs-identifier hs-var hs-var">kFrom</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBV a -&gt; Kind
+forall a. HasKind a =&gt; a -&gt; Kind
+</span><span class="hs-identifier hs-var">SBVI.kindOf</span></span><span> </span><span class="annot"><span class="annottext">SBV a
+</span><a href="#local-6989586621682242902"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-82"></span><span>    </span><span id="local-6989586621682242905"><span class="annot"><span class="annottext">kTo :: Kind
+</span><a href="#local-6989586621682242905"><span class="hs-identifier hs-var hs-var">kTo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy r -&gt; Kind
+forall a. HasKind a =&gt; a -&gt; Kind
+</span><span class="hs-identifier hs-var">SBVI.kindOf</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall t. Proxy t
+forall {k} (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682242577"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-83"></span><span>    </span><span id="local-6989586621682242907"><span class="annot"><span class="annottext">r :: State -&gt; IO SV
+</span><a href="#local-6989586621682242907"><span class="hs-identifier hs-var hs-var">r</span></a></span></span><span> </span><span id="local-6989586621682242910"><span class="annot"><span class="annottext">State
+</span><a href="#local-6989586621682242910"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-84"></span><span>      </span><span id="local-6989586621682242911"><span class="annot"><a href="#local-6989586621682242911"><span class="hs-identifier hs-var">msv</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">State -&gt; SRoundingMode -&gt; IO SV
+forall a. State -&gt; SBV a -&gt; IO SV
+</span><span class="hs-identifier hs-var">SBVI.sbvToSV</span></span><span> </span><span class="annot"><span class="annottext">State
+</span><a href="#local-6989586621682242910"><span class="hs-identifier hs-var">st</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242901"><span class="hs-identifier hs-var">rm</span></a></span><span>
+</span><span id="line-85"></span><span>      </span><span id="local-6989586621682242913"><span class="annot"><a href="#local-6989586621682242913"><span class="hs-identifier hs-var">xsv</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBVI.sbvToSV</span></span><span> </span><span class="annot"><a href="#local-6989586621682242910"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242902"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-86"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">SBVI.newExpr</span></span><span> </span><span class="annot"><a href="#local-6989586621682242910"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242905"><span class="hs-identifier hs-type">kTo</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-87"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">SBVI.SBVApp</span></span><span>
+</span><span id="line-88"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBVI.IEEEFP</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBVI.FP_Cast</span></span><span> </span><span class="annot"><a href="#local-6989586621682242908"><span class="hs-identifier hs-type">kFrom</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242905"><span class="hs-identifier hs-type">kTo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242911"><span class="hs-identifier hs-type">msv</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>          </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621682242913"><span class="hs-identifier hs-type">xsv</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#boundedSBVFromFPTerm"><span class="hs-identifier hs-type">boundedSBVFromFPTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682242612"><span class="annot"><a href="#local-6989586621682242612"><span class="hs-identifier hs-type">bv</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682242613"><span class="annot"><a href="#local-6989586621682242613"><span class="hs-identifier hs-type">n</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Nat</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682242607"><span class="annot"><a href="#local-6989586621682242607"><span class="hs-identifier hs-type">eb</span></a></span></span><span> </span><span id="local-6989586621682242608"><span class="annot"><a href="#local-6989586621682242608"><span class="hs-identifier hs-type">sb</span></a></span></span><span> </span><span id="local-6989586621682242610"><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-93"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242607"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242608"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">SBVI.HasKind</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-95"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">SBVI.SymVal</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-96"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Bounded</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-97"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-99"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">SBVI.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682242612"><span class="hs-identifier hs-type">bv</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242613"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-100"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682242613"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-101"></span><span>    </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682242613"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ConvertibleBound"><span class="hs-identifier hs-type">ConvertibleBound</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242612"><span class="hs-identifier hs-type">bv</span></a></span><span>
+</span><span id="line-103"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-104"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBVI.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-105"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-106"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242607"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242608"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-107"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBVI.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682242610"><span class="hs-identifier hs-type">r</span></a></span><span>
+</span><span id="line-108"></span><span id="boundedSBVFromFPTerm"><span class="annot"><span class="annottext">boundedSBVFromFPTerm :: forall (bv :: Nat -&gt; *) (n :: Nat) (eb :: Nat) (sb :: Nat) r.
+(ValidFP eb sb, HasKind r, SymVal r, Bounded r, Num r, Ord r,
+ SBV r ~ SBVType (bv n), KnownNat n, 1 &lt;= n, ConvertibleBound bv) =&gt;
+SBV r -&gt; SBVType FPRoundingMode -&gt; SBVType (FP eb sb) -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#boundedSBVFromFPTerm"><span class="hs-identifier hs-var hs-var">boundedSBVFromFPTerm</span></a></span></span><span> </span><span id="local-6989586621682242976"><span class="annot"><span class="annottext">SBV r
+</span><a href="#local-6989586621682242976"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682242977"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682242977"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682242978"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682242978"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-109"></span><span>  </span><span class="annot"><span class="annottext">SBool -&gt; SBV r -&gt; SBV r -&gt; SBV r
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-110"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242978"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-111"></span><span>        </span><span class="annot"><span class="annottext">SBool -&gt; SBool -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..||</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsInfinite</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242978"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-112"></span><span>        </span><span class="annot"><span class="annottext">SBool -&gt; SBool -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..||</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242978"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. OrdSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..&lt;</span></span><span> </span><span class="annot"><span class="annottext">(bv n -&gt; FPRoundingMode -&gt; FP eb sb) -&gt; SBV (FloatingPoint eb sb)
+</span><a href="#local-6989586621682242984"><span class="hs-identifier hs-var">bound</span></a></span><span> </span><span class="annot"><span class="annottext">bv n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier hs-var">convertibleLowerBound</span></a></span><span>
+</span><span id="line-113"></span><span>        </span><span class="annot"><span class="annottext">SBool -&gt; SBool -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..||</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242978"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. OrdSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..&gt;</span></span><span> </span><span class="annot"><span class="annottext">(bv n -&gt; FPRoundingMode -&gt; FP eb sb) -&gt; SBV (FloatingPoint eb sb)
+</span><a href="#local-6989586621682242984"><span class="hs-identifier hs-var">bound</span></a></span><span> </span><span class="annot"><span class="annottext">bv n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier hs-var">convertibleUpperBound</span></a></span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-115"></span><span>    </span><span class="annot"><span class="annottext">SBV r
+</span><a href="#local-6989586621682242976"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-116"></span><span>    </span><span class="annot"><span class="annottext">(SBV r -&gt; SBV r) -&gt; SBV r -&gt; SBV r
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (FloatingPoint eb sb) -&gt; SBV r
+forall a r.
+(HasKind a, HasKind r) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#genericFPCast"><span class="hs-identifier hs-var">genericFPCast</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682242977"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682242978"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-117"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-118"></span><span>    </span><span id="local-6989586621682242986"><span class="annot"><span class="annottext">lst :: [(SRoundingMode, FPRoundingMode)]
+</span><a href="#local-6989586621682242986"><span class="hs-identifier hs-var hs-var">lst</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-119"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRTP</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="Grisette.Internal.SymPrim.FP.html#RTP"><span class="hs-identifier hs-var">RTP</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-120"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRTN</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="Grisette.Internal.SymPrim.FP.html#RTN"><span class="hs-identifier hs-var">RTN</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-121"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRTZ</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="Grisette.Internal.SymPrim.FP.html#RTZ"><span class="hs-identifier hs-var">RTZ</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-122"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRNE</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="Grisette.Internal.SymPrim.FP.html#RNE"><span class="hs-identifier hs-var">RNE</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-123"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRNA</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="Grisette.Internal.SymPrim.FP.html#RNA"><span class="hs-identifier hs-var">RNA</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-124"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-125"></span><span>    </span><span id="local-6989586621682242984"><span class="annot"><span class="annottext">bound :: (bv n -&gt; FPRoundingMode -&gt; FP eb sb) -&gt; SBV (FloatingPoint eb sb)
+</span><a href="#local-6989586621682242984"><span class="hs-identifier hs-var hs-var">bound</span></a></span></span><span> </span><span id="local-6989586621682242992"><span class="annot"><span class="annottext">bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="#local-6989586621682242992"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-126"></span><span>      </span><span class="annot"><span class="annottext">(SBV (FloatingPoint eb sb)
+ -&gt; (SRoundingMode, FPRoundingMode) -&gt; SBV (FloatingPoint eb sb))
+-&gt; SBV (FloatingPoint eb sb)
+-&gt; [(SRoundingMode, FPRoundingMode)]
+-&gt; SBV (FloatingPoint eb sb)
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span>
+</span><span id="line-127"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682242994"><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+</span><a href="#local-6989586621682242994"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682242995"><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242995"><span class="hs-identifier hs-var">srm</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682242996"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242996"><span class="hs-identifier hs-var">rm</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-128"></span><span>            </span><span class="annot"><span class="annottext">SBool
+-&gt; SBV (FloatingPoint eb sb)
+-&gt; SBV (FloatingPoint eb sb)
+-&gt; SBV (FloatingPoint eb sb)
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-129"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682242977"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SRoundingMode -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682242995"><span class="hs-identifier hs-var">srm</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-130"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SBVType (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="#local-6989586621682242992"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">bv n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682242612"><span class="hs-identifier hs-type">bv</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242613"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682242996"><span class="hs-identifier hs-var">rm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242607"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242608"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-131"></span><span>              </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+</span><a href="#local-6989586621682242994"><span class="hs-identifier hs-var">acc</span></a></span><span>
+</span><span id="line-132"></span><span>        </span><span class="hs-special">)</span><span>
+</span><span id="line-133"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242607"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242608"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>        </span><span class="annot"><span class="annottext">[(SRoundingMode, FPRoundingMode)]
+</span><a href="#local-6989586621682242986"><span class="hs-identifier hs-var">lst</span></a></span><span>
+</span><span id="line-135"></span><span>
+</span><span id="line-136"></span><span id="local-6989586621682242672"><span id="local-6989586621682242674"><span id="local-6989586621682242675"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalFromFPOrTerm"><span class="hs-identifier hs-type">generalPevalFromFPOrTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-137"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242672"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-138"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242674"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242675"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-139"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242672"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-140"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier hs-type">IEEEFPConvertible</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242672"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242674"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242675"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span>
+</span><span id="line-141"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-142"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242672"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-143"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-144"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242674"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242675"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-145"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242672"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-146"></span><span id="generalPevalFromFPOrTerm"><span class="annot"><span class="annottext">generalPevalFromFPOrTerm :: forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim a,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term a -&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalFromFPOrTerm"><span class="hs-identifier hs-var hs-var">generalPevalFromFPOrTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243008"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682243008"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243010"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682243010"><span class="hs-identifier hs-var">rd</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243014"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243014"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-147"></span><span>  </span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; FPRoundingMode -&gt; FP eb sb -&gt; a
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682243008"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682243010"><span class="hs-identifier hs-var">rd</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243014"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-148"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalFromFPOrTerm"><span class="hs-identifier hs-var">generalPevalFromFPOrTerm</span></a></span><span> </span><span id="local-6989586621682243015"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682243015"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243021"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243021"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNaN"><span class="hs-identifier hs-var">fpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243021"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsInfinite"><span class="hs-identifier hs-var">fpIsInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243021"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682243015"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-149"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalFromFPOrTerm"><span class="hs-identifier hs-var">generalPevalFromFPOrTerm</span></a></span><span> </span><span id="local-6989586621682243023"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682243023"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682243024"><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682243024"><span class="hs-identifier hs-var">rd</span></a></span></span><span> </span><span id="local-6989586621682243025"><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682243025"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term a
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb) =&gt;
+Term a -&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fromFPOrTerm"><span class="hs-identifier hs-var">fromFPOrTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682243023"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682243024"><span class="hs-identifier hs-var">rd</span></a></span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682243025"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-150"></span><span>
+</span><span id="line-151"></span><span id="local-6989586621682242695"><span id="local-6989586621682242696"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#algRealPevalFromFPOrTerm"><span class="hs-identifier hs-type">algRealPevalFromFPOrTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-152"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-153"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242695"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242696"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-154"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier hs-type">IEEEFPConvertible</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242695"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242696"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span>
+</span><span id="line-155"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-156"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-157"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242695"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242696"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-159"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span></span><span>
+</span><span id="line-160"></span><span id="algRealPevalFromFPOrTerm"><span class="annot"><span class="annottext">algRealPevalFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm AlgReal, ValidFP eb sb,
+ IEEEFPConvertible AlgReal (FP eb sb) FPRoundingMode) =&gt;
+Term AlgReal
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#algRealPevalFromFPOrTerm"><span class="hs-identifier hs-var hs-var">algRealPevalFromFPOrTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243036"><span class="annot"><span class="annottext">AlgReal
+</span><a href="#local-6989586621682243036"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243040"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243040"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-161"></span><span>  </span><span class="annot"><span class="annottext">AlgReal -&gt; Term AlgReal
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(AlgReal -&gt; Term AlgReal) -&gt; AlgReal -&gt; Term AlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">AlgReal -&gt; FPRoundingMode -&gt; FP eb sb -&gt; AlgReal
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">AlgReal
+</span><a href="#local-6989586621682243036"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="Grisette.Internal.SymPrim.FP.html#RNE"><span class="hs-identifier hs-var">RNE</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243040"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-162"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#algRealPevalFromFPOrTerm"><span class="hs-identifier hs-var">algRealPevalFromFPOrTerm</span></a></span><span> </span><span id="local-6989586621682243041"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682243041"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243046"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243046"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNaN"><span class="hs-identifier hs-var">fpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243046"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsInfinite"><span class="hs-identifier hs-var">fpIsInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682243046"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682243041"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-163"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#algRealPevalFromFPOrTerm"><span class="hs-identifier hs-var">algRealPevalFromFPOrTerm</span></a></span><span> </span><span id="local-6989586621682243047"><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682243047"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243048"><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682243048"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term AlgReal
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb) =&gt;
+Term a -&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fromFPOrTerm"><span class="hs-identifier hs-var">fromFPOrTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+</span><a href="#local-6989586621682243047"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FPRoundingMode -&gt; Term FPRoundingMode
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="Grisette.Internal.SymPrim.FP.html#RNE"><span class="hs-identifier hs-var">RNE</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682243048"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-164"></span><span>
+</span><span id="line-165"></span><span id="local-6989586621682242699"><span id="local-6989586621682242700"><span id="local-6989586621682242701"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalDoPevalToFPTerm"><span class="hs-identifier hs-type">generalDoPevalToFPTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-166"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242699"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-167"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242700"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242701"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-168"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier hs-type">IEEEFPConvertible</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242699"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242700"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242701"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span>
+</span><span id="line-169"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-170"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-171"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242699"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-172"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242700"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242701"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-173"></span><span id="generalDoPevalToFPTerm"><span class="annot"><span class="annottext">generalDoPevalToFPTerm :: forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Maybe (Term (FP eb sb))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalDoPevalToFPTerm"><span class="hs-identifier hs-var hs-var">generalDoPevalToFPTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243055"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682243055"><span class="hs-identifier hs-var">rd</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243060"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682243060"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-174"></span><span>  </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; Maybe (Term (FP eb sb)))
+-&gt; Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Term (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; Term (FP eb sb)) -&gt; FP eb sb -&gt; Term (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode -&gt; a -&gt; FP eb sb
+forall a fp mode. IEEEFPConvertible a fp mode =&gt; mode -&gt; a -&gt; fp
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#toFP"><span class="hs-identifier hs-var">toFP</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682243055"><span class="hs-identifier hs-var">rd</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682243060"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-175"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalDoPevalToFPTerm"><span class="hs-identifier hs-var">generalDoPevalToFPTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term (FP eb sb))
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-176"></span><span>
+</span><span id="line-177"></span><span id="local-6989586621682242706"><span id="local-6989586621682242707"><span id="local-6989586621682242708"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalToFPTerm"><span class="hs-identifier hs-type">generalPevalToFPTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-178"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242706"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242707"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242708"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-180"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier hs-type">IEEEFPConvertible</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242706"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242707"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242708"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span>
+</span><span id="line-181"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-182"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-183"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242706"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-184"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242707"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242708"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-185"></span><span id="generalPevalToFPTerm"><span class="annot"><span class="annottext">generalPevalToFPTerm :: forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalToFPTerm"><span class="hs-identifier hs-var hs-var">generalPevalToFPTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary FPRoundingMode a (FP eb sb)
+-&gt; TotalRuleBinary FPRoundingMode a (FP eb sb)
+-&gt; TotalRuleBinary FPRoundingMode a (FP eb sb)
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary FPRoundingMode a (FP eb sb)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Maybe (Term (FP eb sb))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalDoPevalToFPTerm"><span class="hs-identifier hs-var">generalDoPevalToFPTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary FPRoundingMode a (FP eb sb)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ SupportedPrim (FP eb sb)) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#toFPTerm"><span class="hs-identifier hs-var">toFPTerm</span></a></span><span>
+</span><span id="line-186"></span><span>
+</span><span id="line-187"></span><span id="local-6989586621682242720"><span id="local-6989586621682242721"><span id="local-6989586621682242722"><span id="local-6989586621682242723"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpDoPevalToFPTerm"><span class="hs-identifier hs-type">fpDoPevalToFPTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-188"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242720"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242721"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-189"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242722"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242723"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-190"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier hs-type">IEEEFPConvertible</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242722"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242723"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242720"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242721"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span>
+</span><span id="line-191"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-192"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-193"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242722"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242723"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-194"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242720"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242721"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span></span><span>
+</span><span id="line-195"></span><span id="fpDoPevalToFPTerm"><span class="annot"><span class="annottext">fpDoPevalToFPTerm :: forall (eb :: Nat) (sb :: Nat) (eb1 :: Nat) (sb1 :: Nat).
+(ValidFP eb sb, ValidFP eb1 sb1,
+ IEEEFPConvertible (FP eb1 sb1) (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term (FP eb1 sb1) -&gt; Maybe (Term (FP eb sb))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpDoPevalToFPTerm"><span class="hs-identifier hs-var hs-var">fpDoPevalToFPTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243081"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682243081"><span class="hs-identifier hs-var">rd</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243086"><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243086"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-196"></span><span>  </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; Maybe (Term (FP eb sb)))
+-&gt; Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Term (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; Term (FP eb sb)) -&gt; FP eb sb -&gt; Term (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode -&gt; FP eb1 sb1 -&gt; FP eb sb
+forall a fp mode. IEEEFPConvertible a fp mode =&gt; mode -&gt; a -&gt; fp
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#toFP"><span class="hs-identifier hs-var">toFP</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682243081"><span class="hs-identifier hs-var">rd</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243086"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-197"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpDoPevalToFPTerm"><span class="hs-identifier hs-var">fpDoPevalToFPTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243107"><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243107"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-198"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1 -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNaN"><span class="hs-identifier hs-var">fpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243107"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; Maybe (Term (FP eb sb)))
+-&gt; Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Term (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+forall a. IEEEFPConstants a =&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNaN"><span class="hs-identifier hs-var">fpNaN</span></a></span><span>
+</span><span id="line-199"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1 -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsPositiveInfinite"><span class="hs-identifier hs-var">fpIsPositiveInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243107"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; Maybe (Term (FP eb sb)))
+-&gt; Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Term (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+forall a. IEEEFPConstants a =&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpPositiveInfinite"><span class="hs-identifier hs-var">fpPositiveInfinite</span></a></span><span>
+</span><span id="line-200"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1 -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNegativeInfinite"><span class="hs-identifier hs-var">fpIsNegativeInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243107"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; Maybe (Term (FP eb sb)))
+-&gt; Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Term (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+forall a. IEEEFPConstants a =&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNegativeInfinite"><span class="hs-identifier hs-var">fpNegativeInfinite</span></a></span><span>
+</span><span id="line-201"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1 -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsPositiveZero"><span class="hs-identifier hs-var">fpIsPositiveZero</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243107"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; Maybe (Term (FP eb sb)))
+-&gt; Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Term (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+forall a. IEEEFPConstants a =&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpPositiveZero"><span class="hs-identifier hs-var">fpPositiveZero</span></a></span><span>
+</span><span id="line-202"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1 -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNegativeZero"><span class="hs-identifier hs-var">fpIsNegativeZero</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb1 sb1
+</span><a href="#local-6989586621682243107"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; Maybe (Term (FP eb sb)))
+-&gt; Term (FP eb sb) -&gt; Maybe (Term (FP eb sb))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Term (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+forall a. IEEEFPConstants a =&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNegativeZero"><span class="hs-identifier hs-var">fpNegativeZero</span></a></span><span>
+</span><span id="line-203"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpDoPevalToFPTerm"><span class="hs-identifier hs-var">fpDoPevalToFPTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term (FP eb1 sb1)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term (FP eb sb))
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-204"></span><span>
+</span><span id="line-205"></span><span id="local-6989586621682242732"><span id="local-6989586621682242733"><span id="local-6989586621682242734"><span id="local-6989586621682242735"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpPevalToFPTerm"><span class="hs-identifier hs-type">fpPevalToFPTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-206"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242732"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242733"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-207"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242734"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242735"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-208"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier hs-type">IEEEFPConvertible</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242734"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242735"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242732"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242733"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span>
+</span><span id="line-209"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-210"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-211"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242734"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242735"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-212"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242732"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242733"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span></span><span>
+</span><span id="line-213"></span><span id="fpPevalToFPTerm"><span class="annot"><span class="annottext">fpPevalToFPTerm :: forall (eb :: Nat) (sb :: Nat) (eb1 :: Nat) (sb1 :: Nat).
+(ValidFP eb sb, ValidFP eb1 sb1,
+ IEEEFPConvertible (FP eb1 sb1) (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term (FP eb1 sb1) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpPevalToFPTerm"><span class="hs-identifier hs-var hs-var">fpPevalToFPTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary FPRoundingMode (FP eb1 sb1) (FP eb sb)
+-&gt; TotalRuleBinary FPRoundingMode (FP eb1 sb1) (FP eb sb)
+-&gt; TotalRuleBinary FPRoundingMode (FP eb1 sb1) (FP eb sb)
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary FPRoundingMode (FP eb1 sb1) (FP eb sb)
+forall (eb :: Nat) (sb :: Nat) (eb1 :: Nat) (sb1 :: Nat).
+(ValidFP eb sb, ValidFP eb1 sb1,
+ IEEEFPConvertible (FP eb1 sb1) (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term (FP eb1 sb1) -&gt; Maybe (Term (FP eb sb))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpDoPevalToFPTerm"><span class="hs-identifier hs-var">fpDoPevalToFPTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary FPRoundingMode (FP eb1 sb1) (FP eb sb)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ SupportedPrim (FP eb sb)) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#toFPTerm"><span class="hs-identifier hs-var">toFPTerm</span></a></span><span>
+</span><span id="line-214"></span><span>
+</span><span id="line-215"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-216"></span><span>  </span><span id="local-6989586621682243139"><span class="annot"><span class="annottext">pevalFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term Integer
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term Integer
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromFPOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Integer
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term Integer
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim a,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term a -&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalFromFPOrTerm"><span class="hs-identifier hs-var">generalPevalFromFPOrTerm</span></a></span><span>
+</span><span id="line-217"></span><span>  </span><span id="local-6989586621682243146"><span class="annot"><span class="annottext">pevalToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term FPRoundingMode -&gt; Term Integer -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalToFPTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term Integer -&gt; Term (FP eb sb)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalToFPTerm"><span class="hs-identifier hs-var">generalPevalToFPTerm</span></a></span><span>
+</span><span id="line-218"></span><span>  </span><span id="local-6989586621682243223"><span class="annot"><span class="annottext">sbvFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType Integer
+-&gt; SBVType FPRoundingMode -&gt; SBVType (FP eb sb) -&gt; SBVType Integer
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromFPOrTerm</span></a></span></span><span> </span><span id="local-6989586621682243224"><span class="annot"><span class="annottext">SBVType Integer
+</span><a href="#local-6989586621682243224"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682243225"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243225"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682243226"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682243226"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-219"></span><span>    </span><span class="annot"><span class="annottext">SBool -&gt; SBVType Integer -&gt; SBVType Integer -&gt; SBVType Integer
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243226"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBool -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..||</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsInfinite</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243226"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SBVType Integer
+</span><a href="#local-6989586621682243224"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">(SBVType Integer -&gt; SBVType Integer)
+-&gt; SBVType Integer -&gt; SBVType Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-220"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682243227"><span class="annot"><span class="annottext">r :: SReal
+</span><a href="#local-6989586621682243227"><span class="hs-identifier hs-var hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (FloatingPoint eb sb) -&gt; SReal
+forall (eb :: Nat) (sb :: Nat).
+ValidFloat eb sb =&gt;
+SRoundingMode -&gt; SFloatingPoint eb sb -&gt; SReal
+forall a (eb :: Nat) (sb :: Nat).
+(IEEEFloatConvertible a, ValidFloat eb sb) =&gt;
+SRoundingMode -&gt; SFloatingPoint eb sb -&gt; SBV a
+</span><span class="hs-identifier hs-var">SBV.fromSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243225"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243226"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SReal</span></span><span>
+</span><span id="line-221"></span><span>          </span><span id="local-6989586621682243229"><span class="annot"><span class="annottext">ifloor :: SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var hs-var">ifloor</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SReal -&gt; SInteger
+</span><span class="hs-identifier hs-var">SBV.sRealToSInteger</span></span><span> </span><span class="annot"><span class="annottext">SReal
+</span><a href="#local-6989586621682243227"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-222"></span><span>          </span><span id="local-6989586621682243231"><span class="annot"><span class="annottext">diff :: SReal
+</span><a href="#local-6989586621682243231"><span class="hs-identifier hs-var hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SReal
+</span><a href="#local-6989586621682243227"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="annot"><span class="annottext">SReal -&gt; SReal -&gt; SReal
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SReal
+forall a b.
+(Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
+ SymVal b) =&gt;
+SBV a -&gt; SBV b
+</span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span>
+</span><span id="line-223"></span><span>       </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBVType Integer -&gt; SBVType Integer -&gt; SBVType Integer
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SReal
+</span><a href="#local-6989586621682243231"><span class="hs-identifier hs-var">diff</span></a></span><span> </span><span class="annot"><span class="annottext">SReal -&gt; SReal -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SReal
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SInteger
+SBVType Integer
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span>
+</span><span id="line-224"></span><span>            </span><span class="annot"><span class="annottext">(SBVType Integer -&gt; SBVType Integer)
+-&gt; SBVType Integer -&gt; SBVType Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBVType Integer -&gt; SBVType Integer -&gt; SBVType Integer
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243225"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SRoundingMode -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRTN</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SInteger
+SBVType Integer
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span>
+</span><span id="line-225"></span><span>            </span><span class="annot"><span class="annottext">(SBVType Integer -&gt; SBVType Integer)
+-&gt; SBVType Integer -&gt; SBVType Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBVType Integer -&gt; SBVType Integer -&gt; SBVType Integer
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243225"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SRoundingMode -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRTP</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SInteger
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-226"></span><span>            </span><span class="annot"><span class="annottext">(SBVType Integer -&gt; SBVType Integer)
+-&gt; SBVType Integer -&gt; SBVType Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBVType Integer -&gt; SBVType Integer -&gt; SBVType Integer
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-227"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243225"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SRoundingMode -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRTZ</span></span><span class="hs-special">)</span><span>
+</span><span id="line-228"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBool -&gt; SInteger -&gt; SInteger -&gt; SInteger
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SBool
+forall a. OrdSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..&lt;</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SInteger
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-229"></span><span>            </span><span class="annot"><span class="annottext">(SBVType Integer -&gt; SBVType Integer)
+-&gt; SBVType Integer -&gt; SBVType Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBVType Integer -&gt; SBVType Integer -&gt; SBVType Integer
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-230"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SReal
+</span><a href="#local-6989586621682243231"><span class="hs-identifier hs-var">diff</span></a></span><span> </span><span class="annot"><span class="annottext">SReal -&gt; SReal -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SReal
+</span><span class="hs-number">0.5</span></span><span class="hs-special">)</span><span>
+</span><span id="line-231"></span><span>              </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SInteger -&gt; SInteger -&gt; SInteger
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-232"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243225"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SRoundingMode -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><span class="hs-identifier hs-var">SBV.sRNE</span></span><span class="hs-special">)</span><span>
+</span><span id="line-233"></span><span>                  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SInteger -&gt; SInteger -&gt; SInteger
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-234"></span><span>                      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SInteger
+forall a. SDivisible a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.sMod</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SBool
+forall a. EqSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..==</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
+</span><span id="line-235"></span><span>                      </span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span>
+</span><span id="line-236"></span><span>                      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SInteger
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-237"></span><span>                  </span><span class="hs-special">)</span><span>
+</span><span id="line-238"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBool -&gt; SInteger -&gt; SInteger -&gt; SInteger
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SBool
+forall a. OrdSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..&lt;</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SInteger
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-239"></span><span>              </span><span class="hs-special">)</span><span>
+</span><span id="line-240"></span><span>            </span><span class="annot"><span class="annottext">(SBVType Integer -&gt; SBVType Integer)
+-&gt; SBVType Integer -&gt; SBVType Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SInteger -&gt; SInteger -&gt; SInteger
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-241"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SReal
+</span><a href="#local-6989586621682243231"><span class="hs-identifier hs-var">diff</span></a></span><span> </span><span class="annot"><span class="annottext">SReal -&gt; SReal -&gt; SBool
+forall a. OrdSymbolic a =&gt; a -&gt; a -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..&lt;</span></span><span> </span><span class="annot"><span class="annottext">SReal
+</span><span class="hs-number">0.5</span></span><span class="hs-special">)</span><span>
+</span><span id="line-242"></span><span>              </span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span>
+</span><span id="line-243"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SInteger
+</span><a href="#local-6989586621682243229"><span class="hs-identifier hs-var">ifloor</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; SInteger -&gt; SInteger
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-244"></span><span>  </span><span id="local-6989586621682243243"><span class="annot"><span class="annottext">sbvToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType FPRoundingMode -&gt; SBVType Integer -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvToFPTerm</span></a></span></span><span> </span><span id="local-6989586621682243244"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243244"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682243245"><span class="annot"><span class="annottext">SBVType Integer
+</span><a href="#local-6989586621682243245"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-245"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SInteger -&gt; Maybe Integer
+forall a. SymVal a =&gt; SBV a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">SBV.unliteral</span></span><span> </span><span class="annot"><span class="annottext">SInteger
+SBVType Integer
+</span><a href="#local-6989586621682243245"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-246"></span><span>      </span><span class="annot"><span class="annottext">Maybe Integer
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SInteger -&gt; SFloatingPoint eb sb
+forall (eb :: Nat) (sb :: Nat).
+ValidFloat eb sb =&gt;
+SRoundingMode -&gt; SInteger -&gt; SFloatingPoint eb sb
+forall a (eb :: Nat) (sb :: Nat).
+(IEEEFloatConvertible a, ValidFloat eb sb) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SFloatingPoint eb sb
+</span><span class="hs-identifier hs-var">SBV.toSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243244"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SInteger
+SBVType Integer
+</span><a href="#local-6989586621682243245"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-247"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-248"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SBVType (FP eb sb)
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; SBVType (FP eb sb)) -&gt; [Char] -&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-249"></span><span>          </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;SBV's toSFloatingPoint does not regard the rounding mode for &quot;</span></span><span>
+</span><span id="line-250"></span><span>            </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;integers. This should never be called. &quot;</span></span><span>
+</span><span id="line-251"></span><span>
+</span><span id="line-252"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-253"></span><span>  </span><span id="local-6989586621682243261"><span class="annot"><span class="annottext">pevalFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term AlgReal
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromFPOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term AlgReal
+forall (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm AlgReal, ValidFP eb sb,
+ IEEEFPConvertible AlgReal (FP eb sb) FPRoundingMode) =&gt;
+Term AlgReal
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#algRealPevalFromFPOrTerm"><span class="hs-identifier hs-var">algRealPevalFromFPOrTerm</span></a></span><span>
+</span><span id="line-254"></span><span>  </span><span id="local-6989586621682243268"><span class="annot"><span class="annottext">pevalToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term FPRoundingMode -&gt; Term AlgReal -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalToFPTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term AlgReal -&gt; Term (FP eb sb)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalToFPTerm"><span class="hs-identifier hs-var">generalPevalToFPTerm</span></a></span><span>
+</span><span id="line-255"></span><span>  </span><span id="local-6989586621682243279"><span class="annot"><span class="annottext">sbvFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType AlgReal
+-&gt; SBVType FPRoundingMode -&gt; SBVType (FP eb sb) -&gt; SBVType AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromFPOrTerm</span></a></span></span><span> </span><span id="local-6989586621682243280"><span class="annot"><span class="annottext">SBVType AlgReal
+</span><a href="#local-6989586621682243280"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682243281"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243281"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682243282"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682243282"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-256"></span><span>    </span><span class="annot"><span class="annottext">SBool -&gt; SBVType AlgReal -&gt; SBVType AlgReal -&gt; SBVType AlgReal
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243282"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBool -&gt; SBool
+</span><span class="hs-operator hs-var">SBV..||</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsInfinite</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243282"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SBVType AlgReal
+</span><a href="#local-6989586621682243280"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">(SBVType AlgReal -&gt; SBVType AlgReal)
+-&gt; SBVType AlgReal -&gt; SBVType AlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-257"></span><span>      </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (FloatingPoint eb sb) -&gt; SReal
+forall (eb :: Nat) (sb :: Nat).
+ValidFloat eb sb =&gt;
+SRoundingMode -&gt; SFloatingPoint eb sb -&gt; SReal
+forall a (eb :: Nat) (sb :: Nat).
+(IEEEFloatConvertible a, ValidFloat eb sb) =&gt;
+SRoundingMode -&gt; SFloatingPoint eb sb -&gt; SBV a
+</span><span class="hs-identifier hs-var">SBV.fromSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243281"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243282"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-258"></span><span>  </span><span id="local-6989586621682243290"><span class="annot"><span class="annottext">sbvToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType FPRoundingMode -&gt; SBVType AlgReal -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvToFPTerm</span></a></span></span><span> </span><span id="local-6989586621682243291"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243291"><span class="hs-identifier hs-var">rm</span></a></span></span><span> </span><span id="local-6989586621682243292"><span class="annot"><span class="annottext">SBVType AlgReal
+</span><a href="#local-6989586621682243292"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-259"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SReal -&gt; Maybe AlgReal
+forall a. SymVal a =&gt; SBV a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">SBV.unliteral</span></span><span> </span><span class="annot"><span class="annottext">SReal
+SBVType AlgReal
+</span><a href="#local-6989586621682243292"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-260"></span><span>      </span><span class="annot"><span class="annottext">Maybe AlgReal
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SReal -&gt; SFloatingPoint eb sb
+forall (eb :: Nat) (sb :: Nat).
+ValidFloat eb sb =&gt;
+SRoundingMode -&gt; SReal -&gt; SFloatingPoint eb sb
+forall a (eb :: Nat) (sb :: Nat).
+(IEEEFloatConvertible a, ValidFloat eb sb) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SFloatingPoint eb sb
+</span><span class="hs-identifier hs-var">SBV.toSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243291"><span class="hs-identifier hs-var">rm</span></a></span><span> </span><span class="annot"><span class="annottext">SReal
+SBVType AlgReal
+</span><a href="#local-6989586621682243292"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-261"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">AlgReal
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-262"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; SBVType (FP eb sb)
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; SBVType (FP eb sb)) -&gt; [Char] -&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-263"></span><span>          </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;SBV is buggy on converting literal AlgReal to an FP. &quot;</span></span><span>
+</span><span id="line-264"></span><span>            </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;This should never be called. &quot;</span></span><span>
+</span><span id="line-265"></span><span>            </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;https://github.com/LeventErkok/sbv/pull/718&quot;</span></span><span>
+</span><span id="line-266"></span><span>
+</span><span id="line-267"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242792"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682242792"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682242792"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242792"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-268"></span><span>  </span><span id="local-6989586621682243316"><span class="annot"><span class="annottext">pevalFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term (WordN n)
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (WordN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromFPOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n)
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (WordN n)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim a,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term a -&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalFromFPOrTerm"><span class="hs-identifier hs-var">generalPevalFromFPOrTerm</span></a></span><span>
+</span><span id="line-269"></span><span>  </span><span id="local-6989586621682243327"><span class="annot"><span class="annottext">pevalToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term FPRoundingMode -&gt; Term (WordN n) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalToFPTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term (WordN n) -&gt; Term (FP eb sb)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalToFPTerm"><span class="hs-identifier hs-var">generalPevalToFPTerm</span></a></span><span>
+</span><span id="line-270"></span><span>  </span><span id="local-6989586621682243332"><span class="annot"><span class="annottext">sbvFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType (WordN n)
+-&gt; SBVType FPRoundingMode
+-&gt; SBVType (FP eb sb)
+-&gt; SBVType (WordN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromFPOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy n
+-&gt; (BVIsNonZero n =&gt;
+    SBVType (WordN n)
+    -&gt; SBVType FPRoundingMode
+    -&gt; SBVType (FP eb sb)
+    -&gt; SBVType (WordN n))
+-&gt; SBVType (WordN n)
+-&gt; SBVType FPRoundingMode
+-&gt; SBVType (FP eb sb)
+-&gt; SBVType (WordN n)
+forall (w :: Nat) r (proxy :: Nat -&gt; *).
+(1 &lt;= w) =&gt;
+proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+forall {k} (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682242792"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt;
+  SBVType (WordN n)
+  -&gt; SBVType FPRoundingMode
+  -&gt; SBVType (FP eb sb)
+  -&gt; SBVType (WordN n))
+ -&gt; SBVType (WordN n)
+ -&gt; SBVType FPRoundingMode
+ -&gt; SBVType (FP eb sb)
+ -&gt; SBVType (WordN n))
+-&gt; (BVIsNonZero n =&gt;
+    SBVType (WordN n)
+    -&gt; SBVType FPRoundingMode
+    -&gt; SBVType (FP eb sb)
+    -&gt; SBVType (WordN n))
+-&gt; SBVType (WordN n)
+-&gt; SBVType FPRoundingMode
+-&gt; SBVType (FP eb sb)
+-&gt; SBVType (WordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (bv :: Nat -&gt; *) (n :: Nat) (eb :: Nat) (sb :: Nat) r.
+(ValidFP eb sb, HasKind r, SymVal r, Bounded r, Num r, Ord r,
+ SBV r ~ SBVType (bv n), KnownNat n, 1 &lt;= n, ConvertibleBound bv) =&gt;
+SBV r -&gt; SBVType FPRoundingMode -&gt; SBVType (FP eb sb) -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#boundedSBVFromFPTerm"><span class="hs-identifier hs-var">boundedSBVFromFPTerm</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span>
+</span><span id="line-271"></span><span>  </span><span id="local-6989586621682243360"><span class="annot"><span class="annottext">sbvToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType FPRoundingMode -&gt; SBVType (WordN n) -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvToFPTerm</span></a></span></span><span> </span><span id="local-6989586621682243361"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243361"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682243362"><span class="annot"><span class="annottext">SBVType (WordN n)
+</span><a href="#local-6989586621682243362"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy n
+-&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
+forall (w :: Nat) r (proxy :: Nat -&gt; *).
+(1 &lt;= w) =&gt;
+proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+forall {k} (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682242792"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb))
+-&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (WordN n) -&gt; SBV (FloatingPoint eb sb)
+forall a r.
+(HasKind a, HasKind r) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#genericFPCast"><span class="hs-identifier hs-var">genericFPCast</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243361"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (WordN n)
+SBVType (WordN n)
+</span><a href="#local-6989586621682243362"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-272"></span><span>
+</span><span id="line-273"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242819"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682242819"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682242819"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242819"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-274"></span><span>  </span><span id="local-6989586621682243391"><span class="annot"><span class="annottext">pevalFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term (IntN n)
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (IntN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromFPOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n)
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (IntN n)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim a,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term a -&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalFromFPOrTerm"><span class="hs-identifier hs-var">generalPevalFromFPOrTerm</span></a></span><span>
+</span><span id="line-275"></span><span>  </span><span id="local-6989586621682243402"><span class="annot"><span class="annottext">pevalToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term FPRoundingMode -&gt; Term (IntN n) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalToFPTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term (IntN n) -&gt; Term (FP eb sb)
+forall a (eb :: Nat) (sb :: Nat).
+(PEvalIEEEFPConvertibleTerm a, ValidFP eb sb,
+ IEEEFPConvertible a (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term a -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#generalPevalToFPTerm"><span class="hs-identifier hs-var">generalPevalToFPTerm</span></a></span><span>
+</span><span id="line-276"></span><span>  </span><span id="local-6989586621682243407"><span class="annot"><span class="annottext">sbvFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType (IntN n)
+-&gt; SBVType FPRoundingMode -&gt; SBVType (FP eb sb) -&gt; SBVType (IntN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromFPOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy n
+-&gt; (BVIsNonZero n =&gt;
+    SBVType (IntN n)
+    -&gt; SBVType FPRoundingMode
+    -&gt; SBVType (FP eb sb)
+    -&gt; SBVType (IntN n))
+-&gt; SBVType (IntN n)
+-&gt; SBVType FPRoundingMode
+-&gt; SBVType (FP eb sb)
+-&gt; SBVType (IntN n)
+forall (w :: Nat) r (proxy :: Nat -&gt; *).
+(1 &lt;= w) =&gt;
+proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+forall {k} (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682242819"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt;
+  SBVType (IntN n)
+  -&gt; SBVType FPRoundingMode
+  -&gt; SBVType (FP eb sb)
+  -&gt; SBVType (IntN n))
+ -&gt; SBVType (IntN n)
+ -&gt; SBVType FPRoundingMode
+ -&gt; SBVType (FP eb sb)
+ -&gt; SBVType (IntN n))
+-&gt; (BVIsNonZero n =&gt;
+    SBVType (IntN n)
+    -&gt; SBVType FPRoundingMode
+    -&gt; SBVType (FP eb sb)
+    -&gt; SBVType (IntN n))
+-&gt; SBVType (IntN n)
+-&gt; SBVType FPRoundingMode
+-&gt; SBVType (FP eb sb)
+-&gt; SBVType (IntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (bv :: Nat -&gt; *) (n :: Nat) (eb :: Nat) (sb :: Nat) r.
+(ValidFP eb sb, HasKind r, SymVal r, Bounded r, Num r, Ord r,
+ SBV r ~ SBVType (bv n), KnownNat n, 1 &lt;= n, ConvertibleBound bv) =&gt;
+SBV r -&gt; SBVType FPRoundingMode -&gt; SBVType (FP eb sb) -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#boundedSBVFromFPTerm"><span class="hs-identifier hs-var">boundedSBVFromFPTerm</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span>
+</span><span id="line-277"></span><span>  </span><span id="local-6989586621682243435"><span class="annot"><span class="annottext">sbvToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType FPRoundingMode -&gt; SBVType (IntN n) -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvToFPTerm</span></a></span></span><span> </span><span id="local-6989586621682243436"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243436"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682243437"><span class="annot"><span class="annottext">SBVType (IntN n)
+</span><a href="#local-6989586621682243437"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy n
+-&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
+forall (w :: Nat) r (proxy :: Nat -&gt; *).
+(1 &lt;= w) =&gt;
+proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+forall {k} (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682242819"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb))
+-&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (IntN n) -&gt; SBV (FloatingPoint eb sb)
+forall a r.
+(HasKind a, HasKind r) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#genericFPCast"><span class="hs-identifier hs-var">genericFPCast</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243436"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (IntN n)
+SBVType (IntN n)
+</span><a href="#local-6989586621682243437"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-278"></span><span>
+</span><span id="line-279"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682242740"><span id="local-6989586621682242741"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242740"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242741"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalIEEEFPConvertibleTerm"><span class="hs-identifier hs-type">PEvalIEEEFPConvertibleTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242740"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242741"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-280"></span><span>  </span><span id="local-6989586621682243457"><span class="annot"><span class="annottext">pevalFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term (FP eb sb)
+-&gt; Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromFPOrTerm</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+forall (eb :: Nat) (sb :: Nat) (eb1 :: Nat) (sb1 :: Nat).
+(ValidFP eb sb, ValidFP eb1 sb1,
+ IEEEFPConvertible (FP eb1 sb1) (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term (FP eb1 sb1) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpPevalToFPTerm"><span class="hs-identifier hs-var">fpPevalToFPTerm</span></a></span><span>
+</span><span id="line-281"></span><span>  </span><span id="local-6989586621682243465"><span class="annot"><span class="annottext">pevalToFPTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalToFPTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+forall (eb :: Nat) (sb :: Nat) (eb1 :: Nat) (sb1 :: Nat).
+(ValidFP eb sb, ValidFP eb1 sb1,
+ IEEEFPConvertible (FP eb1 sb1) (FP eb sb) FPRoundingMode) =&gt;
+Term FPRoundingMode -&gt; Term (FP eb1 sb1) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm.html#fpPevalToFPTerm"><span class="hs-identifier hs-var">fpPevalToFPTerm</span></a></span><span>
+</span><span id="line-282"></span><span>  </span><span id="local-6989586621682243487"><span class="annot"><span class="annottext">sbvFromFPOrTerm :: forall (eb :: Nat) (sb :: Nat).
+ValidFP eb sb =&gt;
+SBVType (FP eb sb)
+-&gt; SBVType FPRoundingMode
+-&gt; SBVType (FP eb sb)
+-&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromFPOrTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromFPOrTerm</span></a></span></span><span> </span><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682243488"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243488"><span class="hs-identifier hs-var">rm</span></a></span></span><span> </span><span id="local-6989586621682243489"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682243489"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode -&gt; Maybe RoundingMode
+forall a. SymVal a =&gt; SBV a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">SBV.unliteral</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243488"><span class="hs-identifier hs-var">rm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; Maybe (FloatingPoint eb sb)
+forall a. SymVal a =&gt; SBV a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">SBV.unliteral</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243489"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-283"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">RoundingMode
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">FloatingPoint eb sb
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-284"></span><span>      </span><span class="annot"><span class="annottext">[Char] -&gt; SBVType (FP eb sb)
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; SBVType (FP eb sb)) -&gt; [Char] -&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-285"></span><span>        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;SBV is buggy on converting literal FP to another FP with different &quot;</span></span><span>
+</span><span id="line-286"></span><span>          </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;precision. This should never be called. &quot;</span></span><span>
+</span><span id="line-287"></span><span>          </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;https://github.com/LeventErkok/sbv/pull/717&quot;</span></span><span>
+</span><span id="line-288"></span><span>    </span><span class="annot"><span class="annottext">(Maybe RoundingMode, Maybe (FloatingPoint eb sb))
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-289"></span><span>      </span><span class="annot"><span class="annottext">SBool
+-&gt; SBVType (FP eb sb) -&gt; SBVType (FP eb sb) -&gt; SBVType (FP eb sb)
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243489"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SBVType (FP eb sb)
+forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb
+forall a. IEEEFPConstants a =&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNaN"><span class="hs-identifier hs-var">fpNaN</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242740"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242741"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SBVType (FP eb sb) -&gt; SBVType (FP eb sb))
+-&gt; SBVType (FP eb sb) -&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-290"></span><span>        </span><span class="annot"><span class="annottext">SRoundingMode
+-&gt; SBV (FloatingPoint eb sb) -&gt; SBV (FloatingPoint eb sb)
+forall (eb :: Nat) (sb :: Nat).
+ValidFloat eb sb =&gt;
+SRoundingMode -&gt; SBV (FloatingPoint eb sb) -&gt; SFloatingPoint eb sb
+forall a (eb :: Nat) (sb :: Nat).
+(IEEEFloatConvertible a, ValidFloat eb sb) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SFloatingPoint eb sb
+</span><span class="hs-identifier hs-var">SBV.toSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243488"><span class="hs-identifier hs-var">rm</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243489"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-291"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvToFPTerm"><span class="hs-identifier hs-type">sbvToFPTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-292"></span><span>    </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682242852"><span class="annot"><a href="#local-6989586621682242852"><span class="hs-identifier hs-type">eb1</span></a></span></span><span> </span><span id="local-6989586621682242853"><span class="annot"><a href="#local-6989586621682242853"><span class="hs-identifier hs-type">sb1</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-293"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242740"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242741"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242852"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242853"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-294"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-295"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242740"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242741"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-296"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SBVType"><span class="hs-identifier hs-type">SBVType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242852"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242853"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-297"></span><span>  </span><span id="local-6989586621682243515"><span class="annot"><span class="annottext">sbvToFPTerm :: forall (eb1 :: Nat) (sb1 :: Nat).
+(ValidFP eb sb, ValidFP eb1 sb1) =&gt;
+SBVType FPRoundingMode
+-&gt; SBVType (FP eb sb) -&gt; SBVType (FP eb1 sb1)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvToFPTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvToFPTerm</span></a></span></span><span> </span><span id="local-6989586621682243516"><span class="annot"><span class="annottext">SBVType FPRoundingMode
+</span><a href="#local-6989586621682243516"><span class="hs-identifier hs-var">rm</span></a></span></span><span> </span><span id="local-6989586621682243517"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682243517"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRoundingMode -&gt; Maybe RoundingMode
+forall a. SymVal a =&gt; SBV a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">SBV.unliteral</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243516"><span class="hs-identifier hs-var">rm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; Maybe (FloatingPoint eb sb)
+forall a. SymVal a =&gt; SBV a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">SBV.unliteral</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243517"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-298"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">RoundingMode
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">FloatingPoint eb sb
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-299"></span><span>      </span><span class="annot"><span class="annottext">[Char] -&gt; SBVType (FP eb1 sb1)
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; SBVType (FP eb1 sb1)) -&gt; [Char] -&gt; SBVType (FP eb1 sb1)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-300"></span><span>        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;SBV is buggy on converting literal FP to another FP with different &quot;</span></span><span>
+</span><span id="line-301"></span><span>          </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;precision. This should never be called. &quot;</span></span><span>
+</span><span id="line-302"></span><span>          </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;https://github.com/LeventErkok/sbv/pull/717&quot;</span></span><span>
+</span><span id="line-303"></span><span>    </span><span class="annot"><span class="annottext">(Maybe RoundingMode, Maybe (FloatingPoint eb sb))
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-304"></span><span>      </span><span class="annot"><span class="annottext">SBool
+-&gt; SBVType (FP eb1 sb1)
+-&gt; SBVType (FP eb1 sb1)
+-&gt; SBVType (FP eb1 sb1)
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243517"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb1 sb1 -&gt; SBVType (FP eb1 sb1)
+forall t. SupportedPrim t =&gt; t -&gt; SBVType t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conSBVTerm"><span class="hs-identifier hs-var">conSBVTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb1 sb1
+forall a. IEEEFPConstants a =&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpNaN"><span class="hs-identifier hs-var">fpNaN</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242852"><span class="hs-identifier hs-type">eb1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682242853"><span class="hs-identifier hs-type">sb1</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SBVType (FP eb1 sb1) -&gt; SBVType (FP eb1 sb1))
+-&gt; SBVType (FP eb1 sb1) -&gt; SBVType (FP eb1 sb1)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-305"></span><span>        </span><span class="annot"><span class="annottext">SRoundingMode
+-&gt; SBV (FloatingPoint eb sb) -&gt; SBV (FloatingPoint eb1 sb1)
+forall (eb :: Nat) (sb :: Nat).
+ValidFloat eb sb =&gt;
+SRoundingMode -&gt; SBV (FloatingPoint eb sb) -&gt; SFloatingPoint eb sb
+forall a (eb :: Nat) (sb :: Nat).
+(IEEEFloatConvertible a, ValidFloat eb sb) =&gt;
+SRoundingMode -&gt; SBV a -&gt; SFloatingPoint eb sb
+</span><span class="hs-identifier hs-var">SBV.toSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+SBVType FPRoundingMode
+</span><a href="#local-6989586621682243516"><span class="hs-identifier hs-var">rm</span></a></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682243517"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-306"></span></pre></body></html>

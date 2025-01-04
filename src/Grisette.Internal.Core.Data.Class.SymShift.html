@@ -1,0 +1,554 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DerivingVia #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE InstanceSigs #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE StandaloneDeriving #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.SymShift</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2023</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SymShift</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier">SymShift</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isSigned</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">shift</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">shiftR</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">FiniteBits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">finiteBitSize</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- | A class for shifting operations.</span><span>
+</span><span id="line-28"></span><span class="hs-comment">--</span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- The `symShift` function shifts the value to the left if the shift amount is</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- positive, and to the right if the shift amount is negative. If shifting</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- beyond the bit width of the value, the result is the same as shifting with</span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- the bit width.</span><span>
+</span><span id="line-33"></span><span class="hs-comment">--</span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- The `symShiftNegated` function shifts the value to the right if the shift</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- amount is positive, and to the left if the shift amount is negative. This</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- function is introduced to handle the asymmetry of the range of values.</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="SymShift"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-var">SymShift</span></a></span></span><span> </span><span id="local-6989586621682210299"><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-38"></span><span>  </span><span id="symShift"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShift"><span class="hs-identifier hs-type">symShift</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span id="symShiftNegated"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShiftNegated"><span class="hs-identifier hs-type">symShiftNegated</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210299"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-42"></span><span>  </span><span id="local-6989586621682210360"><span class="annot"><span class="annottext">symShift :: Int -&gt; Int -&gt; Int
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShift"><span class="hs-identifier hs-var hs-var hs-var">symShift</span></a></span></span><span> </span><span id="local-6989586621682210361"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210361"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682210362"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210362"><span class="hs-identifier hs-var">s</span></a></span></span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210362"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210362"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210362"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Int -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210362"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210361"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210361"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210362"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShiftNegated"><span class="hs-identifier hs-type">symShiftNegated</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-47"></span><span>  </span><span id="local-6989586621682210369"><span class="annot"><span class="annottext">symShiftNegated :: Int -&gt; Int -&gt; Int
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShiftNegated"><span class="hs-identifier hs-var hs-var hs-var">symShiftNegated</span></a></span></span><span> </span><span id="local-6989586621682210370"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210370"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682210371"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210371"><span class="hs-identifier hs-var">s</span></a></span></span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210371"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Int -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210370"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. SymShift a =&gt; a -&gt; a -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShift"><span class="hs-identifier hs-var">symShift</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210370"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682210371"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- | A newtype wrapper. Use this to derive `SymShift` for types that have</span><span>
+</span><span id="line-52"></span><span class="hs-comment">-- `FiniteBits` instances.</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">newtype</span><span> </span><span id="DefaultFiniteBitsSymShift"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-var">DefaultFiniteBitsSymShift</span></a></span></span><span> </span><span id="local-6989586621682210307"><span class="annot"><a href="#local-6989586621682210307"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DefaultFiniteBitsSymShift"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-var">DefaultFiniteBitsSymShift</span></a></span></span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="unDefaultFiniteBitsSymShift"><span class="annot"><span class="annottext">forall a. DefaultFiniteBitsSymShift a -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#unDefaultFiniteBitsSymShift"><span class="hs-identifier hs-var hs-var">unDefaultFiniteBitsSymShift</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682210307"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">newtype</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682210376"><span id="local-6989586621682210380"><span class="annot"><span class="annottext">DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+(DefaultFiniteBitsSymShift a
+ -&gt; DefaultFiniteBitsSymShift a -&gt; Bool)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; DefaultFiniteBitsSymShift a -&gt; Bool)
+-&gt; Eq (DefaultFiniteBitsSymShift a)
+forall a.
+Eq a =&gt;
+DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: forall a.
+Eq a =&gt;
+DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+== :: DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+$c/= :: forall a.
+Eq a =&gt;
+DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+/= :: DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682210391"><span id="local-6989586621682210395"><span id="local-6989586621682210399"><span id="local-6989586621682210403"><span id="local-6989586621682210407"><span id="local-6989586621682210411"><span id="local-6989586621682210415"><span id="local-6989586621682210419"><span id="local-6989586621682210423"><span id="local-6989586621682210427"><span id="local-6989586621682210431"><span id="local-6989586621682210435"><span id="local-6989586621682210439"><span id="local-6989586621682210443"><span id="local-6989586621682210447"><span id="local-6989586621682210451"><span id="local-6989586621682210455"><span id="local-6989586621682210459"><span id="local-6989586621682210463"><span id="local-6989586621682210467"><span id="local-6989586621682210471"><span id="local-6989586621682210475"><span class="annot"><span class="annottext">Eq (DefaultFiniteBitsSymShift a)
+DefaultFiniteBitsSymShift a
+Eq (DefaultFiniteBitsSymShift a) =&gt;
+(DefaultFiniteBitsSymShift a
+ -&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; DefaultFiniteBitsSymShift a
+-&gt; (Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a -&gt; Int -&gt; Bool)
+-&gt; (DefaultFiniteBitsSymShift a -&gt; Maybe Int)
+-&gt; (DefaultFiniteBitsSymShift a -&gt; Int)
+-&gt; (DefaultFiniteBitsSymShift a -&gt; Bool)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a
+    -&gt; Int -&gt; DefaultFiniteBitsSymShift a)
+-&gt; (DefaultFiniteBitsSymShift a -&gt; Int)
+-&gt; Bits (DefaultFiniteBitsSymShift a)
+Int -&gt; DefaultFiniteBitsSymShift a
+DefaultFiniteBitsSymShift a -&gt; Bool
+DefaultFiniteBitsSymShift a -&gt; Int
+DefaultFiniteBitsSymShift a -&gt; Maybe Int
+DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; Bool
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; a
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; Bool)
+-&gt; (a -&gt; Maybe Int)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; Bool)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; Bits a
+forall a. Bits a =&gt; Eq (DefaultFiniteBitsSymShift a)
+forall a. Bits a =&gt; DefaultFiniteBitsSymShift a
+forall a. Bits a =&gt; Int -&gt; DefaultFiniteBitsSymShift a
+forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Int
+forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Maybe Int
+forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Int -&gt; Bool
+forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+$c.&amp;. :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+.&amp;. :: DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+$c.|. :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+.|. :: DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+$cxor :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+xor :: DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+$ccomplement :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+complement :: DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+$cshift :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+shift :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$crotate :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+rotate :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$czeroBits :: forall a. Bits a =&gt; DefaultFiniteBitsSymShift a
+zeroBits :: DefaultFiniteBitsSymShift a
+$cbit :: forall a. Bits a =&gt; Int -&gt; DefaultFiniteBitsSymShift a
+bit :: Int -&gt; DefaultFiniteBitsSymShift a
+$csetBit :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+setBit :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$cclearBit :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+clearBit :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$ccomplementBit :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+complementBit :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$ctestBit :: forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Int -&gt; Bool
+testBit :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; Bool
+$cbitSizeMaybe :: forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Maybe Int
+bitSizeMaybe :: DefaultFiniteBitsSymShift a -&gt; Maybe Int
+$cbitSize :: forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Int
+bitSize :: DefaultFiniteBitsSymShift a -&gt; Int
+$cisSigned :: forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Bool
+isSigned :: DefaultFiniteBitsSymShift a -&gt; Bool
+$cshiftL :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+shiftL :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$cunsafeShiftL :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+unsafeShiftL :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$cshiftR :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+shiftR :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$cunsafeShiftR :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+unsafeShiftR :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$crotateL :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+rotateL :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$crotateR :: forall a.
+Bits a =&gt;
+DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+rotateR :: DefaultFiniteBitsSymShift a -&gt; Int -&gt; DefaultFiniteBitsSymShift a
+$cpopCount :: forall a. Bits a =&gt; DefaultFiniteBitsSymShift a -&gt; Int
+popCount :: DefaultFiniteBitsSymShift a -&gt; Int
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Bits</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-59"></span><span>  </span><span id="local-6989586621682210319"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621682210319"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682210319"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-60"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682210319"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-62"></span><span>  </span><span id="local-6989586621682210514"><span class="annot"><span class="annottext">symShift :: DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShift"><span class="hs-identifier hs-var hs-var hs-var">symShift</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span id="local-6989586621682210515"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210515"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span id="local-6989586621682210516"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210516"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a -&gt; Bool
+forall a. Bits a =&gt; a -&gt; Bool
+</span><span class="hs-identifier hs-var">isSigned</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210515"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; DefaultFiniteBitsSymShift a
+forall a. a -&gt; DefaultFiniteBitsSymShift a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-var">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; a -&gt; DefaultFiniteBitsSymShift a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210517"><span class="hs-identifier hs-var">symShiftSigned</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210515"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210516"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; DefaultFiniteBitsSymShift a
+forall a. a -&gt; DefaultFiniteBitsSymShift a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-var">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; a -&gt; DefaultFiniteBitsSymShift a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210518"><span class="hs-identifier hs-var">symShiftUnsigned</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210515"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210516"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-66"></span><span>      </span><span id="local-6989586621682210519"><span class="annot"><a href="#local-6989586621682210518"><span class="hs-identifier hs-type">symShiftUnsigned</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621682210519"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682210519"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210519"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210519"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210519"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-67"></span><span>      </span><span id="local-6989586621682210518"><span class="annot"><span class="annottext">symShiftUnsigned :: forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210518"><span class="hs-identifier hs-var hs-var">symShiftUnsigned</span></a></span></span><span> </span><span id="local-6989586621682210538"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210538"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682210539"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210539"><span class="hs-identifier hs-var">s</span></a></span></span><span>
+</span><span id="line-68"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210539"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210538"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-69"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210538"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210539"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682210518"><span class="hs-pragma hs-type">symShiftUnsigned</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span>      </span><span id="local-6989586621682210324"><span class="annot"><a href="#local-6989586621682210517"><span class="hs-identifier hs-type">symShiftSigned</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621682210324"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682210324"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210324"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210324"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210324"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-73"></span><span>      </span><span id="local-6989586621682210517"><span class="annot"><span class="annottext">symShiftSigned :: forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210517"><span class="hs-identifier hs-var hs-var">symShiftSigned</span></a></span></span><span> </span><span id="local-6989586621682210577"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210577"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682210578"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span></span><span>
+</span><span id="line-74"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210577"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210577"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210577"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210577"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210577"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-78"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210577"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210578"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-79"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682210517"><span class="hs-pragma hs-type">symShiftSigned</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShift"><span class="hs-pragma hs-type">symShift</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-81"></span><span>  </span><span id="local-6989586621682210585"><span class="annot"><span class="annottext">symShiftNegated :: DefaultFiniteBitsSymShift a
+-&gt; DefaultFiniteBitsSymShift a -&gt; DefaultFiniteBitsSymShift a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShiftNegated"><span class="hs-identifier hs-var hs-var hs-var">symShiftNegated</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span id="local-6989586621682210586"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210586"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span id="local-6989586621682210587"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210587"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a -&gt; Bool
+forall a. Bits a =&gt; a -&gt; Bool
+</span><span class="hs-identifier hs-var">isSigned</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210586"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; DefaultFiniteBitsSymShift a
+forall a. a -&gt; DefaultFiniteBitsSymShift a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-var">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; a -&gt; DefaultFiniteBitsSymShift a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210588"><span class="hs-identifier hs-var">symShiftSigned</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210586"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210587"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-83"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; DefaultFiniteBitsSymShift a
+forall a. a -&gt; DefaultFiniteBitsSymShift a
+</span><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-var">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; DefaultFiniteBitsSymShift a)
+-&gt; a -&gt; DefaultFiniteBitsSymShift a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210589"><span class="hs-identifier hs-var">symShiftUnsigned</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210586"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210587"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-85"></span><span>      </span><span id="local-6989586621682210590"><span class="annot"><a href="#local-6989586621682210589"><span class="hs-identifier hs-type">symShiftUnsigned</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621682210590"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682210590"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210590"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210590"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210590"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-86"></span><span>      </span><span id="local-6989586621682210589"><span class="annot"><span class="annottext">symShiftUnsigned :: forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210589"><span class="hs-identifier hs-var hs-var">symShiftUnsigned</span></a></span></span><span> </span><span id="local-6989586621682210605"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210605"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682210606"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210606"><span class="hs-identifier hs-var">s</span></a></span></span><span>
+</span><span id="line-87"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210606"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210605"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-88"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shiftR</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210605"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210606"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682210589"><span class="hs-pragma hs-type">symShiftUnsigned</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span>      </span><span id="local-6989586621682210607"><span class="annot"><a href="#local-6989586621682210588"><span class="hs-identifier hs-type">symShiftSigned</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621682210607"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FiniteBits</span></span><span> </span><span class="annot"><a href="#local-6989586621682210607"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210607"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210607"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682210607"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-92"></span><span>      </span><span id="local-6989586621682210588"><span class="annot"><span class="annottext">symShiftSigned :: forall a. (Integral a, FiniteBits a) =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621682210588"><span class="hs-identifier hs-var hs-var">symShiftSigned</span></a></span></span><span> </span><span id="local-6989586621682210647"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210647"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682210648"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span></span><span>
+</span><span id="line-93"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210647"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210647"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210647"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-96"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210647"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210647"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-97"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int -&gt; a
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shift</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210647"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">a -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682210648"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-98"></span><span>      </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="#local-6989586621682210588"><span class="hs-pragma hs-type">symShiftSigned</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#symShiftNegated"><span class="hs-pragma hs-type">symShiftNegated</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span id="local-6989586621682210653"><span id="local-6989586621682210659"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int8</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int8</span></span></span></span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span id="local-6989586621682210671"><span id="local-6989586621682210677"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span></span></span><span>
+</span><span id="line-104"></span><span>
+</span><span id="line-105"></span><span id="local-6989586621682210689"><span id="local-6989586621682210695"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span></span></span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span id="local-6989586621682210707"><span id="local-6989586621682210713"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span></span></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span id="local-6989586621682210725"><span id="local-6989586621682210731"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span></span></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span id="local-6989586621682210743"><span id="local-6989586621682210749"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span></span></span><span>
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span id="local-6989586621682210761"><span id="local-6989586621682210767"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span></span></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span id="local-6989586621682210779"><span id="local-6989586621682210785"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span></span></span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span id="local-6989586621682210797"><span id="local-6989586621682210803"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#DefaultFiniteBitsSymShift"><span class="hs-identifier hs-type">DefaultFiniteBitsSymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymShift.html#SymShift"><span class="hs-identifier hs-type">SymShift</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word</span></span></span></span><span>
+</span><span id="line-118"></span></pre></body></html>

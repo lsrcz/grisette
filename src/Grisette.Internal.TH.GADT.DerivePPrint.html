@@ -1,0 +1,463 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE TupleSections #-}</span><span>
+</span><span id="line-4"></span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Module      :   Grisette.Internal.TH.GADT.DerivePPrint</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.DerivePPrint</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint"><span class="hs-identifier">deriveGADTPPrint</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint1"><span class="hs-identifier">deriveGADTPPrint1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint2"><span class="hs-identifier">deriveGADTPPrint2</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IsString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromString</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">appPrec1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint"><span class="hs-identifier">PPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatList"><span class="hs-identifier">pformatList</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatPrec"><span class="hs-identifier">pformatPrec</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint1"><span class="hs-identifier">PPrint1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatList"><span class="hs-identifier">liftPFormatList</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec"><span class="hs-identifier">liftPFormatPrec</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint2"><span class="hs-identifier">PPrint2</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatList2"><span class="hs-identifier">liftPFormatList2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec2"><span class="hs-identifier">liftPFormatPrec2</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><span class="hs-identifier">align</span></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#condEnclose"><span class="hs-identifier">condEnclose</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><span class="hs-identifier">flatAlt</span></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><span class="hs-identifier">group</span></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#groupedEnclose"><span class="hs-identifier">groupedEnclose</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><span class="hs-identifier">nest</span></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatWithConstructorNoAlign"><span class="hs-identifier">pformatWithConstructorNoAlign</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><span class="hs-identifier">vcat</span></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><span class="hs-identifier">vsep</span></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><span class="hs-operator">(&lt;+&gt;)</span></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.Common</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier">DeriveConfig</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.ShowPPrintCommon.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.ShowPPrintCommon</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.ShowPPrintCommon.html#showPrintFieldFunExp"><span class="hs-identifier">showPrintFieldFunExp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.UnaryOpCommon</span></a></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-42"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier">unaryOpAllowExistential</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier">unaryOpConfigs</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier">unaryOpContextNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier">unaryOpExtraVars</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier">unaryOpInstanceNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier">unaryOpInstanceTypeFromConfig</span></a></span><span>
+</span><span id="line-49"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier">UnaryOpFieldConfig</span></a></span><span>
+</span><span id="line-52"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier">UnaryOpFieldConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraLiftedPatNames"><span class="hs-identifier">extraLiftedPatNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraPatNames"><span class="hs-identifier">extraPatNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldCombineFun"><span class="hs-identifier">fieldCombineFun</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier">fieldFunExp</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldResFun"><span class="hs-identifier">fieldResFun</span></a></span><span>
+</span><span id="line-58"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultUnaryOpInstanceTypeFromConfig"><span class="hs-identifier">defaultUnaryOpInstanceTypeFromConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier">genUnaryOpClass</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.Util.html"><span class="hs-identifier">Grisette.Internal.TH.Util</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.Util.html#integerE"><span class="hs-identifier">integerE</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.Util.html#isNonUnitTuple"><span class="hs-identifier">isNonUnitTuple</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH</span></span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Dec</span></span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><span class="hs-identifier">Exp</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ListE</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="hs-identifier">Fixity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Fixity</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><span class="hs-identifier">Name</span></span><span class="hs-special">,</span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><span class="hs-identifier">defaultFixity</span></span><span class="hs-special">,</span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="hs-identifier">listE</span></span><span class="hs-special">,</span><span>
+</span><span id="line-70"></span><span>    </span><span class="annot"><span class="hs-identifier">nameBase</span></span><span class="hs-special">,</span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="hs-identifier">stringE</span></span><span class="hs-special">,</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Datatype</span></span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">ConstructorVariant</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">InfixConstructor</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">NormalConstructor</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">RecordConstructor</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><span class="hs-identifier">reifyFixityCompat</span></span><span class="hs-special">,</span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Q</span></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#pprintConfig"><span class="hs-identifier hs-type">pprintConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-80"></span><span id="pprintConfig"><span class="annot"><span class="annottext">pprintConfig :: UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#pprintConfig"><span class="hs-identifier hs-var hs-var">pprintConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unaryOpConfigs :: [UnaryOpConfig]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier hs-var">unaryOpConfigs</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-83"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">UnaryOpFieldConfig -&gt; [Name] -&gt; UnaryOpConfig
+forall config.
+UnaryOpFunConfig config =&gt;
+config -&gt; [Name] -&gt; UnaryOpConfig
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier hs-var">UnaryOpConfig</span></a></span><span>
+</span><span id="line-84"></span><span>            </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier hs-type">UnaryOpFieldConfig</span></a></span><span>
+</span><span id="line-85"></span><span>              </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">extraPatNames :: [[Char]]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraPatNames"><span class="hs-identifier hs-var">extraPatNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;prec&quot;</span></span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-86"></span><span>                </span><span class="annot"><span class="annottext">extraLiftedPatNames :: Int -&gt; [[Char]]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraLiftedPatNames"><span class="hs-identifier hs-var">extraLiftedPatNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682276655"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276655"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;pl&quot;</span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276655"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-87"></span><span>                </span><span class="annot"><span class="annottext">fieldCombineFun :: Int
+-&gt; Int
+-&gt; ConstructorVariant
+-&gt; Name
+-&gt; [Exp]
+-&gt; [Exp]
+-&gt; Q (Exp, [Bool])
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldCombineFun"><span class="hs-identifier hs-var">fieldCombineFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682276657"><span class="annot"><span class="annottext">ConstructorVariant
+</span><a href="#local-6989586621682276657"><span class="hs-identifier hs-var">variant</span></a></span></span><span> </span><span id="local-6989586621682276658"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276658"><span class="hs-identifier hs-var">conName</span></a></span></span><span> </span><span class="hs-special">[</span><span id="local-6989586621682276659"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276659"><span class="hs-identifier hs-var">prec</span></a></span></span><span class="hs-special">]</span><span> </span><span id="local-6989586621682276660"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682276660"><span class="hs-identifier hs-var">exps</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-88"></span><span>                  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682276673"><span class="annot"><span class="annottext">initExps :: [Q Exp]
+</span><a href="#local-6989586621682276673"><span class="hs-identifier hs-var hs-var">initExps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-89"></span><span>                        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682276674"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276674"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-90"></span><span>                            </span><span class="hs-special">[|</span><span>
+</span><span id="line-91"></span><span>                              </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276674"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>                                </span><span class="annot"><span class="hs-operator hs-type">&lt;&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;,&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span>                                </span><span class="annot"><span class="hs-operator hs-type">&lt;&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">flatAlt</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot; &quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>                              </span><span class="hs-special">|]</span><span>
+</span><span id="line-95"></span><span>                        </span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span>                          </span><span class="annot"><span class="annottext">(Exp -&gt; Q Exp) -&gt; [Exp] -&gt; [Q Exp]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; [Exp]
+forall a. HasCallStack =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">init</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682276660"><span class="hs-identifier hs-var">exps</span></a></span><span>
+</span><span id="line-97"></span><span>                      </span><span id="local-6989586621682276686"><span class="annot"><span class="annottext">lastExp :: Q Exp
+</span><a href="#local-6989586621682276686"><span class="hs-identifier hs-var hs-var">lastExp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Q Exp) -&gt; Exp -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; Exp
+forall a. HasCallStack =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">last</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682276660"><span class="hs-identifier hs-var">exps</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span>
+</span><span id="line-98"></span><span>                      </span><span id="local-6989586621682276688"><span class="annot"><span class="annottext">commaSeped :: [Q Exp]
+</span><a href="#local-6989586621682276688"><span class="hs-identifier hs-var hs-var">commaSeped</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Q Exp]
+</span><a href="#local-6989586621682276673"><span class="hs-identifier hs-var">initExps</span></a></span><span> </span><span class="annot"><span class="annottext">[Q Exp] -&gt; [Q Exp] -&gt; [Q Exp]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682276686"><span class="hs-identifier hs-var">lastExp</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-99"></span><span>                  </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConstructorVariant
+</span><a href="#local-6989586621682276657"><span class="hs-identifier hs-var">variant</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682276660"><span class="hs-identifier hs-var">exps</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-100"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">NormalConstructor</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-101"></span><span>                      </span><span id="local-6989586621682276689"><span class="annot"><a href="#local-6989586621682276689"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Char] -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; [Char] -&gt; m Exp
+</span><span class="hs-identifier hs-var">stringE</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Q Exp) -&gt; [Char] -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; [Char]
+</span><span class="hs-identifier hs-var">nameBase</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276658"><span class="hs-identifier hs-var">conName</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span>
+</span><span id="line-102"></span><span>                      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276689"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">False</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-103"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">NormalConstructor</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621682276690"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276690"><span class="hs-identifier hs-var">exp</span></a></span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-104"></span><span>                      </span><span id="local-6989586621682276691"><span class="annot"><a href="#local-6989586621682276691"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-105"></span><span>                        </span><span class="hs-special">[|</span><span>
+</span><span id="line-106"></span><span>                          </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatWithConstructorNoAlign"><span class="hs-identifier hs-type">pformatWithConstructorNoAlign</span></a></span><span>
+</span><span id="line-107"></span><span>                            </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276659"><span class="hs-identifier hs-var">prec</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-108"></span><span>                            </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Char] -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; [Char] -&gt; m Exp
+</span><span class="hs-identifier hs-var">stringE</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Q Exp) -&gt; [Char] -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; [Char]
+</span><span class="hs-identifier hs-var">nameBase</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276658"><span class="hs-identifier hs-var">conName</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-109"></span><span>                            </span><span class="hs-special">[</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276690"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-110"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-111"></span><span>                      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276691"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-112"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">NormalConstructor</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Bool
+</span><a href="Grisette.Internal.TH.Util.html#isNonUnitTuple"><span class="hs-identifier hs-var">isNonUnitTuple</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276658"><span class="hs-identifier hs-var">conName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-113"></span><span>                      </span><span id="local-6989586621682276692"><span class="annot"><a href="#local-6989586621682276692"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-114"></span><span>                        </span><span class="hs-special">[|</span><span>
+</span><span id="line-115"></span><span>                          </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#groupedEnclose"><span class="hs-identifier hs-type">groupedEnclose</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;(&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;)&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-116"></span><span>                            </span><span class="annot"><span class="hs-identifier hs-type">vcat</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-117"></span><span>                              </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Q Exp] -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; [m Exp] -&gt; m Exp
+</span><span class="hs-identifier hs-var">listE</span></span><span> </span><span class="annot"><span class="annottext">[Q Exp]
+</span><a href="#local-6989586621682276688"><span class="hs-identifier hs-var">commaSeped</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-118"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-119"></span><span>                      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276692"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">False</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-120"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">NormalConstructor</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-121"></span><span>                      </span><span id="local-6989586621682276693"><span class="annot"><a href="#local-6989586621682276693"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-122"></span><span>                        </span><span class="hs-special">[|</span><span>
+</span><span id="line-123"></span><span>                          </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatWithConstructorNoAlign"><span class="hs-identifier hs-type">pformatWithConstructorNoAlign</span></a></span><span>
+</span><span id="line-124"></span><span>                            </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276659"><span class="hs-identifier hs-var">prec</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-125"></span><span>                            </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Char] -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; [Char] -&gt; m Exp
+</span><span class="hs-identifier hs-var">stringE</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Q Exp) -&gt; [Char] -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; [Char]
+</span><span class="hs-identifier hs-var">nameBase</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276658"><span class="hs-identifier hs-var">conName</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-126"></span><span>                            </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">vsep</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Q Exp) -&gt; Exp -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; Exp
+</span><span class="hs-identifier hs-var">ListE</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682276660"><span class="hs-identifier hs-var">exps</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-127"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-128"></span><span>                      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276693"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">RecordConstructor</span></span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-130"></span><span>                      </span><span id="local-6989586621682276694"><span class="annot"><a href="#local-6989586621682276694"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-131"></span><span>                        </span><span class="hs-special">[|</span><span>
+</span><span id="line-132"></span><span>                          </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatWithConstructorNoAlign"><span class="hs-identifier hs-type">pformatWithConstructorNoAlign</span></a></span><span>
+</span><span id="line-133"></span><span>                            </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276659"><span class="hs-identifier hs-var">prec</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>                            </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Char] -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; [Char] -&gt; m Exp
+</span><span class="hs-identifier hs-var">stringE</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Q Exp) -&gt; [Char] -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; [Char]
+</span><span class="hs-identifier hs-var">nameBase</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276658"><span class="hs-identifier hs-var">conName</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-135"></span><span>                            </span><span class="hs-special">[</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#groupedEnclose"><span class="hs-identifier hs-type">groupedEnclose</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;{&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;}&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-136"></span><span>                                </span><span class="annot"><span class="hs-identifier hs-type">vcat</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-137"></span><span>                                  </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Q Exp] -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; [m Exp] -&gt; m Exp
+</span><span class="hs-identifier hs-var">listE</span></span><span> </span><span class="annot"><span class="annottext">[Q Exp]
+</span><a href="#local-6989586621682276688"><span class="hs-identifier hs-var">commaSeped</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-138"></span><span>                            </span><span class="hs-special">]</span><span>
+</span><span id="line-139"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-140"></span><span>                      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276694"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-141"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">InfixConstructor</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621682276695"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276695"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682276696"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276696"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-142"></span><span>                      </span><span id="local-6989586621682276697"><span class="annot"><a href="#local-6989586621682276697"><span class="hs-identifier hs-var">fi</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-143"></span><span>                        </span><span class="annot"><span class="annottext">Fixity -&gt; Maybe Fixity -&gt; Fixity
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Fixity
+</span><span class="hs-identifier hs-var">defaultFixity</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Fixity -&gt; Fixity) -&gt; Q (Maybe Fixity) -&gt; Q Fixity
+forall a b. (a -&gt; b) -&gt; Q a -&gt; Q b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">`fmap`</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Q (Maybe Fixity)
+</span><span class="hs-identifier hs-var">reifyFixityCompat</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276658"><span class="hs-identifier hs-var">conName</span></a></span><span>
+</span><span id="line-144"></span><span>                      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682276698"><span class="annot"><a href="#local-6989586621682276698"><span class="hs-identifier hs-var hs-var">conPrec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Fixity
+</span><a href="#local-6989586621682276697"><span class="hs-identifier hs-var">fi</span></a></span><span> </span><span class="hs-keyword">of</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Fixity</span></span><span> </span><span id="local-6989586621682276699"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276699"><span class="hs-identifier hs-var">prec</span></a></span></span><span> </span><span class="annot"><span class="annottext">FixityDirection
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276699"><span class="hs-identifier hs-var">prec</span></a></span><span>
+</span><span id="line-145"></span><span>                      </span><span id="local-6989586621682276700"><span class="annot"><a href="#local-6989586621682276700"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-146"></span><span>                        </span><span class="hs-special">[|</span><span>
+</span><span id="line-147"></span><span>                          </span><span class="annot"><span class="hs-identifier hs-type">group</span></span><span>
+</span><span id="line-148"></span><span>                            </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#condEnclose"><span class="hs-identifier hs-type">condEnclose</span></a></span><span>
+</span><span id="line-149"></span><span>                              </span><span class="hs-special">(</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><a href="#local-6989586621682276659"><span class="hs-identifier hs-type">prec</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">&gt;</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.Util.html#integerE"><span class="hs-identifier hs-type">integerE</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682276698"><span class="hs-identifier hs-type">conPrec</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-150"></span><span>                              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;(&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-151"></span><span>                              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="annot"><span class="hs-string">&quot;)&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-152"></span><span>                            </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">nest</span></span><span> </span><span class="annot"><span class="hs-number">2</span></span><span>
+</span><span id="line-153"></span><span>                            </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">vsep</span></span><span>
+</span><span id="line-154"></span><span>                              </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="hs-identifier hs-type">align</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><a href="#local-6989586621682276695"><span class="hs-identifier hs-type">l</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-155"></span><span>                                </span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">stringE</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">nameBase</span></span><span> </span><span class="annot"><a href="#local-6989586621682276658"><span class="hs-identifier hs-type">conName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-156"></span><span>                                  </span><span class="annot"><span class="hs-operator hs-type">&lt;+&gt;</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><a href="#local-6989586621682276696"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-157"></span><span>                              </span><span class="hs-special">]</span><span>
+</span><span id="line-158"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-159"></span><span>                      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276700"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-160"></span><span>                    </span><span class="annot"><span class="annottext">(ConstructorVariant, [Exp])
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-161"></span><span>                      </span><span class="annot"><span class="annottext">[Char] -&gt; Q (Exp, [Bool])
+forall a. [Char] -&gt; Q a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; [Char] -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;deriveGADTPPrint: unexpected constructor variant&quot;</span></span><span class="hs-special">,</span><span>
+</span><span id="line-162"></span><span>                </span><span class="annot"><span class="annottext">fieldResFun :: ConstructorVariant
+-&gt; Name -&gt; [Exp] -&gt; Int -&gt; Exp -&gt; Exp -&gt; Q (Exp, [Bool])
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldResFun"><span class="hs-identifier hs-var">fieldResFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682276702"><span class="annot"><span class="annottext">ConstructorVariant
+</span><a href="#local-6989586621682276702"><span class="hs-identifier hs-var">variant</span></a></span></span><span> </span><span id="local-6989586621682276703"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276703"><span class="hs-identifier hs-var">conName</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682276704"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276704"><span class="hs-identifier hs-var">pos</span></a></span></span><span> </span><span id="local-6989586621682276705"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276705"><span class="hs-identifier hs-var">fieldPat</span></a></span></span><span> </span><span id="local-6989586621682276706"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276706"><span class="hs-identifier hs-var">fieldFun</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-163"></span><span>                  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682276727"><span class="annot"><span class="annottext">makePPrintField :: a -&gt; Q Exp
+</span><a href="#local-6989586621682276727"><span class="hs-identifier hs-var hs-var hs-var">makePPrintField</span></a></span></span><span> </span><span id="local-6989586621682276728"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682276728"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-164"></span><span>                        </span><span class="hs-special">[|</span><span>
+</span><span id="line-165"></span><span>                          </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276706"><span class="hs-identifier hs-var">fieldFun</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-166"></span><span>                            </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Q Exp
+forall a. Integral a =&gt; a -&gt; Q Exp
+</span><a href="Grisette.Internal.TH.Util.html#integerE"><span class="hs-identifier hs-var">integerE</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682276728"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-167"></span><span>                            </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682276705"><span class="hs-identifier hs-var">fieldPat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-168"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-169"></span><span>                  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682276730"><span class="annot"><span class="annottext">attachUsedInfo :: Q a -&gt; Q (a, [Bool])
+</span><a href="#local-6989586621682276730"><span class="hs-identifier hs-var hs-var">attachUsedInfo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">[</span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a -&gt; (a, [Bool])) -&gt; Q a -&gt; Q (a, [Bool])
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-170"></span><span>                  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ConstructorVariant
+</span><a href="#local-6989586621682276702"><span class="hs-identifier hs-var">variant</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-171"></span><span>                    </span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">NormalConstructor</span></span><span>
+</span><span id="line-172"></span><span>                      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Bool
+</span><a href="Grisette.Internal.TH.Util.html#isNonUnitTuple"><span class="hs-identifier hs-var">isNonUnitTuple</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276703"><span class="hs-identifier hs-var">conName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-173"></span><span>                          </span><span class="annot"><span class="annottext">Q Exp -&gt; Q (Exp, [Bool])
+forall {a}. Q a -&gt; Q (a, [Bool])
+</span><a href="#local-6989586621682276730"><span class="hs-identifier hs-var">attachUsedInfo</span></a></span><span> </span><span class="annot"><span class="annottext">(Q Exp -&gt; Q (Exp, [Bool])) -&gt; Q Exp -&gt; Q (Exp, [Bool])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Q Exp
+forall a. Integral a =&gt; a -&gt; Q Exp
+</span><a href="#local-6989586621682276727"><span class="hs-identifier hs-var">makePPrintField</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-174"></span><span>                    </span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">NormalConstructor</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-175"></span><span>                      </span><span class="annot"><span class="annottext">Q Exp -&gt; Q (Exp, [Bool])
+forall {a}. Q a -&gt; Q (a, [Bool])
+</span><a href="#local-6989586621682276730"><span class="hs-identifier hs-var">attachUsedInfo</span></a></span><span> </span><span class="annot"><span class="annottext">(Q Exp -&gt; Q (Exp, [Bool])) -&gt; Q Exp -&gt; Q (Exp, [Bool])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Q Exp
+forall a. Integral a =&gt; a -&gt; Q Exp
+</span><a href="#local-6989586621682276727"><span class="hs-identifier hs-var">makePPrintField</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier hs-var">appPrec1</span></span><span>
+</span><span id="line-176"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">RecordConstructor</span></span><span> </span><span id="local-6989586621682276731"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276731"><span class="hs-identifier hs-var">names</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-177"></span><span>                      </span><span class="annot"><span class="annottext">Q Exp -&gt; Q (Exp, [Bool])
+forall {a}. Q a -&gt; Q (a, [Bool])
+</span><a href="#local-6989586621682276730"><span class="hs-identifier hs-var">attachUsedInfo</span></a></span><span>
+</span><span id="line-178"></span><span>                        </span><span class="hs-special">[|</span><span>
+</span><span id="line-179"></span><span>                          </span><span class="annot"><span class="hs-identifier hs-type">fromString</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Char] -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; [Char] -&gt; m Exp
+</span><span class="hs-identifier hs-var">stringE</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Q Exp) -&gt; [Char] -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; [Char]
+</span><span class="hs-identifier hs-var">nameBase</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276731"><span class="hs-identifier hs-var">names</span></a></span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Int -&gt; Name
+forall a. HasCallStack =&gt; [a] -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276704"><span class="hs-identifier hs-var">pos</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot; = &quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-180"></span><span>                            </span><span class="annot"><span class="hs-operator hs-type">&lt;&gt;</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Q Exp
+forall a. Integral a =&gt; a -&gt; Q Exp
+</span><a href="#local-6989586621682276727"><span class="hs-identifier hs-var">makePPrintField</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
+</span><span id="line-181"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-182"></span><span>                    </span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier hs-var">InfixConstructor</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-183"></span><span>                      </span><span id="local-6989586621682276733"><span class="annot"><a href="#local-6989586621682276733"><span class="hs-identifier hs-var">fi</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-184"></span><span>                        </span><span class="annot"><span class="annottext">Fixity -&gt; Maybe Fixity -&gt; Fixity
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Fixity
+</span><span class="hs-identifier hs-var">defaultFixity</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Fixity -&gt; Fixity) -&gt; Q (Maybe Fixity) -&gt; Q Fixity
+forall a b. (a -&gt; b) -&gt; Q a -&gt; Q b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">`fmap`</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Q (Maybe Fixity)
+</span><span class="hs-identifier hs-var">reifyFixityCompat</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682276703"><span class="hs-identifier hs-var">conName</span></a></span><span>
+</span><span id="line-185"></span><span>                      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682276734"><span class="annot"><a href="#local-6989586621682276734"><span class="hs-identifier hs-var hs-var">conPrec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Fixity
+</span><a href="#local-6989586621682276733"><span class="hs-identifier hs-var">fi</span></a></span><span> </span><span class="hs-keyword">of</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Fixity</span></span><span> </span><span id="local-6989586621682276735"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276735"><span class="hs-identifier hs-var">prec</span></a></span></span><span> </span><span class="annot"><span class="annottext">FixityDirection
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682276735"><span class="hs-identifier hs-var">prec</span></a></span><span>
+</span><span id="line-186"></span><span>                      </span><span class="annot"><a href="#local-6989586621682276730"><span class="hs-identifier hs-type">attachUsedInfo</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="#local-6989586621682276727"><span class="hs-identifier hs-type">makePPrintField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276734"><span class="hs-identifier hs-type">conPrec</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-187"></span><span>                </span><span class="annot"><span class="annottext">fieldFunExp :: FieldFunExp
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier hs-var">fieldFunExp</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-188"></span><span>                  </span><span class="annot"><span class="annottext">[Name] -&gt; [Name] -&gt; FieldFunExp
+</span><a href="Grisette.Internal.TH.GADT.ShowPPrintCommon.html#showPrintFieldFunExp"><span class="hs-identifier hs-var">showPrintFieldFunExp</span></a></span><span>
+</span><span id="line-189"></span><span>                    </span><span class="hs-special">[</span><span class="hs-special">'</span><span class="hs-identifier">pformatPrec</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftPFormatPrec</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftPFormatPrec2</span><span class="hs-special">]</span><span>
+</span><span id="line-190"></span><span>                    </span><span class="hs-special">[</span><span class="hs-special">'</span><span class="hs-identifier">pformatList</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftPFormatList</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftPFormatList2</span><span class="hs-special">]</span><span>
+</span><span id="line-191"></span><span>              </span><span class="hs-special">}</span><span>
+</span><span id="line-192"></span><span>            </span><span class="hs-special">[</span><span class="hs-special">'</span><span class="hs-identifier">pformatPrec</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftPFormatPrec</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftPFormatPrec2</span><span class="hs-special">]</span><span>
+</span><span id="line-193"></span><span>        </span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-194"></span><span>      </span><span class="annot"><span class="annottext">unaryOpExtraVars :: DeriveConfig -&gt; Q [(Type, Type)]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier hs-var">unaryOpExtraVars</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)])
+-&gt; Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; Q [(Type, Type)]
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-195"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceNames :: [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier hs-var">unaryOpInstanceNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">''</span><span class="hs-identifier">PPrint</span><span class="hs-special">,</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">PPrint1</span><span class="hs-special">,</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">PPrint2</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-196"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceTypeFromConfig :: DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">unaryOpInstanceTypeFromConfig</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultUnaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">defaultUnaryOpInstanceTypeFromConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-197"></span><span>      </span><span class="annot"><span class="annottext">unaryOpAllowExistential :: Bool
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier hs-var">unaryOpAllowExistential</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">,</span><span>
+</span><span id="line-198"></span><span>      </span><span class="annot"><span class="annottext">unaryOpContextNames :: Maybe [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier hs-var">unaryOpContextNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe [Name]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-199"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-200"></span><span>
+</span><span id="line-201"></span><span class="annot"><span class="hs-comment">-- | Derive 'PPrint' instance for a GADT.</span></span><span>
+</span><span id="line-202"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint"><span class="hs-identifier hs-type">deriveGADTPPrint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-203"></span><span id="deriveGADTPPrint"><span class="annot"><span class="annottext">deriveGADTPPrint :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint"><span class="hs-identifier hs-var hs-var">deriveGADTPPrint</span></a></span></span><span> </span><span id="local-6989586621682276738"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682276738"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682276738"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#pprintConfig"><span class="hs-identifier hs-var">pprintConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-204"></span><span>
+</span><span id="line-205"></span><span class="annot"><span class="hs-comment">-- | Derive 'PPrint1' instance for a GADT.</span></span><span>
+</span><span id="line-206"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint1"><span class="hs-identifier hs-type">deriveGADTPPrint1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-207"></span><span id="deriveGADTPPrint1"><span class="annot"><span class="annottext">deriveGADTPPrint1 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint1"><span class="hs-identifier hs-var hs-var">deriveGADTPPrint1</span></a></span></span><span> </span><span id="local-6989586621682276739"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682276739"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682276739"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#pprintConfig"><span class="hs-identifier hs-var">pprintConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-208"></span><span>
+</span><span id="line-209"></span><span class="annot"><span class="hs-comment">-- | Derive 'PPrint2' instance for a GADT.</span></span><span>
+</span><span id="line-210"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint2"><span class="hs-identifier hs-type">deriveGADTPPrint2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-211"></span><span id="deriveGADTPPrint2"><span class="annot"><span class="annottext">deriveGADTPPrint2 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#deriveGADTPPrint2"><span class="hs-identifier hs-var hs-var">deriveGADTPPrint2</span></a></span></span><span> </span><span id="local-6989586621682276740"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682276740"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682276740"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DerivePPrint.html#pprintConfig"><span class="hs-identifier hs-var">pprintConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-212"></span></pre></body></html>

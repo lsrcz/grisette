@@ -1,0 +1,624 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE MultiWayIf #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE TupleSections #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Module      :   Grisette.Internal.TH.GADT.SerializeCommon</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.SerializeCommon</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#serializeConfig"><span class="hs-identifier">serializeConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#serializeWithSerialConfig"><span class="hs-identifier">serializeWithSerialConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">zipWithM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bytes.Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">deserialize</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">serialize</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Serial1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Serial2</span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">mapMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.UnaryOpCommon</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-28"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier">unaryOpAllowExistential</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier">unaryOpConfigs</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier">unaryOpContextNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier">unaryOpExtraVars</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier">unaryOpInstanceNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier">unaryOpInstanceTypeFromConfig</span></a></span><span>
+</span><span id="line-35"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier">UnaryOpFieldConfig</span></a></span><span>
+</span><span id="line-38"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier">UnaryOpFieldConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraLiftedPatNames"><span class="hs-identifier">extraLiftedPatNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraPatNames"><span class="hs-identifier">extraPatNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldCombineFun"><span class="hs-identifier">fieldCombineFun</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier">fieldFunExp</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldResFun"><span class="hs-identifier">fieldResFun</span></a></span><span>
+</span><span id="line-44"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFunConfig"><span class="hs-identifier">UnaryOpFunConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpFun"><span class="hs-identifier">genUnaryOpFun</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultFieldFunExp"><span class="hs-identifier">defaultFieldFunExp</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultUnaryOpInstanceTypeFromConfig"><span class="hs-identifier">defaultUnaryOpInstanceTypeFromConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.Util.html"><span class="hs-identifier">Grisette.Internal.TH.Util</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.Util.html#integerE"><span class="hs-identifier">integerE</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH</span></span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Body</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NormalB</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="hs-identifier">Clause</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Clause</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><span class="hs-identifier">Dec</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">FunD</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>    </span><span class="annot"><span class="hs-identifier">Lit</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IntegerL</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>    </span><span class="annot"><span class="hs-identifier">Match</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Match</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><span class="hs-identifier">Name</span></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="hs-identifier">Pat</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">LitP</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">VarP</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">WildP</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><span class="hs-identifier">Type</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">VarT</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="hs-identifier">bindS</span></span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><span class="hs-identifier">caseE</span></span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="hs-identifier">clause</span></span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><span class="hs-identifier">conE</span></span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><span class="hs-identifier">conT</span></span><span class="hs-special">,</span><span>
+</span><span id="line-64"></span><span>    </span><span class="annot"><span class="hs-identifier">doE</span></span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><span class="hs-identifier">funD</span></span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="hs-identifier">match</span></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><span class="hs-identifier">mkName</span></span><span class="hs-special">,</span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><span class="hs-identifier">newName</span></span><span class="hs-special">,</span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="hs-identifier">noBindS</span></span><span class="hs-special">,</span><span>
+</span><span id="line-70"></span><span>    </span><span class="annot"><span class="hs-identifier">normalB</span></span><span class="hs-special">,</span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="hs-identifier">sigP</span></span><span class="hs-special">,</span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><span class="hs-identifier">varE</span></span><span class="hs-special">,</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><span class="hs-identifier">varP</span></span><span class="hs-special">,</span><span>
+</span><span id="line-74"></span><span>    </span><span class="annot"><span class="hs-identifier">wildP</span></span><span class="hs-special">,</span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Datatype</span></span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">ConstructorInfo</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">constructorFields</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">constructorName</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-78"></span><span>    </span><span class="annot"><span class="hs-identifier">TypeSubstitution</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">freeVariables</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-79"></span><span>    </span><span class="annot"><span class="hs-identifier">resolveTypeSynonyms</span></span><span class="hs-special">,</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-keyword">data</span><span> </span><span id="UnaryOpSerializeWithSerialConfig"><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpSerializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpSerializeWithSerialConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnaryOpSerializeWithSerialConfig"><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpSerializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpSerializeWithSerialConfig</span></a></span></span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFunConfig"><span class="hs-identifier hs-type">UnaryOpFunConfig</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpSerializeWithSerialConfig"><span class="hs-identifier hs-type">UnaryOpSerializeWithSerialConfig</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-85"></span><span>  </span><span id="local-6989586621682275843"><span class="annot"><span class="annottext">genUnaryOpFun :: DeriveConfig
+-&gt; UnaryOpSerializeWithSerialConfig
+-&gt; [Name]
+-&gt; Int
+-&gt; [(Type, Type)]
+-&gt; [(Type, Type)]
+-&gt; [(Type, Type)]
+-&gt; (Name -&gt; Bool)
+-&gt; [ConstructorInfo]
+-&gt; Q Dec
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpFun"><span class="hs-identifier hs-var hs-var hs-var">genUnaryOpFun</span></a></span></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnaryOpSerializeWithSerialConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpSerializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpSerializeWithSerialConfig</span></a></span><span> </span><span id="local-6989586621682275844"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275844"><span class="hs-identifier hs-var">funNames</span></a></span></span><span> </span><span id="local-6989586621682275845"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275845"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[ConstructorInfo]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-86"></span><span>    </span><span class="annot"><span class="annottext">Name -&gt; [Q Clause] -&gt; Q Dec
+forall (m :: * -&gt; *). Quote m =&gt; Name -&gt; [m Clause] -&gt; m Dec
+</span><span class="hs-identifier hs-var">funD</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275844"><span class="hs-identifier hs-var">funNames</span></a></span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Int -&gt; Name
+forall a. HasCallStack =&gt; [a] -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275845"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Q Pat] -&gt; Q Body -&gt; [Q Dec] -&gt; Q Clause
+forall (m :: * -&gt; *).
+Quote m =&gt;
+[m Pat] -&gt; m Body -&gt; [m Dec] -&gt; m Clause
+</span><span class="hs-identifier hs-var">clause</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Q Exp -&gt; Q Body
+forall (m :: * -&gt; *). Quote m =&gt; m Exp -&gt; m Body
+</span><span class="hs-identifier hs-var">normalB</span></span><span> </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">serialize</span></span><span class="hs-special">|]</span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-keyword">data</span><span> </span><span id="UnaryOpDeserializeWithSerialConfig"><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeWithSerialConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnaryOpDeserializeWithSerialConfig"><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeWithSerialConfig</span></a></span></span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFunConfig"><span class="hs-identifier hs-type">UnaryOpFunConfig</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeWithSerialConfig"><span class="hs-identifier hs-type">UnaryOpDeserializeWithSerialConfig</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-91"></span><span>  </span><span id="local-6989586621682275855"><span class="annot"><span class="annottext">genUnaryOpFun :: DeriveConfig
+-&gt; UnaryOpDeserializeWithSerialConfig
+-&gt; [Name]
+-&gt; Int
+-&gt; [(Type, Type)]
+-&gt; [(Type, Type)]
+-&gt; [(Type, Type)]
+-&gt; (Name -&gt; Bool)
+-&gt; [ConstructorInfo]
+-&gt; Q Dec
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpFun"><span class="hs-identifier hs-var hs-var hs-var">genUnaryOpFun</span></a></span></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnaryOpDeserializeWithSerialConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeWithSerialConfig</span></a></span><span> </span><span id="local-6989586621682275856"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275856"><span class="hs-identifier hs-var">funNames</span></a></span></span><span> </span><span id="local-6989586621682275857"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275857"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[ConstructorInfo]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>    </span><span class="annot"><span class="annottext">Name -&gt; [Q Clause] -&gt; Q Dec
+forall (m :: * -&gt; *). Quote m =&gt; Name -&gt; [m Clause] -&gt; m Dec
+</span><span class="hs-identifier hs-var">funD</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275856"><span class="hs-identifier hs-var">funNames</span></a></span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Int -&gt; Name
+forall a. HasCallStack =&gt; [a] -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275857"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Q Pat] -&gt; Q Body -&gt; [Q Dec] -&gt; Q Clause
+forall (m :: * -&gt; *).
+Quote m =&gt;
+[m Pat] -&gt; m Body -&gt; [m Dec] -&gt; m Clause
+</span><span class="hs-identifier hs-var">clause</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Q Exp -&gt; Q Body
+forall (m :: * -&gt; *). Quote m =&gt; m Exp -&gt; m Body
+</span><span class="hs-identifier hs-var">normalB</span></span><span> </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">deserialize</span></span><span class="hs-special">|]</span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- | Configuration for deserialization function, generate the function from</span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- scratch.</span><span>
+</span><span id="line-96"></span><span class="hs-keyword">data</span><span> </span><span id="UnaryOpDeserializeConfig"><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnaryOpDeserializeConfig"><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeConfig</span></a></span></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#getSerializedType"><span class="hs-identifier hs-type">getSerializedType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span>
+</span><span id="line-99"></span><span id="getSerializedType"><span class="annot"><span class="annottext">getSerializedType :: Int -&gt; Name
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#getSerializedType"><span class="hs-identifier hs-var hs-var">getSerializedType</span></a></span></span><span> </span><span id="local-6989586621682275860"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275860"><span class="hs-identifier hs-var">numConstructors</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-keyword">if</span><span>
+</span><span id="line-101"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275860"><span class="hs-identifier hs-var">numConstructors</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">maxBound</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Word8</span><span>
+</span><span id="line-102"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275860"><span class="hs-identifier hs-var">numConstructors</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">maxBound</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Word16</span><span>
+</span><span id="line-103"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275860"><span class="hs-identifier hs-var">numConstructors</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">maxBound</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Word32</span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275860"><span class="hs-identifier hs-var">numConstructors</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">maxBound</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Word64</span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Integer</span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFunConfig"><span class="hs-identifier hs-type">UnaryOpFunConfig</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeConfig"><span class="hs-identifier hs-type">UnaryOpDeserializeConfig</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-108"></span><span>  </span><span id="local-6989586621682275913"><span class="annot"><span class="annottext">genUnaryOpFun :: DeriveConfig
+-&gt; UnaryOpDeserializeConfig
+-&gt; [Name]
+-&gt; Int
+-&gt; [(Type, Type)]
+-&gt; [(Type, Type)]
+-&gt; [(Type, Type)]
+-&gt; (Name -&gt; Bool)
+-&gt; [ConstructorInfo]
+-&gt; Q Dec
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpFun"><span class="hs-identifier hs-var hs-var hs-var">genUnaryOpFun</span></a></span></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnaryOpDeserializeConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeConfig</span></a></span><span> </span><span id="local-6989586621682275914"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275914"><span class="hs-identifier hs-var">funNames</span></a></span></span><span> </span><span id="local-6989586621682275915"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275915"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275918"><span class="annot"><span class="annottext">instanceFunName :: Name
+</span><a href="#local-6989586621682275918"><span class="hs-identifier hs-var hs-var">instanceFunName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275914"><span class="hs-identifier hs-var">funNames</span></a></span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Int -&gt; Name
+forall a. HasCallStack =&gt; [a] -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275915"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><span class="annottext">Name -&gt; [Q Clause] -&gt; Q Dec
+forall (m :: * -&gt; *). Quote m =&gt; Name -&gt; [m Clause] -&gt; m Dec
+</span><span class="hs-identifier hs-var">funD</span></span><span>
+</span><span id="line-111"></span><span>      </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682275918"><span class="hs-identifier hs-var">instanceFunName</span></a></span><span>
+</span><span id="line-112"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">[Q Pat] -&gt; Q Body -&gt; [Q Dec] -&gt; Q Clause
+forall (m :: * -&gt; *).
+Quote m =&gt;
+[m Pat] -&gt; m Body -&gt; [m Dec] -&gt; m Clause
+</span><span class="hs-identifier hs-var">clause</span></span><span>
+</span><span id="line-113"></span><span>          </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-114"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Q Exp -&gt; Q Body
+forall (m :: * -&gt; *). Quote m =&gt; m Exp -&gt; m Body
+</span><span class="hs-identifier hs-var">normalB</span></span><span> </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">error</span></span><span> </span><span class="annot"><span class="hs-string">&quot;deserializing a type without constructors&quot;</span></span><span class="hs-special">|]</span><span class="hs-special">)</span><span>
+</span><span id="line-115"></span><span>          </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-116"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-117"></span><span>  </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpFun"><span class="hs-identifier hs-var">genUnaryOpFun</span></a></span><span>
+</span><span id="line-118"></span><span>    </span><span class="annot"><span class="annottext">DeriveConfig
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-119"></span><span>    </span><span class="annot"><span class="annottext">UnaryOpDeserializeConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeConfig</span></a></span><span>
+</span><span id="line-120"></span><span>    </span><span id="local-6989586621682275920"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275920"><span class="hs-identifier hs-var">funNames</span></a></span></span><span>
+</span><span id="line-121"></span><span>    </span><span id="local-6989586621682275921"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275921"><span class="hs-identifier hs-var">n</span></a></span></span><span>
+</span><span id="line-122"></span><span>    </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-123"></span><span>    </span><span class="annot"><span class="annottext">[(Type, Type)]
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-124"></span><span>    </span><span id="local-6989586621682275922"><span class="annot"><span class="annottext">[(Type, Type)]
+</span><a href="#local-6989586621682275922"><span class="hs-identifier hs-var">argTypes</span></a></span></span><span>
+</span><span id="line-125"></span><span>    </span><span class="annot"><span class="annottext">Name -&gt; Bool
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-126"></span><span>    </span><span id="local-6989586621682275923"><span class="annot"><span class="annottext">[ConstructorInfo]
+</span><a href="#local-6989586621682275923"><span class="hs-identifier hs-var">constructors</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-127"></span><span>      </span><span id="local-6989586621682275924"><span class="annot"><a href="#local-6989586621682275924"><span class="hs-identifier hs-var">allFields</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-128"></span><span>        </span><span class="annot"><span class="annottext">(Type -&gt; Q Type) -&gt; [Type] -&gt; Q [Type]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Q Type
+</span><span class="hs-identifier hs-var">resolveTypeSynonyms</span></span><span> </span><span class="annot"><span class="annottext">([Type] -&gt; Q [Type]) -&gt; [Type] -&gt; Q [Type]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-129"></span><span>          </span><span class="annot"><span class="annottext">(ConstructorInfo -&gt; [Type]) -&gt; [ConstructorInfo] -&gt; [Type]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">ConstructorInfo -&gt; [Type]
+</span><span class="hs-identifier hs-var">constructorFields</span></span><span> </span><span class="annot"><span class="annottext">[ConstructorInfo]
+</span><a href="#local-6989586621682275923"><span class="hs-identifier hs-var">constructors</span></a></span><span>
+</span><span id="line-130"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275932"><span class="annot"><a href="#local-6989586621682275932"><span class="hs-identifier hs-var hs-var">usedArgs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Set Name
+forall a. Ord a =&gt; [a] -&gt; Set a
+</span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="annot"><span class="annottext">([Name] -&gt; Set Name) -&gt; [Name] -&gt; Set Name
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Type] -&gt; [Name]
+forall a. TypeSubstitution a =&gt; a -&gt; [Name]
+</span><span class="hs-identifier hs-var">freeVariables</span></span><span> </span><span class="annot"><span class="annottext">[Type]
+</span><a href="#local-6989586621682275924"><span class="hs-identifier hs-var">allFields</span></a></span><span>
+</span><span id="line-131"></span><span>      </span><span id="local-6989586621682275934"><span class="annot"><a href="#local-6989586621682275934"><span class="hs-identifier hs-var">args</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-132"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">traverse</span></span><span>
+</span><span id="line-133"></span><span>          </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621682275936"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621682275936"><span class="hs-identifier hs-var">ty</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-134"></span><span>              </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621682275936"><span class="hs-identifier hs-var">ty</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-135"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">VarT</span></span><span> </span><span id="local-6989586621682275937"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682275937"><span class="hs-identifier hs-var">nm</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-136"></span><span>                  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Set Name -&gt; Bool
+forall a. Ord a =&gt; a -&gt; Set a -&gt; Bool
+</span><span class="hs-identifier hs-var">S.member</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682275937"><span class="hs-identifier hs-var">nm</span></a></span><span> </span><span class="annot"><span class="annottext">Set Name
+</span><a href="#local-6989586621682275932"><span class="hs-identifier hs-var">usedArgs</span></a></span><span>
+</span><span id="line-137"></span><span>                    </span><span class="hs-keyword">then</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-138"></span><span>                      </span><span id="local-6989586621682275939"><span class="annot"><a href="#local-6989586621682275939"><span class="hs-identifier hs-var">pname</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; Q Name
+forall (m :: * -&gt; *). Quote m =&gt; String -&gt; m Name
+</span><span class="hs-identifier hs-var">newName</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;p&quot;</span></span><span>
+</span><span id="line-139"></span><span>                      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682275937"><span class="hs-identifier hs-type">nm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621682275939"><span class="hs-identifier hs-type">pname</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-140"></span><span>                    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">(Name, Maybe Name) -&gt; Q (Name, Maybe Name)
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">'</span><span class="hs-identifier">undefined</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe Name
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span>
+</span><span id="line-141"></span><span>                </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Name, Maybe Name) -&gt; Q (Name, Maybe Name)
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">'</span><span class="hs-identifier">undefined</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe Name
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span><span>          </span><span class="hs-special">)</span><span>
+</span><span id="line-143"></span><span>          </span><span class="annot"><a href="#local-6989586621682275922"><span class="hs-identifier hs-type">argTypes</span></a></span><span>
+</span><span id="line-144"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275943"><span class="annot"><a href="#local-6989586621682275943"><span class="hs-identifier hs-var hs-var">argToFunPat</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-145"></span><span>            </span><span class="annot"><span class="annottext">[(Name, Name)] -&gt; Map Name Name
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">M.fromList</span></span><span> </span><span class="annot"><span class="annottext">([(Name, Name)] -&gt; Map Name Name)
+-&gt; [(Name, Name)] -&gt; Map Name Name
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">((Name, Maybe Name) -&gt; Maybe (Name, Name))
+-&gt; [(Name, Maybe Name)] -&gt; [(Name, Name)]
+forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621682275945"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682275945"><span class="hs-identifier hs-var">nm</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682275946"><span class="annot"><span class="annottext">Maybe Name
+</span><a href="#local-6989586621682275946"><span class="hs-identifier hs-var">mpat</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Name -&gt; (Name, Name)) -&gt; Maybe Name -&gt; Maybe (Name, Name)
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682275945"><span class="hs-identifier hs-var">nm</span></a></span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe Name
+</span><a href="#local-6989586621682275946"><span class="hs-identifier hs-var">mpat</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(Name, Maybe Name)]
+</span><a href="#local-6989586621682275934"><span class="hs-identifier hs-var">args</span></a></span><span>
+</span><span id="line-146"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275948"><span class="annot"><a href="#local-6989586621682275948"><span class="hs-identifier hs-var hs-var">funPats</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((Name, Maybe Name) -&gt; Pat) -&gt; [(Name, Maybe Name)] -&gt; [Pat]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Pat -&gt; (Name -&gt; Pat) -&gt; Maybe Name -&gt; Pat
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">Pat
+</span><span class="hs-identifier hs-var">WildP</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Pat
+</span><span class="hs-identifier hs-var">VarP</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Name -&gt; Pat)
+-&gt; ((Name, Maybe Name) -&gt; Maybe Name) -&gt; (Name, Maybe Name) -&gt; Pat
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Name, Maybe Name) -&gt; Maybe Name
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(Name, Maybe Name)]
+</span><a href="#local-6989586621682275934"><span class="hs-identifier hs-var">args</span></a></span><span>
+</span><span id="line-147"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275965"><span class="annot"><a href="#local-6989586621682275965"><span class="hs-identifier hs-var hs-var">genAuxFunMatch</span></a></span></span><span> </span><span id="local-6989586621682275966"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621682275966"><span class="hs-identifier hs-var">conIdx</span></a></span></span><span> </span><span id="local-6989586621682275967"><span class="annot"><span class="annottext">ConstructorInfo
+</span><a href="#local-6989586621682275967"><span class="hs-identifier hs-var">conInfo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-148"></span><span>            </span><span id="local-6989586621682275968"><span class="annot"><a href="#local-6989586621682275968"><span class="hs-identifier hs-var">fields</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Type -&gt; Q Type) -&gt; [Type] -&gt; Q [Type]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Q Type
+</span><span class="hs-identifier hs-var">resolveTypeSynonyms</span></span><span> </span><span class="annot"><span class="annottext">([Type] -&gt; Q [Type]) -&gt; [Type] -&gt; Q [Type]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ConstructorInfo -&gt; [Type]
+</span><span class="hs-identifier hs-var">constructorFields</span></span><span> </span><span class="annot"><span class="annottext">ConstructorInfo
+</span><a href="#local-6989586621682275967"><span class="hs-identifier hs-var">conInfo</span></a></span><span>
+</span><span id="line-149"></span><span>            </span><span id="local-6989586621682275969"><span class="annot"><a href="#local-6989586621682275969"><span class="hs-identifier hs-var">defaultFieldFunExps</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-150"></span><span>              </span><span class="annot"><span class="hs-identifier hs-type">traverse</span></span><span>
+</span><span id="line-151"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultFieldFunExp"><span class="hs-identifier hs-type">defaultFieldFunExp</span></a></span><span>
+</span><span id="line-152"></span><span>                    </span><span class="annot"><a href="#local-6989586621682275920"><span class="hs-identifier hs-type">funNames</span></a></span><span>
+</span><span id="line-153"></span><span>                    </span><span class="annot"><a href="#local-6989586621682275943"><span class="hs-identifier hs-type">argToFunPat</span></a></span><span>
+</span><span id="line-154"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">M.empty</span></span><span>
+</span><span id="line-155"></span><span>                </span><span class="hs-special">)</span><span>
+</span><span id="line-156"></span><span>                </span><span class="annot"><a href="#local-6989586621682275968"><span class="hs-identifier hs-type">fields</span></a></span><span>
+</span><span id="line-157"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275971"><span class="annot"><a href="#local-6989586621682275971"><span class="hs-identifier hs-var hs-var">conName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstructorInfo -&gt; Name
+</span><span class="hs-identifier hs-var">constructorName</span></span><span> </span><span class="annot"><span class="annottext">ConstructorInfo
+</span><a href="#local-6989586621682275967"><span class="hs-identifier hs-var">conInfo</span></a></span><span>
+</span><span id="line-158"></span><span>            </span><span id="local-6989586621682275972"><span class="annot"><a href="#local-6989586621682275972"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-159"></span><span>              </span><span class="annot"><span class="hs-identifier hs-type">foldl</span></span><span>
+</span><span id="line-160"></span><span>                </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621682275974"><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682275974"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span id="local-6989586621682275975"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275975"><span class="hs-identifier hs-var">fieldFun</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682275974"><span class="hs-identifier hs-var">exp</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;*&gt;</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275975"><span class="hs-identifier hs-var">fieldFun</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span class="hs-special">)</span><span>
+</span><span id="line-161"></span><span>                </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">conE</span></span><span> </span><span class="annot"><a href="#local-6989586621682275971"><span class="hs-identifier hs-type">conName</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span>
+</span><span id="line-162"></span><span>                </span><span class="annot"><a href="#local-6989586621682275969"><span class="hs-identifier hs-type">defaultFieldFunExps</span></a></span><span>
+</span><span id="line-163"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Match</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">LitP</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IntegerL</span></span><span> </span><span class="annot"><a href="#local-6989586621682275966"><span class="hs-identifier hs-type">conIdx</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NormalB</span></span><span> </span><span class="annot"><a href="#local-6989586621682275972"><span class="hs-identifier hs-type">exp</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-164"></span><span>      </span><span id="local-6989586621682275976"><span class="annot"><a href="#local-6989586621682275976"><span class="hs-identifier hs-var">auxMatches</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">zipWithM</span></span><span> </span><span class="annot"><a href="#local-6989586621682275965"><span class="hs-identifier hs-type">genAuxFunMatch</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span> </span><span class="annot"><a href="#local-6989586621682275923"><span class="hs-identifier hs-type">constructors</span></a></span><span>
+</span><span id="line-165"></span><span>      </span><span id="local-6989586621682275977"><span class="annot"><a href="#local-6989586621682275977"><span class="hs-identifier hs-var">auxFallbackMatch</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">match</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">wildP</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">normalB</span></span><span> </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">undefined</span></span><span class="hs-special">|]</span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-166"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275981"><span class="annot"><a href="#local-6989586621682275981"><span class="hs-identifier hs-var hs-var">instanceFunName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275920"><span class="hs-identifier hs-var">funNames</span></a></span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Int -&gt; Name
+forall a. HasCallStack =&gt; [a] -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275921"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-167"></span><span>      </span><span class="hs-comment">-- let auxFunName = mkName &quot;go&quot;</span><span>
+</span><span id="line-168"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275982"><span class="annot"><a href="#local-6989586621682275982"><span class="hs-identifier hs-var hs-var">selName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Name
+</span><span class="hs-identifier hs-var">mkName</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;sel&quot;</span></span><span>
+</span><span id="line-169"></span><span>      </span><span id="local-6989586621682275983"><span class="annot"><a href="#local-6989586621682275983"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-170"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">doE</span></span><span>
+</span><span id="line-171"></span><span>          </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="hs-identifier hs-type">bindS</span></span><span>
+</span><span id="line-172"></span><span>              </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">sigP</span></span><span>
+</span><span id="line-173"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">varP</span></span><span> </span><span class="annot"><a href="#local-6989586621682275982"><span class="hs-identifier hs-type">selName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-174"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">conT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#getSerializedType"><span class="hs-identifier hs-type">getSerializedType</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">length</span></span><span> </span><span class="annot"><a href="#local-6989586621682275923"><span class="hs-identifier hs-type">constructors</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-175"></span><span>              </span><span class="hs-special">)</span><span>
+</span><span id="line-176"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">varE</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">head</span></span><span> </span><span class="annot"><a href="#local-6989586621682275920"><span class="hs-identifier hs-type">funNames</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-177"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">noBindS</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-178"></span><span>              </span><span class="annot"><span class="hs-identifier hs-type">caseE</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">varE</span></span><span> </span><span class="annot"><a href="#local-6989586621682275982"><span class="hs-identifier hs-type">selName</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-179"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;$&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621682275976"><span class="hs-identifier hs-type">auxMatches</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621682275977"><span class="hs-identifier hs-type">auxFallbackMatch</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-180"></span><span>          </span><span class="hs-special">]</span><span>
+</span><span id="line-181"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-182"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">FunD</span></span><span>
+</span><span id="line-183"></span><span>          </span><span class="annot"><a href="#local-6989586621682275981"><span class="hs-identifier hs-type">instanceFunName</span></a></span><span>
+</span><span id="line-184"></span><span>          </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Clause</span></span><span>
+</span><span id="line-185"></span><span>              </span><span class="annot"><a href="#local-6989586621682275948"><span class="hs-identifier hs-type">funPats</span></a></span><span>
+</span><span id="line-186"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NormalB</span></span><span> </span><span class="annot"><a href="#local-6989586621682275983"><span class="hs-identifier hs-type">exp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-187"></span><span>              </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-188"></span><span>          </span><span class="hs-special">]</span><span>
+</span><span id="line-189"></span><span>
+</span><span id="line-190"></span><span class="hs-comment">-- | Configuration for serialization function, generate the function from</span><span>
+</span><span id="line-191"></span><span class="hs-comment">-- scratch.</span><span>
+</span><span id="line-192"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#serializeConfig"><span class="hs-identifier hs-type">serializeConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-193"></span><span id="serializeConfig"><span class="annot"><span class="annottext">serializeConfig :: [Name] -&gt; [Name] -&gt; [Name] -&gt; UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#serializeConfig"><span class="hs-identifier hs-var hs-var">serializeConfig</span></a></span></span><span> </span><span id="local-6989586621682275987"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275987"><span class="hs-identifier hs-var">instanceNames</span></a></span></span><span> </span><span id="local-6989586621682275988"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275988"><span class="hs-identifier hs-var">serializeFunNames</span></a></span></span><span> </span><span id="local-6989586621682275989"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275989"><span class="hs-identifier hs-var">deserializeFunNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-194"></span><span>  </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-195"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unaryOpConfigs :: [UnaryOpConfig]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier hs-var">unaryOpConfigs</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-196"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">UnaryOpFieldConfig -&gt; [Name] -&gt; UnaryOpConfig
+forall config.
+UnaryOpFunConfig config =&gt;
+config -&gt; [Name] -&gt; UnaryOpConfig
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier hs-var">UnaryOpConfig</span></a></span><span>
+</span><span id="line-197"></span><span>            </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier hs-type">UnaryOpFieldConfig</span></a></span><span>
+</span><span id="line-198"></span><span>              </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">extraPatNames :: [String]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraPatNames"><span class="hs-identifier hs-var">extraPatNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-199"></span><span>                </span><span class="annot"><span class="annottext">extraLiftedPatNames :: Int -&gt; [String]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraLiftedPatNames"><span class="hs-identifier hs-var">extraLiftedPatNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[String] -&gt; Int -&gt; [String]
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-200"></span><span>                </span><span class="annot"><span class="annottext">fieldCombineFun :: Int
+-&gt; Int
+-&gt; ConstructorVariant
+-&gt; Name
+-&gt; [Exp]
+-&gt; [Exp]
+-&gt; Q (Exp, [Bool])
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldCombineFun"><span class="hs-identifier hs-var">fieldCombineFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682275991"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275991"><span class="hs-identifier hs-var">totalConNumber</span></a></span></span><span> </span><span id="local-6989586621682275992"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275992"><span class="hs-identifier hs-var">conIdx</span></a></span></span><span> </span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span id="local-6989586621682275993"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682275993"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-201"></span><span>                  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682275994"><span class="annot"><span class="annottext">ty :: Name
+</span><a href="#local-6989586621682275994"><span class="hs-identifier hs-var hs-var hs-var">ty</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Name
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#getSerializedType"><span class="hs-identifier hs-var">getSerializedType</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275991"><span class="hs-identifier hs-var">totalConNumber</span></a></span><span>
+</span><span id="line-202"></span><span>                  </span><span id="local-6989586621682275995"><span class="annot"><a href="#local-6989586621682275995"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-203"></span><span>                    </span><span class="annot"><span class="annottext">(Q Exp -&gt; Exp -&gt; Q Exp) -&gt; Q Exp -&gt; [Exp] -&gt; Q Exp
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span>
+</span><span id="line-204"></span><span>                      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621682275996"><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682275996"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span id="local-6989586621682275997"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275997"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682275996"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&gt;&gt;</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275997"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span class="hs-special">)</span><span>
+</span><span id="line-205"></span><span>                      </span><span class="hs-special">(</span><span> </span><span class="hs-special">[|</span><span>
+</span><span id="line-206"></span><span>                          </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Q Exp
+forall (m :: * -&gt; *). Quote m =&gt; Name -&gt; m Exp
+</span><span class="hs-identifier hs-var">varE</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Q Exp) -&gt; Name -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Name
+forall a. HasCallStack =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275988"><span class="hs-identifier hs-var">serializeFunNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-207"></span><span>                            </span><span class="hs-special">(</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Q Exp
+forall a. Integral a =&gt; a -&gt; Q Exp
+</span><a href="Grisette.Internal.TH.Util.html#integerE"><span class="hs-identifier hs-var">integerE</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682275992"><span class="hs-identifier hs-var">conIdx</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Q Type
+forall (m :: * -&gt; *). Quote m =&gt; Name -&gt; m Type
+</span><span class="hs-identifier hs-var">conT</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682275994"><span class="hs-identifier hs-var">ty</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-208"></span><span>                          </span><span class="hs-special">|]</span><span>
+</span><span id="line-209"></span><span>                      </span><span class="hs-special">)</span><span>
+</span><span id="line-210"></span><span>                      </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682275993"><span class="hs-identifier hs-var">exp</span></a></span><span>
+</span><span id="line-211"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682275995"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-212"></span><span>                </span><span class="annot"><span class="annottext">fieldResFun :: ConstructorVariant
+-&gt; Name -&gt; [Exp] -&gt; Int -&gt; Exp -&gt; Exp -&gt; Q (Exp, [Bool])
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldResFun"><span class="hs-identifier hs-var">fieldResFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682275998"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275998"><span class="hs-identifier hs-var">fieldPat</span></a></span></span><span> </span><span id="local-6989586621682275999"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275999"><span class="hs-identifier hs-var">fieldFun</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-213"></span><span>                  </span><span id="local-6989586621682276000"><span class="annot"><a href="#local-6989586621682276000"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275999"><span class="hs-identifier hs-var">fieldFun</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682275998"><span class="hs-identifier hs-var">fieldPat</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span>
+</span><span id="line-214"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682276000"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-215"></span><span>                </span><span class="annot"><span class="annottext">fieldFunExp :: FieldFunExp
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier hs-var">fieldFunExp</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; FieldFunExp
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultFieldFunExp"><span class="hs-identifier hs-var">defaultFieldFunExp</span></a></span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275988"><span class="hs-identifier hs-var">serializeFunNames</span></a></span><span>
+</span><span id="line-216"></span><span>              </span><span class="hs-special">}</span><span>
+</span><span id="line-217"></span><span>            </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275988"><span class="hs-identifier hs-var">serializeFunNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-218"></span><span>          </span><span class="annot"><span class="annottext">UnaryOpDeserializeConfig -&gt; [Name] -&gt; UnaryOpConfig
+forall config.
+UnaryOpFunConfig config =&gt;
+config -&gt; [Name] -&gt; UnaryOpConfig
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier hs-var">UnaryOpConfig</span></a></span><span>
+</span><span id="line-219"></span><span>            </span><span class="annot"><span class="annottext">UnaryOpDeserializeConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeConfig</span></a></span><span>
+</span><span id="line-220"></span><span>            </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275989"><span class="hs-identifier hs-var">deserializeFunNames</span></a></span><span>
+</span><span id="line-221"></span><span>        </span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-222"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceNames :: [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier hs-var">unaryOpInstanceNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682275987"><span class="hs-identifier hs-var">instanceNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-223"></span><span>      </span><span class="annot"><span class="annottext">unaryOpExtraVars :: DeriveConfig -&gt; Q [(Type, Type)]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier hs-var">unaryOpExtraVars</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)])
+-&gt; Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; Q [(Type, Type)]
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-224"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceTypeFromConfig :: DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">unaryOpInstanceTypeFromConfig</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultUnaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">defaultUnaryOpInstanceTypeFromConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-225"></span><span>      </span><span class="annot"><span class="annottext">unaryOpAllowExistential :: Bool
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier hs-var">unaryOpAllowExistential</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span class="hs-special">,</span><span>
+</span><span id="line-226"></span><span>      </span><span class="annot"><span class="annottext">unaryOpContextNames :: Maybe [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier hs-var">unaryOpContextNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe [Name]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-227"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-228"></span><span>
+</span><span id="line-229"></span><span class="annot"><span class="hs-comment">-- | Configuration for serialization function, reuse the 'Serial' instance.</span></span><span>
+</span><span id="line-230"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#serializeWithSerialConfig"><span class="hs-identifier hs-type">serializeWithSerialConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-231"></span><span id="serializeWithSerialConfig"><span class="annot"><span class="annottext">serializeWithSerialConfig :: [Name] -&gt; [Name] -&gt; [Name] -&gt; UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#serializeWithSerialConfig"><span class="hs-identifier hs-var hs-var">serializeWithSerialConfig</span></a></span></span><span> </span><span id="local-6989586621682276001"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276001"><span class="hs-identifier hs-var">instanceNames</span></a></span></span><span> </span><span id="local-6989586621682276002"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276002"><span class="hs-identifier hs-var">serializeFunNames</span></a></span></span><span> </span><span id="local-6989586621682276003"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276003"><span class="hs-identifier hs-var">deserializeFunNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-232"></span><span>  </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-233"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unaryOpConfigs :: [UnaryOpConfig]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier hs-var">unaryOpConfigs</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-234"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">UnaryOpSerializeWithSerialConfig -&gt; [Name] -&gt; UnaryOpConfig
+forall config.
+UnaryOpFunConfig config =&gt;
+config -&gt; [Name] -&gt; UnaryOpConfig
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier hs-var">UnaryOpConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpSerializeWithSerialConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpSerializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpSerializeWithSerialConfig</span></a></span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276002"><span class="hs-identifier hs-var">serializeFunNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-235"></span><span>          </span><span class="annot"><span class="annottext">UnaryOpDeserializeWithSerialConfig -&gt; [Name] -&gt; UnaryOpConfig
+forall config.
+UnaryOpFunConfig config =&gt;
+config -&gt; [Name] -&gt; UnaryOpConfig
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier hs-var">UnaryOpConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpDeserializeWithSerialConfig
+</span><a href="Grisette.Internal.TH.GADT.SerializeCommon.html#UnaryOpDeserializeWithSerialConfig"><span class="hs-identifier hs-var">UnaryOpDeserializeWithSerialConfig</span></a></span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276003"><span class="hs-identifier hs-var">deserializeFunNames</span></a></span><span>
+</span><span id="line-236"></span><span>        </span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-237"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceNames :: [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier hs-var">unaryOpInstanceNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276001"><span class="hs-identifier hs-var">instanceNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-238"></span><span>      </span><span class="annot"><span class="annottext">unaryOpExtraVars :: DeriveConfig -&gt; Q [(Type, Type)]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier hs-var">unaryOpExtraVars</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)])
+-&gt; Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; Q [(Type, Type)]
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-239"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceTypeFromConfig :: DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">unaryOpInstanceTypeFromConfig</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultUnaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">defaultUnaryOpInstanceTypeFromConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-240"></span><span>      </span><span class="annot"><span class="annottext">unaryOpAllowExistential :: Bool
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier hs-var">unaryOpAllowExistential</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span class="hs-special">,</span><span>
+</span><span id="line-241"></span><span>      </span><span class="annot"><span class="annottext">unaryOpContextNames :: Maybe [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier hs-var">unaryOpContextNames</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-242"></span><span>        </span><span class="annot"><span class="annottext">[Name] -&gt; Maybe [Name]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">([Name] -&gt; Maybe [Name]) -&gt; [Name] -&gt; Maybe [Name]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; [Name] -&gt; [Name]
+forall a. Int -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">take</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Name] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621682276001"><span class="hs-identifier hs-var">instanceNames</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">''</span><span class="hs-identifier">Serial</span><span class="hs-special">,</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Serial1</span><span class="hs-special">,</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Serial2</span><span class="hs-special">]</span><span>
+</span><span id="line-243"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-244"></span></pre></body></html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- |</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.IntBitwidth</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2023</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.IntBitwidth.html"><span class="hs-identifier">Grisette.Internal.SymPrim.IntBitwidth</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.IntBitwidth.html#intBitwidthQ"><span class="hs-identifier">intBitwidthQ</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">FiniteBits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">finiteBitSize</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">TyLit</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NumTyLit</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Type</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">LitT</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">TypeQ</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="annot"><span class="hs-comment">-- | Get the bitwidth of 'Int'.</span></span><span>
+</span><span id="line-15"></span><span class="annot"><a href="Grisette.Internal.SymPrim.IntBitwidth.html#intBitwidthQ"><span class="hs-identifier hs-type">intBitwidthQ</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeQ</span></span><span>
+</span><span id="line-16"></span><span id="intBitwidthQ"><span class="annot"><span class="annottext">intBitwidthQ :: TypeQ
+</span><a href="Grisette.Internal.SymPrim.IntBitwidth.html#intBitwidthQ"><span class="hs-identifier hs-var hs-var">intBitwidthQ</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-17"></span><span>  </span><span class="annot"><span class="annottext">Type -&gt; TypeQ
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Type -&gt; TypeQ) -&gt; Type -&gt; TypeQ
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyLit -&gt; Type
+</span><span class="hs-identifier hs-var">LitT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; TyLit
+</span><span class="hs-identifier hs-var">NumTyLit</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; TyLit) -&gt; Integer -&gt; TyLit
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Integer) -&gt; Int -&gt; Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int
+forall b. FiniteBits b =&gt; b -&gt; Int
+</span><span class="hs-identifier hs-var">finiteBitSize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span></pre></body></html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE Strict #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Backend.SymBiMap</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2024</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html"><span class="hs-identifier">Grisette.Internal.Backend.SymBiMap</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier">SymBiMap</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#emptySymBiMap"><span class="hs-identifier">emptySymBiMap</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#sizeBiMap"><span class="hs-identifier">sizeBiMap</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#addBiMap"><span class="hs-identifier">addBiMap</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#addBiMapIntermediate"><span class="hs-identifier">addBiMapIntermediate</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#findStringToSymbol"><span class="hs-identifier">findStringToSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#lookupTerm"><span class="hs-identifier">lookupTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#attachNextQuantifiedSymbolInfo"><span class="hs-identifier">attachNextQuantifiedSymbolInfo</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Dynamic</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Dynamic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Stack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HasCallStack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.QuantifiedStack.html"><span class="hs-identifier">Grisette.Internal.Backend.QuantifiedStack</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.QuantifiedStack.html#QuantifiedStack"><span class="hs-identifier">QuantifiedStack</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html"><span class="hs-identifier">Grisette.Internal.Core.Data.SExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier">SExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#Atom"><span class="hs-identifier">Atom</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#List"><span class="hs-identifier">List</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#NumberAtom"><span class="hs-identifier">NumberAtom</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Symbol</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#mapIdentifier"><span class="hs-identifier">mapIdentifier</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Symbol.html#mapMetadata"><span class="hs-identifier">mapMetadata</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.SomeTerm</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier">SomeTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Term</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#IsSymbolKind"><span class="hs-identifier">IsSymbolKind</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedAnySymbol"><span class="hs-identifier">SomeTypedAnySymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedSymbol"><span class="hs-identifier">SomeTypedSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier">TypedConstantSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedSymbol"><span class="hs-identifier">TypedSymbol</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#unTypedSymbol"><span class="hs-identifier">unTypedSymbol</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#castSomeTypedSymbol"><span class="hs-identifier">castSomeTypedSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#typedConstantSymbol"><span class="hs-identifier">typedConstantSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withConstantSymbolSupported"><span class="hs-identifier">withConstantSymbolSupported</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><span class="hs-comment">-- | A bidirectional map between symbolic Grisette terms and sbv terms.</span></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">data</span><span> </span><span id="SymBiMap"><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-var">SymBiMap</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SymBiMap"><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-var">SymBiMap</span></a></span></span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="biMapToSBV"><span class="annot"><span class="annottext">SymBiMap -&gt; HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#biMapToSBV"><span class="hs-identifier hs-var hs-var">biMapToSBV</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.HashMap</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-type">SomeTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.QuantifiedStack.html#QuantifiedStack"><span class="hs-identifier hs-type">QuantifiedStack</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Dynamic</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span id="biMapSize"><span class="annot"><span class="annottext">SymBiMap -&gt; Int
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#biMapSize"><span class="hs-identifier hs-var hs-var">biMapSize</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span id="biMapFromSBV"><span class="annot"><span class="annottext">SymBiMap -&gt; HashMap String SomeTypedAnySymbol
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#biMapFromSBV"><span class="hs-identifier hs-var hs-var">biMapFromSBV</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedAnySymbol"><span class="hs-identifier hs-type">SomeTypedAnySymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>    </span><span id="quantifiedSymbolNum"><span class="annot"><span class="annottext">SymBiMap -&gt; Int
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#quantifiedSymbolNum"><span class="hs-identifier hs-var hs-var">quantifiedSymbolNum</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682269825"><span id="local-6989586621682269830"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-58"></span><span>  </span><span id="local-6989586621682269853"><span class="annot"><span class="annottext">show :: SymBiMap -&gt; String
+</span><a href="#local-6989586621682269853"><span class="hs-identifier hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span id="local-6989586621682269855"><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269855"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682269856"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269856"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621682269857"><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269857"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SymBiMap { size: &quot;</span></span><span>
+</span><span id="line-60"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269856"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-61"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;, toSBV: &quot;</span></span><span>
+</span><span id="line-62"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic) -&gt; [SomeTerm]
+forall k v. HashMap k v -&gt; [k]
+</span><span class="hs-identifier hs-var">M.keys</span></span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269855"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;, fromSBV: &quot;</span></span><span>
+</span><span id="line-64"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[(String, SomeTypedAnySymbol)] -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol -&gt; [(String, SomeTypedAnySymbol)]
+forall k v. HashMap k v -&gt; [(k, v)]
+</span><span class="hs-identifier hs-var">M.toList</span></span><span> </span><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269857"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; }&quot;</span></span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- | Information about a quantified symbol.</span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int</span><span>
+</span><span id="line-69"></span><span class="hs-comment">--   deriving (Generic, Ord, Eq, Show, Hashable, Lift, NFData)</span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#nextQuantifiedSymbolInfo"><span class="hs-identifier hs-type">nextQuantifiedSymbolInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span id="nextQuantifiedSymbolInfo"><span class="annot"><span class="annottext">nextQuantifiedSymbolInfo :: SymBiMap -&gt; (SymBiMap, SExpr -&gt; SExpr)
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#nextQuantifiedSymbolInfo"><span class="hs-identifier hs-var hs-var">nextQuantifiedSymbolInfo</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span id="local-6989586621682269861"><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269861"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682269862"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269862"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621682269863"><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269863"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682269864"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269864"><span class="hs-identifier hs-var">num</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+-&gt; Int -&gt; HashMap String SomeTypedAnySymbol -&gt; Int -&gt; SymBiMap
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-var">SymBiMap</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269861"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269862"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269863"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269864"><span class="hs-identifier hs-var">num</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-glyph">\</span><span id="local-6989586621682269866"><span class="annot"><span class="annottext">SExpr
+</span><a href="#local-6989586621682269866"><span class="hs-identifier hs-var">meta</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>      </span><span class="annot"><span class="annottext">[SExpr] -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#List"><span class="hs-identifier hs-var">List</span></a></span><span>
+</span><span id="line-75"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#Atom"><span class="hs-identifier hs-var">Atom</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;grisette-quantified&quot;</span></span><span class="hs-special">,</span><span>
+</span><span id="line-76"></span><span>          </span><span class="annot"><span class="annottext">Integer -&gt; SExpr
+</span><a href="Grisette.Internal.Core.Data.SExpr.html#NumberAtom"><span class="hs-identifier hs-var">NumberAtom</span></a></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; SExpr) -&gt; Integer -&gt; SExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269864"><span class="hs-identifier hs-var">num</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-77"></span><span>          </span><span class="annot"><span class="annottext">SExpr
+</span><a href="#local-6989586621682269866"><span class="hs-identifier hs-var">meta</span></a></span><span>
+</span><span id="line-78"></span><span>        </span><span class="hs-special">]</span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span id="local-6989586621682269757"><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#attachQuantifiedSymbolInfo"><span class="hs-identifier hs-type">attachQuantifiedSymbolInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.SExpr.html#SExpr"><span class="hs-identifier hs-type">SExpr</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier hs-type">TypedConstantSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269757"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier hs-type">TypedConstantSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269757"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-83"></span><span id="attachQuantifiedSymbolInfo"><span class="annot"><span class="annottext">attachQuantifiedSymbolInfo :: forall a.
+(SExpr -&gt; SExpr) -&gt; TypedConstantSymbol a -&gt; TypedConstantSymbol a
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#attachQuantifiedSymbolInfo"><span class="hs-identifier hs-var hs-var">attachQuantifiedSymbolInfo</span></a></span></span><span> </span><span id="local-6989586621682269868"><span class="annot"><span class="annottext">SExpr -&gt; SExpr
+</span><a href="#local-6989586621682269868"><span class="hs-identifier hs-var">info</span></a></span></span><span> </span><span id="local-6989586621682269869"><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682269869"><span class="hs-identifier hs-var">tsym</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-84"></span><span>  </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+-&gt; ((SupportedNonFuncPrim a, Typeable a) =&gt; TypedConstantSymbol a)
+-&gt; TypedConstantSymbol a
+forall t a.
+TypedSymbol 'ConstantKind t
+-&gt; ((SupportedNonFuncPrim t, Typeable t) =&gt; a) -&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withConstantSymbolSupported"><span class="hs-identifier hs-var">withConstantSymbolSupported</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682269869"><span class="hs-identifier hs-var">tsym</span></a></span><span> </span><span class="annot"><span class="annottext">(((SupportedNonFuncPrim a, Typeable a) =&gt; TypedConstantSymbol a)
+ -&gt; TypedConstantSymbol a)
+-&gt; ((SupportedNonFuncPrim a, Typeable a) =&gt; TypedConstantSymbol a)
+-&gt; TypedConstantSymbol a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-85"></span><span>    </span><span class="annot"><span class="annottext">Symbol -&gt; TypedConstantSymbol a
+forall t.
+SupportedNonFuncPrim t =&gt;
+Symbol -&gt; TypedSymbol 'ConstantKind t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#typedConstantSymbol"><span class="hs-identifier hs-var">typedConstantSymbol</span></a></span><span> </span><span class="annot"><span class="annottext">(Symbol -&gt; TypedConstantSymbol a)
+-&gt; Symbol -&gt; TypedConstantSymbol a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-86"></span><span>      </span><span class="annot"><span class="annottext">(Identifier -&gt; Identifier) -&gt; Symbol -&gt; Symbol
+</span><a href="Grisette.Internal.Core.Data.Symbol.html#mapIdentifier"><span class="hs-identifier hs-var">mapIdentifier</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(SExpr -&gt; SExpr) -&gt; Identifier -&gt; Identifier
+</span><a href="Grisette.Internal.Core.Data.Symbol.html#mapMetadata"><span class="hs-identifier hs-var">mapMetadata</span></a></span><span> </span><span class="annot"><span class="annottext">SExpr -&gt; SExpr
+</span><a href="#local-6989586621682269868"><span class="hs-identifier hs-var">info</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Symbol -&gt; Symbol) -&gt; Symbol -&gt; Symbol
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-87"></span><span>        </span><span class="annot"><span class="annottext">TypedConstantSymbol a -&gt; Symbol
+forall t (knd :: SymbolKind). TypedSymbol knd t -&gt; Symbol
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#unTypedSymbol"><span class="hs-identifier hs-var">unTypedSymbol</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682269869"><span class="hs-identifier hs-var">tsym</span></a></span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="annot"><span class="hs-comment">-- | Attach the next quantified symbol info to a symbol.</span></span><span>
+</span><span id="line-90"></span><span id="local-6989586621682269770"><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#attachNextQuantifiedSymbolInfo"><span class="hs-identifier hs-type">attachNextQuantifiedSymbolInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier hs-type">TypedConstantSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269770"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier hs-type">TypedConstantSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269770"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-92"></span><span id="attachNextQuantifiedSymbolInfo"><span class="annot"><span class="annottext">attachNextQuantifiedSymbolInfo :: forall a.
+SymBiMap
+-&gt; TypedConstantSymbol a -&gt; (SymBiMap, TypedConstantSymbol a)
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#attachNextQuantifiedSymbolInfo"><span class="hs-identifier hs-var hs-var">attachNextQuantifiedSymbolInfo</span></a></span></span><span> </span><span id="local-6989586621682269873"><span class="annot"><span class="annottext">SymBiMap
+</span><a href="#local-6989586621682269873"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span id="local-6989586621682269874"><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682269874"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682269875"><span class="annot"><span class="annottext">SymBiMap
+</span><a href="#local-6989586621682269875"><span class="hs-identifier hs-var">m'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682269876"><span class="annot"><span class="annottext">SExpr -&gt; SExpr
+</span><a href="#local-6989586621682269876"><span class="hs-identifier hs-var">info</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBiMap -&gt; (SymBiMap, SExpr -&gt; SExpr)
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#nextQuantifiedSymbolInfo"><span class="hs-identifier hs-var">nextQuantifiedSymbolInfo</span></a></span><span> </span><span class="annot"><span class="annottext">SymBiMap
+</span><a href="#local-6989586621682269873"><span class="hs-identifier hs-var">m</span></a></span><span>
+</span><span id="line-94"></span><span>   </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBiMap
+</span><a href="#local-6989586621682269875"><span class="hs-identifier hs-var">m'</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(SExpr -&gt; SExpr) -&gt; TypedConstantSymbol a -&gt; TypedConstantSymbol a
+forall a.
+(SExpr -&gt; SExpr) -&gt; TypedConstantSymbol a -&gt; TypedConstantSymbol a
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#attachQuantifiedSymbolInfo"><span class="hs-identifier hs-var">attachQuantifiedSymbolInfo</span></a></span><span> </span><span class="annot"><span class="annottext">SExpr -&gt; SExpr
+</span><a href="#local-6989586621682269876"><span class="hs-identifier hs-var">info</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682269874"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><span class="hs-comment">-- | An empty bidirectional map.</span></span><span>
+</span><span id="line-97"></span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#emptySymBiMap"><span class="hs-identifier hs-type">emptySymBiMap</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span>
+</span><span id="line-98"></span><span id="emptySymBiMap"><span class="annot"><span class="annottext">emptySymBiMap :: SymBiMap
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#emptySymBiMap"><span class="hs-identifier hs-var hs-var">emptySymBiMap</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+-&gt; Int -&gt; HashMap String SomeTypedAnySymbol -&gt; Int -&gt; SymBiMap
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-var">SymBiMap</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+forall k v. HashMap k v
+</span><span class="hs-identifier hs-var">M.empty</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+forall k v. HashMap k v
+</span><span class="hs-identifier hs-var">M.empty</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="annot"><span class="hs-comment">-- | The size of the bidirectional map.</span></span><span>
+</span><span id="line-101"></span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#sizeBiMap"><span class="hs-identifier hs-type">sizeBiMap</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-102"></span><span id="sizeBiMap"><span class="annot"><span class="annottext">sizeBiMap :: SymBiMap -&gt; Int
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#sizeBiMap"><span class="hs-identifier hs-var hs-var">sizeBiMap</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBiMap -&gt; Int
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#biMapSize"><span class="hs-identifier hs-var">biMapSize</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="annot"><span class="hs-comment">-- | Add a new entry to the bidirectional map.</span></span><span>
+</span><span id="line-105"></span><span id="local-6989586621682269775"><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#addBiMap"><span class="hs-identifier hs-type">addBiMap</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-106"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-107"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-type">SomeTerm</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Dynamic</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-109"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-110"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedSymbol"><span class="hs-identifier hs-type">SomeTypedSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269775"><span class="hs-identifier hs-type">knd</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-111"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-112"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span></span><span>
+</span><span id="line-113"></span><span id="addBiMap"><span class="annot"><span class="annottext">addBiMap :: forall (knd :: SymbolKind).
+HasCallStack =&gt;
+SomeTerm
+-&gt; Dynamic -&gt; String -&gt; SomeTypedSymbol knd -&gt; SymBiMap -&gt; SymBiMap
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#addBiMap"><span class="hs-identifier hs-var hs-var">addBiMap</span></a></span></span><span> </span><span id="local-6989586621682269897"><span class="annot"><span class="annottext">SomeTerm
+</span><a href="#local-6989586621682269897"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621682269898"><span class="annot"><span class="annottext">Dynamic
+</span><a href="#local-6989586621682269898"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682269899"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682269899"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621682269900"><span class="annot"><span class="annottext">SomeTypedSymbol knd
+</span><a href="#local-6989586621682269900"><span class="hs-identifier hs-var">sb</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span id="local-6989586621682269901"><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269901"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682269902"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269902"><span class="hs-identifier hs-var">sz</span></a></span></span><span> </span><span id="local-6989586621682269903"><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269903"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682269904"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269904"><span class="hs-identifier hs-var">num</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-114"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SomeTypedSymbol knd -&gt; Maybe SomeTypedAnySymbol
+forall (knd' :: SymbolKind) (knd :: SymbolKind).
+IsSymbolKind knd' =&gt;
+SomeTypedSymbol knd -&gt; Maybe (SomeTypedSymbol knd')
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#castSomeTypedSymbol"><span class="hs-identifier hs-var">castSomeTypedSymbol</span></a></span><span> </span><span class="annot"><span class="annottext">SomeTypedSymbol knd
+</span><a href="#local-6989586621682269900"><span class="hs-identifier hs-var">sb</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-115"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682269905"><span class="annot"><span class="annottext">SomeTypedAnySymbol
+</span><a href="#local-6989586621682269905"><span class="hs-identifier hs-var">sb'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+-&gt; Int -&gt; HashMap String SomeTypedAnySymbol -&gt; Int -&gt; SymBiMap
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-var">SymBiMap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SomeTerm
+-&gt; (QuantifiedStack -&gt; Dynamic)
+-&gt; HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+-&gt; HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">M.insert</span></span><span> </span><span class="annot"><span class="annottext">SomeTerm
+</span><a href="#local-6989586621682269897"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Dynamic -&gt; QuantifiedStack -&gt; Dynamic
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">Dynamic
+</span><a href="#local-6989586621682269898"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269901"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269902"><span class="hs-identifier hs-var">sz</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+-&gt; SomeTypedAnySymbol
+-&gt; HashMap String SomeTypedAnySymbol
+-&gt; HashMap String SomeTypedAnySymbol
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">M.insert</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682269899"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">SomeTypedAnySymbol
+</span><a href="#local-6989586621682269905"><span class="hs-identifier hs-var">sb'</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269903"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269904"><span class="hs-identifier hs-var">num</span></a></span><span>
+</span><span id="line-116"></span><span>    </span><span class="annot"><span class="annottext">Maybe SomeTypedAnySymbol
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; SymBiMap
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Casting to AnySymbol, should not fail&quot;</span></span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span class="annot"><span class="hs-comment">-- | Add a new entry to the bidirectional map for intermediate values.</span></span><span>
+</span><span id="line-119"></span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#addBiMapIntermediate"><span class="hs-identifier hs-type">addBiMapIntermediate</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-120"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-type">SomeTerm</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.QuantifiedStack.html#QuantifiedStack"><span class="hs-identifier hs-type">QuantifiedStack</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Dynamic</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span>
+</span><span id="line-121"></span><span id="addBiMapIntermediate"><span class="annot"><span class="annottext">addBiMapIntermediate :: HasCallStack =&gt;
+SomeTerm -&gt; (QuantifiedStack -&gt; Dynamic) -&gt; SymBiMap -&gt; SymBiMap
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#addBiMapIntermediate"><span class="hs-identifier hs-var hs-var">addBiMapIntermediate</span></a></span></span><span> </span><span id="local-6989586621682269914"><span class="annot"><span class="annottext">SomeTerm
+</span><a href="#local-6989586621682269914"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621682269915"><span class="annot"><span class="annottext">QuantifiedStack -&gt; Dynamic
+</span><a href="#local-6989586621682269915"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span id="local-6989586621682269916"><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269916"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682269917"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269917"><span class="hs-identifier hs-var">sz</span></a></span></span><span> </span><span id="local-6989586621682269918"><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269918"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682269919"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269919"><span class="hs-identifier hs-var">num</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-122"></span><span>  </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+-&gt; Int -&gt; HashMap String SomeTypedAnySymbol -&gt; Int -&gt; SymBiMap
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-var">SymBiMap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SomeTerm
+-&gt; (QuantifiedStack -&gt; Dynamic)
+-&gt; HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+-&gt; HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">M.insert</span></span><span> </span><span class="annot"><span class="annottext">SomeTerm
+</span><a href="#local-6989586621682269914"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">QuantifiedStack -&gt; Dynamic
+</span><a href="#local-6989586621682269915"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="#local-6989586621682269916"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269917"><span class="hs-identifier hs-var">sz</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269918"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682269919"><span class="hs-identifier hs-var">num</span></a></span><span>
+</span><span id="line-123"></span><span>
+</span><span id="line-124"></span><span class="annot"><span class="hs-comment">-- | Find a symbolic Grisette term from a string.</span></span><span>
+</span><span id="line-125"></span><span id="local-6989586621682269790"><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#findStringToSymbol"><span class="hs-identifier hs-type">findStringToSymbol</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#IsSymbolKind"><span class="hs-identifier hs-type">IsSymbolKind</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269790"><span class="hs-identifier hs-type">knd</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SomeTypedSymbol"><span class="hs-identifier hs-type">SomeTypedSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269790"><span class="hs-identifier hs-type">knd</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-126"></span><span id="findStringToSymbol"><span class="annot"><span class="annottext">findStringToSymbol :: forall (knd :: SymbolKind).
+IsSymbolKind knd =&gt;
+String -&gt; SymBiMap -&gt; Maybe (SomeTypedSymbol knd)
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#findStringToSymbol"><span class="hs-identifier hs-var hs-var">findStringToSymbol</span></a></span></span><span> </span><span id="local-6989586621682269928"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682269928"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682269929"><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269929"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-127"></span><span>  </span><span id="local-6989586621682269930"><span class="annot"><a href="#local-6989586621682269930"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String
+-&gt; HashMap String SomeTypedAnySymbol -&gt; Maybe SomeTypedAnySymbol
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
+</span><span class="hs-identifier hs-var">M.lookup</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682269928"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap String SomeTypedAnySymbol
+</span><a href="#local-6989586621682269929"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-128"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#castSomeTypedSymbol"><span class="hs-identifier hs-type">castSomeTypedSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682269930"><span class="hs-identifier hs-type">r</span></a></span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- | Look up an sbv value with a symbolic Grisette term in the bidirectional</span><span>
+</span><span id="line-131"></span><span class="hs-comment">-- map.</span><span>
+</span><span id="line-132"></span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#lookupTerm"><span class="hs-identifier hs-type">lookupTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-type">SomeTerm</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Backend.SymBiMap.html#SymBiMap"><span class="hs-identifier hs-type">SymBiMap</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Backend.QuantifiedStack.html#QuantifiedStack"><span class="hs-identifier hs-type">QuantifiedStack</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Dynamic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-133"></span><span id="lookupTerm"><span class="annot"><span class="annottext">lookupTerm :: HasCallStack =&gt;
+SomeTerm -&gt; SymBiMap -&gt; Maybe (QuantifiedStack -&gt; Dynamic)
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#lookupTerm"><span class="hs-identifier hs-var hs-var">lookupTerm</span></a></span></span><span> </span><span id="local-6989586621682269935"><span class="annot"><span class="annottext">SomeTerm
+</span><a href="#local-6989586621682269935"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682269936"><span class="annot"><span class="annottext">SymBiMap
+</span><a href="#local-6989586621682269936"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SomeTerm
+-&gt; HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+-&gt; Maybe (QuantifiedStack -&gt; Dynamic)
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
+</span><span class="hs-identifier hs-var">M.lookup</span></span><span> </span><span class="annot"><span class="annottext">SomeTerm
+</span><a href="#local-6989586621682269935"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBiMap -&gt; HashMap SomeTerm (QuantifiedStack -&gt; Dynamic)
+</span><a href="Grisette.Internal.Backend.SymBiMap.html#biMapToSBV"><span class="hs-identifier hs-var">biMapToSBV</span></a></span><span> </span><span class="annot"><span class="annottext">SymBiMap
+</span><a href="#local-6989586621682269936"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span></pre></body></html>

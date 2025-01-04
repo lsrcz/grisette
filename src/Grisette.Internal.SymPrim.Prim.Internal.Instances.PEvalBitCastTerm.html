@@ -1,0 +1,455 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE PatternSynonyms #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCast"><span class="hs-identifier">doPevalBitCast</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.SBV</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SBV</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeLits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(+)</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.BitCast</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCast"><span class="hs-identifier">BitCast</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCast"><span class="hs-identifier">bitCast</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastOr"><span class="hs-identifier">BitCastOr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastOr"><span class="hs-identifier">bitCastOr</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#withValidFPProofs"><span class="hs-identifier">withValidFPProofs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastOrTerm"><span class="hs-identifier">PEvalBitCastOrTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastOrTerm"><span class="hs-identifier">pevalBitCastOrTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCastOr"><span class="hs-identifier">sbvBitCastOr</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier">PEvalBitCastTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastTerm"><span class="hs-identifier">pevalBitCastTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCast"><span class="hs-identifier">sbvBitCast</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BitCastTerm"><span class="hs-identifier">BitCastTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bitCastOrTerm"><span class="hs-identifier">bitCastOrTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bitCastTerm"><span class="hs-identifier">bitCastTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#introSupportedPrimConstraint"><span class="hs-identifier">introSupportedPrimConstraint</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#DynTerm"><span class="hs-identifier">DynTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier">binaryUnfoldOnce</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier">unaryUnfoldOnce</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastSameType"><span class="hs-identifier hs-type">doPevalBitCastSameType</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682250708"><span class="annot"><a href="#local-6989586621682250708"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621682250706"><span class="annot"><a href="#local-6989586621682250706"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250706"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250708"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250706"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span id="doPevalBitCastSameType"><span class="annot"><span class="annottext">doPevalBitCastSameType :: forall x b. SupportedPrim b =&gt; Term x -&gt; Maybe (Term b)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastSameType"><span class="hs-identifier hs-var hs-var">doPevalBitCastSameType</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BitCastTerm"><span class="hs-identifier hs-type">BitCastTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#DynTerm"><span class="hs-identifier hs-type">DynTerm</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682250883"><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682250883"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250706"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682250883"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-53"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastSameType"><span class="hs-identifier hs-var">doPevalBitCastSameType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BitCastTerm"><span class="hs-identifier hs-type">BitCastTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682250887"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682250887"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Maybe (Term b)
+forall x b. SupportedPrim b =&gt; Term x -&gt; Maybe (Term b)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastSameType"><span class="hs-identifier hs-var">doPevalBitCastSameType</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682250887"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-54"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastSameType"><span class="hs-identifier hs-var">doPevalBitCastSameType</span></a></span><span> </span><span class="annot"><span class="annottext">Term x
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="hs-comment">-- | Partially evaluate a bitcast term. If no reduction is performed, return</span><span>
+</span><span id="line-57"></span><span class="hs-comment">-- Nothing.</span><span>
+</span><span id="line-58"></span><span id="local-6989586621682250719"><span id="local-6989586621682250720"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCast"><span class="hs-identifier hs-type">doPevalBitCast</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250719"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250720"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250720"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250719"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250720"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-59"></span><span id="doPevalBitCast"><span class="annot"><span class="annottext">doPevalBitCast :: forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Maybe (Term b)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCast"><span class="hs-identifier hs-var hs-var">doPevalBitCast</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682250896"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682250896"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; Maybe (Term b)) -&gt; Term b -&gt; Maybe (Term b)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Term b
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(b -&gt; Term b) -&gt; b -&gt; Term b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b
+forall from to. BitCast from to =&gt; from -&gt; to
+</span><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCast"><span class="hs-identifier hs-var">bitCast</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682250896"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-60"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCast"><span class="hs-identifier hs-var">doPevalBitCast</span></a></span><span> </span><span id="local-6989586621682250897"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682250897"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Maybe (Term b)
+forall x b. SupportedPrim b =&gt; Term x -&gt; Maybe (Term b)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastSameType"><span class="hs-identifier hs-var">doPevalBitCastSameType</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682250897"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-type">pevalBitCastGeneral</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682250733"><span class="annot"><a href="#local-6989586621682250733"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682250734"><span class="annot"><a href="#local-6989586621682250734"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250733"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250734"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250734"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-65"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250733"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250734"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-67"></span><span id="pevalBitCastGeneral"><span class="annot"><span class="annottext">pevalBitCastGeneral :: forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-var hs-var">pevalBitCastGeneral</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+forall a b.
+SupportedPrim b =&gt;
+PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier hs-var">unaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a b
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Maybe (Term b)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCast"><span class="hs-identifier hs-var">doPevalBitCast</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bitCastTerm"><span class="hs-identifier hs-var">bitCastTerm</span></a></span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span id="local-6989586621682250741"><span id="local-6989586621682250742"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastOr"><span class="hs-identifier hs-type">doPevalBitCastOr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-70"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastOrTerm"><span class="hs-identifier hs-type">PEvalBitCastOrTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250741"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250742"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-71"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250742"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-72"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250741"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250742"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-74"></span><span id="doPevalBitCastOr"><span class="annot"><span class="annottext">doPevalBitCastOr :: forall a b.
+PEvalBitCastOrTerm a b =&gt;
+Term b -&gt; Term a -&gt; Maybe (Term b)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastOr"><span class="hs-identifier hs-var hs-var">doPevalBitCastOr</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682250911"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682250911"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682250915"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682250915"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-75"></span><span>  </span><span class="annot"><span class="annottext">Term b -&gt; Maybe (Term b)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; Maybe (Term b)) -&gt; Term b -&gt; Maybe (Term b)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Term b
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(b -&gt; Term b) -&gt; b -&gt; Term b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; a -&gt; b
+forall from to. BitCastOr from to =&gt; to -&gt; from -&gt; to
+</span><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastOr"><span class="hs-identifier hs-var">bitCastOr</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682250911"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682250915"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-76"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastOr"><span class="hs-identifier hs-var">doPevalBitCastOr</span></a></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term b)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastOr"><span class="hs-identifier hs-type">pevalBitCastOr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682250751"><span class="annot"><a href="#local-6989586621682250751"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682250752"><span class="annot"><a href="#local-6989586621682250752"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastOrTerm"><span class="hs-identifier hs-type">PEvalBitCastOrTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250751"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250752"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250752"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250751"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-83"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250752"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-84"></span><span id="pevalBitCastOr"><span class="annot"><span class="annottext">pevalBitCastOr :: forall a b. PEvalBitCastOrTerm a b =&gt; Term b -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastOr"><span class="hs-identifier hs-var hs-var">pevalBitCastOr</span></a></span></span><span> </span><span id="local-6989586621682250918"><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682250918"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682250919"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682250919"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-85"></span><span>  </span><span class="annot"><span class="annottext">Term b -&gt; ((SupportedPrim b, Typeable b) =&gt; Term b) -&gt; Term b
+forall t a. Term t -&gt; ((SupportedPrim t, Typeable t) =&gt; a) -&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#introSupportedPrimConstraint"><span class="hs-identifier hs-var">introSupportedPrimConstraint</span></a></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682250918"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">(((SupportedPrim b, Typeable b) =&gt; Term b) -&gt; Term b)
+-&gt; ((SupportedPrim b, Typeable b) =&gt; Term b) -&gt; Term b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-86"></span><span>    </span><span class="annot"><span class="annottext">PartialRuleBinary b a b
+-&gt; TotalRuleBinary b a b -&gt; TotalRuleBinary b a b
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary b a b
+forall a b.
+PEvalBitCastOrTerm a b =&gt;
+Term b -&gt; Term a -&gt; Maybe (Term b)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#doPevalBitCastOr"><span class="hs-identifier hs-var">doPevalBitCastOr</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary b a b
+forall a b. PEvalBitCastOrTerm a b =&gt; Term b -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bitCastOrTerm"><span class="hs-identifier hs-var">bitCastOrTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682250918"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682250919"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-89"></span><span>  </span><span id="local-6989586621682250938"><span class="annot"><span class="annottext">pevalBitCastTerm :: Term Bool -&gt; Term (IntN 1)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; Term (IntN 1)
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-var">pevalBitCastGeneral</span></a></span><span>
+</span><span id="line-90"></span><span>  </span><span id="local-6989586621682250952"><span class="annot"><span class="annottext">sbvBitCast :: SBVType Bool -&gt; SBVType (IntN 1)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCast"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCast</span></a></span></span><span> </span><span id="local-6989586621682250953"><span class="annot"><span class="annottext">SBVType Bool
+</span><a href="#local-6989586621682250953"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBV (IntN 1) -&gt; SBV (IntN 1) -&gt; SBV (IntN 1)
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="annot"><span class="annottext">SBool
+SBVType Bool
+</span><a href="#local-6989586621682250953"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IntN 1 -&gt; SBV (IntN 1)
+forall a. SymVal a =&gt; a -&gt; SBV a
+</span><span class="hs-identifier hs-var">SBV.literal</span></span><span> </span><span class="annot"><span class="annottext">IntN 1
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IntN 1 -&gt; SBV (IntN 1)
+forall a. SymVal a =&gt; a -&gt; SBV a
+</span><span class="hs-identifier hs-var">SBV.literal</span></span><span> </span><span class="annot"><span class="annottext">IntN 1
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-93"></span><span>  </span><span id="local-6989586621682250968"><span class="annot"><span class="annottext">pevalBitCastTerm :: Term Bool -&gt; Term (WordN 1)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; Term (WordN 1)
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-var">pevalBitCastGeneral</span></a></span><span>
+</span><span id="line-94"></span><span>  </span><span id="local-6989586621682250981"><span class="annot"><span class="annottext">sbvBitCast :: SBVType Bool -&gt; SBVType (WordN 1)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCast"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCast</span></a></span></span><span> </span><span id="local-6989586621682250982"><span class="annot"><span class="annottext">SBVType Bool
+</span><a href="#local-6989586621682250982"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBool -&gt; SBV (WordN 1) -&gt; SBV (WordN 1) -&gt; SBV (WordN 1)
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span> </span><span class="annot"><span class="annottext">SBool
+SBVType Bool
+</span><a href="#local-6989586621682250982"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WordN 1 -&gt; SBV (WordN 1)
+forall a. SymVal a =&gt; a -&gt; SBV a
+</span><span class="hs-identifier hs-var">SBV.literal</span></span><span> </span><span class="annot"><span class="annottext">WordN 1
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WordN 1 -&gt; SBV (WordN 1)
+forall a. SymVal a =&gt; a -&gt; SBV a
+</span><span class="hs-identifier hs-var">SBV.literal</span></span><span> </span><span class="annot"><span class="annottext">WordN 1
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-97"></span><span>  </span><span id="local-6989586621682250992"><span class="annot"><span class="annottext">pevalBitCastTerm :: Term (IntN 1) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN 1) -&gt; Term Bool
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-var">pevalBitCastGeneral</span></a></span><span>
+</span><span id="line-98"></span><span>  </span><span id="local-6989586621682250998"><span class="annot"><span class="annottext">sbvBitCast :: SBVType (IntN 1) -&gt; SBVType Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCast"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCast</span></a></span></span><span> </span><span id="local-6989586621682250999"><span class="annot"><span class="annottext">SBVType (IntN 1)
+</span><a href="#local-6989586621682250999"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBV (IntN 1) -&gt; Int -&gt; SBool
+forall a. SFiniteBits a =&gt; SBV a -&gt; Int -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.sTestBit</span></span><span> </span><span class="annot"><span class="annottext">SBV (IntN 1)
+SBVType (IntN 1)
+</span><a href="#local-6989586621682250999"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-101"></span><span>  </span><span id="local-6989586621682251009"><span class="annot"><span class="annottext">pevalBitCastTerm :: Term (WordN 1) -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN 1) -&gt; Term Bool
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-var">pevalBitCastGeneral</span></a></span><span>
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682251015"><span class="annot"><span class="annottext">sbvBitCast :: SBVType (WordN 1) -&gt; SBVType Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCast"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCast</span></a></span></span><span> </span><span id="local-6989586621682251016"><span class="annot"><span class="annottext">SBVType (WordN 1)
+</span><a href="#local-6989586621682251016"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBV (WordN 1) -&gt; Int -&gt; SBool
+forall a. SFiniteBits a =&gt; SBV a -&gt; Int -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.sTestBit</span></span><span> </span><span class="annot"><span class="annottext">SBV (WordN 1)
+SBVType (WordN 1)
+</span><a href="#local-6989586621682251016"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-105"></span><span>  </span><span id="local-6989586621682250804"><span id="local-6989586621682250805"><span id="local-6989586621682250806"><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250804"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250805"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><a href="#local-6989586621682250806"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250805"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250806"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682250804"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682250804"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-106"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250804"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250805"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250806"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-107"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-108"></span><span>  </span><span id="local-6989586621682251043"><span class="annot"><span class="annottext">pevalBitCastTerm :: Term (WordN n) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (FP eb sb)
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-var">pevalBitCastGeneral</span></a></span><span>
+</span><span id="line-109"></span><span>  </span><span id="local-6989586621682251045"><span class="annot"><span class="annottext">sbvBitCast :: SBVType (WordN n) -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCast"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCast</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (eb :: Natural) (sb :: Natural) r.
+ValidFP eb sb =&gt;
+((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+  1 &lt;= eb, 1 &lt;= sb) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.SymPrim.FP.html#withValidFPProofs"><span class="hs-identifier hs-var">withValidFPProofs</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250805"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250806"><span class="hs-identifier hs-type">sb</span></a></span><span> </span><span class="annot"><span class="annottext">(((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+   1 &lt;= eb, 1 &lt;= sb) =&gt;
+  SBVType (WordN n) -&gt; SBVType (FP eb sb))
+ -&gt; SBVType (WordN n) -&gt; SBVType (FP eb sb))
+-&gt; ((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+     1 &lt;= eb, 1 &lt;= sb) =&gt;
+    SBVType (WordN n) -&gt; SBVType (FP eb sb))
+-&gt; SBVType (WordN n)
+-&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+ 1 &lt;= eb, 1 &lt;= sb) =&gt;
+SBVType (WordN n) -&gt; SBVType (FP eb sb)
+SWord (eb + sb) -&gt; SFloatingPoint eb sb
+SBVType (WordN n) -&gt; SBVType (FP eb sb)
+forall (eb :: Natural) (sb :: Natural).
+(KnownNat (eb + sb), BVIsNonZero (eb + sb), ValidFloat eb sb) =&gt;
+SWord (eb + sb) -&gt; SFloatingPoint eb sb
+</span><span class="hs-identifier hs-var">SBV.sWordAsSFloatingPoint</span></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-112"></span><span>  </span><span id="local-6989586621682250823"><span id="local-6989586621682250824"><span id="local-6989586621682250825"><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250823"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250824"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><a href="#local-6989586621682250825"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250824"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250825"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682250823"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682250823"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastTerm"><span class="hs-identifier hs-type">PEvalBitCastTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250823"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250824"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250825"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-114"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-115"></span><span>  </span><span id="local-6989586621682251082"><span class="annot"><span class="annottext">pevalBitCastTerm :: Term (IntN n) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (FP eb sb)
+forall a b.
+(PEvalBitCastTerm a b, SupportedPrim b) =&gt;
+Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastGeneral"><span class="hs-identifier hs-var">pevalBitCastGeneral</span></a></span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621682251084"><span class="annot"><span class="annottext">sbvBitCast :: SBVType (IntN n) -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCast"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCast</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-117"></span><span>    </span><span class="annot"><span class="annottext">forall (eb :: Natural) (sb :: Natural) r.
+ValidFP eb sb =&gt;
+((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+  1 &lt;= eb, 1 &lt;= sb) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.SymPrim.FP.html#withValidFPProofs"><span class="hs-identifier hs-var">withValidFPProofs</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250824"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250825"><span class="hs-identifier hs-type">sb</span></a></span><span> </span><span class="annot"><span class="annottext">(((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+   1 &lt;= eb, 1 &lt;= sb) =&gt;
+  SBVType (IntN n) -&gt; SBVType (FP eb sb))
+ -&gt; SBVType (IntN n) -&gt; SBVType (FP eb sb))
+-&gt; ((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+     1 &lt;= eb, 1 &lt;= sb) =&gt;
+    SBVType (IntN n) -&gt; SBVType (FP eb sb))
+-&gt; SBVType (IntN n)
+-&gt; SBVType (FP eb sb)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBV (WordN n) -&gt; SFloatingPoint eb sb
+SWord (eb + sb) -&gt; SFloatingPoint eb sb
+forall (eb :: Natural) (sb :: Natural).
+(KnownNat (eb + sb), BVIsNonZero (eb + sb), ValidFloat eb sb) =&gt;
+SWord (eb + sb) -&gt; SFloatingPoint eb sb
+</span><span class="hs-identifier hs-var">SBV.sWordAsSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">(SBV (WordN n) -&gt; SFloatingPoint eb sb)
+-&gt; (SBV (IntN n) -&gt; SBV (WordN n))
+-&gt; SBV (IntN n)
+-&gt; SFloatingPoint eb sb
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SBV (IntN n) -&gt; SBV (WordN n)
+forall a b.
+(Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
+ SymVal b) =&gt;
+SBV a -&gt; SBV b
+</span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-120"></span><span>  </span><span id="local-6989586621682250841"><span id="local-6989586621682250842"><span id="local-6989586621682250843"><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250841"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250842"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><a href="#local-6989586621682250843"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250842"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250843"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682250841"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682250841"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-121"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastOrTerm"><span class="hs-identifier hs-type">PEvalBitCastOrTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250842"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250843"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250841"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-122"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-123"></span><span>  </span><span id="local-6989586621682251138"><span class="annot"><span class="annottext">pevalBitCastOrTerm :: Term (WordN n) -&gt; Term (FP eb sb) -&gt; Term (WordN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastOrTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (FP eb sb) -&gt; Term (WordN n)
+forall a b. PEvalBitCastOrTerm a b =&gt; Term b -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastOr"><span class="hs-identifier hs-var">pevalBitCastOr</span></a></span><span>
+</span><span id="line-124"></span><span>  </span><span id="local-6989586621682251140"><span class="annot"><span class="annottext">sbvBitCastOr :: SBVType (WordN n) -&gt; SBVType (FP eb sb) -&gt; SBVType (WordN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCastOr"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCastOr</span></a></span></span><span> </span><span id="local-6989586621682251141"><span class="annot"><span class="annottext">SBVType (WordN n)
+</span><a href="#local-6989586621682251141"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682251142"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682251142"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-125"></span><span>    </span><span class="annot"><span class="annottext">forall (eb :: Natural) (sb :: Natural) r.
+ValidFP eb sb =&gt;
+((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+  1 &lt;= eb, 1 &lt;= sb) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.SymPrim.FP.html#withValidFPProofs"><span class="hs-identifier hs-var">withValidFPProofs</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250842"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250843"><span class="hs-identifier hs-type">sb</span></a></span><span> </span><span class="annot"><span class="annottext">(((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+   1 &lt;= eb, 1 &lt;= sb) =&gt;
+  SBVType (WordN n))
+ -&gt; SBVType (WordN n))
+-&gt; ((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+     1 &lt;= eb, 1 &lt;= sb) =&gt;
+    SBVType (WordN n))
+-&gt; SBVType (WordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-126"></span><span>      </span><span class="annot"><span class="annottext">SBool -&gt; SBV (WordN n) -&gt; SBV (WordN n) -&gt; SBV (WordN n)
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-127"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682251142"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>        </span><span class="annot"><span class="annottext">SBV (WordN n)
+SBVType (WordN n)
+</span><a href="#local-6989586621682251141"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-129"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SWord (eb + sb)
+forall (eb :: Natural) (sb :: Natural).
+(ValidFloat eb sb, KnownNat (eb + sb), BVIsNonZero (eb + sb)) =&gt;
+SFloatingPoint eb sb -&gt; SWord (eb + sb)
+</span><span class="hs-identifier hs-var">SBV.sFloatingPointAsSWord</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682251142"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-132"></span><span>  </span><span id="local-6989586621682250857"><span id="local-6989586621682250858"><span id="local-6989586621682250859"><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250857"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682250858"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><a href="#local-6989586621682250859"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250858"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250859"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682250857"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682250857"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-133"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitCastOrTerm"><span class="hs-identifier hs-type">PEvalBitCastOrTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250858"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250859"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682250857"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-134"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-135"></span><span>  </span><span id="local-6989586621682251184"><span class="annot"><span class="annottext">pevalBitCastOrTerm :: Term (IntN n) -&gt; Term (FP eb sb) -&gt; Term (IntN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalBitCastOrTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalBitCastOrTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (FP eb sb) -&gt; Term (IntN n)
+forall a b. PEvalBitCastOrTerm a b =&gt; Term b -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm.html#pevalBitCastOr"><span class="hs-identifier hs-var">pevalBitCastOr</span></a></span><span>
+</span><span id="line-136"></span><span>  </span><span id="local-6989586621682251186"><span class="annot"><span class="annottext">sbvBitCastOr :: SBVType (IntN n) -&gt; SBVType (FP eb sb) -&gt; SBVType (IntN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvBitCastOr"><span class="hs-identifier hs-var hs-var hs-var">sbvBitCastOr</span></a></span></span><span> </span><span id="local-6989586621682251187"><span class="annot"><span class="annottext">SBVType (IntN n)
+</span><a href="#local-6989586621682251187"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621682251188"><span class="annot"><span class="annottext">SBVType (FP eb sb)
+</span><a href="#local-6989586621682251188"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><span class="annottext">forall (eb :: Natural) (sb :: Natural) r.
+ValidFP eb sb =&gt;
+((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+  1 &lt;= eb, 1 &lt;= sb) =&gt;
+ r)
+-&gt; r
+</span><a href="Grisette.Internal.SymPrim.FP.html#withValidFPProofs"><span class="hs-identifier hs-var">withValidFPProofs</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250858"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682250859"><span class="hs-identifier hs-type">sb</span></a></span><span> </span><span class="annot"><span class="annottext">(((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+   1 &lt;= eb, 1 &lt;= sb) =&gt;
+  SBVType (IntN n))
+ -&gt; SBVType (IntN n))
+-&gt; ((KnownNat (eb + sb), BVIsNonZero (eb + sb), 1 &lt;= (eb + sb),
+     1 &lt;= eb, 1 &lt;= sb) =&gt;
+    SBVType (IntN n))
+-&gt; SBVType (IntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-138"></span><span>      </span><span class="annot"><span class="annottext">SBool -&gt; SBV (IntN n) -&gt; SBV (IntN n) -&gt; SBV (IntN n)
+forall a. Mergeable a =&gt; SBool -&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">SBV.ite</span></span><span>
+</span><span id="line-139"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBool
+forall a. IEEEFloating a =&gt; SBV a -&gt; SBool
+</span><span class="hs-identifier hs-var">SBV.fpIsNaN</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682251188"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-140"></span><span>        </span><span class="annot"><span class="annottext">SBV (IntN n)
+SBVType (IntN n)
+</span><a href="#local-6989586621682251187"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-141"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV (WordN (eb + sb)) -&gt; SBV (IntN n)
+forall a b.
+(Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
+ SymVal b) =&gt;
+SBV a -&gt; SBV b
+</span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(SBV (WordN (eb + sb)) -&gt; SBV (IntN n))
+-&gt; SBV (WordN (eb + sb)) -&gt; SBV (IntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb) -&gt; SBV (WordN (eb + sb))
+forall (eb :: Natural) (sb :: Natural).
+(ValidFloat eb sb, KnownNat (eb + sb), BVIsNonZero (eb + sb)) =&gt;
+SFloatingPoint eb sb -&gt; SWord (eb + sb)
+</span><span class="hs-identifier hs-var">SBV.sFloatingPointAsSWord</span></span><span> </span><span class="annot"><span class="annottext">SBV (FloatingPoint eb sb)
+SBVType (FP eb sb)
+</span><a href="#local-6989586621682251188"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span></pre></body></html>

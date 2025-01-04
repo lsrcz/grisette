@@ -1,0 +1,999 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.SafeFromFP</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SafeFromFP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier">SafeFromFP</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Error.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadError</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">throwError</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeLits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html"><span class="hs-identifier">Grisette.Internal.Core.Control.Monad.Class.Union</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html#MonadUnion"><span class="hs-identifier">MonadUnion</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.IEEEFP</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier">IEEEFPConvertible</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier">fromFPOr</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPRoundingMode"><span class="hs-identifier">IEEEFPRoundingMode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rna"><span class="hs-identifier">rna</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rne"><span class="hs-identifier">rne</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtn"><span class="hs-identifier">rtn</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtp"><span class="hs-identifier">rtp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtz"><span class="hs-identifier">rtz</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNaN"><span class="hs-identifier">fpIsNaN</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNegativeInfinite"><span class="hs-identifier">fpIsNegativeInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsPositiveInfinite"><span class="hs-identifier">fpIsPositiveInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier">symIte</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SimpleMergeable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SimpleMergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier">mrgIf</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier">Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier">con</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymEq.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SymEq</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#SymEq"><span class="hs-identifier">SymEq</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator">(.==)</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SymIEEEFP</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#SymIEEEFPTraits"><span class="hs-identifier">SymIEEEFPTraits</span></a></span><span>
+</span><span id="line-36"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNaN"><span class="hs-identifier">symFpIsNaN</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>        </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNegativeInfinite"><span class="hs-identifier">symFpIsNegativeInfinite</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>        </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsPositiveInfinite"><span class="hs-identifier">symFpIsPositiveInfinite</span></a></span><span>
+</span><span id="line-39"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SymOrd.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SymOrd</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#SymOrd"><span class="hs-identifier">SymOrd</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3C"><span class="hs-operator">(.&lt;)</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3E"><span class="hs-operator">(.&gt;)</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.TryMerge.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.TryMerge</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier">TryMerge</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier">mrgSingle</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier">tryMerge</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ConvertibleBound"><span class="hs-identifier">ConvertibleBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier">convertibleLowerBound</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier">convertibleUpperBound</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier">FPRoundingMode</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier">NotRepresentableFPError</span></a></span><span>
+</span><span id="line-54"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier">FPOverflowError</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier">FPUnderflowError</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NaNError"><span class="hs-identifier">NaNError</span></a></span><span>
+</span><span id="line-57"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymAlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier">SymAlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier">SymIntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier">SymWordN</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymFP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier">SymFP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier">SymFPRoundingMode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymInteger</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html#SymInteger"><span class="hs-identifier">SymInteger</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- | Safe conversion from floating point numbers that throws exceptions when</span><span>
+</span><span id="line-66"></span><span class="hs-comment">-- the result isn't representable by the type.</span><span>
+</span><span id="line-67"></span><span class="hs-keyword">class</span><span>
+</span><span id="line-68"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="#local-6989586621682352156"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352160"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352160"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#IEEEFPConvertible"><span class="hs-identifier hs-type">IEEEFPConvertible</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352157"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352158"><span class="hs-identifier hs-type">fp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352159"><span class="hs-identifier hs-type">fprd</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-69"></span><span>  </span><span id="SafeFromFP"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-var">SafeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352156"><span class="annot"><a href="#local-6989586621682352156"><span class="hs-identifier hs-type">e</span></a></span></span><span> </span><span id="local-6989586621682352157"><span class="annot"><a href="#local-6989586621682352157"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682352158"><span class="annot"><a href="#local-6989586621682352158"><span class="hs-identifier hs-type">fp</span></a></span></span><span> </span><span id="local-6989586621682352159"><span class="annot"><a href="#local-6989586621682352159"><span class="hs-identifier hs-type">fprd</span></a></span></span><span> </span><span id="local-6989586621682352160"><span class="annot"><a href="#local-6989586621682352160"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-70"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-71"></span><span>  </span><span id="safeFromFP"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-type">safeFromFP</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352159"><span class="hs-identifier hs-type">fprd</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682352158"><span class="hs-identifier hs-type">fp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682352160"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352157"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-74"></span><span>  </span><span id="local-6989586621682352184"><span id="local-6989586621682352185"><span id="local-6989586621682352186"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352184"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352184"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352185"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352186"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-75"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352185"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352186"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352184"><span class="hs-identifier hs-type">m</span></a></span></span></span></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-77"></span><span>  </span><span id="local-6989586621682352429"><span class="annot"><span class="annottext">safeFromFP :: FPRoundingMode -&gt; FP eb sb -&gt; m AlgReal
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352430"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352430"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682352431"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352431"><span class="hs-identifier hs-var">a</span></a></span></span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsPositiveInfinite"><span class="hs-identifier hs-var">fpIsPositiveInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352431"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m AlgReal -&gt; m AlgReal
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m AlgReal -&gt; m AlgReal) -&gt; m AlgReal -&gt; m AlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m AlgReal
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNegativeInfinite"><span class="hs-identifier hs-var">fpIsNegativeInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352431"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m AlgReal -&gt; m AlgReal
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m AlgReal -&gt; m AlgReal) -&gt; m AlgReal -&gt; m AlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m AlgReal
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNaN"><span class="hs-identifier hs-var">fpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352431"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m AlgReal -&gt; m AlgReal
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m AlgReal -&gt; m AlgReal) -&gt; m AlgReal -&gt; m AlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m AlgReal
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#NaNError"><span class="hs-identifier hs-var">NaNError</span></a></span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AlgReal -&gt; m AlgReal
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(AlgReal -&gt; m AlgReal) -&gt; AlgReal -&gt; m AlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">AlgReal -&gt; FPRoundingMode -&gt; FP eb sb -&gt; AlgReal
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">AlgReal
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352430"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352431"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621682352220"><span id="local-6989586621682352221"><span id="local-6989586621682352222"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352220"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html#MonadUnion"><span class="hs-identifier hs-type">MonadUnion</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352220"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352221"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352222"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-85"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span>
+</span><span id="line-86"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span>
+</span><span id="line-87"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier hs-type">SymAlgReal</span></a></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352221"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352222"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier hs-type">SymFPRoundingMode</span></a></span><span>
+</span><span id="line-90"></span><span>    </span><span class="annot"><a href="#local-6989586621682352220"><span class="hs-identifier hs-type">m</span></a></span></span></span></span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-92"></span><span>  </span><span id="local-6989586621682352480"><span class="annot"><span class="annottext">safeFromFP :: SymFPRoundingMode -&gt; SymFP eb sb -&gt; m SymAlgReal
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352481"><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352481"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682352482"><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352482"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>    </span><span class="annot"><span class="annottext">SymBool -&gt; m SymAlgReal -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsPositiveInfinite"><span class="hs-identifier hs-var">symFpIsPositiveInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352482"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m SymAlgReal -&gt; m SymAlgReal
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m SymAlgReal -&gt; m SymAlgReal) -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m SymAlgReal
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>      </span><span class="annot"><span class="annottext">(m SymAlgReal -&gt; m SymAlgReal) -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m SymAlgReal -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-95"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNegativeInfinite"><span class="hs-identifier hs-var">symFpIsNegativeInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352482"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m SymAlgReal -&gt; m SymAlgReal
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m SymAlgReal -&gt; m SymAlgReal) -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m SymAlgReal
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>      </span><span class="annot"><span class="annottext">(m SymAlgReal -&gt; m SymAlgReal) -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m SymAlgReal -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNaN"><span class="hs-identifier hs-var">symFpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352482"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m SymAlgReal -&gt; m SymAlgReal
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m SymAlgReal -&gt; m SymAlgReal) -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m SymAlgReal
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#NaNError"><span class="hs-identifier hs-var">NaNError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-98"></span><span>      </span><span class="annot"><span class="annottext">(m SymAlgReal -&gt; m SymAlgReal) -&gt; m SymAlgReal -&gt; m SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymAlgReal -&gt; m SymAlgReal
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span>
+</span><span id="line-99"></span><span>      </span><span class="annot"><span class="annottext">(SymAlgReal -&gt; m SymAlgReal) -&gt; SymAlgReal -&gt; m SymAlgReal
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymAlgReal -&gt; SymFPRoundingMode -&gt; SymFP eb sb -&gt; SymAlgReal
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">SymAlgReal
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352481"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352482"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682352236"><span id="local-6989586621682352237"><span id="local-6989586621682352238"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352236"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352236"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352237"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352238"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-103"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352237"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352238"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352236"><span class="hs-identifier hs-type">m</span></a></span></span></span></span><span>
+</span><span id="line-104"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-105"></span><span>  </span><span id="local-6989586621682352520"><span class="annot"><span class="annottext">safeFromFP :: FPRoundingMode -&gt; FP eb sb -&gt; m Integer
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352521"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352521"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682352522"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352522"><span class="hs-identifier hs-var">a</span></a></span></span><span>
+</span><span id="line-106"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsPositiveInfinite"><span class="hs-identifier hs-var">fpIsPositiveInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352522"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m Integer -&gt; m Integer
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m Integer -&gt; m Integer) -&gt; m Integer -&gt; m Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m Integer
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNegativeInfinite"><span class="hs-identifier hs-var">fpIsNegativeInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352522"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m Integer -&gt; m Integer
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m Integer -&gt; m Integer) -&gt; m Integer -&gt; m Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m Integer
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span>
+</span><span id="line-108"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; Bool
+forall a. RealFloat a =&gt; a -&gt; Bool
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fpIsNaN"><span class="hs-identifier hs-var">fpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352522"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m Integer -&gt; m Integer
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m Integer -&gt; m Integer) -&gt; m Integer -&gt; m Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m Integer
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#NaNError"><span class="hs-identifier hs-var">NaNError</span></a></span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; m Integer
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; m Integer) -&gt; Integer -&gt; m Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; FPRoundingMode -&gt; FP eb sb -&gt; Integer
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352521"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352522"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-112"></span><span>  </span><span id="local-6989586621682352245"><span id="local-6989586621682352246"><span id="local-6989586621682352247"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352245"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html#MonadUnion"><span class="hs-identifier hs-type">MonadUnion</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352245"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352246"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352247"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span>
+</span><span id="line-114"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span>
+</span><span id="line-115"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html#SymInteger"><span class="hs-identifier hs-type">SymInteger</span></a></span><span>
+</span><span id="line-116"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352246"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352247"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-117"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier hs-type">SymFPRoundingMode</span></a></span><span>
+</span><span id="line-118"></span><span>    </span><span class="annot"><a href="#local-6989586621682352245"><span class="hs-identifier hs-type">m</span></a></span></span></span></span><span>
+</span><span id="line-119"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-120"></span><span>  </span><span id="local-6989586621682352568"><span class="annot"><span class="annottext">safeFromFP :: SymFPRoundingMode -&gt; SymFP eb sb -&gt; m SymInteger
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352569"><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352569"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682352570"><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352570"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-121"></span><span>    </span><span class="annot"><span class="annottext">SymBool -&gt; m SymInteger -&gt; m SymInteger -&gt; m SymInteger
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsPositiveInfinite"><span class="hs-identifier hs-var">symFpIsPositiveInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352570"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m SymInteger -&gt; m SymInteger
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m SymInteger -&gt; m SymInteger) -&gt; m SymInteger -&gt; m SymInteger
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m SymInteger
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-122"></span><span>      </span><span class="annot"><span class="annottext">(m SymInteger -&gt; m SymInteger) -&gt; m SymInteger -&gt; m SymInteger
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m SymInteger -&gt; m SymInteger -&gt; m SymInteger
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-123"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNegativeInfinite"><span class="hs-identifier hs-var">symFpIsNegativeInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352570"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-124"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m SymInteger -&gt; m SymInteger
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m SymInteger -&gt; m SymInteger) -&gt; m SymInteger -&gt; m SymInteger
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m SymInteger
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-125"></span><span>      </span><span class="annot"><span class="annottext">(m SymInteger -&gt; m SymInteger) -&gt; m SymInteger -&gt; m SymInteger
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m SymInteger -&gt; m SymInteger -&gt; m SymInteger
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-126"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNaN"><span class="hs-identifier hs-var">symFpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352570"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-127"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m SymInteger -&gt; m SymInteger
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m SymInteger -&gt; m SymInteger) -&gt; m SymInteger -&gt; m SymInteger
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m SymInteger
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#NaNError"><span class="hs-identifier hs-var">NaNError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>      </span><span class="annot"><span class="annottext">(m SymInteger -&gt; m SymInteger) -&gt; m SymInteger -&gt; m SymInteger
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymInteger -&gt; m SymInteger
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span>
+</span><span id="line-129"></span><span>      </span><span class="annot"><span class="annottext">(SymInteger -&gt; m SymInteger) -&gt; SymInteger -&gt; m SymInteger
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymInteger -&gt; SymFPRoundingMode -&gt; SymFP eb sb -&gt; SymInteger
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">SymInteger
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352569"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352570"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-132"></span><span>  </span><span id="local-6989586621682352260"><span id="local-6989586621682352261"><span id="local-6989586621682352262"><span id="local-6989586621682352263"><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352260"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-133"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352260"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-134"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352261"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352262"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-135"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682352263"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-136"></span><span>    </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682352263"><span class="hs-identifier hs-type">n</span></a></span><span>
+</span><span id="line-137"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-138"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352263"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352261"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352262"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352260"><span class="hs-identifier hs-type">m</span></a></span></span></span></span></span><span>
+</span><span id="line-139"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-140"></span><span>  </span><span id="local-6989586621682352637"><span class="annot"><span class="annottext">safeFromFP :: FPRoundingMode -&gt; FP eb sb -&gt; m (WordN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352638"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352638"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682352639"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352639"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-141"></span><span>    </span><span id="local-6989586621682352640"><span class="annot"><a href="#local-6989586621682352640"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier">Integer</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode -&gt; FP eb sb -&gt; m Integer
+forall e a fp fprd (m :: * -&gt; *).
+SafeFromFP e a fp fprd m =&gt;
+fprd -&gt; fp -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var">safeFromFP</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352638"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352639"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-142"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><a href="#local-6989586621682352640"><span class="hs-identifier hs-type">p</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">minBound</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352263"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-143"></span><span>      </span><span class="hs-keyword">then</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-type">tryMerge</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">throwError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-type">FPUnderflowError</span></a></span><span>
+</span><span id="line-144"></span><span>      </span><span class="hs-keyword">else</span><span>
+</span><span id="line-145"></span><span>        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><a href="#local-6989586621682352640"><span class="hs-identifier hs-type">p</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">maxBound</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352263"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-146"></span><span>          </span><span class="hs-keyword">then</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-type">tryMerge</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">throwError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-type">FPOverflowError</span></a></span><span>
+</span><span id="line-147"></span><span>          </span><span class="hs-keyword">else</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-type">mrgSingle</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="annot"><a href="#local-6989586621682352640"><span class="hs-identifier hs-type">p</span></a></span><span>
+</span><span id="line-148"></span><span>
+</span><span id="line-149"></span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleLowerBound"><span class="hs-identifier hs-type">symConvertibleLowerBound</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-150"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682352272"><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span></span><span> </span><span id="local-6989586621682352277"><span class="annot"><a href="#local-6989586621682352277"><span class="hs-identifier hs-type">symBV</span></a></span></span><span> </span><span id="local-6989586621682352276"><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span></span><span> </span><span id="local-6989586621682352274"><span class="annot"><a href="#local-6989586621682352274"><span class="hs-identifier hs-type">eb</span></a></span></span><span> </span><span id="local-6989586621682352275"><span class="annot"><a href="#local-6989586621682352275"><span class="hs-identifier hs-type">sb</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-151"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ConvertibleBound"><span class="hs-identifier hs-type">ConvertibleBound</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-152"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352274"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352275"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-153"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-154"></span><span>    </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-155"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682352277"><span class="hs-identifier hs-type">symBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-156"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-157"></span><span>  </span><span class="annot"><a href="#local-6989586621682352277"><span class="hs-identifier hs-type">symBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier hs-type">SymFPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-159"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352274"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352275"><span class="hs-identifier hs-type">sb</span></a></span><span>
+</span><span id="line-160"></span><span id="symConvertibleLowerBound"><span class="annot"><span class="annottext">symConvertibleLowerBound :: forall (conBV :: Nat -&gt; *) (symBV :: Nat -&gt; *) (n :: Nat)
+       (eb :: Nat) (sb :: Nat).
+(ConvertibleBound conBV, ValidFP eb sb, KnownNat n, 1 &lt;= n,
+ Solvable (conBV n) (symBV n)) =&gt;
+symBV n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleLowerBound"><span class="hs-identifier hs-var hs-var">symConvertibleLowerBound</span></a></span></span><span> </span><span class="annot"><span class="annottext">symBV n
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682352717"><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352717"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-161"></span><span>  </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-162"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352717"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rne"><span class="hs-identifier hs-var">rne</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier hs-var">convertibleLowerBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rne"><span class="hs-identifier hs-var">rne</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-164"></span><span>    </span><span class="annot"><span class="annottext">(SymFP eb sb -&gt; SymFP eb sb) -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-165"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352717"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rna"><span class="hs-identifier hs-var">rna</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-166"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier hs-var">convertibleLowerBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rna"><span class="hs-identifier hs-var">rna</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-167"></span><span>    </span><span class="annot"><span class="annottext">(SymFP eb sb -&gt; SymFP eb sb) -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-168"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352717"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtp"><span class="hs-identifier hs-var">rtp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-169"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier hs-var">convertibleLowerBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtp"><span class="hs-identifier hs-var">rtp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-170"></span><span>    </span><span class="annot"><span class="annottext">(SymFP eb sb -&gt; SymFP eb sb) -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-171"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352717"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtn"><span class="hs-identifier hs-var">rtn</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-172"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier hs-var">convertibleLowerBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtn"><span class="hs-identifier hs-var">rtn</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-173"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleLowerBound"><span class="hs-identifier hs-var">convertibleLowerBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352272"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352276"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtz"><span class="hs-identifier hs-var">rtz</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-174"></span><span>
+</span><span id="line-175"></span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleUpperBound"><span class="hs-identifier hs-type">symConvertibleUpperBound</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-176"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682352719"><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span></span><span> </span><span id="local-6989586621682352720"><span class="annot"><a href="#local-6989586621682352720"><span class="hs-identifier hs-type">symBV</span></a></span></span><span> </span><span id="local-6989586621682352721"><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span></span><span> </span><span id="local-6989586621682352722"><span class="annot"><a href="#local-6989586621682352722"><span class="hs-identifier hs-type">eb</span></a></span></span><span> </span><span id="local-6989586621682352723"><span class="annot"><a href="#local-6989586621682352723"><span class="hs-identifier hs-type">sb</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-177"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ConvertibleBound"><span class="hs-identifier hs-type">ConvertibleBound</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-178"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352722"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352723"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-180"></span><span>    </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-181"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682352720"><span class="hs-identifier hs-type">symBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-182"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-183"></span><span>  </span><span class="annot"><a href="#local-6989586621682352720"><span class="hs-identifier hs-type">symBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-184"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier hs-type">SymFPRoundingMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-185"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352722"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352723"><span class="hs-identifier hs-type">sb</span></a></span><span>
+</span><span id="line-186"></span><span id="symConvertibleUpperBound"><span class="annot"><span class="annottext">symConvertibleUpperBound :: forall (conBV :: Nat -&gt; *) (symBV :: Nat -&gt; *) (n :: Nat)
+       (eb :: Nat) (sb :: Nat).
+(ConvertibleBound conBV, ValidFP eb sb, KnownNat n, 1 &lt;= n,
+ Solvable (conBV n) (symBV n)) =&gt;
+symBV n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleUpperBound"><span class="hs-identifier hs-var hs-var">symConvertibleUpperBound</span></a></span></span><span> </span><span class="annot"><span class="annottext">symBV n
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682352790"><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352790"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-187"></span><span>  </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-188"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352790"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rne"><span class="hs-identifier hs-var">rne</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-189"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier hs-var">convertibleUpperBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rne"><span class="hs-identifier hs-var">rne</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-190"></span><span>    </span><span class="annot"><span class="annottext">(SymFP eb sb -&gt; SymFP eb sb) -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-191"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352790"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rna"><span class="hs-identifier hs-var">rna</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-192"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier hs-var">convertibleUpperBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rna"><span class="hs-identifier hs-var">rna</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-193"></span><span>    </span><span class="annot"><span class="annottext">(SymFP eb sb -&gt; SymFP eb sb) -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-194"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352790"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtp"><span class="hs-identifier hs-var">rtp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-195"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier hs-var">convertibleUpperBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtp"><span class="hs-identifier hs-var">rtp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-196"></span><span>    </span><span class="annot"><span class="annottext">(SymFP eb sb -&gt; SymFP eb sb) -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span>
+</span><span id="line-197"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352790"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode -&gt; SymFPRoundingMode -&gt; SymBool
+forall a. SymEq a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq.html#.%3D%3D"><span class="hs-operator hs-var">.==</span></a></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtn"><span class="hs-identifier hs-var">rtn</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-198"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier hs-var">convertibleUpperBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtn"><span class="hs-identifier hs-var">rtn</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-199"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FP eb sb -&gt; SymFP eb sb
+forall c t. Solvable c t =&gt; c -&gt; t
+</span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var">con</span></a></span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; SymFP eb sb) -&gt; FP eb sb -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+conBV n -&gt; FPRoundingMode -&gt; FP eb sb
+forall (bv :: Nat -&gt; *) (eb :: Nat) (sb :: Nat) (n :: Nat).
+(ConvertibleBound bv, ValidFP eb sb, KnownNat n, 1 &lt;= n) =&gt;
+bv n -&gt; FPRoundingMode -&gt; FP eb sb
+</span><a href="Grisette.Internal.SymPrim.FP.html#convertibleUpperBound"><span class="hs-identifier hs-var">convertibleUpperBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">conBV n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682352719"><span class="hs-identifier hs-type">conBV</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352721"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+forall mode. IEEEFPRoundingMode mode =&gt; mode
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#rtz"><span class="hs-identifier hs-var">rtz</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-200"></span><span>
+</span><span id="line-201"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-202"></span><span>  </span><span id="local-6989586621682352316"><span id="local-6989586621682352317"><span id="local-6989586621682352318"><span id="local-6989586621682352319"><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352316"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-203"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html#MonadUnion"><span class="hs-identifier hs-type">MonadUnion</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352316"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-204"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352317"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352318"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-205"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682352319"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-206"></span><span>    </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682352319"><span class="hs-identifier hs-type">n</span></a></span><span>
+</span><span id="line-207"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-208"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352319"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352317"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352318"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier hs-type">SymFPRoundingMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352316"><span class="hs-identifier hs-type">m</span></a></span></span></span></span></span><span>
+</span><span id="line-209"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-210"></span><span>  </span><span id="local-6989586621682352881"><span class="annot"><span class="annottext">safeFromFP :: SymFPRoundingMode -&gt; SymFP eb sb -&gt; m (SymWordN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352882"><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352882"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682352883"><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352883"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-211"></span><span>    </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymWordN n) -&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsPositiveInfinite"><span class="hs-identifier hs-var">symFpIsPositiveInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352883"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymWordN n) -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymWordN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-212"></span><span>      </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymWordN n) -&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-213"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNegativeInfinite"><span class="hs-identifier hs-var">symFpIsNegativeInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352883"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-214"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymWordN n) -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymWordN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-215"></span><span>      </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymWordN n) -&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNaN"><span class="hs-identifier hs-var">symFpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352883"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymWordN n) -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymWordN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#NaNError"><span class="hs-identifier hs-var">NaNError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-216"></span><span>      </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymWordN n) -&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-217"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352883"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymFP eb sb -&gt; SymBool
+forall a. SymOrd a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3C"><span class="hs-operator hs-var">.&lt;</span></a></span><span> </span><span class="annot"><span class="annottext">SymWordN n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+forall (conBV :: Nat -&gt; *) (symBV :: Nat -&gt; *) (n :: Nat)
+       (eb :: Nat) (sb :: Nat).
+(ConvertibleBound conBV, ValidFP eb sb, KnownNat n, 1 &lt;= n,
+ Solvable (conBV n) (symBV n)) =&gt;
+symBV n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleLowerBound"><span class="hs-identifier hs-var">symConvertibleLowerBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352319"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352882"><span class="hs-identifier hs-var">mode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-218"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymWordN n) -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymWordN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-219"></span><span>      </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymWordN n) -&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-220"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352883"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymFP eb sb -&gt; SymBool
+forall a. SymOrd a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3E"><span class="hs-operator hs-var">.&gt;</span></a></span><span> </span><span class="annot"><span class="annottext">SymWordN n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+forall (conBV :: Nat -&gt; *) (symBV :: Nat -&gt; *) (n :: Nat)
+       (eb :: Nat) (sb :: Nat).
+(ConvertibleBound conBV, ValidFP eb sb, KnownNat n, 1 &lt;= n,
+ Solvable (conBV n) (symBV n)) =&gt;
+symBV n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleUpperBound"><span class="hs-identifier hs-var">symConvertibleUpperBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymWordN n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier hs-type">SymWordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352319"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352882"><span class="hs-identifier hs-var">mode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-221"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymWordN n) -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymWordN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-222"></span><span>      </span><span class="annot"><span class="annottext">(m (SymWordN n) -&gt; m (SymWordN n))
+-&gt; m (SymWordN n) -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n -&gt; m (SymWordN n)
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span>
+</span><span id="line-223"></span><span>      </span><span class="annot"><span class="annottext">(SymWordN n -&gt; m (SymWordN n)) -&gt; SymWordN n -&gt; m (SymWordN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymWordN n -&gt; SymFPRoundingMode -&gt; SymFP eb sb -&gt; SymWordN n
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">SymWordN n
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682352882"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682352883"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-224"></span><span>
+</span><span id="line-225"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-226"></span><span>  </span><span id="local-6989586621682352335"><span id="local-6989586621682352336"><span id="local-6989586621682352337"><span id="local-6989586621682352338"><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352335"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-227"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352335"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-228"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352336"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352337"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-229"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682352338"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-230"></span><span>    </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682352338"><span class="hs-identifier hs-type">n</span></a></span><span>
+</span><span id="line-231"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-232"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352338"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352336"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352337"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPRoundingMode"><span class="hs-identifier hs-type">FPRoundingMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352335"><span class="hs-identifier hs-type">m</span></a></span></span></span></span></span><span>
+</span><span id="line-233"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-234"></span><span>  </span><span id="local-6989586621682352947"><span class="annot"><span class="annottext">safeFromFP :: FPRoundingMode -&gt; FP eb sb -&gt; m (IntN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682352948"><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352948"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682352949"><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352949"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-235"></span><span>    </span><span id="local-6989586621682352950"><span class="annot"><a href="#local-6989586621682352950"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier">Integer</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">FPRoundingMode -&gt; FP eb sb -&gt; m Integer
+forall e a fp fprd (m :: * -&gt; *).
+SafeFromFP e a fp fprd m =&gt;
+fprd -&gt; fp -&gt; m a
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var">safeFromFP</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingMode
+</span><a href="#local-6989586621682352948"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb
+</span><a href="#local-6989586621682352949"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-236"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><a href="#local-6989586621682352950"><span class="hs-identifier hs-type">p</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">minBound</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352338"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-237"></span><span>      </span><span class="hs-keyword">then</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-type">tryMerge</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">throwError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-type">FPUnderflowError</span></a></span><span>
+</span><span id="line-238"></span><span>      </span><span class="hs-keyword">else</span><span>
+</span><span id="line-239"></span><span>        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><a href="#local-6989586621682352950"><span class="hs-identifier hs-type">p</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">maxBound</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352338"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-240"></span><span>          </span><span class="hs-keyword">then</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-type">tryMerge</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">throwError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-type">FPOverflowError</span></a></span><span>
+</span><span id="line-241"></span><span>          </span><span class="hs-keyword">else</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-type">mrgSingle</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="annot"><a href="#local-6989586621682352950"><span class="hs-identifier hs-type">p</span></a></span><span>
+</span><span id="line-242"></span><span>
+</span><span id="line-243"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-244"></span><span>  </span><span id="local-6989586621682352351"><span id="local-6989586621682352352"><span id="local-6989586621682352353"><span id="local-6989586621682352354"><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352351"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-245"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Control.Monad.Class.Union.html#MonadUnion"><span class="hs-identifier hs-type">MonadUnion</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352351"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-246"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352352"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352353"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-247"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682352354"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-248"></span><span>    </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682352354"><span class="hs-identifier hs-type">n</span></a></span><span>
+</span><span id="line-249"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-250"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#SafeFromFP"><span class="hs-identifier hs-type">SafeFromFP</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#NotRepresentableFPError"><span class="hs-identifier hs-type">NotRepresentableFPError</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352354"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352352"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352353"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier hs-type">SymFPRoundingMode</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352351"><span class="hs-identifier hs-type">m</span></a></span></span></span></span></span><span>
+</span><span id="line-251"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-252"></span><span>  </span><span id="local-6989586621682353040"><span class="annot"><span class="annottext">safeFromFP :: SymFPRoundingMode -&gt; SymFP eb sb -&gt; m (SymIntN n)
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#safeFromFP"><span class="hs-identifier hs-var hs-var hs-var">safeFromFP</span></a></span></span><span> </span><span id="local-6989586621682353041"><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682353041"><span class="hs-identifier hs-var">mode</span></a></span></span><span> </span><span id="local-6989586621682353042"><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682353042"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-253"></span><span>    </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymIntN n) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsPositiveInfinite"><span class="hs-identifier hs-var">symFpIsPositiveInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682353042"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymIntN n) -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymIntN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-254"></span><span>      </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymIntN n) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-255"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNegativeInfinite"><span class="hs-identifier hs-var">symFpIsNegativeInfinite</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682353042"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-256"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymIntN n) -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymIntN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-257"></span><span>      </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymIntN n) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymBool
+forall a. SymIEEEFPTraits a =&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Core.Data.Class.SymIEEEFP.html#symFpIsNaN"><span class="hs-identifier hs-var">symFpIsNaN</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682353042"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymIntN n) -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymIntN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#NaNError"><span class="hs-identifier hs-var">NaNError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-258"></span><span>      </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymIntN n) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-259"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682353042"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymFP eb sb -&gt; SymBool
+forall a. SymOrd a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3C"><span class="hs-operator hs-var">.&lt;</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+forall (conBV :: Nat -&gt; *) (symBV :: Nat -&gt; *) (n :: Nat)
+       (eb :: Nat) (sb :: Nat).
+(ConvertibleBound conBV, ValidFP eb sb, KnownNat n, 1 &lt;= n,
+ Solvable (conBV n) (symBV n)) =&gt;
+symBV n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleLowerBound"><span class="hs-identifier hs-var">symConvertibleLowerBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352354"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682353041"><span class="hs-identifier hs-var">mode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-260"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymIntN n) -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymIntN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPUnderflowError"><span class="hs-identifier hs-var">FPUnderflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-261"></span><span>      </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; m (SymIntN n) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall (u :: * -&gt; *) a.
+(SymBranching u, Mergeable a) =&gt;
+SymBool -&gt; u a -&gt; u a -&gt; u a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.html#mrgIf"><span class="hs-identifier hs-var">mrgIf</span></a></span><span>
+</span><span id="line-262"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682353042"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb -&gt; SymFP eb sb -&gt; SymBool
+forall a. SymOrd a =&gt; a -&gt; a -&gt; SymBool
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd.html#.%3E"><span class="hs-operator hs-var">.&gt;</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+forall (conBV :: Nat -&gt; *) (symBV :: Nat -&gt; *) (n :: Nat)
+       (eb :: Nat) (sb :: Nat).
+(ConvertibleBound conBV, ValidFP eb sb, KnownNat n, 1 &lt;= n,
+ Solvable (conBV n) (symBV n)) =&gt;
+symBV n -&gt; SymFPRoundingMode -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.Core.Data.Class.SafeFromFP.html#symConvertibleUpperBound"><span class="hs-identifier hs-var">symConvertibleUpperBound</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymIntN n
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier hs-type">SymIntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682352354"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682353041"><span class="hs-identifier hs-var">mode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-263"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m (SymIntN n) -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a. (TryMerge m, Mergeable a) =&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMerge"><span class="hs-identifier hs-var">tryMerge</span></a></span><span> </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError -&gt; m (SymIntN n)
+forall a. NotRepresentableFPError -&gt; m a
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">NotRepresentableFPError
+</span><a href="Grisette.Internal.SymPrim.FP.html#FPOverflowError"><span class="hs-identifier hs-var">FPOverflowError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-264"></span><span>      </span><span class="annot"><span class="annottext">(m (SymIntN n) -&gt; m (SymIntN n)) -&gt; m (SymIntN n) -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymIntN n -&gt; m (SymIntN n)
+forall (m :: * -&gt; *) a.
+(TryMerge m, Applicative m, Mergeable a) =&gt;
+a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#mrgSingle"><span class="hs-identifier hs-var">mrgSingle</span></a></span><span>
+</span><span id="line-265"></span><span>      </span><span class="annot"><span class="annottext">(SymIntN n -&gt; m (SymIntN n)) -&gt; SymIntN n -&gt; m (SymIntN n)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymIntN n -&gt; SymFPRoundingMode -&gt; SymFP eb sb -&gt; SymIntN n
+forall a fp mode.
+IEEEFPConvertible a fp mode =&gt;
+a -&gt; mode -&gt; fp -&gt; a
+</span><a href="Grisette.Internal.Core.Data.Class.IEEEFP.html#fromFPOr"><span class="hs-identifier hs-var">fromFPOr</span></a></span><span> </span><span class="annot"><span class="annottext">SymIntN n
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">SymFPRoundingMode
+</span><a href="#local-6989586621682353041"><span class="hs-identifier hs-var">mode</span></a></span><span> </span><span class="annot"><span class="annottext">SymFP eb sb
+</span><a href="#local-6989586621682353042"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-266"></span></pre></body></html>

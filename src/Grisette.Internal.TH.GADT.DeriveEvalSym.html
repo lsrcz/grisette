@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE RecordWildCards #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE TupleSections #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# HLINT ignore &quot;Unused LANGUAGE pragma&quot; #-}</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Module      :   Grisette.Internal.TH.GADT.DeriveEvalSym</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.DeriveEvalSym</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym"><span class="hs-identifier">deriveGADTEvalSym</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym1"><span class="hs-identifier">deriveGADTEvalSym1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym2"><span class="hs-identifier">deriveGADTEvalSym2</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym.html#EvalSym"><span class="hs-identifier">EvalSym</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym.html#evalSym"><span class="hs-identifier">evalSym</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym.html#EvalSym1"><span class="hs-identifier">EvalSym1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym.html#liftEvalSym"><span class="hs-identifier">liftEvalSym</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym.html#EvalSym2"><span class="hs-identifier">EvalSym2</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym.html#liftEvalSym2"><span class="hs-identifier">liftEvalSym2</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.Common</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier">DeriveConfig</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html"><span class="hs-identifier">Grisette.Internal.TH.GADT.UnaryOpCommon</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-33"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier">UnaryOpClassConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier">unaryOpAllowExistential</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier">unaryOpConfigs</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier">unaryOpContextNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier">unaryOpExtraVars</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier">unaryOpInstanceNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier">unaryOpInstanceTypeFromConfig</span></a></span><span>
+</span><span id="line-40"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier">UnaryOpConfig</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier">UnaryOpFieldConfig</span></a></span><span>
+</span><span id="line-43"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier">UnaryOpFieldConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraLiftedPatNames"><span class="hs-identifier">extraLiftedPatNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraPatNames"><span class="hs-identifier">extraPatNames</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldCombineFun"><span class="hs-identifier">fieldCombineFun</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier">fieldFunExp</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>        </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldResFun"><span class="hs-identifier">fieldResFun</span></a></span><span>
+</span><span id="line-49"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultFieldFunExp"><span class="hs-identifier">defaultFieldFunExp</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultFieldResFun"><span class="hs-identifier">defaultFieldResFun</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultUnaryOpInstanceTypeFromConfig"><span class="hs-identifier">defaultUnaryOpInstanceTypeFromConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier">genUnaryOpClass</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH</span></span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Dec</span></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="hs-identifier">Exp</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">AppE</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ConE</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><span class="hs-identifier">Name</span></span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="hs-identifier">Q</span></span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#evalSymConfig"><span class="hs-identifier hs-type">evalSymConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-63"></span><span id="evalSymConfig"><span class="annot"><span class="annottext">evalSymConfig :: UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#evalSymConfig"><span class="hs-identifier hs-var hs-var">evalSymConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpClassConfig"><span class="hs-identifier hs-type">UnaryOpClassConfig</span></a></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unaryOpConfigs :: [UnaryOpConfig]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpConfigs"><span class="hs-identifier hs-var">unaryOpConfigs</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">UnaryOpFieldConfig -&gt; [Name] -&gt; UnaryOpConfig
+forall config.
+UnaryOpFunConfig config =&gt;
+config -&gt; [Name] -&gt; UnaryOpConfig
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpConfig"><span class="hs-identifier hs-var">UnaryOpConfig</span></a></span><span>
+</span><span id="line-67"></span><span>            </span><span class="annot"><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#UnaryOpFieldConfig"><span class="hs-identifier hs-type">UnaryOpFieldConfig</span></a></span><span>
+</span><span id="line-68"></span><span>              </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">extraPatNames :: [String]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraPatNames"><span class="hs-identifier hs-var">extraPatNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;fillDefault&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;model&quot;</span></span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-69"></span><span>                </span><span class="annot"><span class="annottext">extraLiftedPatNames :: Int -&gt; [String]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#extraLiftedPatNames"><span class="hs-identifier hs-var">extraLiftedPatNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[String] -&gt; Int -&gt; [String]
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-70"></span><span>                </span><span class="annot"><span class="annottext">fieldResFun :: ConstructorVariant
+-&gt; Name -&gt; [Exp] -&gt; Int -&gt; Exp -&gt; Exp -&gt; Q (Exp, [Bool])
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldResFun"><span class="hs-identifier hs-var">fieldResFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstructorVariant
+-&gt; Name -&gt; [Exp] -&gt; Int -&gt; Exp -&gt; Exp -&gt; Q (Exp, [Bool])
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultFieldResFun"><span class="hs-identifier hs-var">defaultFieldResFun</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-71"></span><span>                </span><span class="annot"><span class="annottext">fieldCombineFun :: Int
+-&gt; Int
+-&gt; ConstructorVariant
+-&gt; Name
+-&gt; [Exp]
+-&gt; [Exp]
+-&gt; Q (Exp, [Bool])
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldCombineFun"><span class="hs-identifier hs-var">fieldCombineFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">ConstructorVariant
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682278390"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682278390"><span class="hs-identifier hs-var">con</span></a></span></span><span> </span><span id="local-6989586621682278391"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682278391"><span class="hs-identifier hs-var">extraPat</span></a></span></span><span> </span><span id="local-6989586621682278392"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682278392"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-72"></span><span>                  </span><span class="annot"><span class="annottext">(Exp, [Bool]) -&gt; Q (Exp, [Bool])
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Exp -&gt; Exp -&gt; Exp) -&gt; Exp -&gt; [Exp] -&gt; Exp
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp -&gt; Exp
+</span><span class="hs-identifier hs-var">AppE</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Exp
+</span><span class="hs-identifier hs-var">ConE</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682278390"><span class="hs-identifier hs-var">con</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682278392"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; [Exp] -&gt; [Bool]
+forall a b. a -&gt; [b] -&gt; [a]
+forall (f :: * -&gt; *) a b. Functor f =&gt; a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;$</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682278391"><span class="hs-identifier hs-var">extraPat</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-73"></span><span>                </span><span class="annot"><span class="annottext">fieldFunExp :: FieldFunExp
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier hs-var">fieldFunExp</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-74"></span><span>                  </span><span class="annot"><span class="annottext">[Name] -&gt; FieldFunExp
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultFieldFunExp"><span class="hs-identifier hs-var">defaultFieldFunExp</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">'</span><span class="hs-identifier">evalSym</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftEvalSym</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftEvalSym2</span><span class="hs-special">]</span><span>
+</span><span id="line-75"></span><span>              </span><span class="hs-special">}</span><span>
+</span><span id="line-76"></span><span>            </span><span class="hs-special">[</span><span class="hs-special">'</span><span class="hs-identifier">evalSym</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftEvalSym</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftEvalSym2</span><span class="hs-special">]</span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-78"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceNames :: [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceNames"><span class="hs-identifier hs-var">unaryOpInstanceNames</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-79"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">''</span><span class="hs-identifier">EvalSym</span><span class="hs-special">,</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">EvalSym1</span><span class="hs-special">,</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">EvalSym2</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-80"></span><span>      </span><span class="annot"><span class="annottext">unaryOpExtraVars :: DeriveConfig -&gt; Q [(Type, Type)]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpExtraVars"><span class="hs-identifier hs-var">unaryOpExtraVars</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)])
+-&gt; Q [(Type, Type)] -&gt; DeriveConfig -&gt; Q [(Type, Type)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(Type, Type)] -&gt; Q [(Type, Type)]
+forall a. a -&gt; Q a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
+</span><span id="line-81"></span><span>      </span><span class="annot"><span class="annottext">unaryOpInstanceTypeFromConfig :: DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">unaryOpInstanceTypeFromConfig</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; [(Type, Type)] -&gt; [(Type, Type)] -&gt; Name -&gt; Q Type
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#defaultUnaryOpInstanceTypeFromConfig"><span class="hs-identifier hs-var">defaultUnaryOpInstanceTypeFromConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-82"></span><span>      </span><span class="annot"><span class="annottext">unaryOpAllowExistential :: Bool
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpAllowExistential"><span class="hs-identifier hs-var">unaryOpAllowExistential</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">,</span><span>
+</span><span id="line-83"></span><span>      </span><span class="annot"><span class="annottext">unaryOpContextNames :: Maybe [Name]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#unaryOpContextNames"><span class="hs-identifier hs-var">unaryOpContextNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe [Name]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="annot"><span class="hs-comment">-- | Derive 'EvalSym' instance for a GADT.</span></span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym"><span class="hs-identifier hs-type">deriveGADTEvalSym</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-88"></span><span id="deriveGADTEvalSym"><span class="annot"><span class="annottext">deriveGADTEvalSym :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym"><span class="hs-identifier hs-var hs-var">deriveGADTEvalSym</span></a></span></span><span> </span><span id="local-6989586621682278395"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682278395"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682278395"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#evalSymConfig"><span class="hs-identifier hs-var">evalSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="annot"><span class="hs-comment">-- | Derive 'EvalSym1' instance for a GADT.</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym1"><span class="hs-identifier hs-type">deriveGADTEvalSym1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-92"></span><span id="deriveGADTEvalSym1"><span class="annot"><span class="annottext">deriveGADTEvalSym1 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym1"><span class="hs-identifier hs-var hs-var">deriveGADTEvalSym1</span></a></span></span><span> </span><span id="local-6989586621682278396"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682278396"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682278396"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#evalSymConfig"><span class="hs-identifier hs-var">evalSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="annot"><span class="hs-comment">-- | Derive 'EvalSym2' instance for a GADT.</span></span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym2"><span class="hs-identifier hs-type">deriveGADTEvalSym2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
+</span><span id="line-96"></span><span id="deriveGADTEvalSym2"><span class="annot"><span class="annottext">deriveGADTEvalSym2 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#deriveGADTEvalSym2"><span class="hs-identifier hs-var hs-var">deriveGADTEvalSym2</span></a></span></span><span> </span><span id="local-6989586621682278397"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682278397"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682278397"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="Grisette.Internal.TH.GADT.DeriveEvalSym.html#evalSymConfig"><span class="hs-identifier hs-var">evalSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-97"></span></pre></body></html>

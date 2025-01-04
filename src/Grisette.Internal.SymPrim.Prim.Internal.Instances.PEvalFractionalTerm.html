@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# HLINT ignore &quot;Eta reduce&quot; #-}</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFractionalTerm"><span class="hs-identifier">PEvalFractionalTerm</span></a></span><span>
+</span><span id="line-23"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFdivTerm"><span class="hs-identifier">pevalFdivTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRecipTerm"><span class="hs-identifier">pevalRecipTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFractionalTermConstraint"><span class="hs-identifier">withSbvFractionalTermConstraint</span></a></span><span>
+</span><span id="line-26"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier">withPrim</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fdivTerm"><span class="hs-identifier">fdivTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#introSupportedPrimConstraint"><span class="hs-identifier">introSupportedPrimConstraint</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#recipTerm"><span class="hs-identifier">recipTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier">binaryUnfoldOnce</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalBinaryUnfolded"><span class="hs-identifier">generalBinaryUnfolded</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalUnaryUnfolded"><span class="hs-identifier">generalUnaryUnfolded</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier">unaryUnfoldOnce</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682244387"><span id="local-6989586621682244388"><span id="local-6989586621682244474"><span id="local-6989586621682244479"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244387"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244388"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFractionalTerm"><span class="hs-identifier hs-type">PEvalFractionalTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244387"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244388"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-42"></span><span>  </span><span id="local-6989586621682244499"><span class="annot"><span class="annottext">pevalFdivTerm :: Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFdivTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFdivTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; FP eb sb -&gt; FP eb sb)
+-&gt; (Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term (FP eb sb))
+-&gt; Term (FP eb sb)
+-&gt; Term (FP eb sb)
+-&gt; Term (FP eb sb)
+forall a b c.
+(Typeable a, Typeable b, SupportedPrim c) =&gt;
+(a -&gt; b -&gt; c)
+-&gt; (Term a -&gt; Term b -&gt; Term c) -&gt; Term a -&gt; Term b -&gt; Term c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalBinaryUnfolded"><span class="hs-identifier hs-var">generalBinaryUnfolded</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; FP eb sb -&gt; FP eb sb
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(/)</span></span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+forall a. PEvalFractionalTerm a =&gt; Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fdivTerm"><span class="hs-identifier hs-var">fdivTerm</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span id="local-6989586621682244512"><span class="annot"><span class="annottext">pevalRecipTerm :: Term (FP eb sb) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRecipTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalRecipTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; FP eb sb)
+-&gt; (Term (FP eb sb) -&gt; Term (FP eb sb))
+-&gt; Term (FP eb sb)
+-&gt; Term (FP eb sb)
+forall a b.
+(Typeable a, SupportedPrim b) =&gt;
+(a -&gt; b) -&gt; (Term a -&gt; Term b) -&gt; Term a -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalUnaryUnfolded"><span class="hs-identifier hs-var">generalUnaryUnfolded</span></a></span><span> </span><span class="annot"><span class="annottext">FP eb sb -&gt; FP eb sb
+forall a. Fractional a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">recip</span></span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; Term (FP eb sb)
+forall a. PEvalFractionalTerm a =&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#recipTerm"><span class="hs-identifier hs-var">recipTerm</span></a></span><span>
+</span><span id="line-44"></span><span>  </span><span id="local-6989586621682244516"><span class="annot"><span class="annottext">withSbvFractionalTermConstraint :: forall r. (Fractional (SBVType (FP eb sb)) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFractionalTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvFractionalTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682244517"><span class="annot"><span class="annottext">Fractional (SBVType (FP eb sb)) =&gt; r
+</span><a href="#local-6989586621682244517"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244387"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244388"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
+Fractional (SBVType (FP eb sb)) =&gt; r
+(PrimConstraint (FP eb sb), SMTDefinable (SBVType (FP eb sb)),
+ Mergeable (SBVType (FP eb sb)), Typeable (SBVType (FP eb sb))) =&gt;
+r
+</span><a href="#local-6989586621682244517"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span id="local-6989586621682244420"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#pevalDefaultFdivTerm"><span class="hs-identifier hs-type">pevalDefaultFdivTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFractionalTerm"><span class="hs-identifier hs-type">PEvalFractionalTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244420"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682244420"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244420"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244420"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244420"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-48"></span><span id="pevalDefaultFdivTerm"><span class="annot"><span class="annottext">pevalDefaultFdivTerm :: forall a.
+(PEvalFractionalTerm a, Eq a) =&gt;
+Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#pevalDefaultFdivTerm"><span class="hs-identifier hs-var hs-var">pevalDefaultFdivTerm</span></a></span></span><span> </span><span id="local-6989586621682244539"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244539"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682244540"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244540"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-49"></span><span>  </span><span class="annot"><span class="annottext">Term a -&gt; ((SupportedPrim a, Typeable a) =&gt; Term a) -&gt; Term a
+forall t a. Term t -&gt; ((SupportedPrim t, Typeable t) =&gt; a) -&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#introSupportedPrimConstraint"><span class="hs-identifier hs-var">introSupportedPrimConstraint</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244539"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">(((SupportedPrim a, Typeable a) =&gt; Term a) -&gt; Term a)
+-&gt; ((SupportedPrim a, Typeable a) =&gt; Term a) -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="annottext">PartialRuleBinary a a a
+-&gt; TotalRuleBinary a a a -&gt; TotalRuleBinary a a a
+forall a b c.
+SupportedPrim c =&gt;
+PartialRuleBinary a b c
+-&gt; TotalRuleBinary a b c -&gt; TotalRuleBinary a b c
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#binaryUnfoldOnce"><span class="hs-identifier hs-var">binaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleBinary a a a
+forall a.
+(PEvalFractionalTerm a, Eq a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term a)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultFdivTerm"><span class="hs-identifier hs-var">doPevalDefaultFdivTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a a
+forall a. PEvalFractionalTerm a =&gt; Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fdivTerm"><span class="hs-identifier hs-var">fdivTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244539"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244540"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span id="local-6989586621682244433"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultFdivTerm"><span class="hs-identifier hs-type">doPevalDefaultFdivTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFractionalTerm"><span class="hs-identifier hs-type">PEvalFractionalTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244433"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682244433"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244433"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244433"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244433"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-54"></span><span id="doPevalDefaultFdivTerm"><span class="annot"><span class="annottext">doPevalDefaultFdivTerm :: forall a.
+(PEvalFractionalTerm a, Eq a) =&gt;
+Term a -&gt; Term a -&gt; Maybe (Term a)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultFdivTerm"><span class="hs-identifier hs-var hs-var">doPevalDefaultFdivTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682244555"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244555"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682244561"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244561"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244561"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Maybe (Term a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term a -&gt; Maybe (Term a)) -&gt; Term a -&gt; Maybe (Term a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244555"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244561"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-56"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultFdivTerm"><span class="hs-identifier hs-var">doPevalDefaultFdivTerm</span></a></span><span> </span><span id="local-6989586621682244563"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244563"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Maybe (Term a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244563"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-57"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultFdivTerm"><span class="hs-identifier hs-var">doPevalDefaultFdivTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span id="local-6989586621682244441"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#pevalDefaultRecipTerm"><span class="hs-identifier hs-type">pevalDefaultRecipTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFractionalTerm"><span class="hs-identifier hs-type">PEvalFractionalTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244441"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682244441"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244441"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244441"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-61"></span><span id="pevalDefaultRecipTerm"><span class="annot"><span class="annottext">pevalDefaultRecipTerm :: forall a. (PEvalFractionalTerm a, Eq a) =&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#pevalDefaultRecipTerm"><span class="hs-identifier hs-var hs-var">pevalDefaultRecipTerm</span></a></span></span><span> </span><span id="local-6989586621682244570"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244570"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-62"></span><span>  </span><span class="annot"><span class="annottext">Term a -&gt; ((SupportedPrim a, Typeable a) =&gt; Term a) -&gt; Term a
+forall t a. Term t -&gt; ((SupportedPrim t, Typeable t) =&gt; a) -&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#introSupportedPrimConstraint"><span class="hs-identifier hs-var">introSupportedPrimConstraint</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244570"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">(((SupportedPrim a, Typeable a) =&gt; Term a) -&gt; Term a)
+-&gt; ((SupportedPrim a, Typeable a) =&gt; Term a) -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><span class="annottext">PartialRuleUnary a a -&gt; TotalRuleUnary a a -&gt; TotalRuleUnary a a
+forall a b.
+SupportedPrim b =&gt;
+PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier hs-var">unaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a a
+forall a. (PEvalFractionalTerm a, Eq a) =&gt; Term a -&gt; Maybe (Term a)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultRecipTerm"><span class="hs-identifier hs-var">doPevalDefaultRecipTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a a
+forall a. PEvalFractionalTerm a =&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#recipTerm"><span class="hs-identifier hs-var">recipTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682244570"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span id="local-6989586621682244447"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultRecipTerm"><span class="hs-identifier hs-type">doPevalDefaultRecipTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFractionalTerm"><span class="hs-identifier hs-type">PEvalFractionalTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244447"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682244447"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244447"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682244447"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-67"></span><span id="doPevalDefaultRecipTerm"><span class="annot"><span class="annottext">doPevalDefaultRecipTerm :: forall a. (PEvalFractionalTerm a, Eq a) =&gt; Term a -&gt; Maybe (Term a)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultRecipTerm"><span class="hs-identifier hs-var hs-var">doPevalDefaultRecipTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682244587"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244587"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244587"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; Maybe (Term a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term a -&gt; Maybe (Term a)) -&gt; Term a -&gt; Maybe (Term a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Term a
+forall t. SupportedPrim t =&gt; t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Term a) -&gt; a -&gt; Term a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a
+forall a. Fractional a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">recip</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682244587"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-68"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#doPevalDefaultRecipTerm"><span class="hs-identifier hs-var">doPevalDefaultRecipTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682244595"><span id="local-6989586621682244599"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFractionalTerm"><span class="hs-identifier hs-type">PEvalFractionalTerm</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-71"></span><span>  </span><span id="local-6989586621682244604"><span class="annot"><span class="annottext">pevalFdivTerm :: Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFdivTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFdivTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
+forall a.
+(PEvalFractionalTerm a, Eq a) =&gt;
+Term a -&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#pevalDefaultFdivTerm"><span class="hs-identifier hs-var">pevalDefaultFdivTerm</span></a></span><span>
+</span><span id="line-72"></span><span>  </span><span id="local-6989586621682244607"><span class="annot"><span class="annottext">pevalRecipTerm :: Term AlgReal -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalRecipTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalRecipTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal
+forall a. (PEvalFractionalTerm a, Eq a) =&gt; Term a -&gt; Term a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm.html#pevalDefaultRecipTerm"><span class="hs-identifier hs-var">pevalDefaultRecipTerm</span></a></span><span>
+</span><span id="line-73"></span><span>  </span><span id="local-6989586621682244610"><span class="annot"><span class="annottext">withSbvFractionalTermConstraint :: forall r. (Fractional (SBVType AlgReal) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFractionalTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvFractionalTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682244611"><span class="annot"><span class="annottext">Fractional (SBVType AlgReal) =&gt; r
+</span><a href="#local-6989586621682244611"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+SupportedPrim t =&gt;
+((PrimConstraint t, SMTDefinable (SBVType t),
+  Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
+ a)
+-&gt; a
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="annot"><span class="annottext">r
+Fractional (SBVType AlgReal) =&gt; r
+(PrimConstraint AlgReal, SMTDefinable (SBVType AlgReal),
+ Mergeable (SBVType AlgReal), Typeable (SBVType AlgReal)) =&gt;
+r
+</span><a href="#local-6989586621682244611"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-74"></span></pre></body></html>

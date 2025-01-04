@@ -1,0 +1,58 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-missing-import-lists #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.PPrint</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2024</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.PPrint.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.PPrint</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Pretty printing</span></span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint"><span class="hs-identifier">PPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#docToTextWith"><span class="hs-identifier">docToTextWith</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#docToTextWithWidth"><span class="hs-identifier">docToTextWithWidth</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#docToText"><span class="hs-identifier">docToText</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatTextWith"><span class="hs-identifier">pformatTextWith</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatTextWithWidth"><span class="hs-identifier">pformatTextWithWidth</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatText"><span class="hs-identifier">pformatText</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pprint"><span class="hs-identifier">pprint</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint1"><span class="hs-identifier">PPrint1</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatPrec1"><span class="hs-identifier">pformatPrec1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatList1"><span class="hs-identifier">pformatList1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint2"><span class="hs-identifier">PPrint2</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatPrec2"><span class="hs-identifier">pformatPrec2</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatList2"><span class="hs-identifier">pformatList2</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Generic 'PPrint'</span></span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#genericPFormatPrec"><span class="hs-identifier">genericPFormatPrec</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#genericLiftPFormatPrec"><span class="hs-identifier">genericLiftPFormatPrec</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#genericPFormatList"><span class="hs-identifier">genericPFormatList</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#genericLiftPFormatList"><span class="hs-identifier">genericLiftPFormatList</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrintArgs"><span class="hs-identifier">PPrintArgs</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#GPPrint"><span class="hs-identifier">GPPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrintType"><span class="hs-identifier">PPrintType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Helpers</span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#groupedEnclose"><span class="hs-identifier">groupedEnclose</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#condEnclose"><span class="hs-identifier">condEnclose</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatWithConstructor"><span class="hs-identifier">pformatWithConstructor</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatWithConstructorNoAlign"><span class="hs-identifier">pformatWithConstructorNoAlign</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#viaShowsPrec"><span class="hs-identifier">viaShowsPrec</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Re-exports</span></span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><span class="hs-identifier">Prettyprinter</span></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span class="hs-keyword">where</span><span class="hs-cpp">
+
+#if MIN_VERSION_prettyprinter(1,7,0)
+</span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prettyprinter</span></span><span class="hs-cpp">
+#else
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data.Text.Prettyprint.Doc</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">Prettyprinter</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint</span></a></span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint.html"><span class="hs-identifier">Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span></pre></body></html>

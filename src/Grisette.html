@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- Disable this warning because we are re-exporting things.</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-missing-import-lists #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Module      :   Grisette</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2024</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.html"><span class="hs-identifier">Grisette</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="hs-comment">-- | Grisette is a tool for performing symbolic evaluation on programs. With</span><span>
+</span><span id="line-14"></span><span>    </span><span class="hs-comment">-- Grisette, you can construct your own symbolic DSL and obtain the symbolic</span><span>
+</span><span id="line-15"></span><span>    </span><span class="hs-comment">-- evaluator for it without manually implementing the symbolic evaluation</span><span>
+</span><span id="line-16"></span><span>    </span><span class="hs-comment">-- algorithms. A brief introduction to symbolic evaluation is available in</span><span>
+</span><span id="line-17"></span><span>    </span><span class="hs-comment">-- the &quot;Grisette.Core&quot; module.</span><span>
+</span><span id="line-18"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-19"></span><span>    </span><span class="hs-comment">-- This module exports most of the Grisette APIs. Additional lifted library</span><span>
+</span><span id="line-20"></span><span>    </span><span class="hs-comment">-- constructs are in the submodules of @Grisette.Lib@, which are not</span><span>
+</span><span id="line-21"></span><span>    </span><span class="hs-comment">-- exported here and should be imported explicitly. For example, to use</span><span>
+</span><span id="line-22"></span><span>    </span><span class="hs-comment">-- the lifted &quot;Data.List&quot; functions, you should import</span><span>
+</span><span id="line-23"></span><span>    </span><span class="hs-comment">-- &quot;Grisette.Lib.Data.List&quot; explicitly.</span><span>
+</span><span id="line-24"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-25"></span><span>    </span><span class="hs-comment">-- Grisette also provides an experimental API for unifying symbolic and</span><span>
+</span><span id="line-26"></span><span>    </span><span class="hs-comment">-- concrete code to avoid code duplication. This API is exported in the</span><span>
+</span><span id="line-27"></span><span>    </span><span class="hs-comment">-- &quot;Grisette.Unified&quot; module. The module should be imported qualified, as</span><span>
+</span><span id="line-28"></span><span>    </span><span class="hs-comment">-- it intentionally uses the same names as the &quot;Grisette&quot; module.</span><span>
+</span><span id="line-29"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-comment">-- The following shows a typical import list:</span><span>
+</span><span id="line-31"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-comment">-- &gt; import Grisette</span><span>
+</span><span id="line-33"></span><span>    </span><span class="hs-comment">-- &gt; import Grisette.Lib.Data.List</span><span>
+</span><span id="line-34"></span><span>    </span><span class="hs-comment">-- &gt; import qualified Grisette.Unified as U</span><span>
+</span><span id="line-35"></span><span>    </span><span class="hs-comment">-- &gt; import qualified Grisette.Unified.Lib.Data.List as U</span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-comment">-- Other highly experimental APIs are exported in &quot;Grisette.Experimental&quot;</span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-comment">-- and its submodules. These APIs are not stable, may be buggy and poorly</span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-comment">-- maintained, and do not follow the PVP rules.</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Core modules</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-comment">-- | This module exports the core operations for manipulating symbolic</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-comment">-- values.</span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Core.html"><span class="hs-identifier">Grisette.Core</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Symbolic primitives</span></span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><span class="hs-comment">-- | This module provides primitive types for symbolic evaluation.</span></span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.SymPrim.html"><span class="hs-identifier">Grisette.SymPrim</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Solver backend</span></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span>    </span><span class="annot"><span class="hs-comment">-- | This module provides the configuration of the solver backends.</span></span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Backend.html"><span class="hs-identifier">Grisette.Backend</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Core libraries</span></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="hs-comment">-- | This module exports the core lifted library constructs.</span></span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Lib.Base.html"><span class="hs-identifier">Grisette.Lib.Base</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Utils</span></span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-comment">-- | This module exports utility functions for working with size-tagged</span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-comment">-- types.</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Utils.html"><span class="hs-identifier">Grisette.Utils</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Template Haskell</span></span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-comment">-- | This module provides template haskell procedures that help with type</span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-comment">-- class derivation and constructing some smart constructors.</span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.TH.html"><span class="hs-identifier">Grisette.TH</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Backend.html"><span class="hs-identifier">Grisette.Backend</span></a></span><span>
+</span><span id="line-77"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Core.html"><span class="hs-identifier">Grisette.Core</span></a></span><span>
+</span><span id="line-78"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Lib.Base.html"><span class="hs-identifier">Grisette.Lib.Base</span></a></span><span>
+</span><span id="line-79"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.SymPrim.html"><span class="hs-identifier">Grisette.SymPrim</span></a></span><span>
+</span><span id="line-80"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.TH.html"><span class="hs-identifier">Grisette.TH</span></a></span><span>
+</span><span id="line-81"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Utils.html"><span class="hs-identifier">Grisette.Utils</span></a></span><span>
+</span><span id="line-82"></span></pre></body></html>

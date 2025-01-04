@@ -1,0 +1,500 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ExplicitNamespaces #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE MagicHash #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE PatternSynonyms #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE PolyKinds #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE UnboxedTuples #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE UnliftedFFITypes #-}</span><span>
+</span><span id="line-12"></span><span class="hs-pragma">{-# LANGUAGE ViewPatterns #-}</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Utils</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2024</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-18"></span><span class="hs-comment">--</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Utils</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#Dyn"><span class="hs-identifier">Dyn</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHetero"><span class="hs-identifier">cmpHetero</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHetero"><span class="hs-identifier">eqHetero</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHeteroRep"><span class="hs-identifier">cmpHeteroRep</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHeteroRep"><span class="hs-identifier">eqHeteroRep</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqTypeRepBool"><span class="hs-identifier">eqTypeRepBool</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier">WeakThreadId</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier">weakThreadId</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadIdRef"><span class="hs-identifier">WeakThreadIdRef</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#myWeakThreadId"><span class="hs-identifier">myWeakThreadId</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadRefAlive"><span class="hs-identifier">weakThreadRefAlive</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakThreadIdRefWithFinalizer"><span class="hs-identifier">mkWeakThreadIdRefWithFinalizer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#addStableNameFinalizer"><span class="hs-identifier">addStableNameFinalizer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#addThreadIdFinalizer"><span class="hs-identifier">addThreadIdFinalizer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakStableNameRefWithFinalizer"><span class="hs-identifier">mkWeakStableNameRefWithFinalizer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier">SomeStableName</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakSomeStableNameRefWithFinalizer"><span class="hs-identifier">mkWeakSomeStableNameRefWithFinalizer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakSomeStableNameRef"><span class="hs-identifier">mkWeakSomeStableNameRef</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">where</span><span class="hs-cpp">
+
+#if MIN_VERSION_base(4,19,0)
+</span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Conc.Sync</span></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">ThreadId</span></span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ThreadId</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><span class="hs-identifier">ThreadStatus</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ThreadDied</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ThreadFinished</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="hs-identifier">fromThreadId</span></span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><span class="hs-identifier">myThreadId</span></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="hs-identifier">threadStatus</span></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Exts</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">mkWeak#</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">mkWeakNoFinalizer#</span></span><span class="hs-special">)</span><span class="hs-cpp">
+#else
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">GHC.Conc</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="hs-identifier">ThreadId</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">ThreadId</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-identifier">ThreadStatus</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">ThreadDied</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">ThreadFinished</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-identifier">myThreadId</span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-identifier">threadStatus</span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">GHC.Exts</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">Addr#</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">ThreadId#</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">unsafeCoerce#</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">mkWeak#</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">mkWeakNoFinalizer#</span><span class="hs-special">)</span><span class="hs-cpp">
+#if __GLASGOW_HASKELL__ &gt;= 904
+</span><span class="hs-cpp">#elif __GLASGOW_HASKELL__ &gt;= 900
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Foreign.C.Types</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">CLong</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">CLong</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-cpp">
+#else
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Foreign.C.Types</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">CInt</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">CInt</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span class="hs-cpp">#endif
+</span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Typeable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">cast</span></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IO</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.StableName</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">StableName</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">StableName</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">eqStableName</span></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Weak</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Weak</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Weak</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Mem.Weak</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">deRefWeak</span></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Type.Reflection</span></span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">TypeRep</span></span><span class="hs-special">,</span><span>
+</span><span id="line-76"></span><span>    </span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">,</span><span>
+</span><span id="line-77"></span><span>    </span><span class="annot"><span class="hs-identifier">eqTypeRep</span></span><span class="hs-special">,</span><span>
+</span><span id="line-78"></span><span>    </span><span class="annot"><span class="hs-identifier">typeRep</span></span><span class="hs-special">,</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(:~~:)</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HRefl</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="annot"><span class="hs-comment">-- | Pattern synonym for dynamic type casting.</span></span><span>
+</span><span id="line-83"></span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#Dyn"><span class="hs-identifier hs-type">Dyn</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621682213282"><span id="local-6989586621682213283"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682213282"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682213283"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213282"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213283"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-84"></span><span class="hs-keyword">pattern</span><span> </span><span id="Dyn"><span id="%24mDyn"><span class="annot"><span class="annottext">$mDyn :: forall {r} {a} {b}.
+(Typeable a, Typeable b) =&gt;
+b -&gt; (a -&gt; r) -&gt; ((# #) -&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#Dyn"><span class="hs-identifier hs-var hs-var">Dyn</span></a></span></span></span><span> </span><span class="annot"><a href="#local-6989586621682213399"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">cast</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682213399"><span class="annot"><a href="#local-6989586621682213399"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="hs-comment">-- | Compare two values of different types, resolve the type equality using the</span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- type representation.</span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHeteroRep"><span class="hs-identifier hs-type">cmpHeteroRep</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213289"><span class="annot"><a href="#local-6989586621682213289"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682213290"><span class="annot"><a href="#local-6989586621682213290"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeRep</span></span><span> </span><span class="annot"><a href="#local-6989586621682213289"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeRep</span></span><span> </span><span class="annot"><a href="#local-6989586621682213290"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682213289"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213289"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213289"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213290"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-89"></span><span id="cmpHeteroRep"><span class="annot"><span class="annottext">cmpHeteroRep :: forall a b.
+TypeRep a -&gt; TypeRep b -&gt; (a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHeteroRep"><span class="hs-identifier hs-var hs-var">cmpHeteroRep</span></a></span></span><span> </span><span id="local-6989586621682213402"><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621682213402"><span class="hs-identifier hs-var">ta</span></a></span></span><span> </span><span id="local-6989586621682213403"><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621682213403"><span class="hs-identifier hs-var">tb</span></a></span></span><span> </span><span id="local-6989586621682213404"><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621682213404"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682213405"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682213405"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682213406"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682213406"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TypeRep a -&gt; TypeRep b -&gt; Maybe (a :~~: b)
+forall k1 k2 (a :: k1) (b :: k2).
+TypeRep a -&gt; TypeRep b -&gt; Maybe (a :~~: b)
+</span><span class="hs-identifier hs-var">eqTypeRep</span></span><span> </span><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621682213402"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621682213403"><span class="hs-identifier hs-var">tb</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">a :~~: b
+</span><span class="hs-identifier hs-var">HRefl</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621682213404"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682213405"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a
+b
+</span><a href="#local-6989586621682213406"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><span class="annottext">Maybe (a :~~: b)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-92"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHeteroRep"><span class="hs-pragma hs-type">cmpHeteroRep</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="annot"><span class="hs-comment">-- | Compare two values of different types.</span></span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHetero"><span class="hs-identifier hs-type">cmpHetero</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213298"><span class="annot"><a href="#local-6989586621682213298"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682213299"><span class="annot"><a href="#local-6989586621682213299"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682213298"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682213299"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682213298"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213298"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213298"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213299"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-96"></span><span id="cmpHetero"><span class="annot"><span class="annottext">cmpHetero :: forall a b.
+(Typeable a, Typeable b) =&gt;
+(a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHetero"><span class="hs-identifier hs-var hs-var">cmpHetero</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TypeRep a -&gt; TypeRep b -&gt; (a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+forall a b.
+TypeRep a -&gt; TypeRep b -&gt; (a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHeteroRep"><span class="hs-identifier hs-var">cmpHeteroRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Typeable a =&gt; TypeRep a
+forall {k} (a :: k). Typeable a =&gt; TypeRep a
+</span><span class="hs-identifier hs-var">typeRep</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682213298"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Typeable a =&gt; TypeRep a
+forall {k} (a :: k). Typeable a =&gt; TypeRep a
+</span><span class="hs-identifier hs-var">typeRep</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682213299"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHetero"><span class="hs-pragma hs-type">cmpHetero</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="annot"><span class="hs-comment">-- | Compare two values of different types for equality.</span></span><span>
+</span><span id="line-100"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHetero"><span class="hs-identifier hs-type">eqHetero</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213304"><span class="annot"><a href="#local-6989586621682213304"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682213305"><span class="annot"><a href="#local-6989586621682213305"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682213304"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682213305"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682213304"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213304"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213305"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-101"></span><span id="eqHetero"><span class="annot"><span class="annottext">eqHetero :: forall a b. (Typeable a, Typeable b, Eq a) =&gt; a -&gt; b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHetero"><span class="hs-identifier hs-var hs-var">eqHetero</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+forall a b.
+(Typeable a, Typeable b) =&gt;
+(a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHetero"><span class="hs-identifier hs-var">cmpHetero</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">(==)</span></span><span>
+</span><span id="line-102"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHetero"><span class="hs-pragma hs-type">eqHetero</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- | Compare two values of different types for equality, resolve the type</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- equality using the type representation.</span><span>
+</span><span id="line-106"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHeteroRep"><span class="hs-identifier hs-type">eqHeteroRep</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213309"><span class="annot"><a href="#local-6989586621682213309"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682213310"><span class="annot"><a href="#local-6989586621682213310"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621682213309"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeRep</span></span><span> </span><span class="annot"><a href="#local-6989586621682213309"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeRep</span></span><span> </span><span class="annot"><a href="#local-6989586621682213310"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213309"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213310"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-107"></span><span id="eqHeteroRep"><span class="annot"><span class="annottext">eqHeteroRep :: forall a b. Eq a =&gt; TypeRep a -&gt; TypeRep b -&gt; a -&gt; b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHeteroRep"><span class="hs-identifier hs-var hs-var">eqHeteroRep</span></a></span></span><span> </span><span id="local-6989586621682213421"><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621682213421"><span class="hs-identifier hs-var">ta</span></a></span></span><span> </span><span id="local-6989586621682213422"><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621682213422"><span class="hs-identifier hs-var">tb</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TypeRep a -&gt; TypeRep b -&gt; (a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+forall a b.
+TypeRep a -&gt; TypeRep b -&gt; (a -&gt; a -&gt; Bool) -&gt; a -&gt; b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#cmpHeteroRep"><span class="hs-identifier hs-var">cmpHeteroRep</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621682213421"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621682213422"><span class="hs-identifier hs-var">tb</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">(==)</span></span><span>
+</span><span id="line-108"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqHeteroRep"><span class="hs-pragma hs-type">eqHeteroRep</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="annot"><span class="hs-comment">-- | Compare two type representations for equality.</span></span><span>
+</span><span id="line-111"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqTypeRepBool"><span class="hs-identifier hs-type">eqTypeRepBool</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213313"><span class="annot"><a href="#local-6989586621682213313"><span class="hs-identifier hs-type">ka</span></a></span></span><span> </span><span id="local-6989586621682213314"><span class="annot"><a href="#local-6989586621682213314"><span class="hs-identifier hs-type">kb</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682213315"><span class="annot"><a href="#local-6989586621682213315"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682213313"><span class="hs-identifier hs-type">ka</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682213316"><span class="annot"><a href="#local-6989586621682213316"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682213314"><span class="hs-identifier hs-type">kb</span></a></span><span class="hs-special">)</span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeRep</span></span><span> </span><span class="annot"><a href="#local-6989586621682213315"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeRep</span></span><span> </span><span class="annot"><a href="#local-6989586621682213316"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-112"></span><span id="eqTypeRepBool"><span class="annot"><span class="annottext">eqTypeRepBool :: forall ka kb (a :: ka) (b :: kb). TypeRep a -&gt; TypeRep b -&gt; Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqTypeRepBool"><span class="hs-identifier hs-var hs-var">eqTypeRepBool</span></a></span></span><span> </span><span id="local-6989586621682213423"><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621682213423"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682213424"><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621682213424"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TypeRep a -&gt; TypeRep b -&gt; Maybe (a :~~: b)
+forall k1 k2 (a :: k1) (b :: k2).
+TypeRep a -&gt; TypeRep b -&gt; Maybe (a :~~: b)
+</span><span class="hs-identifier hs-var">eqTypeRep</span></span><span> </span><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621682213423"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621682213424"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">a :~~: b
+</span><span class="hs-identifier hs-var">HRefl</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-114"></span><span>  </span><span class="annot"><span class="annottext">Maybe (a :~~: b)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-115"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#eqTypeRepBool"><span class="hs-pragma hs-type">eqTypeRepBool</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- | A weak identifier to a thread id that doesn't prevent its garbage</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- collection.</span><span>
+</span><span id="line-119"></span><span class="hs-keyword">type</span><span> </span><span id="WeakThreadId"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-var">WeakThreadId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- | A weak reference to a thread id that doesn't prevent its garbage</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- collection.</span><span>
+</span><span id="line-123"></span><span class="hs-keyword">type</span><span> </span><span id="WeakThreadIdRef"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadIdRef"><span class="hs-identifier hs-var">WeakThreadIdRef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Weak</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-pragma hs-type">weakThreadId</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-126"></span><span>
+</span><span id="line-127"></span><span class="annot"><span class="hs-comment">-- | Get an id of a thread that doesn't prevent its garbage collection.</span></span><span>
+</span><span id="line-128"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-type">weakThreadId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span class="hs-cpp">
+#if MIN_VERSION_base(4,19,0)
+</span><span id="weakThreadId"><span class="annot"><span class="annottext">weakThreadId :: ThreadId -&gt; Word64
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-var hs-var">weakThreadId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ThreadId -&gt; Word64
+</span><span class="hs-identifier hs-var">fromThreadId</span></span><span class="hs-cpp">
+#else
+</span><span class="hs-cpp">#if __GLASGOW_HASKELL__ &gt;= 904
+</span><span class="hs-identifier">weakThreadId</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">ThreadId</span><span> </span><span class="hs-identifier">t#</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">rts_getThreadId</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">threadIdToAddr#</span><span> </span><span class="hs-identifier">t#</span><span class="hs-special">)</span><span class="hs-cpp">
+#else
+</span><span class="hs-identifier">weakThreadId</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">ThreadId</span><span> </span><span class="hs-identifier">t#</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">fromIntegral</span><span> </span><span class="hs-operator">$</span><span> </span><span class="hs-identifier">rts_getThreadId</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">threadIdToAddr#</span><span> </span><span class="hs-identifier">t#</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-138"></span><span class="hs-keyword">foreign</span><span> </span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">ccall</span><span> </span><span class="hs-keyword">unsafe</span><span> </span><span class="hs-string">&quot;rts_getThreadId&quot;</span><span class="hs-cpp">
+#if __GLASGOW_HASKELL__ &gt;= 904
+</span><span>  </span><span class="hs-comment">-- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163</span><span>
+</span><span id="line-141"></span><span>  </span><span class="hs-identifier">rts_getThreadId</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier">Addr#</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">Word64</span><span class="hs-cpp">
+#elif __GLASGOW_HASKELL__ &gt;= 900
+</span><span>  </span><span class="hs-comment">-- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/1254</span><span>
+</span><span id="line-144"></span><span>  </span><span class="hs-identifier">rts_getThreadId</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier">Addr#</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">CLong</span><span class="hs-cpp">
+#else
+</span><span>  </span><span class="hs-identifier">rts_getThreadId</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier">Addr#</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">CInt</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-149"></span><span class="hs-comment">-- Note: FFI imports take Addr# instead of ThreadId# because of</span><span>
+</span><span id="line-150"></span><span class="hs-comment">-- https://gitlab.haskell.org/ghc/ghc/-/issues/8281, which would prevent loading</span><span>
+</span><span id="line-151"></span><span class="hs-comment">-- effectful-core into GHCi.</span><span>
+</span><span id="line-152"></span><span class="hs-comment">--</span><span>
+</span><span id="line-153"></span><span class="hs-comment">-- Previous workaround was to use an internal library with just this module, but</span><span>
+</span><span id="line-154"></span><span class="hs-comment">-- this is not viable because of bugs in stack (sigh).</span><span>
+</span><span id="line-155"></span><span class="hs-comment">--</span><span>
+</span><span id="line-156"></span><span class="hs-comment">-- The coercion is fine because GHC represents ThreadId# as a pointer.</span><span>
+</span><span id="line-157"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="hs-pragma">threadIdToAddr#</span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-158"></span><span class="hs-identifier">threadIdToAddr#</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier">ThreadId#</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">Addr#</span><span>
+</span><span id="line-159"></span><span class="hs-identifier">threadIdToAddr#</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">unsafeCoerce#</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-162"></span><span class="annot"><span class="hs-comment">-- | Get a weak identifier to the current thread id.</span></span><span>
+</span><span id="line-163"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#myWeakThreadId"><span class="hs-identifier hs-type">myWeakThreadId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-type">WeakThreadId</span></a></span><span>
+</span><span id="line-164"></span><span id="myWeakThreadId"><span class="annot"><span class="annottext">myWeakThreadId :: IO Word64
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#myWeakThreadId"><span class="hs-identifier hs-var hs-var">myWeakThreadId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ThreadId -&gt; Word64
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-var">weakThreadId</span></a></span><span> </span><span class="annot"><span class="annottext">(ThreadId -&gt; Word64) -&gt; IO ThreadId -&gt; IO Word64
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">IO ThreadId
+</span><span class="hs-identifier hs-var">myThreadId</span></span><span>
+</span><span id="line-165"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#myWeakThreadId"><span class="hs-pragma hs-type">myWeakThreadId</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-166"></span><span>
+</span><span id="line-167"></span><span class="annot"><span class="hs-comment">-- | Check if a weak reference to a thread id is still alive.</span></span><span>
+</span><span id="line-168"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadRefAlive"><span class="hs-identifier hs-type">weakThreadRefAlive</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadIdRef"><span class="hs-identifier hs-type">WeakThreadIdRef</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-169"></span><span id="weakThreadRefAlive"><span class="annot"><span class="annottext">weakThreadRefAlive :: WeakThreadIdRef -&gt; IO Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadRefAlive"><span class="hs-identifier hs-var hs-var">weakThreadRefAlive</span></a></span></span><span> </span><span id="local-6989586621682213428"><span class="annot"><span class="annottext">WeakThreadIdRef
+</span><a href="#local-6989586621682213428"><span class="hs-identifier hs-var">wtid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-170"></span><span>  </span><span id="local-6989586621682213429"><span class="annot"><a href="#local-6989586621682213429"><span class="hs-identifier hs-var">tid</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">WeakThreadIdRef -&gt; IO (Maybe ThreadId)
+forall v. Weak v -&gt; IO (Maybe v)
+</span><span class="hs-identifier hs-var">deRefWeak</span></span><span> </span><span class="annot"><span class="annottext">WeakThreadIdRef
+</span><a href="#local-6989586621682213428"><span class="hs-identifier hs-var">wtid</span></a></span><span>
+</span><span id="line-171"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621682213429"><span class="hs-identifier hs-type">tid</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-172"></span><span>    </span><span class="annot"><span class="annottext">Maybe ThreadId
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; IO Bool
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-173"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682213430"><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213430"><span class="hs-identifier hs-var">tid</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-174"></span><span>      </span><span id="local-6989586621682213431"><span class="annot"><a href="#local-6989586621682213431"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ThreadId -&gt; IO ThreadStatus
+</span><span class="hs-identifier hs-var">threadStatus</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213430"><span class="hs-identifier hs-var">tid</span></a></span><span>
+</span><span id="line-175"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="#local-6989586621682213431"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">`notElem`</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">ThreadFinished</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadDied</span></span><span class="hs-special">]</span><span>
+</span><span id="line-176"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadRefAlive"><span class="hs-pragma hs-type">weakThreadRefAlive</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-177"></span><span>
+</span><span id="line-178"></span><span class="annot"><span class="hs-comment">-- | Create a weak reference to a thread id with a finalizer.</span></span><span>
+</span><span id="line-179"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakThreadIdRefWithFinalizer"><span class="hs-identifier hs-type">mkWeakThreadIdRefWithFinalizer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Weak</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span class="hs-special">)</span><span>
+</span><span id="line-180"></span><span id="mkWeakThreadIdRefWithFinalizer"><span class="annot"><span class="annottext">mkWeakThreadIdRefWithFinalizer :: ThreadId -&gt; IO () -&gt; IO WeakThreadIdRef
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakThreadIdRefWithFinalizer"><span class="hs-identifier hs-var hs-var">mkWeakThreadIdRefWithFinalizer</span></a></span></span><span> </span><span id="local-6989586621682213433"><span class="annot"><span class="annottext">t :: ThreadId
+</span><a href="#local-6989586621682213433"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span> </span><span id="local-6989586621682213434"><span class="annot"><span class="annottext">ThreadId#
+</span><a href="#local-6989586621682213434"><span class="hs-identifier hs-var">t#</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span id="local-6989586621682213435"><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213435"><span class="hs-identifier hs-var">finalizer</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(State# RealWorld -&gt; (# State# RealWorld, WeakThreadIdRef #))
+-&gt; IO WeakThreadIdRef
+forall a. (State# RealWorld -&gt; (# State# RealWorld, a #)) -&gt; IO a
+</span><span class="hs-identifier hs-var">IO</span></span><span> </span><span class="annot"><span class="annottext">((State# RealWorld -&gt; (# State# RealWorld, WeakThreadIdRef #))
+ -&gt; IO WeakThreadIdRef)
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, WeakThreadIdRef #))
+-&gt; IO WeakThreadIdRef
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682213436"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213436"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-181"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ThreadId#
+-&gt; ThreadId
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, () #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# ThreadId #)
+forall a b c.
+a
+-&gt; b
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, c #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# b #)
+</span><span class="hs-identifier hs-var">mkWeak#</span></span><span> </span><span class="annot"><span class="annottext">ThreadId#
+</span><a href="#local-6989586621682213434"><span class="hs-identifier hs-var">t#</span></a></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213433"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213435"><span class="hs-identifier hs-var">finalizer</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213436"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-182"></span><span>    </span><span class="hs-special">(#</span><span> </span><span id="local-6989586621682213437"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213437"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213438"><span class="annot"><span class="annottext">Weak# ThreadId
+</span><a href="#local-6989586621682213438"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-special">#)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(#</span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213437"><span class="hs-identifier hs-var">s1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Weak# ThreadId -&gt; WeakThreadIdRef
+forall v. Weak# v -&gt; Weak v
+</span><span class="hs-identifier hs-var">Weak</span></span><span> </span><span class="annot"><span class="annottext">Weak# ThreadId
+</span><a href="#local-6989586621682213438"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-special">#)</span><span>
+</span><span id="line-183"></span><span>
+</span><span id="line-184"></span><span class="annot"><span class="hs-comment">-- | Add a finalizer to a thread id.</span></span><span>
+</span><span id="line-185"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#addThreadIdFinalizer"><span class="hs-identifier hs-type">addThreadIdFinalizer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-186"></span><span id="addThreadIdFinalizer"><span class="annot"><span class="annottext">addThreadIdFinalizer :: ThreadId -&gt; IO () -&gt; IO ()
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#addThreadIdFinalizer"><span class="hs-identifier hs-var hs-var">addThreadIdFinalizer</span></a></span></span><span> </span><span id="local-6989586621682213439"><span class="annot"><span class="annottext">t :: ThreadId
+</span><a href="#local-6989586621682213439"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span> </span><span id="local-6989586621682213440"><span class="annot"><span class="annottext">ThreadId#
+</span><a href="#local-6989586621682213440"><span class="hs-identifier hs-var">t#</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span id="local-6989586621682213441"><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213441"><span class="hs-identifier hs-var">finalizer</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(State# RealWorld -&gt; (# State# RealWorld, () #)) -&gt; IO ()
+forall a. (State# RealWorld -&gt; (# State# RealWorld, a #)) -&gt; IO a
+</span><span class="hs-identifier hs-var">IO</span></span><span> </span><span class="annot"><span class="annottext">((State# RealWorld -&gt; (# State# RealWorld, () #)) -&gt; IO ())
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, () #)) -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682213442"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213442"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-187"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ThreadId#
+-&gt; ThreadId
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, () #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# ThreadId #)
+forall a b c.
+a
+-&gt; b
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, c #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# b #)
+</span><span class="hs-identifier hs-var">mkWeak#</span></span><span> </span><span class="annot"><span class="annottext">ThreadId#
+</span><a href="#local-6989586621682213440"><span class="hs-identifier hs-var">t#</span></a></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213439"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213441"><span class="hs-identifier hs-var">finalizer</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213442"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-188"></span><span>    </span><span class="hs-special">(#</span><span> </span><span id="local-6989586621682213443"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213443"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Weak# ThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">#)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(#</span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213443"><span class="hs-identifier hs-var">s1</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-special">#)</span><span>
+</span><span id="line-189"></span><span>
+</span><span id="line-190"></span><span class="annot"><span class="hs-comment">-- | Create a weak reference to a stable name with a finalizer.</span></span><span>
+</span><span id="line-191"></span><span id="local-6989586621682213343"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakStableNameRefWithFinalizer"><span class="hs-identifier hs-type">mkWeakStableNameRefWithFinalizer</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-192"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span class="annot"><a href="#local-6989586621682213343"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Weak</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span class="annot"><a href="#local-6989586621682213343"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-193"></span><span id="mkWeakStableNameRefWithFinalizer"><span class="annot"><span class="annottext">mkWeakStableNameRefWithFinalizer :: forall a. StableName a -&gt; IO () -&gt; IO (Weak (StableName a))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakStableNameRefWithFinalizer"><span class="hs-identifier hs-var hs-var">mkWeakStableNameRefWithFinalizer</span></a></span></span><span> </span><span id="local-6989586621682213444"><span class="annot"><span class="annottext">t :: StableName a
+</span><a href="#local-6989586621682213444"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span id="local-6989586621682213445"><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213445"><span class="hs-identifier hs-var">t#</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span id="local-6989586621682213446"><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213446"><span class="hs-identifier hs-var">finalizer</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(State# RealWorld -&gt; (# State# RealWorld, Weak (StableName a) #))
+-&gt; IO (Weak (StableName a))
+forall a. (State# RealWorld -&gt; (# State# RealWorld, a #)) -&gt; IO a
+</span><span class="hs-identifier hs-var">IO</span></span><span> </span><span class="annot"><span class="annottext">((State# RealWorld -&gt; (# State# RealWorld, Weak (StableName a) #))
+ -&gt; IO (Weak (StableName a)))
+-&gt; (State# RealWorld
+    -&gt; (# State# RealWorld, Weak (StableName a) #))
+-&gt; IO (Weak (StableName a))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682213447"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213447"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-194"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">StableName# a
+-&gt; StableName a
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, () #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# (StableName a) #)
+forall a b c.
+a
+-&gt; b
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, c #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# b #)
+</span><span class="hs-identifier hs-var">mkWeak#</span></span><span> </span><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213445"><span class="hs-identifier hs-var">t#</span></a></span><span> </span><span class="annot"><span class="annottext">StableName a
+</span><a href="#local-6989586621682213444"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213446"><span class="hs-identifier hs-var">finalizer</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213447"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-195"></span><span>    </span><span class="hs-special">(#</span><span> </span><span id="local-6989586621682213448"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213448"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213449"><span class="annot"><span class="annottext">Weak# (StableName a)
+</span><a href="#local-6989586621682213449"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-special">#)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(#</span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213448"><span class="hs-identifier hs-var">s1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Weak# (StableName a) -&gt; Weak (StableName a)
+forall v. Weak# v -&gt; Weak v
+</span><span class="hs-identifier hs-var">Weak</span></span><span> </span><span class="annot"><span class="annottext">Weak# (StableName a)
+</span><a href="#local-6989586621682213449"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-special">#)</span><span>
+</span><span id="line-196"></span><span>
+</span><span id="line-197"></span><span class="annot"><span class="hs-comment">-- | Add a finalizer to a stable name.</span></span><span>
+</span><span id="line-198"></span><span id="local-6989586621682213346"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#addStableNameFinalizer"><span class="hs-identifier hs-type">addStableNameFinalizer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span class="annot"><a href="#local-6989586621682213346"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-199"></span><span id="addStableNameFinalizer"><span class="annot"><span class="annottext">addStableNameFinalizer :: forall a. StableName a -&gt; IO () -&gt; IO ()
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#addStableNameFinalizer"><span class="hs-identifier hs-var hs-var">addStableNameFinalizer</span></a></span></span><span> </span><span id="local-6989586621682213450"><span class="annot"><span class="annottext">t :: StableName a
+</span><a href="#local-6989586621682213450"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span id="local-6989586621682213451"><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213451"><span class="hs-identifier hs-var">t#</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span id="local-6989586621682213452"><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213452"><span class="hs-identifier hs-var">finalizer</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(State# RealWorld -&gt; (# State# RealWorld, () #)) -&gt; IO ()
+forall a. (State# RealWorld -&gt; (# State# RealWorld, a #)) -&gt; IO a
+</span><span class="hs-identifier hs-var">IO</span></span><span> </span><span class="annot"><span class="annottext">((State# RealWorld -&gt; (# State# RealWorld, () #)) -&gt; IO ())
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, () #)) -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682213453"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213453"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-200"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">StableName# a
+-&gt; StableName a
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, () #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# (StableName a) #)
+forall a b c.
+a
+-&gt; b
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, c #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# b #)
+</span><span class="hs-identifier hs-var">mkWeak#</span></span><span> </span><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213451"><span class="hs-identifier hs-var">t#</span></a></span><span> </span><span class="annot"><span class="annottext">StableName a
+</span><a href="#local-6989586621682213450"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213452"><span class="hs-identifier hs-var">finalizer</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213453"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-201"></span><span>    </span><span class="hs-special">(#</span><span> </span><span id="local-6989586621682213454"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213454"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Weak# (StableName a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">#)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(#</span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213454"><span class="hs-identifier hs-var">s1</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-special">#)</span><span>
+</span><span id="line-202"></span><span>
+</span><span id="line-203"></span><span class="annot"><span class="hs-comment">-- | A type-erased stable name.</span></span><span>
+</span><span id="line-204"></span><span class="hs-keyword">data</span><span> </span><span id="SomeStableName"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-var">SomeStableName</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-205"></span><span>  </span><span id="local-6989586621682213455"><span id="SomeStableName"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-var">SomeStableName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span class="annot"><a href="#local-6989586621682213455"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span></span><span>
+</span><span id="line-206"></span><span>
+</span><span id="line-207"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682213459"><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-208"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span> </span><span id="local-6989586621682213463"><span class="annot"><span class="annottext">StableName a
+</span><a href="#local-6989586621682213463"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682213464"><span class="annot"><span class="annottext">== :: SomeStableName -&gt; SomeStableName -&gt; Bool
+</span><span class="hs-operator hs-var hs-var hs-var">==</span></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span> </span><span id="local-6989586621682213465"><span class="annot"><span class="annottext">StableName a
+</span><a href="#local-6989586621682213465"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StableName a -&gt; StableName a -&gt; Bool
+forall a b. StableName a -&gt; StableName b -&gt; Bool
+</span><span class="hs-identifier hs-var">eqStableName</span></span><span> </span><span class="annot"><span class="annottext">StableName a
+</span><a href="#local-6989586621682213463"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">StableName a
+</span><a href="#local-6989586621682213465"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-209"></span><span>
+</span><span id="line-210"></span><span class="annot"><span class="hs-comment">-- | Create a weak reference to a stable name.</span></span><span>
+</span><span id="line-211"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakSomeStableNameRef"><span class="hs-identifier hs-type">mkWeakSomeStableNameRef</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Weak</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-212"></span><span id="mkWeakSomeStableNameRef"><span class="annot"><span class="annottext">mkWeakSomeStableNameRef :: SomeStableName -&gt; IO (Weak SomeStableName)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakSomeStableNameRef"><span class="hs-identifier hs-var hs-var">mkWeakSomeStableNameRef</span></a></span></span><span> </span><span id="local-6989586621682213466"><span class="annot"><span class="annottext">t :: SomeStableName
+</span><a href="#local-6989586621682213466"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span id="local-6989586621682213467"><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213467"><span class="hs-identifier hs-var">t#</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(State# RealWorld -&gt; (# State# RealWorld, Weak SomeStableName #))
+-&gt; IO (Weak SomeStableName)
+forall a. (State# RealWorld -&gt; (# State# RealWorld, a #)) -&gt; IO a
+</span><span class="hs-identifier hs-var">IO</span></span><span> </span><span class="annot"><span class="annottext">((State# RealWorld -&gt; (# State# RealWorld, Weak SomeStableName #))
+ -&gt; IO (Weak SomeStableName))
+-&gt; (State# RealWorld
+    -&gt; (# State# RealWorld, Weak SomeStableName #))
+-&gt; IO (Weak SomeStableName)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682213468"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213468"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-213"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">StableName# a
+-&gt; SomeStableName
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# SomeStableName #)
+forall a b.
+a -&gt; b -&gt; State# RealWorld -&gt; (# State# RealWorld, Weak# b #)
+</span><span class="hs-identifier hs-var">mkWeakNoFinalizer#</span></span><span> </span><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213467"><span class="hs-identifier hs-var">t#</span></a></span><span> </span><span class="annot"><span class="annottext">SomeStableName
+</span><a href="#local-6989586621682213466"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213468"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-214"></span><span>    </span><span class="hs-special">(#</span><span> </span><span id="local-6989586621682213469"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213469"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213470"><span class="annot"><span class="annottext">Weak# SomeStableName
+</span><a href="#local-6989586621682213470"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-special">#)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(#</span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213469"><span class="hs-identifier hs-var">s1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Weak# SomeStableName -&gt; Weak SomeStableName
+forall v. Weak# v -&gt; Weak v
+</span><span class="hs-identifier hs-var">Weak</span></span><span> </span><span class="annot"><span class="annottext">Weak# SomeStableName
+</span><a href="#local-6989586621682213470"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-special">#)</span><span>
+</span><span id="line-215"></span><span>
+</span><span id="line-216"></span><span class="annot"><span class="hs-comment">-- | Create a weak reference to a stable name with a finalizer.</span></span><span>
+</span><span id="line-217"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakSomeStableNameRefWithFinalizer"><span class="hs-identifier hs-type">mkWeakSomeStableNameRefWithFinalizer</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-218"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Weak</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-219"></span><span id="mkWeakSomeStableNameRefWithFinalizer"><span class="annot"><span class="annottext">mkWeakSomeStableNameRefWithFinalizer :: SomeStableName -&gt; IO () -&gt; IO (Weak SomeStableName)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakSomeStableNameRefWithFinalizer"><span class="hs-identifier hs-var hs-var">mkWeakSomeStableNameRefWithFinalizer</span></a></span></span><span>
+</span><span id="line-220"></span><span>  </span><span id="local-6989586621682213471"><span class="annot"><span class="annottext">t :: SomeStableName
+</span><a href="#local-6989586621682213471"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier hs-type">SomeStableName</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span id="local-6989586621682213472"><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213472"><span class="hs-identifier hs-var">t#</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-221"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span id="local-6989586621682213473"><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213473"><span class="hs-identifier hs-var">finalizer</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(State# RealWorld -&gt; (# State# RealWorld, Weak SomeStableName #))
+-&gt; IO (Weak SomeStableName)
+forall a. (State# RealWorld -&gt; (# State# RealWorld, a #)) -&gt; IO a
+</span><span class="hs-identifier hs-var">IO</span></span><span> </span><span class="annot"><span class="annottext">((State# RealWorld -&gt; (# State# RealWorld, Weak SomeStableName #))
+ -&gt; IO (Weak SomeStableName))
+-&gt; (State# RealWorld
+    -&gt; (# State# RealWorld, Weak SomeStableName #))
+-&gt; IO (Weak SomeStableName)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682213474"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213474"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-222"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">StableName# a
+-&gt; SomeStableName
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, () #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# SomeStableName #)
+forall a b c.
+a
+-&gt; b
+-&gt; (State# RealWorld -&gt; (# State# RealWorld, c #))
+-&gt; State# RealWorld
+-&gt; (# State# RealWorld, Weak# b #)
+</span><span class="hs-identifier hs-var">mkWeak#</span></span><span> </span><span class="annot"><span class="annottext">StableName# a
+</span><a href="#local-6989586621682213472"><span class="hs-identifier hs-var">t#</span></a></span><span> </span><span class="annot"><span class="annottext">SomeStableName
+</span><a href="#local-6989586621682213471"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld -&gt; (# State# RealWorld, () #)
+</span><a href="#local-6989586621682213473"><span class="hs-identifier hs-var">finalizer</span></a></span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213474"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-223"></span><span>      </span><span class="hs-special">(#</span><span> </span><span id="local-6989586621682213475"><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213475"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213476"><span class="annot"><span class="annottext">Weak# SomeStableName
+</span><a href="#local-6989586621682213476"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-special">#)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(#</span><span> </span><span class="annot"><span class="annottext">State# RealWorld
+</span><a href="#local-6989586621682213475"><span class="hs-identifier hs-var">s1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Weak# SomeStableName -&gt; Weak SomeStableName
+forall v. Weak# v -&gt; Weak v
+</span><span class="hs-identifier hs-var">Weak</span></span><span> </span><span class="annot"><span class="annottext">Weak# SomeStableName
+</span><a href="#local-6989586621682213476"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-special">#)</span><span>
+</span><span id="line-224"></span></pre></body></html>

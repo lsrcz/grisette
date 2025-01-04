@@ -1,0 +1,859 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE AllowAmbiguousTypes #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE BangPatterns #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE Strict #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# OPTIONS_GHC -fno-cse #-}</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Caches</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2024</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Caches</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier">SomeStableName</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Id"><span class="hs-identifier">Id</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Ident"><span class="hs-identifier">Ident</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Digest"><span class="hs-identifier">Digest</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Interned"><span class="hs-identifier">Interned</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#intern"><span class="hs-identifier">intern</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#haveCache"><span class="hs-identifier">haveCache</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#threadCacheSize"><span class="hs-identifier">threadCacheSize</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-comment">-- dumpThreadCache,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#threadCacheLiveSize"><span class="hs-identifier">threadCacheLiveSize</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent</span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">MVar</span></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><span class="hs-identifier">ThreadId</span></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><span class="hs-identifier">myThreadId</span></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><span class="hs-identifier">newMVar</span></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><span class="hs-identifier">putMVar</span></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><span class="hs-identifier">takeMVar</span></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">replicateM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Array</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">A</span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Atomics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">atomicModifyIORefCAS</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">atomicModifyIORefCAS_</span></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Data</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Proxy</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">typeRepFingerprint</span></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">traverse_</span></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">HM</span></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Hashable</span></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.IORef</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IORef</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">newIORef</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">readIORef</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">writeIORef</span></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isJust</span></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector.Unboxed.Mutable</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Base</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Any</span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Fingerprint</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Fingerprint</span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">unsafePerformIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.StableName</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">makeStableName</span></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Weak</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Weak</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">deRefWeak</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">finalize</span></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Utils</span></a></span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier">SomeStableName</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#SomeStableName"><span class="hs-identifier">SomeStableName</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier">WeakThreadId</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadIdRef"><span class="hs-identifier">WeakThreadIdRef</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakStableNameRefWithFinalizer"><span class="hs-identifier">mkWeakStableNameRefWithFinalizer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-64"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakThreadIdRefWithFinalizer"><span class="hs-identifier">mkWeakThreadIdRefWithFinalizer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#myWeakThreadId"><span class="hs-identifier">myWeakThreadId</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier">weakThreadId</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Mem.StableName</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">StableName</span></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Type.Reflection</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">someTypeRep</span></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Unsafe.Coerce</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">unsafeCoerce</span></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">-- | A unique identifier for a term.</span></span><span>
+</span><span id="line-73"></span><span class="hs-keyword">type</span><span> </span><span id="Id"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Id"><span class="hs-identifier hs-var">Id</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">-- | The identity of a term.</span></span><span>
+</span><span id="line-76"></span><span class="hs-keyword">type</span><span> </span><span id="Ident"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Ident"><span class="hs-identifier hs-var">Ident</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StableName</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Any</span></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="annot"><span class="hs-comment">-- | A digest of a term.</span></span><span>
+</span><span id="line-79"></span><span class="hs-keyword">type</span><span> </span><span id="Digest"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Digest"><span class="hs-identifier hs-var">Digest</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span class="hs-keyword">newtype</span><span> </span><span id="Cache"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span></span><span> </span><span id="local-6989586621682213479"><span class="annot"><a href="#local-6989586621682213479"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Cache"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span></span><span> </span><span class="hs-special">{</span><span id="getCache"><span class="annot"><span class="annottext">forall t. Cache t -&gt; Array Int (CacheState t)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#getCache"><span class="hs-identifier hs-var hs-var">getCache</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">A.Array</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213479"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">}</span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="hs-keyword">type</span><span> </span><span id="HashTable"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#HashTable"><span class="hs-identifier hs-var">HashTable</span></a></span></span><span> </span><span id="local-6989586621682213695"><span class="annot"><a href="#local-6989586621682213695"><span class="hs-identifier hs-type">k</span></a></span></span><span> </span><span id="local-6989586621682213696"><span class="annot"><a href="#local-6989586621682213696"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IORef</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HM.HashMap</span></span><span> </span><span class="annot"><a href="#local-6989586621682213695"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213696"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="hs-keyword">data</span><span> </span><span id="CacheState"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-var">CacheState</span></a></span></span><span> </span><span id="local-6989586621682213697"><span class="annot"><a href="#local-6989586621682213697"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-86"></span><span>  </span><span id="local-6989586621682213484"><span id="CacheState"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-var">CacheState</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="_sem"><span class="annot"><span class="annottext">forall t. CacheState t -&gt; MVar ()
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#_sem"><span class="hs-identifier hs-var hs-var">_sem</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MVar</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-88"></span><span>      </span><span id="_nextId"><span class="annot"><span class="annottext">forall t. CacheState t -&gt; IOVector Word32
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#_nextId"><span class="hs-identifier hs-var hs-var">_nextId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.IOVector</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-89"></span><span>      </span><span id="_currentThread"><span class="annot"><span class="annottext">forall t.
+CacheState t -&gt; HashTable (Description t) (Word32, Weak Ident)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#_currentThread"><span class="hs-identifier hs-var hs-var">_currentThread</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#HashTable"><span class="hs-identifier hs-type">HashTable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213484"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Weak</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Ident"><span class="hs-identifier hs-type">Ident</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213484"><span class="hs-identifier hs-type">t</span></a></span></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span id="local-6989586621682213494"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#finalizeCacheState"><span class="hs-identifier hs-type">finalizeCacheState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213494"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-94"></span><span id="finalizeCacheState"><span class="annot"><span class="annottext">finalizeCacheState :: forall t. CacheState t -&gt; IO ()
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#finalizeCacheState"><span class="hs-identifier hs-var hs-var">finalizeCacheState</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span class="annot"><span class="annottext">MVar ()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">IOVector Word32
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682213708"><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213708"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-95"></span><span>  </span><span id="local-6989586621682213709"><span class="annot"><a href="#local-6989586621682213709"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+-&gt; IO (HashMap (Description t) (Word32, Weak Ident))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213708"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-96"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">traverse_</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213710"><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213710"><span class="hs-identifier hs-var">w</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Weak Ident -&gt; IO ()
+forall v. Weak v -&gt; IO ()
+</span><span class="hs-identifier hs-var">finalize</span></span><span> </span><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213710"><span class="hs-identifier hs-var">w</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682213709"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span id="local-6989586621682213505"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#finalizeCache"><span class="hs-identifier hs-type">finalizeCache</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213505"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-99"></span><span id="finalizeCache"><span class="annot"><span class="annottext">finalizeCache :: forall t. Cache t -&gt; IO ()
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#finalizeCache"><span class="hs-identifier hs-var hs-var">finalizeCache</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span id="local-6989586621682213714"><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213714"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(CacheState t -&gt; IO ()) -&gt; [CacheState t] -&gt; IO ()
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Foldable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m ()
+</span><span class="hs-identifier hs-var">mapM_</span></span><span> </span><span class="annot"><span class="annottext">CacheState t -&gt; IO ()
+forall t. CacheState t -&gt; IO ()
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#finalizeCacheState"><span class="hs-identifier hs-var">finalizeCacheState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Array Int (CacheState t) -&gt; [CacheState t]
+forall i e. Array i e -&gt; [e]
+</span><span class="hs-identifier hs-var">A.elems</span></span><span> </span><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213714"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="annot"><span class="hs-comment">-- | A class for interning terms.</span></span><span>
+</span><span id="line-102"></span><span class="hs-keyword">class</span><span> </span><span id="Interned"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Interned"><span class="hs-identifier hs-var">Interned</span></a></span></span><span> </span><span id="local-6989586621682213587"><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-103"></span><span>  </span><span class="hs-keyword">data</span><span> </span><span id="Description"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-var">Description</span></a></span></span><span> </span><span id="local-6989586621682213587"><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span></span><span>
+</span><span id="line-104"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="Uninterned"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Uninterned"><span class="hs-identifier hs-var">Uninterned</span></a></span></span><span> </span><span id="local-6989586621682213587"><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span></span><span>
+</span><span id="line-105"></span><span>  </span><span id="describe"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#describe"><span class="hs-identifier hs-type">describe</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Uninterned"><span class="hs-identifier hs-type">Uninterned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-106"></span><span>  </span><span id="identify"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#identify"><span class="hs-identifier hs-type">identify</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-type">WeakThreadId</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Digest"><span class="hs-identifier hs-type">Digest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Ident"><span class="hs-identifier hs-type">Ident</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Uninterned"><span class="hs-identifier hs-type">Uninterned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-107"></span><span>  </span><span id="threadId"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#threadId"><span class="hs-identifier hs-type">threadId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-type">WeakThreadId</span></a></span><span>
+</span><span id="line-108"></span><span>  </span><span id="descriptionDigest"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#descriptionDigest"><span class="hs-identifier hs-type">descriptionDigest</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213587"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Digest"><span class="hs-identifier hs-type">Digest</span></a></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-pragma">{-# NOINLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-pragma hs-type">termCacheCell</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-111"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-type">termCacheCell</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-112"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IORef</span></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.HashMap</span></span><span>
+</span><span id="line-114"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-type">WeakThreadId</span></a></span><span>
+</span><span id="line-115"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadIdRef"><span class="hs-identifier hs-type">WeakThreadIdRef</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-116"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">IORef</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HM.HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Fingerprint</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Any</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-117"></span><span>        </span><span class="hs-special">)</span><span>
+</span><span id="line-118"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-119"></span><span id="termCacheCell"><span class="annot"><span class="annottext">termCacheCell :: IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-var hs-var">termCacheCell</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO
+  (IORef
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))))
+-&gt; IORef
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+forall a. IO a -&gt; a
+</span><span class="hs-identifier hs-var">unsafePerformIO</span></span><span> </span><span class="annot"><span class="annottext">(IO
+   (IORef
+      (HashMap
+         WeakThreadId
+         (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))))
+ -&gt; IORef
+      (HashMap
+         WeakThreadId
+         (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))))
+-&gt; IO
+     (IORef
+        (HashMap
+           WeakThreadId
+           (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))))
+-&gt; IORef
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap
+  WeakThreadId
+  (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+-&gt; IO
+     (IORef
+        (HashMap
+           WeakThreadId
+           (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))))
+forall a. a -&gt; IO (IORef a)
+</span><span class="hs-identifier hs-var">newIORef</span></span><span> </span><span class="annot"><span class="annottext">HashMap
+  WeakThreadId
+  (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+forall k v. HashMap k v
+</span><span class="hs-identifier hs-var">HM.empty</span></span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-identifier hs-type">cacheWidth</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-122"></span><span id="cacheWidth"><span class="annot"><span class="annottext">cacheWidth :: Word32
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-identifier hs-var hs-var">cacheWidth</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">10</span></span><span>
+</span><span id="line-123"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-pragma hs-type">cacheWidth</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#mkCache"><span class="hs-identifier hs-type">mkCache</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213524"><span class="annot"><a href="#local-6989586621682213524"><span class="hs-identifier hs-type">t</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Interned"><span class="hs-identifier hs-type">Interned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213524"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213524"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-126"></span><span id="mkCache"><span class="annot"><span class="annottext">mkCache :: forall t. Interned t =&gt; IO (Cache t)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#mkCache"><span class="hs-identifier hs-var hs-var">mkCache</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO (Cache t)
+forall {t}. IO (Cache t)
+</span><a href="#local-6989586621682213726"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-128"></span><span>    </span><span id="local-6989586621682213735"><span class="annot"><span class="annottext">element :: IO (CacheState t)
+</span><a href="#local-6989586621682213735"><span class="hs-identifier hs-var hs-var">element</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-129"></span><span>      </span><span class="annot"><span class="annottext">MVar ()
+-&gt; IOVector Word32
+-&gt; HashTable (Description t) (Word32, Weak Ident)
+-&gt; CacheState t
+forall t.
+MVar ()
+-&gt; IOVector Word32
+-&gt; HashTable (Description t) (Word32, Weak Ident)
+-&gt; CacheState t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-var">CacheState</span></a></span><span>
+</span><span id="line-130"></span><span>        </span><span class="annot"><span class="annottext">(MVar ()
+ -&gt; IOVector Word32
+ -&gt; HashTable (Description t) (Word32, Weak Ident)
+ -&gt; CacheState t)
+-&gt; IO (MVar ())
+-&gt; IO
+     (IOVector Word32
+      -&gt; HashTable (Description t) (Word32, Weak Ident) -&gt; CacheState t)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">() -&gt; IO (MVar ())
+forall a. a -&gt; IO (MVar a)
+</span><span class="hs-identifier hs-var">newMVar</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-131"></span><span>        </span><span class="annot"><span class="annottext">IO
+  (IOVector Word32
+   -&gt; HashTable (Description t) (Word32, Weak Ident) -&gt; CacheState t)
+-&gt; IO (IOVector Word32)
+-&gt; IO
+     (HashTable (Description t) (Word32, Weak Ident) -&gt; CacheState t)
+forall a b. IO (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word32 -&gt; IO (MVector (PrimState IO) Word32)
+forall (m :: * -&gt; *) a.
+(PrimMonad m, Unbox a) =&gt;
+Int -&gt; a -&gt; m (MVector (PrimState m) a)
+</span><span class="hs-identifier hs-var">M.replicate</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-132"></span><span>        </span><span class="annot"><span class="annottext">IO (HashTable (Description t) (Word32, Weak Ident) -&gt; CacheState t)
+-&gt; IO (HashTable (Description t) (Word32, Weak Ident))
+-&gt; IO (CacheState t)
+forall a b. IO (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">HashMap (Description t) (Word32, Weak Ident)
+-&gt; IO (HashTable (Description t) (Word32, Weak Ident))
+forall a. a -&gt; IO (IORef a)
+</span><span class="hs-identifier hs-var">newIORef</span></span><span> </span><span class="annot"><span class="annottext">HashMap (Description t) (Word32, Weak Ident)
+forall k v. HashMap k v
+</span><span class="hs-identifier hs-var">HM.empty</span></span><span>
+</span><span id="line-133"></span><span>    </span><span id="local-6989586621682213726"><span class="annot"><span class="annottext">result :: IO (Cache t)
+</span><a href="#local-6989586621682213726"><span class="hs-identifier hs-var hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-134"></span><span>      </span><span id="local-6989586621682213751"><span class="annot"><a href="#local-6989586621682213751"><span class="hs-identifier hs-var">elements</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; IO (CacheState t) -&gt; IO [CacheState t]
+forall (m :: * -&gt; *) a. Applicative m =&gt; Int -&gt; m a -&gt; m [a]
+</span><span class="hs-identifier hs-var">replicateM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-identifier hs-var">cacheWidth</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO (CacheState t)
+forall {t}. IO (CacheState t)
+</span><a href="#local-6989586621682213735"><span class="hs-identifier hs-var">element</span></a></span><span>
+</span><span id="line-135"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">A.listArray</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-number">0</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-identifier hs-type">cacheWidth</span></a></span><span> </span><span class="annot"><span class="hs-glyph hs-type">-</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682213751"><span class="hs-identifier hs-type">elements</span></a></span><span>
+</span><span id="line-136"></span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- | Internal cache for memoization of term construction. Different types have</span><span>
+</span><span id="line-138"></span><span class="hs-comment">-- different caches and they may share names, ids, or representations, but they</span><span>
+</span><span id="line-139"></span><span class="hs-comment">-- are not the same term.</span><span>
+</span><span id="line-140"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#typeMemoizedCache"><span class="hs-identifier hs-type">typeMemoizedCache</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-141"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213550"><span class="annot"><a href="#local-6989586621682213550"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Interned"><span class="hs-identifier hs-type">Interned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213550"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Fingerprint</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213550"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span><span id="typeMemoizedCache"><span class="annot"><span class="annottext">typeMemoizedCache :: forall a. Interned a =&gt; ThreadId -&gt; Fingerprint -&gt; IO (Cache a)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#typeMemoizedCache"><span class="hs-identifier hs-var hs-var">typeMemoizedCache</span></a></span></span><span> </span><span id="local-6989586621682213780"><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213780"><span class="hs-identifier hs-var">tid</span></a></span></span><span> </span><span id="local-6989586621682213781"><span class="annot"><span class="annottext">Fingerprint
+</span><a href="#local-6989586621682213781"><span class="hs-identifier hs-var">tyFingerprint</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-143"></span><span>  </span><span id="local-6989586621682213782"><span class="annot"><a href="#local-6989586621682213782"><span class="hs-identifier hs-var">caches</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+-&gt; IO
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-var">termCacheCell</span></a></span><span>
+</span><span id="line-144"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682213783"><span class="annot"><a href="#local-6989586621682213783"><span class="hs-identifier hs-var hs-var">wtid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ThreadId -&gt; WeakThreadId
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-var">weakThreadId</span></a></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213780"><span class="hs-identifier hs-var">tid</span></a></span><span>
+</span><span id="line-145"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213783"><span class="hs-identifier hs-type">wtid</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213782"><span class="hs-identifier hs-type">caches</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-146"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WeakThreadIdRef
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213785"><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213785"><span class="hs-identifier hs-var">cref</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-147"></span><span>      </span><span id="local-6989586621682213786"><span class="annot"><a href="#local-6989586621682213786"><span class="hs-identifier hs-var">cache</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+-&gt; IO (HashMap Fingerprint (Cache Any))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213785"><span class="hs-identifier hs-var">cref</span></a></span><span>
+</span><span id="line-148"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213781"><span class="hs-identifier hs-type">tyFingerprint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213786"><span class="hs-identifier hs-type">cache</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-149"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682213787"><span class="annot"><span class="annottext">Cache Any
+</span><a href="#local-6989586621682213787"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Cache a -&gt; IO (Cache a)
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Cache a -&gt; IO (Cache a)) -&gt; Cache a -&gt; IO (Cache a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Cache Any -&gt; Cache a
+forall a b. a -&gt; b
+</span><span class="hs-identifier hs-var">unsafeCoerce</span></span><span> </span><span class="annot"><span class="annottext">Cache Any
+</span><a href="#local-6989586621682213787"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-150"></span><span>        </span><span class="annot"><span class="annottext">Maybe (Cache Any)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-151"></span><span>          </span><span id="local-6989586621682213788"><span class="annot"><a href="#local-6989586621682213788"><span class="hs-identifier hs-var">r1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO (Cache a)
+forall t. Interned t =&gt; IO (Cache t)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#mkCache"><span class="hs-identifier hs-var">mkCache</span></a></span><span>
+</span><span id="line-152"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">writeIORef</span></span><span> </span><span class="annot"><a href="#local-6989586621682213785"><span class="hs-identifier hs-type">cref</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$!</span></span><span>
+</span><span id="line-153"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">HM.insert</span></span><span> </span><span class="annot"><a href="#local-6989586621682213781"><span class="hs-identifier hs-type">tyFingerprint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">unsafeCoerce</span></span><span> </span><span class="annot"><a href="#local-6989586621682213788"><span class="hs-identifier hs-type">r1</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682213786"><span class="hs-identifier hs-type">cache</span></a></span><span>
+</span><span id="line-154"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><a href="#local-6989586621682213788"><span class="hs-identifier hs-type">r1</span></a></span><span>
+</span><span id="line-155"></span><span>    </span><span class="annot"><span class="annottext">Maybe (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-156"></span><span>      </span><span id="local-6989586621682213791"><span class="annot"><a href="#local-6989586621682213791"><span class="hs-identifier hs-var">r1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO (Cache a)
+forall t. Interned t =&gt; IO (Cache t)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#mkCache"><span class="hs-identifier hs-var">mkCache</span></a></span><span>
+</span><span id="line-157"></span><span>      </span><span id="local-6989586621682213792"><span class="annot"><a href="#local-6989586621682213792"><span class="hs-identifier hs-var">wtidRef</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-158"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakThreadIdRefWithFinalizer"><span class="hs-identifier hs-type">mkWeakThreadIdRefWithFinalizer</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213780"><span class="hs-identifier hs-type">tid</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-159"></span><span>          </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#finalizeCache"><span class="hs-identifier hs-type">finalizeCache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213791"><span class="hs-identifier hs-type">r1</span></a></span><span>
+</span><span id="line-160"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">atomicModifyIORefCAS_</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-type">termCacheCell</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HM.delete</span></span><span> </span><span class="annot"><a href="#local-6989586621682213783"><span class="hs-identifier hs-type">wtid</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-161"></span><span>      </span><span id="local-6989586621682213794"><span class="annot"><a href="#local-6989586621682213794"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">newIORef</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.singleton</span></span><span> </span><span class="annot"><a href="#local-6989586621682213781"><span class="hs-identifier hs-type">tyFingerprint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">unsafeCoerce</span></span><span> </span><span class="annot"><a href="#local-6989586621682213791"><span class="hs-identifier hs-type">r1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-162"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">atomicModifyIORefCAS</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-type">termCacheCell</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-163"></span><span>        </span><span class="hs-glyph">\</span><span id="local-6989586621682213796"><span class="annot"><span class="annottext">HashMap
+  WeakThreadId
+  (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+</span><a href="#local-6989586621682213796"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WeakThreadId
+-&gt; (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+-&gt; HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+-&gt; HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">HM.insert</span></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><a href="#local-6989586621682213783"><span class="hs-identifier hs-var">wtid</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WeakThreadIdRef
+</span><a href="#local-6989586621682213792"><span class="hs-identifier hs-var">wtidRef</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213794"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashMap
+  WeakThreadId
+  (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+</span><a href="#local-6989586621682213796"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Cache a
+</span><a href="#local-6989586621682213791"><span class="hs-identifier hs-var">r1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-164"></span><span>
+</span><span id="line-165"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#reclaimTerm"><span class="hs-identifier hs-type">reclaimTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-166"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213570"><span class="annot"><a href="#local-6989586621682213570"><span class="hs-identifier hs-type">t</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-167"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Interned"><span class="hs-identifier hs-type">Interned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213570"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213570"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213570"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-168"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-type">WeakThreadId</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-169"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Fingerprint</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-170"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-171"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213570"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-172"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-173"></span><span id="reclaimTerm"><span class="annot"><span class="annottext">reclaimTerm :: forall t.
+(Interned t, Hashable (Description t), Eq (Description t)) =&gt;
+WeakThreadId -&gt; Fingerprint -&gt; Int -&gt; Description t -&gt; IO ()
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#reclaimTerm"><span class="hs-identifier hs-var hs-var">reclaimTerm</span></a></span></span><span> </span><span id="local-6989586621682213820"><span class="annot"><span class="annottext">WeakThreadId
+</span><a href="#local-6989586621682213820"><span class="hs-identifier hs-var">id</span></a></span></span><span> </span><span id="local-6989586621682213821"><span class="annot"><span class="annottext">Fingerprint
+</span><a href="#local-6989586621682213821"><span class="hs-identifier hs-var">tyFingerprint</span></a></span></span><span> </span><span id="local-6989586621682213822"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682213822"><span class="hs-identifier hs-var">grp</span></a></span></span><span> </span><span id="local-6989586621682213823"><span class="annot"><span class="annottext">Description t
+</span><a href="#local-6989586621682213823"><span class="hs-identifier hs-var">dt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-174"></span><span>  </span><span id="local-6989586621682213824"><span class="annot"><a href="#local-6989586621682213824"><span class="hs-identifier hs-var">caches</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+-&gt; IO
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-var">termCacheCell</span></a></span><span>
+</span><span id="line-175"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213820"><span class="hs-identifier hs-type">id</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213824"><span class="hs-identifier hs-type">caches</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-176"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WeakThreadIdRef
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213825"><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213825"><span class="hs-identifier hs-var">cref</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-177"></span><span>      </span><span id="local-6989586621682213826"><span class="annot"><a href="#local-6989586621682213826"><span class="hs-identifier hs-var">cache</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+-&gt; IO (HashMap Fingerprint (Cache Any))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213825"><span class="hs-identifier hs-var">cref</span></a></span><span>
+</span><span id="line-178"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213821"><span class="hs-identifier hs-type">tyFingerprint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213826"><span class="hs-identifier hs-type">cache</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-179"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682213827"><span class="annot"><span class="annottext">Cache Any
+</span><a href="#local-6989586621682213827"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-180"></span><span>          </span><span class="hs-keyword">let</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span id="local-6989586621682213828"><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213828"><span class="hs-identifier hs-var hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Cache Any -&gt; Cache t
+forall a b. a -&gt; b
+</span><span class="hs-identifier hs-var">unsafeCoerce</span></span><span> </span><span class="annot"><span class="annottext">Cache Any
+</span><a href="#local-6989586621682213827"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213570"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-181"></span><span>          </span><span class="hs-keyword">let</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span id="local-6989586621682213829"><span class="annot"><span class="annottext">MVar ()
+</span><a href="#local-6989586621682213829"><span class="hs-identifier hs-var hs-var">sem</span></a></span></span><span> </span><span class="annot"><span class="annottext">IOVector Word32
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682213830"><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213830"><span class="hs-identifier hs-var hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213828"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Array Int (CacheState t) -&gt; Int -&gt; CacheState t
+forall i e. Ix i =&gt; Array i e -&gt; i -&gt; e
+</span><span class="hs-operator hs-var">A.!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682213822"><span class="hs-identifier hs-var">grp</span></a></span><span>
+</span><span id="line-182"></span><span>          </span><span class="annot"><span class="annottext">MVar () -&gt; IO ()
+forall a. MVar a -&gt; IO a
+</span><span class="hs-identifier hs-var">takeMVar</span></span><span> </span><span class="annot"><span class="annottext">MVar ()
+</span><a href="#local-6989586621682213829"><span class="hs-identifier hs-var">sem</span></a></span><span>
+</span><span id="line-183"></span><span>          </span><span id="local-6989586621682213832"><span class="annot"><a href="#local-6989586621682213832"><span class="hs-identifier hs-var">current</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+-&gt; IO (HashMap (Description t) (Word32, Weak Ident))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213830"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-184"></span><span>          </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213823"><span class="hs-identifier hs-type">dt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213832"><span class="hs-identifier hs-type">current</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-185"></span><span>            </span><span class="annot"><span class="annottext">Maybe (Word32, Weak Ident)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; IO ()
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-186"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213833"><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213833"><span class="hs-identifier hs-var">wr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-187"></span><span>              </span><span id="local-6989586621682213834"><span class="annot"><a href="#local-6989586621682213834"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Weak Ident -&gt; IO (Maybe Ident)
+forall v. Weak v -&gt; IO (Maybe v)
+</span><span class="hs-identifier hs-var">deRefWeak</span></span><span> </span><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213833"><span class="hs-identifier hs-var">wr</span></a></span><span>
+</span><span id="line-188"></span><span>              </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621682213834"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-189"></span><span>                </span><span class="annot"><span class="annottext">Maybe Ident
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+-&gt; HashMap (Description t) (Word32, Weak Ident) -&gt; IO ()
+forall a. IORef a -&gt; a -&gt; IO ()
+</span><span class="hs-identifier hs-var">writeIORef</span></span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213830"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">(HashMap (Description t) (Word32, Weak Ident) -&gt; IO ())
+-&gt; HashMap (Description t) (Word32, Weak Ident) -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Description t
+-&gt; HashMap (Description t) (Word32, Weak Ident)
+-&gt; HashMap (Description t) (Word32, Weak Ident)
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">HM.delete</span></span><span> </span><span class="annot"><span class="annottext">Description t
+</span><a href="#local-6989586621682213823"><span class="hs-identifier hs-var">dt</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213832"><span class="hs-identifier hs-var">current</span></a></span><span>
+</span><span id="line-190"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; IO ()
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-191"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">putMVar</span></span><span> </span><span class="annot"><a href="#local-6989586621682213829"><span class="hs-identifier hs-type">sem</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-192"></span><span>        </span><span class="annot"><span class="annottext">Maybe (Cache Any)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; IO ()
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-193"></span><span>    </span><span class="annot"><span class="annottext">Maybe (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; IO ()
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-194"></span><span>
+</span><span id="line-195"></span><span class="annot"><span class="hs-comment">-- | Internalize a term.</span></span><span>
+</span><span id="line-196"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#intern"><span class="hs-identifier hs-type">intern</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-197"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682213577"><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-198"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Interned"><span class="hs-identifier hs-type">Interned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-199"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Uninterned"><span class="hs-identifier hs-type">Uninterned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-200"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-201"></span><span id="intern"><span class="annot"><span class="annottext">intern :: forall t.
+(Interned t, Typeable t, Hashable (Description t),
+ Eq (Description t)) =&gt;
+Uninterned t -&gt; IO t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#intern"><span class="hs-identifier hs-var hs-var">intern</span></a></span></span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621682213903"><span class="annot"><span class="annottext">Uninterned t
+</span><a href="#local-6989586621682213903"><span class="hs-identifier hs-var">bt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-202"></span><span>  </span><span id="local-6989586621682213904"><span class="annot"><a href="#local-6989586621682213904"><span class="hs-identifier hs-var">tid</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO ThreadId
+</span><span class="hs-identifier hs-var">myThreadId</span></span><span>
+</span><span id="line-203"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682213905"><span class="annot"><a href="#local-6989586621682213905"><span class="hs-identifier hs-var hs-var">wtid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ThreadId -&gt; WeakThreadId
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-var">weakThreadId</span></a></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213904"><span class="hs-identifier hs-var">tid</span></a></span><span>
+</span><span id="line-204"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682213906"><span class="annot"><a href="#local-6989586621682213906"><span class="hs-identifier hs-var hs-var">fingerprint</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TypeRep -&gt; Fingerprint
+</span><span class="hs-identifier hs-var">typeRepFingerprint</span></span><span> </span><span class="annot"><span class="annottext">(TypeRep -&gt; Fingerprint) -&gt; TypeRep -&gt; Fingerprint
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Proxy t -&gt; TypeRep
+forall {k} (proxy :: k -&gt; *) (a :: k).
+Typeable a =&gt;
+proxy a -&gt; TypeRep
+</span><span class="hs-identifier hs-var">someTypeRep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall t. Proxy t
+forall {k} (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-205"></span><span>  </span><span id="local-6989586621682213907"><span class="annot"><a href="#local-6989586621682213907"><span class="hs-identifier hs-var">cache</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#typeMemoizedCache"><span class="hs-identifier hs-type">typeMemoizedCache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213904"><span class="hs-identifier hs-type">tid</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213906"><span class="hs-identifier hs-type">fingerprint</span></a></span><span>
+</span><span id="line-206"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621682213908"><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-var hs-var">dt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Uninterned t -&gt; Description t
+forall t. Interned t =&gt; Uninterned t -&gt; Description t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#describe"><span class="hs-identifier hs-var">describe</span></a></span><span> </span><span class="annot"><span class="annottext">Uninterned t
+</span><a href="#local-6989586621682213903"><span class="hs-identifier hs-var">bt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Description"><span class="hs-identifier hs-type">Description</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213577"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-207"></span><span>      </span><span class="hs-glyph">!</span><span id="local-6989586621682213909"><span class="annot"><a href="#local-6989586621682213909"><span class="hs-identifier hs-var hs-var">hdt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Description t -&gt; Word32
+forall t. Interned t =&gt; Description t -&gt; Word32
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#descriptionDigest"><span class="hs-identifier hs-var">descriptionDigest</span></a></span><span> </span><span class="annot"><span class="annottext">Description t
+</span><a href="#local-6989586621682213908"><span class="hs-identifier hs-var">dt</span></a></span><span>
+</span><span id="line-208"></span><span>      </span><span class="hs-glyph">!</span><span id="local-6989586621682213910"><span class="annot"><a href="#local-6989586621682213910"><span class="hs-identifier hs-var hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213909"><span class="hs-identifier hs-var">hdt</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-identifier hs-var">cacheWidth</span></a></span><span>
+</span><span id="line-209"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span id="local-6989586621682213912"><span class="annot"><a href="#local-6989586621682213912"><span class="hs-identifier hs-var">sem</span></a></span></span><span> </span><span id="local-6989586621682213913"><span class="annot"><a href="#local-6989586621682213913"><span class="hs-identifier hs-var">nextId</span></a></span></span><span> </span><span id="local-6989586621682213914"><span class="annot"><a href="#local-6989586621682213914"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#getCache"><span class="hs-identifier hs-var">getCache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213907"><span class="hs-identifier hs-type">cache</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">A.!</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="annot"><a href="#local-6989586621682213910"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-210"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">takeMVar</span></span><span> </span><span class="annot"><a href="#local-6989586621682213912"><span class="hs-identifier hs-type">sem</span></a></span><span>
+</span><span id="line-211"></span><span>  </span><span class="hs-comment">-- print (&quot;intern&quot;, wtid, dt, r)</span><span>
+</span><span id="line-212"></span><span>  </span><span id="local-6989586621682213915"><span class="annot"><a href="#local-6989586621682213915"><span class="hs-identifier hs-var">current</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">readIORef</span></span><span> </span><span class="annot"><a href="#local-6989586621682213914"><span class="hs-identifier hs-type">s</span></a></span><span>
+</span><span id="line-213"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-type">dt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213915"><span class="hs-identifier hs-type">current</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-214"></span><span>    </span><span class="annot"><span class="annottext">Maybe (Word32, Weak Ident)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-215"></span><span>      </span><span id="local-6989586621682213916"><span class="annot"><a href="#local-6989586621682213916"><span class="hs-identifier hs-var">newId0</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">MVector (PrimState IO) Word32 -&gt; Int -&gt; IO Word32
+forall (m :: * -&gt; *) a.
+(PrimMonad m, Unbox a) =&gt;
+MVector (PrimState m) a -&gt; Int -&gt; m a
+</span><span class="hs-identifier hs-var">M.unsafeRead</span></span><span> </span><span class="annot"><span class="annottext">IOVector Word32
+MVector (PrimState IO) Word32
+</span><a href="#local-6989586621682213913"><span class="hs-identifier hs-var">nextId</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-216"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">M.unsafeWrite</span></span><span> </span><span class="annot"><a href="#local-6989586621682213913"><span class="hs-identifier hs-type">nextId</span></a></span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682213916"><span class="hs-identifier hs-type">newId0</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-217"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682213920"><span class="annot"><a href="#local-6989586621682213920"><span class="hs-identifier hs-var hs-var">newId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213916"><span class="hs-identifier hs-var">newId0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-identifier hs-var">cacheWidth</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213910"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-218"></span><span>      </span><span id="local-6989586621682213922"><span class="annot"><a href="#local-6989586621682213922"><span class="hs-identifier hs-var">newIdent</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">makeStableName</span></span><span> </span><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-type">dt</span></a></span><span>
+</span><span id="line-219"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682213923"><span class="annot"><a href="#local-6989586621682213923"><span class="hs-identifier hs-var hs-var">anyNewIdent</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StableName (Description t) -&gt; Ident
+forall a b. a -&gt; b
+</span><span class="hs-identifier hs-var">unsafeCoerce</span></span><span> </span><span class="annot"><span class="annottext">StableName (Description t)
+</span><a href="#local-6989586621682213922"><span class="hs-identifier hs-var">newIdent</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Ident"><span class="hs-identifier hs-type">Ident</span></a></span><span>
+</span><span id="line-220"></span><span>      </span><span id="local-6989586621682213924"><span class="annot"><a href="#local-6989586621682213924"><span class="hs-identifier hs-var">identRef</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-221"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakStableNameRefWithFinalizer"><span class="hs-identifier hs-type">mkWeakStableNameRefWithFinalizer</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213923"><span class="hs-identifier hs-type">anyNewIdent</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-222"></span><span>          </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#reclaimTerm"><span class="hs-identifier hs-type">reclaimTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213905"><span class="hs-identifier hs-type">wtid</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213906"><span class="hs-identifier hs-type">fingerprint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="annot"><a href="#local-6989586621682213910"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-type">dt</span></a></span><span>
+</span><span id="line-223"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621682213925"><span class="annot"><a href="#local-6989586621682213925"><span class="hs-identifier hs-var hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WeakThreadId -&gt; Word32 -&gt; Word32 -&gt; Ident -&gt; Uninterned t -&gt; t
+forall t.
+Interned t =&gt;
+WeakThreadId -&gt; Word32 -&gt; Word32 -&gt; Ident -&gt; Uninterned t -&gt; t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#identify"><span class="hs-identifier hs-var">identify</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ThreadId -&gt; WeakThreadId
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-var">weakThreadId</span></a></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213904"><span class="hs-identifier hs-var">tid</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213909"><span class="hs-identifier hs-var">hdt</span></a></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213920"><span class="hs-identifier hs-var">newId</span></a></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><a href="#local-6989586621682213923"><span class="hs-identifier hs-var">anyNewIdent</span></a></span><span> </span><span class="annot"><span class="annottext">Uninterned t
+</span><a href="#local-6989586621682213903"><span class="hs-identifier hs-var">bt</span></a></span><span>
+</span><span id="line-224"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">writeIORef</span></span><span> </span><span class="annot"><a href="#local-6989586621682213914"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.insert</span></span><span> </span><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-type">dt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682213920"><span class="hs-identifier hs-type">newId</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621682213924"><span class="hs-identifier hs-type">identRef</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682213915"><span class="hs-identifier hs-type">current</span></a></span><span>
+</span><span id="line-225"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">putMVar</span></span><span> </span><span class="annot"><a href="#local-6989586621682213912"><span class="hs-identifier hs-type">sem</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-226"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><a href="#local-6989586621682213925"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-227"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682213926"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213926"><span class="hs-identifier hs-var">oldId</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213927"><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213927"><span class="hs-identifier hs-var">oldIdentRef</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-228"></span><span>      </span><span id="local-6989586621682213928"><span class="annot"><a href="#local-6989586621682213928"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Weak Ident -&gt; IO (Maybe Ident)
+forall v. Weak v -&gt; IO (Maybe v)
+</span><span class="hs-identifier hs-var">deRefWeak</span></span><span> </span><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213927"><span class="hs-identifier hs-var">oldIdentRef</span></a></span><span>
+</span><span id="line-229"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621682213928"><span class="hs-identifier hs-type">t1</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-230"></span><span>        </span><span class="annot"><span class="annottext">Maybe Ident
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-231"></span><span>          </span><span id="local-6989586621682213929"><span class="annot"><a href="#local-6989586621682213929"><span class="hs-identifier hs-var">newId0</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">MVector (PrimState IO) Word32 -&gt; Int -&gt; IO Word32
+forall (m :: * -&gt; *) a.
+(PrimMonad m, Unbox a) =&gt;
+MVector (PrimState m) a -&gt; Int -&gt; m a
+</span><span class="hs-identifier hs-var">M.unsafeRead</span></span><span> </span><span class="annot"><span class="annottext">IOVector Word32
+MVector (PrimState IO) Word32
+</span><a href="#local-6989586621682213913"><span class="hs-identifier hs-var">nextId</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-232"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">M.unsafeWrite</span></span><span> </span><span class="annot"><a href="#local-6989586621682213913"><span class="hs-identifier hs-type">nextId</span></a></span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682213929"><span class="hs-identifier hs-type">newId0</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-233"></span><span>          </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682213930"><span class="annot"><a href="#local-6989586621682213930"><span class="hs-identifier hs-var hs-var">newId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213929"><span class="hs-identifier hs-var">newId0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheWidth"><span class="hs-identifier hs-var">cacheWidth</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213910"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-234"></span><span>          </span><span id="local-6989586621682213931"><span class="annot"><a href="#local-6989586621682213931"><span class="hs-identifier hs-var">newIdent</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">makeStableName</span></span><span> </span><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-type">dt</span></a></span><span>
+</span><span id="line-235"></span><span>          </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682213932"><span class="annot"><a href="#local-6989586621682213932"><span class="hs-identifier hs-var hs-var">anyNewIdent</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StableName (Description t) -&gt; Ident
+forall a b. a -&gt; b
+</span><span class="hs-identifier hs-var">unsafeCoerce</span></span><span> </span><span class="annot"><span class="annottext">StableName (Description t)
+</span><a href="#local-6989586621682213931"><span class="hs-identifier hs-var">newIdent</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Ident"><span class="hs-identifier hs-type">Ident</span></a></span><span>
+</span><span id="line-236"></span><span>          </span><span id="local-6989586621682213933"><span class="annot"><a href="#local-6989586621682213933"><span class="hs-identifier hs-var">identRef</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-237"></span><span>            </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#mkWeakStableNameRefWithFinalizer"><span class="hs-identifier hs-type">mkWeakStableNameRefWithFinalizer</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213932"><span class="hs-identifier hs-type">anyNewIdent</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-238"></span><span>              </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#reclaimTerm"><span class="hs-identifier hs-type">reclaimTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213905"><span class="hs-identifier hs-type">wtid</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213906"><span class="hs-identifier hs-type">fingerprint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="annot"><a href="#local-6989586621682213910"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-type">dt</span></a></span><span>
+</span><span id="line-239"></span><span>          </span><span class="hs-keyword">let</span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621682213934"><span class="annot"><a href="#local-6989586621682213934"><span class="hs-identifier hs-var hs-var">term</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WeakThreadId -&gt; Word32 -&gt; Word32 -&gt; Ident -&gt; Uninterned t -&gt; t
+forall t.
+Interned t =&gt;
+WeakThreadId -&gt; Word32 -&gt; Word32 -&gt; Ident -&gt; Uninterned t -&gt; t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#identify"><span class="hs-identifier hs-var">identify</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ThreadId -&gt; WeakThreadId
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-var">weakThreadId</span></a></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213904"><span class="hs-identifier hs-var">tid</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213909"><span class="hs-identifier hs-var">hdt</span></a></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213930"><span class="hs-identifier hs-var">newId</span></a></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><a href="#local-6989586621682213932"><span class="hs-identifier hs-var">anyNewIdent</span></a></span><span> </span><span class="annot"><span class="annottext">Uninterned t
+</span><a href="#local-6989586621682213903"><span class="hs-identifier hs-var">bt</span></a></span><span>
+</span><span id="line-240"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">writeIORef</span></span><span> </span><span class="annot"><a href="#local-6989586621682213914"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.insert</span></span><span> </span><span class="annot"><a href="#local-6989586621682213908"><span class="hs-identifier hs-type">dt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682213930"><span class="hs-identifier hs-type">newId</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621682213933"><span class="hs-identifier hs-type">identRef</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682213915"><span class="hs-identifier hs-type">current</span></a></span><span>
+</span><span id="line-241"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">putMVar</span></span><span> </span><span class="annot"><a href="#local-6989586621682213912"><span class="hs-identifier hs-type">sem</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-242"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><a href="#local-6989586621682213934"><span class="hs-identifier hs-type">term</span></a></span><span>
+</span><span id="line-243"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682213935"><span class="annot"><span class="annottext">Ident
+</span><a href="#local-6989586621682213935"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-244"></span><span>          </span><span class="annot"><span class="annottext">MVar () -&gt; () -&gt; IO ()
+forall a. MVar a -&gt; a -&gt; IO ()
+</span><span class="hs-identifier hs-var">putMVar</span></span><span> </span><span class="annot"><span class="annottext">MVar ()
+</span><a href="#local-6989586621682213912"><span class="hs-identifier hs-var">sem</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-245"></span><span>          </span><span class="annot"><span class="annottext">t -&gt; IO t
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(t -&gt; IO t) -&gt; t -&gt; IO t
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$!</span></span><span> </span><span class="annot"><span class="annottext">WeakThreadId -&gt; Word32 -&gt; Word32 -&gt; Ident -&gt; Uninterned t -&gt; t
+forall t.
+Interned t =&gt;
+WeakThreadId -&gt; Word32 -&gt; Word32 -&gt; Ident -&gt; Uninterned t -&gt; t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#identify"><span class="hs-identifier hs-var">identify</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ThreadId -&gt; WeakThreadId
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#weakThreadId"><span class="hs-identifier hs-var">weakThreadId</span></a></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621682213904"><span class="hs-identifier hs-var">tid</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213909"><span class="hs-identifier hs-var">hdt</span></a></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621682213926"><span class="hs-identifier hs-var">oldId</span></a></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><a href="#local-6989586621682213935"><span class="hs-identifier hs-var">t1</span></a></span><span> </span><span class="annot"><span class="annottext">Uninterned t
+</span><a href="#local-6989586621682213903"><span class="hs-identifier hs-var">bt</span></a></span><span>
+</span><span id="line-246"></span><span class="hs-pragma">{-# NOINLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#intern"><span class="hs-pragma hs-type">intern</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-247"></span><span>
+</span><span id="line-248"></span><span class="annot"><span class="hs-comment">-- | Check if the current thread has a cache.</span></span><span>
+</span><span id="line-249"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#haveCache"><span class="hs-identifier hs-type">haveCache</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-250"></span><span id="haveCache"><span class="annot"><span class="annottext">haveCache :: IO Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#haveCache"><span class="hs-identifier hs-var hs-var">haveCache</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-251"></span><span>  </span><span id="local-6989586621682213936"><span class="annot"><a href="#local-6989586621682213936"><span class="hs-identifier hs-var">caches</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+-&gt; IO
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-var">termCacheCell</span></a></span><span>
+</span><span id="line-252"></span><span>  </span><span id="local-6989586621682213937"><span class="annot"><a href="#local-6989586621682213937"><span class="hs-identifier hs-var">tid</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#myWeakThreadId"><span class="hs-identifier hs-type">myWeakThreadId</span></a></span><span>
+</span><span id="line-253"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.member</span></span><span> </span><span class="annot"><a href="#local-6989586621682213937"><span class="hs-identifier hs-type">tid</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213936"><span class="hs-identifier hs-type">caches</span></a></span><span>
+</span><span id="line-254"></span><span>
+</span><span id="line-255"></span><span id="local-6989586621682213598"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheStateSize"><span class="hs-identifier hs-type">cacheStateSize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213598"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span><span>
+</span><span id="line-256"></span><span id="cacheStateSize"><span class="annot"><span class="annottext">cacheStateSize :: forall t. CacheState t -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheStateSize"><span class="hs-identifier hs-var hs-var">cacheStateSize</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span class="annot"><span class="annottext">MVar ()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">IOVector Word32
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682213941"><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213941"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap (Description t) (Word32, Weak Ident) -&gt; Int
+forall k v. HashMap k v -&gt; Int
+</span><span class="hs-identifier hs-var">HM.size</span></span><span> </span><span class="annot"><span class="annottext">(HashMap (Description t) (Word32, Weak Ident) -&gt; Int)
+-&gt; IO (HashMap (Description t) (Word32, Weak Ident)) -&gt; IO Int
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+-&gt; IO (HashMap (Description t) (Word32, Weak Ident))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213941"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-257"></span><span>
+</span><span id="line-258"></span><span id="local-6989586621682213943"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheStateLiveSize"><span class="hs-identifier hs-type">cacheStateLiveSize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213943"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span><span>
+</span><span id="line-259"></span><span id="cacheStateLiveSize"><span class="annot"><span class="annottext">cacheStateLiveSize :: forall t. CacheState t -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheStateLiveSize"><span class="hs-identifier hs-var hs-var">cacheStateLiveSize</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#CacheState"><span class="hs-identifier hs-type">CacheState</span></a></span><span> </span><span id="local-6989586621682213963"><span class="annot"><span class="annottext">MVar ()
+</span><a href="#local-6989586621682213963"><span class="hs-identifier hs-var">sem</span></a></span></span><span> </span><span class="annot"><span class="annottext">IOVector Word32
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682213964"><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213964"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-260"></span><span>  </span><span class="annot"><span class="annottext">MVar () -&gt; IO ()
+forall a. MVar a -&gt; IO a
+</span><span class="hs-identifier hs-var">takeMVar</span></span><span> </span><span class="annot"><span class="annottext">MVar ()
+</span><a href="#local-6989586621682213963"><span class="hs-identifier hs-var">sem</span></a></span><span>
+</span><span id="line-261"></span><span>  </span><span id="local-6989586621682213965"><span class="annot"><a href="#local-6989586621682213965"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">((Description t, (Word32, Weak Ident)) -&gt; (Word32, Weak Ident))
+-&gt; [(Description t, (Word32, Weak Ident))]
+-&gt; [(Word32, Weak Ident)]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">(Description t, (Word32, Weak Ident)) -&gt; (Word32, Weak Ident)
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">([(Description t, (Word32, Weak Ident))] -&gt; [(Word32, Weak Ident)])
+-&gt; (HashMap (Description t) (Word32, Weak Ident)
+    -&gt; [(Description t, (Word32, Weak Ident))])
+-&gt; HashMap (Description t) (Word32, Weak Ident)
+-&gt; [(Word32, Weak Ident)]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">HashMap (Description t) (Word32, Weak Ident)
+-&gt; [(Description t, (Word32, Weak Ident))]
+forall k v. HashMap k v -&gt; [(k, v)]
+</span><span class="hs-identifier hs-var">HM.toList</span></span><span> </span><span class="annot"><span class="annottext">(HashMap (Description t) (Word32, Weak Ident)
+ -&gt; [(Word32, Weak Ident)])
+-&gt; IO (HashMap (Description t) (Word32, Weak Ident))
+-&gt; IO [(Word32, Weak Ident)]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+-&gt; IO (HashMap (Description t) (Word32, Weak Ident))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">HashTable (Description t) (Word32, Weak Ident)
+</span><a href="#local-6989586621682213964"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-262"></span><span>  </span><span id="local-6989586621682213969"><span class="annot"><a href="#local-6989586621682213969"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-263"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">sum</span></span><span>
+</span><span id="line-264"></span><span>      </span><span class="annot"><span class="hs-operator hs-type">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">mapM</span></span><span>
+</span><span id="line-265"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213972"><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213972"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-266"></span><span>            </span><span id="local-6989586621682213973"><span class="annot"><a href="#local-6989586621682213973"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Weak Ident -&gt; IO (Maybe Ident)
+forall v. Weak v -&gt; IO (Maybe v)
+</span><span class="hs-identifier hs-var">deRefWeak</span></span><span> </span><span class="annot"><span class="annottext">Weak Ident
+</span><a href="#local-6989586621682213972"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-267"></span><span>            </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="hs-identifier hs-type">isJust</span></span><span> </span><span class="annot"><a href="#local-6989586621682213973"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-number">0</span></span><span>
+</span><span id="line-268"></span><span>        </span><span class="hs-special">)</span><span>
+</span><span id="line-269"></span><span>        </span><span class="annot"><a href="#local-6989586621682213965"><span class="hs-identifier hs-type">v</span></a></span><span>
+</span><span id="line-270"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">putMVar</span></span><span> </span><span class="annot"><a href="#local-6989586621682213963"><span class="hs-identifier hs-type">sem</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-271"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><a href="#local-6989586621682213969"><span class="hs-identifier hs-type">r</span></a></span><span>
+</span><span id="line-272"></span><span>
+</span><span id="line-273"></span><span class="hs-comment">{-
+dumpCacheState :: CacheState t -&gt; IO ()
+dumpCacheState (CacheState sem s) = do
+  takeMVar sem
+  v &lt;- HM.toList &lt;$&gt; readIORef s
+  mapM_
+    ( \(k, (i, v)) -&gt; do
+        v1 &lt;- deRefWeak v
+        case v1 of
+          Nothing -&gt; print (k, i, &quot;dead&quot;)
+          Just r -&gt; print (k, i, r)
+    )
+    v
+  putMVar sem ()
+
+dumpCache :: Cache t -&gt; IO ()
+dumpCache (Cache a) = mapM_ dumpCacheState (A.elems a)
+-}</span><span>
+</span><span id="line-291"></span><span>
+</span><span id="line-292"></span><span id="local-6989586621682213620"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheSize"><span class="hs-identifier hs-type">cacheSize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213620"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span><span>
+</span><span id="line-293"></span><span id="cacheSize"><span class="annot"><span class="annottext">cacheSize :: forall t. Cache t -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheSize"><span class="hs-identifier hs-var hs-var">cacheSize</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span id="local-6989586621682213980"><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213980"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
+forall a. Num a =&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">sum</span></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; Int) -&gt; IO [Int] -&gt; IO Int
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(CacheState t -&gt; IO Int) -&gt; [CacheState t] -&gt; IO [Int]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">CacheState t -&gt; IO Int
+forall t. CacheState t -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheStateSize"><span class="hs-identifier hs-var">cacheStateSize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Array Int (CacheState t) -&gt; [CacheState t]
+forall i e. Array i e -&gt; [e]
+</span><span class="hs-identifier hs-var">A.elems</span></span><span> </span><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213980"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-294"></span><span>
+</span><span id="line-295"></span><span id="local-6989586621682213981"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheLiveSize"><span class="hs-identifier hs-type">cacheLiveSize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213981"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span><span>
+</span><span id="line-296"></span><span id="cacheLiveSize"><span class="annot"><span class="annottext">cacheLiveSize :: forall t. Cache t -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheLiveSize"><span class="hs-identifier hs-var hs-var">cacheLiveSize</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span id="local-6989586621682213988"><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213988"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
+forall a. Num a =&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">sum</span></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; Int) -&gt; IO [Int] -&gt; IO Int
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(CacheState t -&gt; IO Int) -&gt; [CacheState t] -&gt; IO [Int]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">CacheState t -&gt; IO Int
+forall t. CacheState t -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheStateLiveSize"><span class="hs-identifier hs-var">cacheStateLiveSize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Array Int (CacheState t) -&gt; [CacheState t]
+forall i e. Array i e -&gt; [e]
+</span><span class="hs-identifier hs-var">A.elems</span></span><span> </span><span class="annot"><span class="annottext">Array Int (CacheState t)
+</span><a href="#local-6989586621682213988"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-297"></span><span>
+</span><span id="line-298"></span><span class="annot"><span class="hs-comment">-- | Get the size of the current thread's cache.</span></span><span>
+</span><span id="line-299"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#threadCacheSize"><span class="hs-identifier hs-type">threadCacheSize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-type">WeakThreadId</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-300"></span><span id="threadCacheSize"><span class="annot"><span class="annottext">threadCacheSize :: WeakThreadId -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#threadCacheSize"><span class="hs-identifier hs-var hs-var">threadCacheSize</span></a></span></span><span> </span><span id="local-6989586621682213989"><span class="annot"><span class="annottext">WeakThreadId
+</span><a href="#local-6989586621682213989"><span class="hs-identifier hs-var">tid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-301"></span><span>  </span><span id="local-6989586621682213990"><span class="annot"><a href="#local-6989586621682213990"><span class="hs-identifier hs-var">caches</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+-&gt; IO
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-var">termCacheCell</span></a></span><span>
+</span><span id="line-302"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213989"><span class="hs-identifier hs-type">tid</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213990"><span class="hs-identifier hs-type">caches</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-303"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WeakThreadIdRef
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213991"><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213991"><span class="hs-identifier hs-var">cref</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-304"></span><span>      </span><span id="local-6989586621682213992"><span class="annot"><a href="#local-6989586621682213992"><span class="hs-identifier hs-var">cache</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+-&gt; IO (HashMap Fingerprint (Cache Any))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213991"><span class="hs-identifier hs-var">cref</span></a></span><span>
+</span><span id="line-305"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">sum</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">mapM</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheSize"><span class="hs-identifier hs-type">cacheSize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HM.elems</span></span><span> </span><span class="annot"><a href="#local-6989586621682213992"><span class="hs-identifier hs-type">cache</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-306"></span><span>    </span><span class="annot"><span class="annottext">Maybe (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int -&gt; IO Int
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-307"></span><span>
+</span><span id="line-308"></span><span class="annot"><span class="hs-comment">-- | Get the live size of the current thread's cache.</span></span><span>
+</span><span id="line-309"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#threadCacheLiveSize"><span class="hs-identifier hs-type">threadCacheLiveSize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Utils.html#WeakThreadId"><span class="hs-identifier hs-type">WeakThreadId</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-310"></span><span id="threadCacheLiveSize"><span class="annot"><span class="annottext">threadCacheLiveSize :: WeakThreadId -&gt; IO Int
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#threadCacheLiveSize"><span class="hs-identifier hs-var hs-var">threadCacheLiveSize</span></a></span></span><span> </span><span id="local-6989586621682213994"><span class="annot"><span class="annottext">WeakThreadId
+</span><a href="#local-6989586621682213994"><span class="hs-identifier hs-var">tid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-311"></span><span>  </span><span id="local-6989586621682213995"><span class="annot"><a href="#local-6989586621682213995"><span class="hs-identifier hs-var">caches</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+-&gt; IO
+     (HashMap
+        WeakThreadId
+        (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef
+  (HashMap
+     WeakThreadId
+     (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any))))
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#termCacheCell"><span class="hs-identifier hs-var">termCacheCell</span></a></span><span>
+</span><span id="line-312"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HM.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621682213994"><span class="hs-identifier hs-type">tid</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682213995"><span class="hs-identifier hs-type">caches</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-313"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WeakThreadIdRef
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682213996"><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213996"><span class="hs-identifier hs-var">cref</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-314"></span><span>      </span><span id="local-6989586621682213997"><span class="annot"><a href="#local-6989586621682213997"><span class="hs-identifier hs-var">cache</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+-&gt; IO (HashMap Fingerprint (Cache Any))
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Fingerprint (Cache Any))
+</span><a href="#local-6989586621682213996"><span class="hs-identifier hs-var">cref</span></a></span><span>
+</span><span id="line-315"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">sum</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">mapM</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Caches.html#cacheLiveSize"><span class="hs-identifier hs-type">cacheLiveSize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HM.elems</span></span><span> </span><span class="annot"><a href="#local-6989586621682213997"><span class="hs-identifier hs-type">cache</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-316"></span><span>    </span><span class="annot"><span class="annottext">Maybe (WeakThreadIdRef, IORef (HashMap Fingerprint (Cache Any)))
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int -&gt; IO Int
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-317"></span><span>
+</span><span id="line-318"></span><span class="hs-comment">{-
+-- | Dump the current thread's cache.
+dumpThreadCache :: WeakThreadId -&gt; IO ()
+dumpThreadCache tid = do
+  caches &lt;- readIORef termCacheCell
+  case HM.lookup tid caches of
+    Just (_, cref) -&gt; do
+      cache &lt;- readIORef cref
+      mapM_ dumpCache (HM.elems cache)
+    Nothing -&gt; return ()
+-}</span><span>
+</span><span id="line-329"></span></pre></body></html>

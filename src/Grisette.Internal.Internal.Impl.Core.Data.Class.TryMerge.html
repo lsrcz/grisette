@@ -1,0 +1,445 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2023-2024</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge.html"><span class="hs-identifier">Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Cont</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ContT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ContT</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Except</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ExceptT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ExceptT</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Identity</span></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Identity</span></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><span class="hs-identifier">IdentityT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IdentityT</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.RWS.Lazy</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RWSLazy</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.RWS.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RWSStrict</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Reader</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ReaderT</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.State.Lazy</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">StateLazy</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.State.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">StateStrict</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MaybeT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MaybeT</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Writer.Lazy</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">WriterLazy</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Writer.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">WriterStrict</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Functor.Sum</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Sum</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">InL</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">InR</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Monoid</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monoid</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Mergeable.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.Mergeable</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier">Mergeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier">rootStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable1"><span class="hs-identifier">Mergeable1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy"><span class="hs-identifier">liftRootStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable2"><span class="hs-identifier">Mergeable2</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy2"><span class="hs-identifier">liftRootStrategy2</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable3"><span class="hs-identifier">Mergeable3</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy3"><span class="hs-identifier">liftRootStrategy3</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html"><span class="hs-identifier">Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier">tryMergeWithStrategy</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319056"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319056"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MaybeT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319056"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-45"></span><span>  </span><span id="local-6989586621682319299"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; MaybeT m a -&gt; MaybeT m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319300"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319300"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MaybeT</span></span><span> </span><span id="local-6989586621682319301"><span class="annot"><span class="annottext">m (Maybe a)
+</span><a href="#local-6989586621682319301"><span class="hs-identifier hs-var">ma</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><span class="annottext">m (Maybe a) -&gt; MaybeT m a
+forall (m :: * -&gt; *) a. m (Maybe a) -&gt; MaybeT m a
+</span><span class="hs-identifier hs-var">MaybeT</span></span><span> </span><span class="annot"><span class="annottext">(m (Maybe a) -&gt; MaybeT m a) -&gt; m (Maybe a) -&gt; MaybeT m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy (Maybe a) -&gt; m (Maybe a) -&gt; m (Maybe a)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; MergingStrategy (Maybe a)
+forall a. MergingStrategy a -&gt; MergingStrategy (Maybe a)
+forall (u :: * -&gt; *) a.
+Mergeable1 u =&gt;
+MergingStrategy a -&gt; MergingStrategy (u a)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy"><span class="hs-identifier hs-var">liftRootStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319300"><span class="hs-identifier hs-var">strategy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">m (Maybe a)
+</span><a href="#local-6989586621682319301"><span class="hs-identifier hs-var">ma</span></a></span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319071"><span id="local-6989586621682319072"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319071"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319072"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ExceptT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319071"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319072"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-50"></span><span>  </span><span id="local-6989586621682319309"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; ExceptT e m a -&gt; ExceptT e m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319310"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319310"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ExceptT</span></span><span> </span><span id="local-6989586621682319311"><span class="annot"><span class="annottext">m (Either e a)
+</span><a href="#local-6989586621682319311"><span class="hs-identifier hs-var">ma</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><span class="annottext">m (Either e a) -&gt; ExceptT e m a
+forall e (m :: * -&gt; *) a. m (Either e a) -&gt; ExceptT e m a
+</span><span class="hs-identifier hs-var">ExceptT</span></span><span> </span><span class="annot"><span class="annottext">(m (Either e a) -&gt; ExceptT e m a)
+-&gt; m (Either e a) -&gt; ExceptT e m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy (Either e a) -&gt; m (Either e a) -&gt; m (Either e a)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; MergingStrategy (Either e a)
+forall a. MergingStrategy a -&gt; MergingStrategy (Either e a)
+forall (u :: * -&gt; *) a.
+Mergeable1 u =&gt;
+MergingStrategy a -&gt; MergingStrategy (u a)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy"><span class="hs-identifier hs-var">liftRootStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319310"><span class="hs-identifier hs-var">strategy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">m (Either e a)
+</span><a href="#local-6989586621682319311"><span class="hs-identifier hs-var">ma</span></a></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319081"><span id="local-6989586621682319082"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319081"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319082"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319081"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-55"></span><span>  </span><span id="local-6989586621682319316"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; ReaderT r m a -&gt; ReaderT r m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319317"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319317"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span id="local-6989586621682319318"><span class="annot"><span class="annottext">r -&gt; m a
+</span><a href="#local-6989586621682319318"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><span class="annottext">(r -&gt; m a) -&gt; ReaderT r m a
+forall r (m :: * -&gt; *) a. (r -&gt; m a) -&gt; ReaderT r m a
+</span><span class="hs-identifier hs-var">ReaderT</span></span><span> </span><span class="annot"><span class="annottext">((r -&gt; m a) -&gt; ReaderT r m a) -&gt; (r -&gt; m a) -&gt; ReaderT r m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682319319"><span class="annot"><span class="annottext">r
+</span><a href="#local-6989586621682319319"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; m a -&gt; m a
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319317"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; m a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">r -&gt; m a
+</span><a href="#local-6989586621682319318"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">r
+</span><a href="#local-6989586621682319319"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319090"><span id="local-6989586621682319091"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319090"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319091"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StateLazy.StateT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319090"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319091"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-60"></span><span>  </span><span id="local-6989586621682319328"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; StateT s m a -&gt; StateT s m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319329"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319329"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StateLazy.StateT</span></span><span> </span><span id="local-6989586621682319331"><span class="annot"><span class="annottext">s -&gt; m (a, s)
+</span><a href="#local-6989586621682319331"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">(s -&gt; m (a, s)) -&gt; StateT s m a
+forall s (m :: * -&gt; *) a. (s -&gt; m (a, s)) -&gt; StateT s m a
+</span><span class="hs-identifier hs-var">StateLazy.StateT</span></span><span> </span><span class="annot"><span class="annottext">((s -&gt; m (a, s)) -&gt; StateT s m a)
+-&gt; (s -&gt; m (a, s)) -&gt; StateT s m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-62"></span><span>      </span><span class="hs-glyph">\</span><span id="local-6989586621682319332"><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319332"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">MergingStrategy (a, s) -&gt; m (a, s) -&gt; m (a, s)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; MergingStrategy s -&gt; MergingStrategy (a, s)
+forall a b.
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (a, b)
+forall (u :: * -&gt; * -&gt; *) a b.
+Mergeable2 u =&gt;
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (u a b)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy2"><span class="hs-identifier hs-var">liftRootStrategy2</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319329"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy s
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">s -&gt; m (a, s)
+</span><a href="#local-6989586621682319331"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319332"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319104"><span id="local-6989586621682319105"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319104"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319105"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StateStrict.StateT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319104"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319105"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-66"></span><span>  </span><span id="local-6989586621682319340"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; StateT s m a -&gt; StateT s m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319341"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319341"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">StateStrict.StateT</span></span><span> </span><span id="local-6989586621682319343"><span class="annot"><span class="annottext">s -&gt; m (a, s)
+</span><a href="#local-6989586621682319343"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><span class="annottext">(s -&gt; m (a, s)) -&gt; StateT s m a
+forall s (m :: * -&gt; *) a. (s -&gt; m (a, s)) -&gt; StateT s m a
+</span><span class="hs-identifier hs-var">StateStrict.StateT</span></span><span> </span><span class="annot"><span class="annottext">((s -&gt; m (a, s)) -&gt; StateT s m a)
+-&gt; (s -&gt; m (a, s)) -&gt; StateT s m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-68"></span><span>      </span><span class="hs-glyph">\</span><span id="local-6989586621682319344"><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319344"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">MergingStrategy (a, s) -&gt; m (a, s) -&gt; m (a, s)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; MergingStrategy s -&gt; MergingStrategy (a, s)
+forall a b.
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (a, b)
+forall (u :: * -&gt; * -&gt; *) a b.
+Mergeable2 u =&gt;
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (u a b)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy2"><span class="hs-identifier hs-var">liftRootStrategy2</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319341"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy s
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">s -&gt; m (a, s)
+</span><a href="#local-6989586621682319343"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319344"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-72"></span><span>  </span><span id="local-6989586621682319113"><span id="local-6989586621682319114"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621682319113"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319113"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319114"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">WriterLazy.WriterT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319113"><span class="hs-identifier hs-type">w</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319114"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-75"></span><span>  </span><span id="local-6989586621682319353"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; WriterT w m a -&gt; WriterT w m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319354"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319354"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">WriterLazy.WriterT</span></span><span> </span><span id="local-6989586621682319356"><span class="annot"><span class="annottext">m (a, w)
+</span><a href="#local-6989586621682319356"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-76"></span><span>    </span><span class="annot"><span class="annottext">m (a, w) -&gt; WriterT w m a
+forall w (m :: * -&gt; *) a. m (a, w) -&gt; WriterT w m a
+</span><span class="hs-identifier hs-var">WriterLazy.WriterT</span></span><span> </span><span class="annot"><span class="annottext">(m (a, w) -&gt; WriterT w m a) -&gt; m (a, w) -&gt; WriterT w m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-77"></span><span>      </span><span class="annot"><span class="annottext">MergingStrategy (a, w) -&gt; m (a, w) -&gt; m (a, w)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; MergingStrategy w -&gt; MergingStrategy (a, w)
+forall a b.
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (a, b)
+forall (u :: * -&gt; * -&gt; *) a b.
+Mergeable2 u =&gt;
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (u a b)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy2"><span class="hs-identifier hs-var">liftRootStrategy2</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319354"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy w
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">m (a, w)
+</span><a href="#local-6989586621682319356"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-78"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-81"></span><span>  </span><span id="local-6989586621682319122"><span id="local-6989586621682319123"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621682319122"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319122"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319123"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">WriterStrict.WriterT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319122"><span class="hs-identifier hs-type">w</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319123"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621682319365"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; WriterT w m a -&gt; WriterT w m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319366"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319366"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">WriterStrict.WriterT</span></span><span> </span><span id="local-6989586621682319368"><span class="annot"><span class="annottext">m (a, w)
+</span><a href="#local-6989586621682319368"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-85"></span><span>    </span><span class="annot"><span class="annottext">m (a, w) -&gt; WriterT w m a
+forall w (m :: * -&gt; *) a. m (a, w) -&gt; WriterT w m a
+</span><span class="hs-identifier hs-var">WriterStrict.WriterT</span></span><span> </span><span class="annot"><span class="annottext">(m (a, w) -&gt; WriterT w m a) -&gt; m (a, w) -&gt; WriterT w m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-86"></span><span>      </span><span class="annot"><span class="annottext">MergingStrategy (a, w) -&gt; m (a, w) -&gt; m (a, w)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a -&gt; MergingStrategy w -&gt; MergingStrategy (a, w)
+forall a b.
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (a, b)
+forall (u :: * -&gt; * -&gt; *) a b.
+Mergeable2 u =&gt;
+MergingStrategy a -&gt; MergingStrategy b -&gt; MergingStrategy (u a b)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy2"><span class="hs-identifier hs-var">liftRootStrategy2</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319366"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy w
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">m (a, w)
+</span><a href="#local-6989586621682319368"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-87"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-90"></span><span>  </span><span id="local-6989586621682319133"><span id="local-6989586621682319134"><span id="local-6989586621682319135"><span id="local-6989586621682319136"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621682319133"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319133"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319134"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319135"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">RWSStrict.RWST</span></span><span> </span><span class="annot"><a href="#local-6989586621682319136"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319133"><span class="hs-identifier hs-type">w</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319134"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319135"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span></span></span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-93"></span><span>  </span><span id="local-6989586621682319380"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; RWST r w s m a -&gt; RWST r w s m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319381"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319381"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">RWSStrict.RWST</span></span><span> </span><span id="local-6989586621682319383"><span class="annot"><span class="annottext">r -&gt; s -&gt; m (a, s, w)
+</span><a href="#local-6989586621682319383"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">(r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a
+forall r w s (m :: * -&gt; *) a.
+(r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a
+</span><span class="hs-identifier hs-var">RWSStrict.RWST</span></span><span> </span><span class="annot"><span class="annottext">((r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a)
+-&gt; (r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-95"></span><span>      </span><span class="hs-glyph">\</span><span id="local-6989586621682319384"><span class="annot"><span class="annottext">r
+</span><a href="#local-6989586621682319384"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span id="local-6989586621682319385"><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319385"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-96"></span><span>        </span><span class="annot"><span class="annottext">MergingStrategy (a, s, w) -&gt; m (a, s, w) -&gt; m (a, s, w)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span>
+</span><span id="line-97"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; MergingStrategy s
+-&gt; MergingStrategy w
+-&gt; MergingStrategy (a, s, w)
+forall a b c.
+MergingStrategy a
+-&gt; MergingStrategy b
+-&gt; MergingStrategy c
+-&gt; MergingStrategy (a, b, c)
+forall (u :: * -&gt; * -&gt; * -&gt; *) a b c.
+Mergeable3 u =&gt;
+MergingStrategy a
+-&gt; MergingStrategy b
+-&gt; MergingStrategy c
+-&gt; MergingStrategy (u a b c)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy3"><span class="hs-identifier hs-var">liftRootStrategy3</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319381"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy s
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy w
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-98"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">r -&gt; s -&gt; m (a, s, w)
+</span><a href="#local-6989586621682319383"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">r
+</span><a href="#local-6989586621682319384"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319385"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682319153"><span id="local-6989586621682319154"><span id="local-6989586621682319155"><span id="local-6989586621682319156"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621682319153"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319153"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319154"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319155"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-103"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">RWSLazy.RWST</span></span><span> </span><span class="annot"><a href="#local-6989586621682319156"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319153"><span class="hs-identifier hs-type">w</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319154"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319155"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span></span></span><span>
+</span><span id="line-104"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-105"></span><span>  </span><span id="local-6989586621682319396"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; RWST r w s m a -&gt; RWST r w s m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319397"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319397"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">RWSLazy.RWST</span></span><span> </span><span id="local-6989586621682319399"><span class="annot"><span class="annottext">r -&gt; s -&gt; m (a, s, w)
+</span><a href="#local-6989586621682319399"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-106"></span><span>    </span><span class="annot"><span class="annottext">(r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a
+forall r w s (m :: * -&gt; *) a.
+(r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a
+</span><span class="hs-identifier hs-var">RWSLazy.RWST</span></span><span> </span><span class="annot"><span class="annottext">((r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a)
+-&gt; (r -&gt; s -&gt; m (a, s, w)) -&gt; RWST r w s m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-107"></span><span>      </span><span class="hs-glyph">\</span><span id="local-6989586621682319400"><span class="annot"><span class="annottext">r
+</span><a href="#local-6989586621682319400"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span id="local-6989586621682319401"><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319401"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>        </span><span class="annot"><span class="annottext">MergingStrategy (a, s, w) -&gt; m (a, s, w) -&gt; m (a, s, w)
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span>
+</span><span id="line-109"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MergingStrategy a
+-&gt; MergingStrategy s
+-&gt; MergingStrategy w
+-&gt; MergingStrategy (a, s, w)
+forall a b c.
+MergingStrategy a
+-&gt; MergingStrategy b
+-&gt; MergingStrategy c
+-&gt; MergingStrategy (a, b, c)
+forall (u :: * -&gt; * -&gt; * -&gt; *) a b c.
+Mergeable3 u =&gt;
+MergingStrategy a
+-&gt; MergingStrategy b
+-&gt; MergingStrategy c
+-&gt; MergingStrategy (u a b c)
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#liftRootStrategy3"><span class="hs-identifier hs-var">liftRootStrategy3</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319397"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy s
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy w
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">r -&gt; s -&gt; m (a, s, w)
+</span><a href="#local-6989586621682319399"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">r
+</span><a href="#local-6989586621682319400"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621682319401"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319165"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319165"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IdentityT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319165"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-114"></span><span>  </span><span id="local-6989586621682319406"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; IdentityT m a -&gt; IdentityT m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319407"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319407"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IdentityT</span></span><span> </span><span id="local-6989586621682319408"><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621682319408"><span class="hs-identifier hs-var">ma</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-115"></span><span>    </span><span class="annot"><span class="annottext">m a -&gt; IdentityT m a
+forall {k} (f :: k -&gt; *) (a :: k). f a -&gt; IdentityT f a
+</span><span class="hs-identifier hs-var">IdentityT</span></span><span> </span><span class="annot"><span class="annottext">(m a -&gt; IdentityT m a) -&gt; m a -&gt; IdentityT m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; m a -&gt; m a
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319407"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621682319408"><span class="hs-identifier hs-var">ma</span></a></span><span>
+</span><span id="line-116"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319173"><span id="local-6989586621682319174"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319173"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319174"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ContT</span></span><span> </span><span class="annot"><a href="#local-6989586621682319174"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319173"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-119"></span><span>  </span><span id="local-6989586621682319415"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; ContT r m a -&gt; ContT r m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ContT</span></span><span> </span><span id="local-6989586621682319416"><span class="annot"><span class="annottext">(a -&gt; m r) -&gt; m r
+</span><a href="#local-6989586621682319416"><span class="hs-identifier hs-var">ma</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-120"></span><span>    </span><span class="annot"><span class="annottext">((a -&gt; m r) -&gt; m r) -&gt; ContT r m a
+forall {k} (r :: k) (m :: k -&gt; *) a.
+((a -&gt; m r) -&gt; m r) -&gt; ContT r m a
+</span><span class="hs-identifier hs-var">ContT</span></span><span> </span><span class="annot"><span class="annottext">(((a -&gt; m r) -&gt; m r) -&gt; ContT r m a)
+-&gt; ((a -&gt; m r) -&gt; m r) -&gt; ContT r m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682319417"><span class="annot"><span class="annottext">a -&gt; m r
+</span><a href="#local-6989586621682319417"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">MergingStrategy r -&gt; m r -&gt; m r
+forall a. MergingStrategy a -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy r
+forall a. Mergeable a =&gt; MergingStrategy a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#rootStrategy"><span class="hs-identifier hs-var">rootStrategy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(a -&gt; m r) -&gt; m r
+</span><a href="#local-6989586621682319416"><span class="hs-identifier hs-var">ma</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; m r
+</span><a href="#local-6989586621682319417"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-121"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span class="hs-cpp">
+
+#define TRYMERGE_ID(T) \
+  instance TryMerge (T) where { \
+    tryMergeWithStrategy _ = id; {-# INLINE tryMergeWithStrategy #-} \
+  }
+</span><span class="hs-cpp">
+#if 1
+</span><span id="local-6989586621682319181"></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-identifier">Either</span><span> </span><span class="hs-identifier">a</span><span class="hs-special">)</span><span>
+</span><span id="line-130"></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-identifier">Maybe</span><span class="hs-special">)</span><span>
+</span><span id="line-131"></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-identifier">Identity</span><span class="hs-special">)</span><span>
+</span><span id="line-132"></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-133"></span><span id="local-6989586621682319189"></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span id="local-6989586621682319193"><span id="local-6989586621682319194"></span></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-identifier">b</span><span class="hs-special">)</span><span>
+</span><span id="line-135"></span><span id="local-6989586621682319199"><span id="local-6989586621682319200"><span id="local-6989586621682319201"></span></span></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-identifier">b</span><span> </span><span class="hs-identifier">c</span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span id="local-6989586621682319207"><span id="local-6989586621682319208"><span id="local-6989586621682319209"><span id="local-6989586621682319210"></span></span></span></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-identifier">b</span><span> </span><span class="hs-identifier">c</span><span> </span><span class="hs-identifier">d</span><span class="hs-special">)</span><span>
+</span><span id="line-137"></span><span id="local-6989586621682319217"><span id="local-6989586621682319218"><span id="local-6989586621682319219"><span id="local-6989586621682319220"><span id="local-6989586621682319221"></span></span></span></span></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-identifier">b</span><span> </span><span class="hs-identifier">c</span><span> </span><span class="hs-identifier">d</span><span> </span><span class="hs-identifier">e</span><span class="hs-special">)</span><span>
+</span><span id="line-138"></span><span id="local-6989586621682319229"><span id="local-6989586621682319230"><span id="local-6989586621682319231"><span id="local-6989586621682319232"><span id="local-6989586621682319233"><span id="local-6989586621682319234"></span></span></span></span></span></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-identifier">b</span><span> </span><span class="hs-identifier">c</span><span> </span><span class="hs-identifier">d</span><span> </span><span class="hs-identifier">e</span><span> </span><span class="hs-identifier">f</span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span id="local-6989586621682319243"><span id="local-6989586621682319244"><span id="local-6989586621682319245"><span id="local-6989586621682319246"><span id="local-6989586621682319247"><span id="local-6989586621682319248"><span id="local-6989586621682319249"></span></span></span></span></span></span></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-identifier">b</span><span> </span><span class="hs-identifier">c</span><span> </span><span class="hs-identifier">d</span><span> </span><span class="hs-identifier">e</span><span> </span><span class="hs-identifier">f</span><span> </span><span class="hs-identifier">g</span><span class="hs-special">)</span><span>
+</span><span id="line-140"></span><span id="local-6989586621682319259"><span id="local-6989586621682319260"><span id="local-6989586621682319261"><span id="local-6989586621682319262"><span id="local-6989586621682319263"><span id="local-6989586621682319264"><span id="local-6989586621682319265"><span id="local-6989586621682319266"></span></span></span></span></span></span></span></span><span class="hs-identifier">TRYMERGE_ID</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-identifier">b</span><span> </span><span class="hs-identifier">c</span><span> </span><span class="hs-identifier">d</span><span> </span><span class="hs-identifier">e</span><span> </span><span class="hs-identifier">f</span><span> </span><span class="hs-identifier">g</span><span> </span><span class="hs-identifier">h</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-143"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682319271"><span id="local-6989586621682319272"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319271"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319272"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Sum</span></span><span> </span><span class="annot"><a href="#local-6989586621682319271"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682319272"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-144"></span><span>  </span><span id="local-6989586621682319461"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; Sum f g a -&gt; Sum f g a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span id="local-6989586621682319462"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319462"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">InL</span></span><span> </span><span id="local-6989586621682319463"><span class="annot"><span class="annottext">f a
+</span><a href="#local-6989586621682319463"><span class="hs-identifier hs-var">fa</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-145"></span><span>    </span><span class="annot"><span class="annottext">f a -&gt; Sum f g a
+forall {k} (f :: k -&gt; *) (g :: k -&gt; *) (a :: k). f a -&gt; Sum f g a
+</span><span class="hs-identifier hs-var">InL</span></span><span> </span><span class="annot"><span class="annottext">(f a -&gt; Sum f g a) -&gt; f a -&gt; Sum f g a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; f a -&gt; f a
+forall a. MergingStrategy a -&gt; f a -&gt; f a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319462"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">f a
+</span><a href="#local-6989586621682319463"><span class="hs-identifier hs-var">fa</span></a></span><span>
+</span><span id="line-146"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span id="local-6989586621682319464"><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319464"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">InR</span></span><span> </span><span id="local-6989586621682319465"><span class="annot"><span class="annottext">g a
+</span><a href="#local-6989586621682319465"><span class="hs-identifier hs-var">fa</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><span class="annottext">g a -&gt; Sum f g a
+forall {k} (f :: k -&gt; *) (g :: k -&gt; *) (a :: k). g a -&gt; Sum f g a
+</span><span class="hs-identifier hs-var">InR</span></span><span> </span><span class="annot"><span class="annottext">(g a -&gt; Sum f g a) -&gt; g a -&gt; Sum f g a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a -&gt; g a -&gt; g a
+forall a. MergingStrategy a -&gt; g a -&gt; g a
+forall (m :: * -&gt; *) a.
+TryMerge m =&gt;
+MergingStrategy a -&gt; m a -&gt; m a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var">tryMergeWithStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><a href="#local-6989586621682319464"><span class="hs-identifier hs-var">strategy</span></a></span><span> </span><span class="annot"><span class="annottext">g a
+</span><a href="#local-6989586621682319465"><span class="hs-identifier hs-var">fa</span></a></span><span>
+</span><span id="line-148"></span><span>
+</span><span id="line-149"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#TryMerge"><span class="hs-identifier hs-type">TryMerge</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monoid.Sum</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-150"></span><span>  </span><span id="local-6989586621682319468"><span class="annot"><span class="annottext">tryMergeWithStrategy :: forall a. MergingStrategy a -&gt; Sum a -&gt; Sum a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-identifier hs-var hs-var hs-var">tryMergeWithStrategy</span></a></span></span><span> </span><span class="annot"><span class="annottext">MergingStrategy a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Sum a -&gt; Sum a
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-151"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.html#tryMergeWithStrategy"><span class="hs-pragma hs-type">tryMergeWithStrategy</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-152"></span></pre></body></html>

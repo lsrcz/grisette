@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.ModelRep</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.ModelRep.html"><span class="hs-identifier">Grisette.Internal.SymPrim.ModelRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.ModelRep.html#ModelSymPair"><span class="hs-identifier">ModelSymPair</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ModelOps.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.ModelOps</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#ModelOps"><span class="hs-identifier">ModelOps</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#emptyModel"><span class="hs-identifier">emptyModel</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#insertValue"><span class="hs-identifier">insertValue</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#ModelRep"><span class="hs-identifier">ModelRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#buildModel"><span class="hs-identifier">buildModel</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Model</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#Model"><span class="hs-identifier">Model</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Term</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LinkedRep"><span class="hs-identifier">LinkedRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#underlyingTerm"><span class="hs-identifier">underlyingTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymTerm"><span class="hs-identifier">SymTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-25"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Backend</span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- &gt;&gt;&gt; import Data.Proxy</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- ModelRep</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- | A pair of a symbolic constant and its value.</span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- This is used to build a model from a list of symbolic constants and their values.</span><span>
+</span><span id="line-34"></span><span class="hs-comment">--</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- &gt;&gt;&gt; buildModel (&quot;a&quot; := (1 :: Integer), &quot;b&quot; := True) :: Model</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- Model {a -&gt; 1 :: Integer, b -&gt; true :: Bool}</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">data</span><span> </span><span id="ModelSymPair"><span class="annot"><a href="Grisette.Internal.SymPrim.ModelRep.html#ModelSymPair"><span class="hs-identifier hs-var">ModelSymPair</span></a></span></span><span> </span><span id="local-6989586621682262489"><span class="annot"><a href="#local-6989586621682262489"><span class="hs-identifier hs-type">ct</span></a></span></span><span> </span><span id="local-6989586621682262490"><span class="annot"><a href="#local-6989586621682262490"><span class="hs-identifier hs-type">st</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-38"></span><span>  </span><span id="local-6989586621682262491"><span id="local-6989586621682262492"><span id="%3A%3D"><span class="annot"><a href="Grisette.Internal.SymPrim.ModelRep.html#%3A%3D"><span class="hs-operator hs-var">(:=)</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LinkedRep"><span class="hs-identifier hs-type">LinkedRep</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682262491"><span class="hs-identifier hs-type">ct</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682262492"><span class="hs-identifier hs-type">st</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682262492"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682262491"><span class="hs-identifier hs-type">ct</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.ModelRep.html#ModelSymPair"><span class="hs-identifier hs-type">ModelSymPair</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682262491"><span class="hs-identifier hs-type">ct</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682262492"><span class="hs-identifier hs-type">st</span></a></span></span></span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682262464"><span id="local-6989586621682262465"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#ModelRep"><span class="hs-identifier hs-type">ModelRep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.ModelRep.html#ModelSymPair"><span class="hs-identifier hs-type">ModelSymPair</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682262464"><span class="hs-identifier hs-type">ct</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682262465"><span class="hs-identifier hs-type">st</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Model.html#Model"><span class="hs-identifier hs-type">Model</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-41"></span><span>  </span><span id="local-6989586621682262497"><span class="annot"><span class="annottext">buildModel :: ModelSymPair ct st -&gt; Model
+</span><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#buildModel"><span class="hs-identifier hs-var hs-var hs-var">buildModel</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682262505"><span class="annot"><span class="annottext">st
+</span><a href="#local-6989586621682262505"><span class="hs-identifier hs-var">sym</span></a></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.ModelRep.html#%3A%3D"><span class="hs-operator hs-type">:=</span></a></span><span> </span><span id="local-6989586621682262506"><span class="annot"><span class="annottext">ct
+</span><a href="#local-6989586621682262506"><span class="hs-identifier hs-var">val</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">st -&gt; Term ct
+forall con sym. LinkedRep con sym =&gt; sym -&gt; Term con
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#underlyingTerm"><span class="hs-identifier hs-var">underlyingTerm</span></a></span><span> </span><span class="annot"><span class="annottext">st
+</span><a href="#local-6989586621682262505"><span class="hs-identifier hs-var">sym</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-43"></span><span>      </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymTerm"><span class="hs-identifier hs-type">SymTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682262507"><span class="annot"><span class="annottext">TypedSymbol 'AnyKind ct
+</span><a href="#local-6989586621682262507"><span class="hs-identifier hs-var">symbol</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'AnyKind ct -&gt; ct -&gt; Model -&gt; Model
+forall t. TypedSymbol 'AnyKind t -&gt; t -&gt; Model -&gt; Model
+forall model symbolSet (typedSymbol :: * -&gt; *) t.
+ModelOps model symbolSet typedSymbol =&gt;
+typedSymbol t -&gt; t -&gt; model -&gt; model
+</span><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#insertValue"><span class="hs-identifier hs-var">insertValue</span></a></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'AnyKind ct
+</span><a href="#local-6989586621682262507"><span class="hs-identifier hs-var">symbol</span></a></span><span> </span><span class="annot"><span class="annottext">ct
+</span><a href="#local-6989586621682262506"><span class="hs-identifier hs-var">val</span></a></span><span> </span><span class="annot"><span class="annottext">Model
+forall model symbolSet (typedSymbol :: * -&gt; *).
+ModelOps model symbolSet typedSymbol =&gt;
+model
+</span><a href="Grisette.Internal.Core.Data.Class.ModelOps.html#emptyModel"><span class="hs-identifier hs-var">emptyModel</span></a></span><span>
+</span><span id="line-44"></span><span>      </span><span class="annot"><span class="annottext">Term ct
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Model
+forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;buildModel: should only use symbolic constants&quot;</span></span><span>
+</span><span id="line-45"></span></pre></body></html>

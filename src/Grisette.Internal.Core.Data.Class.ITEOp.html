@@ -1,0 +1,209 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.ITEOp</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2021-2023</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.ITEOp</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Identity</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">HS</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Proxy</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.TypeNats</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">KnownNat</span></span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(&lt;=)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html"><span class="hs-identifier">Grisette.Internal.SymPrim.GeneralFun</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html#freshArgSymbol"><span class="hs-identifier">freshArgSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html#substTerm"><span class="hs-identifier">substTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-keyword">type</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html#--%3E"><span class="hs-operator">(--&gt;)</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html#GeneralFun"><span class="hs-identifier">GeneralFun</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.SomeTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier">SomeTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier">SomeTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Term</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier">pevalITETerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier">TypedConstantSymbol</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#symTerm"><span class="hs-identifier">symTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymAlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier">SymAlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymAlgReal.html#SymAlgReal"><span class="hs-identifier">SymAlgReal</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBV</span></a></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier">SymIntN</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymIntN"><span class="hs-identifier">SymIntN</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier">SymWordN</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBV.html#SymWordN"><span class="hs-identifier">SymWordN</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier">SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier">SymBool</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymFP</span></a></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier">SymFP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier">SymFP</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier">SymFPRoundingMode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFPRoundingMode"><span class="hs-identifier">SymFPRoundingMode</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymGeneralFun.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymGeneralFun</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-keyword">type</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymGeneralFun.html#-~%3E"><span class="hs-operator">(-~&gt;)</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymGeneralFun.html#SymGeneralFun"><span class="hs-identifier">SymGeneralFun</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymInteger</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html#SymInteger"><span class="hs-identifier">SymInteger</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymInteger.html#SymInteger"><span class="hs-identifier">SymInteger</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymTabularFun.html"><span class="hs-identifier">Grisette.Internal.SymPrim.SymTabularFun</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-keyword">type</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymTabularFun.html#%3D~%3E"><span class="hs-operator">(=~&gt;)</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymTabularFun.html#SymTabularFun"><span class="hs-identifier">SymTabularFun</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-comment">-- $setup</span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Core</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="hs-comment">-- | ITE operator for solvable (see &quot;Grisette.Core#g:solvable&quot;)s, including</span><span>
+</span><span id="line-57"></span><span class="hs-comment">-- symbolic boolean, integer, etc.</span><span>
+</span><span id="line-58"></span><span class="hs-comment">--</span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- &gt;&gt;&gt; let a = &quot;a&quot; :: SymBool</span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- &gt;&gt;&gt; let b = &quot;b&quot; :: SymBool</span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- &gt;&gt;&gt; let c = &quot;c&quot; :: SymBool</span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- &gt;&gt;&gt; symIte a b c</span><span>
+</span><span id="line-63"></span><span class="hs-comment">-- (ite a b c)</span><span>
+</span><span id="line-64"></span><span class="hs-keyword">class</span><span> </span><span id="ITEOp"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-var">ITEOp</span></a></span></span><span> </span><span id="local-6989586621682273156"><span class="annot"><a href="#local-6989586621682273156"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-comment">-- | Symbolic if-then-else.</span><span>
+</span><span id="line-66"></span><span>  </span><span id="symIte"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-type">symIte</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682273156"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682273156"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682273156"><span class="hs-identifier hs-type">v</span></a></span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- ITEOp instances</span><span class="hs-cpp">
+#define ITEOP_SIMPLE(type) \
+instance ITEOp type where \
+  symIte (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
+  {-# INLINE symIte #-}
+</span><span class="hs-cpp">
+#define ITEOP_BV(type) \
+instance (KnownNat n, 1 &lt;= n) =&gt; ITEOp (type n) where \
+  symIte (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
+  {-# INLINE symIte #-}
+</span><span class="hs-cpp">
+#define ITEOP_FUN(cop, op, cons) \
+instance ITEOp (op sa sb) where \
+  symIte (SymBool c) (cons t) (cons f) = cons $ pevalITETerm c t f; \
+  {-# INLINE symIte #-}
+</span><span class="hs-cpp">
+#if 1
+</span><span class="hs-identifier">ITEOP_SIMPLE</span><span class="hs-special">(</span><span class="hs-identifier">SymBool</span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span class="hs-identifier">ITEOP_SIMPLE</span><span class="hs-special">(</span><span class="hs-identifier">SymInteger</span><span class="hs-special">)</span><span>
+</span><span id="line-87"></span><span class="hs-identifier">ITEOP_SIMPLE</span><span class="hs-special">(</span><span class="hs-identifier">SymFPRoundingMode</span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span class="hs-identifier">ITEOP_SIMPLE</span><span class="hs-special">(</span><span class="hs-identifier">SymAlgReal</span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span class="hs-identifier">ITEOP_BV</span><span class="hs-special">(</span><span id="local-6989586621682273173"><span class="hs-identifier">SymIntN</span><span class="hs-special">)</span></span><span>
+</span><span id="line-90"></span><span class="hs-identifier">ITEOP_BV</span><span class="hs-special">(</span><span id="local-6989586621682273181"><span class="hs-identifier">SymWordN</span><span class="hs-special">)</span></span><span>
+</span><span id="line-91"></span><span class="hs-identifier">ITEOP_FUN</span><span id="local-6989586621682273188"><span id="local-6989586621682273189"><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator">=-&gt;</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymTabularFun.html#%3D~%3E"><span class="hs-operator hs-type">(=~&gt;)</span></a></span><span class="hs-special">,</span><span> </span></span></span><span class="hs-identifier">SymTabularFun</span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span class="hs-identifier">ITEOP_FUN</span><span id="local-6989586621682273210"><span id="local-6989586621682273211"><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator">--&gt;</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymGeneralFun.html#-~%3E"><span class="hs-operator hs-type">(-~&gt;)</span></a></span><span class="hs-special">,</span><span> </span></span></span><span class="hs-identifier">SymGeneralFun</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-95"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682273223"><span id="local-6989586621682273224"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621682273223"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html#--%3E"><span class="hs-operator hs-type">--&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273224"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-96"></span><span>  </span><span id="local-6989586621682273410"><span class="annot"><span class="annottext">symIte :: SymBool -&gt; (a --&gt; b) -&gt; (a --&gt; b) -&gt; a --&gt; b
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var hs-var hs-var">symIte</span></a></span></span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682273411"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682273411"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html#GeneralFun"><span class="hs-identifier hs-type">GeneralFun</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621682273418"><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682273418"><span class="hs-identifier hs-var">ta</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier hs-type">TypedConstantSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273223"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682273419"><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682273419"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.GeneralFun.html#GeneralFun"><span class="hs-identifier hs-type">GeneralFun</span></a></span><span> </span><span id="local-6989586621682273435"><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682273435"><span class="hs-identifier hs-var">tb</span></a></span></span><span> </span><span id="local-6989586621682273436"><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682273436"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-100"></span><span>      </span><span class="annot"><span class="annottext">TypedConstantSymbol a -&gt; Term b -&gt; a --&gt; b
+forall a b.
+(SupportedNonFuncPrim a, SupportedPrim b) =&gt;
+TypedConstantSymbol a -&gt; Term b -&gt; a --&gt; b
+</span><a href="Grisette.Internal.SymPrim.GeneralFun.html#GeneralFun"><span class="hs-identifier hs-var">GeneralFun</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682273437"><span class="hs-identifier hs-var">argSymbol</span></a></span><span> </span><span class="annot"><span class="annottext">(Term b -&gt; a --&gt; b) -&gt; Term b -&gt; a --&gt; b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-101"></span><span>        </span><span class="annot"><span class="annottext">Term Bool -&gt; Term b -&gt; Term b -&gt; Term b
+forall t.
+SupportedPrim t =&gt;
+Term Bool -&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier hs-var">pevalITETerm</span></a></span><span>
+</span><span id="line-102"></span><span>          </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682273411"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-103"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TypedConstantSymbol a
+-&gt; Term a -&gt; HashSet SomeTypedConstantSymbol -&gt; Term b -&gt; Term b
+forall (knd :: SymbolKind) a b.
+(SupportedPrim a, SupportedPrim b, IsSymbolKind knd) =&gt;
+TypedSymbol knd a
+-&gt; Term a -&gt; HashSet SomeTypedConstantSymbol -&gt; Term b -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.GeneralFun.html#substTerm"><span class="hs-identifier hs-var">substTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682273418"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TypedConstantSymbol a -&gt; Term a
+forall (knd :: SymbolKind) t. TypedSymbol knd t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#symTerm"><span class="hs-identifier hs-var">symTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682273437"><span class="hs-identifier hs-var">argSymbol</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashSet SomeTypedConstantSymbol
+forall a. HashSet a
+</span><span class="hs-identifier hs-var">HS.empty</span></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682273419"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-104"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TypedConstantSymbol a
+-&gt; Term a -&gt; HashSet SomeTypedConstantSymbol -&gt; Term b -&gt; Term b
+forall (knd :: SymbolKind) a b.
+(SupportedPrim a, SupportedPrim b, IsSymbolKind knd) =&gt;
+TypedSymbol knd a
+-&gt; Term a -&gt; HashSet SomeTypedConstantSymbol -&gt; Term b -&gt; Term b
+</span><a href="Grisette.Internal.SymPrim.GeneralFun.html#substTerm"><span class="hs-identifier hs-var">substTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682273435"><span class="hs-identifier hs-var">tb</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TypedConstantSymbol a -&gt; Term a
+forall (knd :: SymbolKind) t. TypedSymbol knd t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#symTerm"><span class="hs-identifier hs-var">symTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedConstantSymbol a
+</span><a href="#local-6989586621682273437"><span class="hs-identifier hs-var">argSymbol</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashSet SomeTypedConstantSymbol
+forall a. HashSet a
+</span><span class="hs-identifier hs-var">HS.empty</span></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682273436"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-106"></span><span>        </span><span class="annot"><a href="#local-6989586621682273437"><span class="hs-identifier hs-type">argSymbol</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#TypedConstantSymbol"><span class="hs-identifier hs-type">TypedConstantSymbol</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273223"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-107"></span><span>        </span><span id="local-6989586621682273437"><span class="annot"><span class="annottext">argSymbol :: TypedConstantSymbol a
+</span><a href="#local-6989586621682273437"><span class="hs-identifier hs-var hs-var">argSymbol</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; TypedConstantSymbol a
+forall a.
+SupportedNonFuncPrim a =&gt;
+[SomeTerm] -&gt; TypedConstantSymbol a
+</span><a href="Grisette.Internal.SymPrim.GeneralFun.html#freshArgSymbol"><span class="hs-identifier hs-var">freshArgSymbol</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term b -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682273419"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term b -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term b
+</span><a href="#local-6989586621682273436"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-108"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-pragma hs-type">symIte</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682273250"><span id="local-6989586621682273251"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273250"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273251"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273250"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273251"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-111"></span><span>  </span><span id="local-6989586621682273446"><span class="annot"><span class="annottext">symIte :: SymBool -&gt; SymFP eb sb -&gt; SymFP eb sb -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var hs-var hs-var">symIte</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682273447"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682273447"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span id="local-6989586621682273448"><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682273448"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-type">SymFP</span></a></span><span> </span><span id="local-6989586621682273449"><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682273449"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; SymFP eb sb
+forall (eb :: Nat) (sb :: Nat). Term (FP eb sb) -&gt; SymFP eb sb
+</span><a href="Grisette.Internal.SymPrim.SymFP.html#SymFP"><span class="hs-identifier hs-var">SymFP</span></a></span><span> </span><span class="annot"><span class="annottext">(Term (FP eb sb) -&gt; SymFP eb sb) -&gt; Term (FP eb sb) -&gt; SymFP eb sb
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+forall t.
+SupportedPrim t =&gt;
+Term Bool -&gt; Term t -&gt; Term t -&gt; Term t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalITETerm"><span class="hs-identifier hs-var">pevalITETerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682273447"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682273448"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682273449"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-112"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-pragma hs-type">symIte</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682273264"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682273264"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span> </span><span class="annot"><a href="#local-6989586621682273264"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-115"></span><span>  </span><span id="local-6989586621682273454"><span class="annot"><span class="annottext">symIte :: SymBool -&gt; Identity v -&gt; Identity v -&gt; Identity v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var hs-var hs-var">symIte</span></a></span></span><span> </span><span id="local-6989586621682273455"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682273455"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span> </span><span id="local-6989586621682273456"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621682273456"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span> </span><span id="local-6989586621682273457"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621682273457"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">v -&gt; Identity v
+forall a. a -&gt; Identity a
+</span><span class="hs-identifier hs-var">Identity</span></span><span> </span><span class="annot"><span class="annottext">(v -&gt; Identity v) -&gt; v -&gt; Identity v
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; v -&gt; v -&gt; v
+forall v. ITEOp v =&gt; SymBool -&gt; v -&gt; v -&gt; v
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var">symIte</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682273455"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621682273456"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621682273457"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-116"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-pragma hs-type">symIte</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682273268"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#ITEOp"><span class="hs-identifier hs-type">ITEOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="annot"><a href="#local-6989586621682273268"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-119"></span><span>  </span><span id="local-6989586621682273460"><span class="annot"><span class="annottext">symIte :: SymBool -&gt; Proxy a -&gt; Proxy a -&gt; Proxy a
+</span><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-identifier hs-var hs-var hs-var">symIte</span></a></span></span><span> </span><span class="annot"><span class="annottext">SymBool
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682273461"><span class="annot"><span class="annottext">Proxy a
+</span><a href="#local-6989586621682273461"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="annot"><span class="annottext">Proxy a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy a
+</span><a href="#local-6989586621682273461"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-120"></span><span>  </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.ITEOp.html#symIte"><span class="hs-pragma hs-type">symIte</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-121"></span></pre></body></html>

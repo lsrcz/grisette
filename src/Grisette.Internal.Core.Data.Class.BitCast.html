@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.BitCast</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.BitCast</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCast"><span class="hs-identifier">BitCast</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastCanonical"><span class="hs-identifier">BitCastCanonical</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastOr"><span class="hs-identifier">BitCastOr</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastOrCanonical"><span class="hs-identifier">bitCastOrCanonical</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastOrCanonical"><span class="hs-identifier">BitCastOrCanonical</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.ST</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ST</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">runST</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Array.ST</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MArray</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">newArray</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">STUArray</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">readArray</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Array.Unsafe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">castSTUArray</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- | Type class for bit-casting between types.</span><span>
+</span><span id="line-33"></span><span class="hs-comment">--</span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- __Special Considerations for Floating-Point Types:__</span><span>
+</span><span id="line-35"></span><span class="hs-comment">--</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- Typically, bit-casting a value from type @a@ to type @b@ and then back to</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- type @a@ should result in the original value. However, this is not always</span><span>
+</span><span id="line-38"></span><span class="hs-comment">-- true for floating-point values. In SMT-LIB2, there is only one NaN value with</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- multiple bit representations.</span><span>
+</span><span id="line-40"></span><span class="hs-comment">--</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- Given this, we do not provide 'BitCast' for the t'Grisette.SymPrim.FP' type,</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- instead, we use the 'bitCastOrCanonical' function to use a canonical</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- representation for the NaN values.</span><span>
+</span><span id="line-44"></span><span class="hs-comment">--</span><span>
+</span><span id="line-45"></span><span class="hs-comment">-- If your application requires distinguishing between different NaN values,</span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- it is recommended to define your own floating-point type using bit-vectors.</span><span>
+</span><span id="line-47"></span><span class="hs-comment">-- This allows you to check for NaN values and perform operations by bitcasting</span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- back to the provided floating-point types when they are not NaN values.</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">class</span><span> </span><span id="BitCast"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCast"><span class="hs-identifier hs-var">BitCast</span></a></span></span><span> </span><span id="local-6989586621682209327"><span class="annot"><a href="#local-6989586621682209327"><span class="hs-identifier hs-type">from</span></a></span></span><span> </span><span id="local-6989586621682209328"><span class="annot"><a href="#local-6989586621682209328"><span class="hs-identifier hs-type">to</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-50"></span><span>  </span><span id="bitCast"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCast"><span class="hs-identifier hs-type">bitCast</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682209327"><span class="hs-identifier hs-type">from</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209328"><span class="hs-identifier hs-type">to</span></a></span><span class="hs-cpp">
+
+#define BITCAST_WITH_MARRAY(from, to) \
+instance BitCast from to where \
+  bitCast x = runST $ bitcastWithMArray x; \
+  {-# INLINE bitCast #-}
+</span><span class="hs-cpp">
+#if 1
+</span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Int64</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Double</span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Double</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Int64</span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Word64</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Double</span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Double</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Word64</span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Word64</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Int64</span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Int64</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Word64</span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Int32</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Float</span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Float</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Int32</span><span class="hs-special">)</span><span>
+</span><span id="line-66"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Word32</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Float</span><span class="hs-special">)</span><span>
+</span><span id="line-67"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Float</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Word32</span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Word32</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Int32</span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span class="hs-identifier">BITCAST_WITH_MARRAY</span><span class="hs-special">(</span><span class="hs-identifier">Int32</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">Word32</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-72"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitcastWithMArray"><span class="hs-pragma hs-type">bitcastWithMArray</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-73"></span><span id="local-6989586621682209341"><span id="local-6989586621682209342"><span id="local-6989586621682209343"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitcastWithMArray"><span class="hs-identifier hs-type">bitcastWithMArray</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MArray</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">STUArray</span></span><span> </span><span class="annot"><a href="#local-6989586621682209341"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682209342"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ST</span></span><span> </span><span class="annot"><a href="#local-6989586621682209341"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">MArray</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">STUArray</span></span><span> </span><span class="annot"><a href="#local-6989586621682209341"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621682209343"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ST</span></span><span> </span><span class="annot"><a href="#local-6989586621682209341"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><a href="#local-6989586621682209342"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">ST</span></span><span> </span><span class="annot"><a href="#local-6989586621682209341"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209343"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-79"></span><span id="bitcastWithMArray"><span class="annot"><span class="annottext">bitcastWithMArray :: forall s a b.
+(MArray (STUArray s) a (ST s), MArray (STUArray s) b (ST s)) =&gt;
+a -&gt; ST s b
+</span><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitcastWithMArray"><span class="hs-identifier hs-var hs-var">bitcastWithMArray</span></a></span></span><span> </span><span id="local-6989586621682209495"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682209495"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-80"></span><span>  </span><span class="annot"><span class="annottext">(Int, Int) -&gt; a -&gt; ST s (STUArray s Int a)
+forall i. Ix i =&gt; (i, i) -&gt; a -&gt; ST s (STUArray s i a)
+forall (a :: * -&gt; * -&gt; *) e (m :: * -&gt; *) i.
+(MArray a e m, Ix i) =&gt;
+(i, i) -&gt; e -&gt; m (a i e)
+</span><span class="hs-identifier hs-var">newArray</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682209495"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">ST s (STUArray s Int a)
+-&gt; (STUArray s Int a -&gt; ST s (STUArray s Int b))
+-&gt; ST s (STUArray s Int b)
+forall a b. ST s a -&gt; (a -&gt; ST s b) -&gt; ST s b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">STUArray s Int a -&gt; ST s (STUArray s Int b)
+forall s ix a b. STUArray s ix a -&gt; ST s (STUArray s ix b)
+</span><span class="hs-identifier hs-var">castSTUArray</span></span><span> </span><span class="annot"><span class="annottext">ST s (STUArray s Int b) -&gt; (STUArray s Int b -&gt; ST s b) -&gt; ST s b
+forall a b. ST s a -&gt; (a -&gt; ST s b) -&gt; ST s b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(STUArray s Int b -&gt; Int -&gt; ST s b)
+-&gt; Int -&gt; STUArray s Int b -&gt; ST s b
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">STUArray s Int b -&gt; Int -&gt; ST s b
+forall (a :: * -&gt; * -&gt; *) e (m :: * -&gt; *) i.
+(MArray a e m, Ix i) =&gt;
+a i e -&gt; i -&gt; m e
+</span><span class="hs-identifier hs-var">readArray</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- | The canonical value when the bitcast cannot be precisely performed.</span><span>
+</span><span id="line-83"></span><span class="hs-comment">--</span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- For example, with SMT-LIB2, there is only one NaN for floating point numbers,</span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- with multiple bit representations. Our underlying t'Grisette.SymPrim.FP' type</span><span>
+</span><span id="line-86"></span><span class="hs-comment">-- also follows this convention. This means that we cannot precisely bitcast a</span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- t'Grisette.SymPrim.FP' to other types. So instead, we bitcast the NaN value</span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- to a canonical representation, defined with this type class.</span><span>
+</span><span id="line-89"></span><span class="hs-keyword">class</span><span> </span><span id="BitCastCanonical"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastCanonical"><span class="hs-identifier hs-var">BitCastCanonical</span></a></span></span><span> </span><span id="local-6989586621682209392"><span class="annot"><a href="#local-6989586621682209392"><span class="hs-identifier hs-type">from</span></a></span></span><span> </span><span id="local-6989586621682209393"><span class="annot"><a href="#local-6989586621682209393"><span class="hs-identifier hs-type">to</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-90"></span><span>  </span><span id="bitCastCanonicalValue"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastCanonicalValue"><span class="hs-identifier hs-type">bitCastCanonicalValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621682209394"><span class="annot"><a href="#local-6989586621682209394"><span class="hs-identifier hs-type">proxy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209392"><span class="hs-identifier hs-type">from</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209393"><span class="hs-identifier hs-type">to</span></a></span></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="hs-comment">-- | Bitcasting a value. If the value cannot be precisely bitcast, use the</span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- default value.</span><span>
+</span><span id="line-94"></span><span class="hs-keyword">class</span><span> </span><span id="BitCastOr"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastOr"><span class="hs-identifier hs-var">BitCastOr</span></a></span></span><span> </span><span id="local-6989586621682209390"><span class="annot"><a href="#local-6989586621682209390"><span class="hs-identifier hs-type">from</span></a></span></span><span> </span><span id="local-6989586621682209391"><span class="annot"><a href="#local-6989586621682209391"><span class="hs-identifier hs-type">to</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-95"></span><span>  </span><span id="bitCastOr"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastOr"><span class="hs-identifier hs-type">bitCastOr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682209391"><span class="hs-identifier hs-type">to</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209390"><span class="hs-identifier hs-type">from</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209391"><span class="hs-identifier hs-type">to</span></a></span><span>
+</span><span id="line-96"></span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- | Constraint for bitcasting a value and when the value cannot be precisely</span><span>
+</span><span id="line-98"></span><span class="hs-comment">-- bitcast, use the canonical value.</span><span>
+</span><span id="line-99"></span><span class="hs-keyword">type</span><span> </span><span id="BitCastOrCanonical"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastOrCanonical"><span class="hs-identifier hs-var">BitCastOrCanonical</span></a></span></span><span> </span><span id="local-6989586621682209499"><span class="annot"><a href="#local-6989586621682209499"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682209500"><span class="annot"><a href="#local-6989586621682209500"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastCanonical"><span class="hs-identifier hs-type">BitCastCanonical</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209499"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209500"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastOr"><span class="hs-identifier hs-type">BitCastOr</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209499"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209500"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- | Bitcasting a value and when the value cannot be precisely bitcast, use the</span><span>
+</span><span id="line-102"></span><span class="hs-comment">-- canonical value.</span><span>
+</span><span id="line-103"></span><span id="local-6989586621682209381"><span id="local-6989586621682209382"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastOrCanonical"><span class="hs-identifier hs-type">bitCastOrCanonical</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.BitCast.html#BitCastOrCanonical"><span class="hs-identifier hs-type">BitCastOrCanonical</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209381"><span class="hs-identifier hs-type">from</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682209382"><span class="hs-identifier hs-type">to</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209381"><span class="hs-identifier hs-type">from</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209382"><span class="hs-identifier hs-type">to</span></a></span></span></span><span>
+</span><span id="line-104"></span><span id="bitCastOrCanonical"><span class="annot"><span class="annottext">bitCastOrCanonical :: forall from to. BitCastOrCanonical from to =&gt; from -&gt; to
+</span><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastOrCanonical"><span class="hs-identifier hs-var hs-var">bitCastOrCanonical</span></a></span></span><span> </span><span id="local-6989586621682209506"><span class="annot"><span class="annottext">from
+</span><a href="#local-6989586621682209506"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">to -&gt; from -&gt; to
+forall from to. BitCastOr from to =&gt; to -&gt; from -&gt; to
+</span><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastOr"><span class="hs-identifier hs-var">bitCastOr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[from] -&gt; to
+forall from to (proxy :: * -&gt; *).
+BitCastCanonical from to =&gt;
+proxy from -&gt; to
+forall (proxy :: * -&gt; *). proxy from -&gt; to
+</span><a href="Grisette.Internal.Core.Data.Class.BitCast.html#bitCastCanonicalValue"><span class="hs-identifier hs-var">bitCastCanonicalValue</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">from
+</span><a href="#local-6989586621682209506"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">from
+</span><a href="#local-6989586621682209506"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-105"></span></pre></body></html>

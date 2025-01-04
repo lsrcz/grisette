@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE FunctionalDependencies #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- Module      :   Grisette.Internal.Core.Data.Class.SignConversion</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2023-2024</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html"><span class="hs-identifier">Grisette.Internal.Core.Data.Class.SignConversion</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#SignConversion"><span class="hs-identifier">SignConversion</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="annot"><span class="hs-comment">-- | Convert values between signed and unsigned.</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">class</span><span> </span><span id="SignConversion"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#SignConversion"><span class="hs-identifier hs-var">SignConversion</span></a></span></span><span> </span><span id="local-6989586621682209784"><span class="annot"><a href="#local-6989586621682209784"><span class="hs-identifier hs-type">ubv</span></a></span></span><span> </span><span id="local-6989586621682209785"><span class="annot"><a href="#local-6989586621682209785"><span class="hs-identifier hs-type">sbv</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621682209784"><span class="hs-identifier hs-type">ubv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209785"><span class="hs-identifier hs-type">sbv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621682209785"><span class="hs-identifier hs-type">sbv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209784"><span class="hs-identifier hs-type">ubv</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-comment">-- | Convert unsigned value to the corresponding signed value.</span><span>
+</span><span id="line-22"></span><span>  </span><span id="toSigned"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toSigned"><span class="hs-identifier hs-type">toSigned</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682209784"><span class="hs-identifier hs-type">ubv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209785"><span class="hs-identifier hs-type">sbv</span></a></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-comment">-- | Convert signed value to the corresponding unsigned value.</span><span>
+</span><span id="line-25"></span><span>  </span><span id="toUnsigned"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toUnsigned"><span class="hs-identifier hs-type">toUnsigned</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621682209785"><span class="hs-identifier hs-type">sbv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621682209784"><span class="hs-identifier hs-type">ubv</span></a></span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#SignConversion"><span class="hs-identifier hs-type">SignConversion</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int8</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-28"></span><span>  </span><span id="local-6989586621682209798"><span class="annot"><span class="annottext">toSigned :: Word8 -&gt; Int8
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toSigned"><span class="hs-identifier hs-var hs-var hs-var">toSigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Int8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-29"></span><span>  </span><span id="local-6989586621682209803"><span class="annot"><span class="annottext">toUnsigned :: Int8 -&gt; Word8
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toUnsigned"><span class="hs-identifier hs-var hs-var hs-var">toUnsigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int8 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#SignConversion"><span class="hs-identifier hs-type">SignConversion</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-32"></span><span>  </span><span id="local-6989586621682209811"><span class="annot"><span class="annottext">toSigned :: Word16 -&gt; Int16
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toSigned"><span class="hs-identifier hs-var hs-var hs-var">toSigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Int16
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-33"></span><span>  </span><span id="local-6989586621682209816"><span class="annot"><span class="annottext">toUnsigned :: Int16 -&gt; Word16
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toUnsigned"><span class="hs-identifier hs-var hs-var hs-var">toUnsigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int16 -&gt; Word16
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#SignConversion"><span class="hs-identifier hs-type">SignConversion</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-36"></span><span>  </span><span id="local-6989586621682209824"><span class="annot"><span class="annottext">toSigned :: Word32 -&gt; Int32
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toSigned"><span class="hs-identifier hs-var hs-var hs-var">toSigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-37"></span><span>  </span><span id="local-6989586621682209829"><span class="annot"><span class="annottext">toUnsigned :: Int32 -&gt; Word32
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toUnsigned"><span class="hs-identifier hs-var hs-var hs-var">toUnsigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#SignConversion"><span class="hs-identifier hs-type">SignConversion</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-40"></span><span>  </span><span id="local-6989586621682209837"><span class="annot"><span class="annottext">toSigned :: Word64 -&gt; Int64
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toSigned"><span class="hs-identifier hs-var hs-var hs-var">toSigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-41"></span><span>  </span><span id="local-6989586621682209842"><span class="annot"><span class="annottext">toUnsigned :: Int64 -&gt; Word64
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toUnsigned"><span class="hs-identifier hs-var hs-var hs-var">toUnsigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; Word64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#SignConversion"><span class="hs-identifier hs-type">SignConversion</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-44"></span><span>  </span><span id="local-6989586621682209850"><span class="annot"><span class="annottext">toSigned :: Word -&gt; Int
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toSigned"><span class="hs-identifier hs-var hs-var hs-var">toSigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-45"></span><span>  </span><span id="local-6989586621682209855"><span class="annot"><span class="annottext">toUnsigned :: Int -&gt; Word
+</span><a href="Grisette.Internal.Core.Data.Class.SignConversion.html#toUnsigned"><span class="hs-identifier hs-var hs-var hs-var">toUnsigned</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span>
+</span><span id="line-46"></span></pre></body></html>
