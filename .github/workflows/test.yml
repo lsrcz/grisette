@@ -166,16 +166,24 @@ jobs:
           reporter: java-junit
         if: matrix.os == 'ubuntu-latest' && (success() || failure ())
 
-      - name: Tix files
-        id: tix
+      - name: Info for coverage
+        id: coverage_info
         run: |
           echo "tix=$(find result/hpc/vanilla/tix -name '*.tix')" >> $GITHUB_OUTPUT
+          version=$(grep -Po 'version: \K(\d+)\.(\d+)\.(\d+)\.(\d+)' package.yaml)
+          echo "version=${version}" >> $GITHUB_OUTPUT
+          ls result/
+          ls result/hpc
+          ls result/hpc/vanilla
+          ls result/hpc/vanilla/mix
+          ls result/hpc/vanilla/mix/grisette-${version}
+        if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
 
       - name: Generate coverage report
         uses: 8c6794b6/hpc-codecov-action@v2
         with:
-          target: ${{ steps.tix.outputs.tix }}
-          mix: result/hpc/vanilla/mix
+          target: ${{ steps.coverage_info.outputs.tix }}
+          mix: result/hpc/vanilla/mix/grisette-${{ steps.coverage_info.outputs.version }}
         if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
 
       - name: Send coverage report
