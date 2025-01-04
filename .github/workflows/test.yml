@@ -185,3 +185,10 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
         if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
+
+      - name: Deploy haddock
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./result/haddock
+          destination_dir: grisette
