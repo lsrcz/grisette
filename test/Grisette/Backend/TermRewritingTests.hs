@@ -567,8 +567,8 @@ termRewritingTests =
                     ]
               let ps =
                     [ fpBinaryOpSpec op l r :: IEEEFPSpec 4 4
-                      | l <- lst,
-                        r <- lst
+                    | l <- lst,
+                      r <- lst
                     ]
               traverse_ (validateSpec z3) ps,
           testGroup "RoundingOp" $ do

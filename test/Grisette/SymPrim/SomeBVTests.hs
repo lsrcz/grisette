@@ -484,7 +484,7 @@ someBVTests =
                     (UnionSingle $ bv 4 5)
                     (UnionSingle $ bv 5 4)
                 )
-                ]
+              ]
             return $ testCase name $ do
               let actual =
                     mrgIf "cond" (return l) (return r) :: Union SomeIntN
@@ -515,7 +515,7 @@ someBVTests =
                     (UnionSingle $ ssymBV 4 "a")
                     (UnionSingle $ ssymBV 5 "b")
                 )
-                ]
+              ]
             return $ testCase name $ do
               let actual =
                     mrgIf "cond" (return l) (return r) :: Union SomeSymIntN

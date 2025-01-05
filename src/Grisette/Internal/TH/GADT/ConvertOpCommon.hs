@@ -448,6 +448,6 @@ genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
               )
               instanceUnionType
               [instanceUnionFun]
-            | n == 0
+          | n == 0
           ]
         )

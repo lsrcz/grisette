@@ -482,16 +482,16 @@ fpTests =
             let operand = [fpNaN :: FP32, 1]
             let operands =
                   [ (a, b, c)
-                    | a <- operand,
-                      b <- operand,
-                      c <- operand,
-                      fpIsNaN a || fpIsNaN b || fpIsNaN c
+                  | a <- operand,
+                    b <- operand,
+                    c <- operand,
+                    fpIsNaN a || fpIsNaN b || fpIsNaN c
                   ]
             traverse_ (\(o, r, (a, b, c)) -> SameFPObj (o r a b c) @?= fpNaN) $
               [ (o, r, (a, b, c))
-                | o <- op,
-                  r <- roundingMode,
-                  (a, b, c) <- operands
+              | o <- op,
+                r <- roundingMode,
+                (a, b, c) <- operands
               ],
           testCase "fpAdd" $ do
             let v = 60 :: FP 4 4

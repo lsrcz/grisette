@@ -244,8 +244,7 @@ mrgPutTest state runStateT mrgPut = do
   let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
-          ( mrgIte (ssymBool "c") ((), ssymBool "x") ((), ssymBool "y")
-          )
+          (mrgIte (ssymBool "c") ((), ssymBool "x") ((), ssymBool "y"))
   unionSize actual @?= 1
   actual @?=~ expected
 

@@ -395,16 +395,14 @@ instance
 
 instance
   {-# OVERLAPPABLE #-}
-  ( GenSymSimple spec (m (CBMCEither a b))
-  ) =>
+  (GenSymSimple spec (m (CBMCEither a b))) =>
   GenSymSimple spec (CBMCExceptT a m b)
   where
   simpleFresh v = CBMCExceptT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}
-  ( GenSymSimple (m (CBMCEither e a)) (m (CBMCEither e a))
-  ) =>
+  (GenSymSimple (m (CBMCEither e a)) (m (CBMCEither e a))) =>
   GenSymSimple (CBMCExceptT e m a) (CBMCExceptT e m a)
   where
   simpleFresh (CBMCExceptT v) = CBMCExceptT <$> simpleFresh v

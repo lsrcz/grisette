@@ -149,7 +149,7 @@ bvTests =
                     (Proxy @4)
                     (bitCastTerm @(WordN 2) @(IntN 2) (ssymTerm "a"))
               }
-            ]
+          ]
         return $ testCase name $ do
           let actual = pevalBitCastTerm term
           actual @?= expected,
@@ -193,7 +193,7 @@ bvTests =
                     (Proxy @4)
                     (bitCastTerm @(IntN 2) @(WordN 2) (ssymTerm "a"))
               }
-            ]
+          ]
         return $ testCase name $ do
           let actual = pevalBitCastTerm term
           actual @?= expected,
@@ -411,7 +411,7 @@ bvTests =
                       (Proxy @1)
                       (ssymTerm "a" :: Term (WordN 4))
               }
-            ]
+          ]
         return . testCase name $
           pevalBVSelectTerm ix w term @?= expected,
       testGroup "pevalBVExtendTerm" $ do
@@ -473,7 +473,7 @@ bvTests =
                 bvExtendExpected =
                   bvExtendTerm True (Proxy @6) (ssymTerm "a" :: Term (WordN 2))
               }
-            ]
+          ]
         return . testCase name $
           pevalBVExtendTerm signed pr term @?= expected,
       testGroup "pevalBVConcatTerm" $ do
@@ -494,8 +494,7 @@ bvTests =
                 bvConcatTestExpected =
                   bvConcatTerm
                     (conTerm 29 :: Term (WordN 7))
-                    ( ssymTerm "b" :: Term (WordN 3)
-                    )
+                    (ssymTerm "b" :: Term (WordN 3))
               },
             BVConcatTest
               { bvConcatTestName = "[c1 (s c2)] -> (c1 (s c2))",
@@ -549,8 +548,7 @@ bvTests =
                     (conTerm 3 :: Term (WordN 4))
                     ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
-                        ( conTerm 5 :: Term (WordN 3)
-                        )
+                        (conTerm 5 :: Term (WordN 3))
                     )
               },
             BVConcatTest
@@ -710,8 +708,7 @@ bvTests =
                             (ssymTerm "a" :: Term (WordN 4))
                             (conTerm 83 :: Term (WordN 8))
                         )
-                        ( ssymTerm "b" :: Term (WordN 4)
-                        )
+                        (ssymTerm "b" :: Term (WordN 4))
                     )
                     (conTerm 7 :: Term (WordN 4))
               },
@@ -769,8 +766,7 @@ bvTests =
                         (ssymTerm "a" :: Term (WordN 4))
                         ( bvConcatTerm
                             (conTerm 87 :: Term (WordN 8))
-                            ( ssymTerm "b" :: Term (WordN 4)
-                            )
+                            (ssymTerm "b" :: Term (WordN 4))
                         )
                     )
               },
@@ -851,8 +847,7 @@ bvTests =
                             (ssymTerm "a" :: Term (WordN 4))
                             (conTerm 5 :: Term (WordN 4))
                         )
-                        ( ssymTerm "b" :: Term (WordN 3)
-                        )
+                        (ssymTerm "b" :: Term (WordN 3))
                     )
               },
             BVConcatTest
@@ -924,7 +919,7 @@ bvTests =
                     (ssymTerm "a" :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 3))
               }
-            ]
+          ]
         return . testCase name $
           pevalBVConcatTerm lhs rhs @?= expected
     ]
