@@ -456,8 +456,7 @@ class (Mergeable a) => GenSym spec a where
     m (Union a)
   default fresh ::
     (GenSymSimple spec a) =>
-    ( MonadFresh m
-    ) =>
+    (MonadFresh m) =>
     spec ->
     m (Union a)
   fresh spec = mrgSingle <$> simpleFresh spec
@@ -491,8 +490,7 @@ class GenSymSimple spec a where
   -- >>> runFresh (simpleFresh (SimpleListSpec 2 ())) "a" :: [SymBool]
   -- [a@0,a@1]
   simpleFresh ::
-    ( MonadFresh m
-    ) =>
+    (MonadFresh m) =>
     spec ->
     m a
 
@@ -507,8 +505,7 @@ genSymSimple = runFresh . simpleFresh
 
 class GenSymNoSpec a where
   freshNoSpec ::
-    ( MonadFresh m
-    ) =>
+    (MonadFresh m) =>
     m (Union (a c))
 
 instance GenSymNoSpec U1 where
@@ -530,8 +527,7 @@ instance
   where
   freshNoSpec ::
     forall m c.
-    ( MonadFresh m
-    ) =>
+    (MonadFresh m) =>
     m (Union ((a :+: b) c))
   freshNoSpec = do
     cond :: bool <- simpleFresh ()
@@ -545,8 +541,7 @@ instance
   where
   freshNoSpec ::
     forall m c.
-    ( MonadFresh m
-    ) =>
+    (MonadFresh m) =>
     m (Union ((a :*: b) c))
   freshNoSpec = do
     l :: Union (a c) <- freshNoSpec
@@ -617,8 +612,7 @@ derivedNoSpecSimpleFresh _ = to <$> simpleFreshNoSpec
 
 class GenSymSameShape a where
   genSymSameShapeFresh ::
-    ( MonadFresh m
-    ) =>
+    (MonadFresh m) =>
     a c ->
     m (a c)
 
@@ -698,8 +692,7 @@ chooseFresh [] = error "chooseFresh expects at least one value"
 -- symbolic constants in the generated symbolic values.
 choose ::
   forall a.
-  ( Mergeable a
-  ) =>
+  (Mergeable a) =>
   [a] ->
   Identifier ->
   Union a
@@ -734,8 +727,7 @@ chooseSimpleFresh [] = error "chooseSimpleFresh expects at least one value"
 -- symbolic constants in the generated symbolic values.
 chooseSimple ::
   forall a.
-  ( SimpleMergeable a
-  ) =>
+  (SimpleMergeable a) =>
   [a] ->
   Identifier ->
   a
@@ -772,8 +764,7 @@ chooseUnionFresh [] = error "chooseUnionFresh expects at least one value"
 -- symbolic constants in the generated symbolic values.
 chooseUnion ::
   forall a.
-  ( Mergeable a
-  ) =>
+  (Mergeable a) =>
   [Union a] ->
   Identifier ->
   Union a
@@ -1584,16 +1575,14 @@ instance
 
 instance
   {-# OVERLAPPABLE #-}
-  ( GenSymSimple spec (m (Maybe a))
-  ) =>
+  (GenSymSimple spec (m (Maybe a))) =>
   GenSymSimple spec (MaybeT m a)
   where
   simpleFresh v = MaybeT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}
-  ( GenSymSimple (m (Maybe a)) (m (Maybe a))
-  ) =>
+  (GenSymSimple (m (Maybe a)) (m (Maybe a))) =>
   GenSymSimple (MaybeT m a) (MaybeT m a)
   where
   simpleFresh (MaybeT v) = MaybeT <$> simpleFresh v
@@ -1622,16 +1611,14 @@ instance
 
 instance
   {-# OVERLAPPABLE #-}
-  ( GenSymSimple spec (m (Either a b))
-  ) =>
+  (GenSymSimple spec (m (Either a b))) =>
   GenSymSimple spec (ExceptT a m b)
   where
   simpleFresh v = ExceptT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}
-  ( GenSymSimple (m (Either e a)) (m (Either e a))
-  ) =>
+  (GenSymSimple (m (Either e a)) (m (Either e a))) =>
   GenSymSimple (ExceptT e m a) (ExceptT e m a)
   where
   simpleFresh (ExceptT v) = ExceptT <$> simpleFresh v

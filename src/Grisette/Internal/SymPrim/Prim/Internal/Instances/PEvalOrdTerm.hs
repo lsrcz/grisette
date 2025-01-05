@@ -136,9 +136,9 @@ fpRoundingModeLtTable =
   [ ( conSBVTerm @FPRoundingMode a,
       conSBVTerm @FPRoundingMode b
     )
-    | a <- allFPRoundingMode,
-      b <- allFPRoundingMode,
-      a < b
+  | a <- allFPRoundingMode,
+    b <- allFPRoundingMode,
+    a < b
   ]
 
 fpRoundingModeLeTable :: [(SBV.SRoundingMode, SBV.SRoundingMode)]
@@ -146,9 +146,9 @@ fpRoundingModeLeTable =
   [ ( conSBVTerm @FPRoundingMode a,
       conSBVTerm @FPRoundingMode b
     )
-    | a <- allFPRoundingMode,
-      b <- allFPRoundingMode,
-      a <= b
+  | a <- allFPRoundingMode,
+    b <- allFPRoundingMode,
+    a <= b
   ]
 
 sbvTableLookup ::

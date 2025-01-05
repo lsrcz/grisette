@@ -265,5 +265,5 @@ supportedPrimFunUpTo
             funNamePrefix
             funTypeName
             n
-          | n <- [2 .. numArg]
+        | n <- [2 .. numArg]
         ]

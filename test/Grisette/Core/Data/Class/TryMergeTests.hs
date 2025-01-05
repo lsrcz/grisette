@@ -158,7 +158,7 @@ tryMergeTests =
                     (\x -> mrgSingle $ x + 1),
                 testMerged = mrgSingle $ symIte "a" ("b" + 1) ("c" + 1)
               }
-            ]
+          ]
         case test of
           TryMergeInstanceTest name unmerged merged ->
             [ testCase name $ do

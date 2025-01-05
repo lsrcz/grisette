@@ -638,8 +638,7 @@ listTests =
                     Union [SymInteger]
             let expected =
                   mrgIf
-                    ( aint ./= bint .|| aint ./= cint .|| aint ./= dint
-                    )
+                    (aint ./= bint .|| aint ./= cint .|| aint ./= dint)
                     ( return
                         [ symIte (aint ./= bint) cint bint,
                           symIte (aint ./= bint .|| aint ./= cint) dint cint

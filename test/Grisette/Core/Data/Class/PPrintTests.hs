@@ -616,40 +616,31 @@ pprintTests =
             (arbitrary :: Gen (Maybe (Maybe Int))),
           propertyPFormatRead
             "Maybe (,)"
-            ( arbitrary :: Gen (Maybe (Int, Int))
-            ),
+            (arbitrary :: Gen (Maybe (Int, Int))),
           propertyPFormatRead
             "Maybe I5"
-            ( arbitrary :: Gen (Maybe (I5 Int))
-            ),
+            (arbitrary :: Gen (Maybe (I5 Int))),
           propertyPFormatRead
             "Maybe []"
-            ( arbitrary :: Gen (Maybe [Int])
-            ),
+            (arbitrary :: Gen (Maybe [Int])),
           propertyPFormatRead
             "Maybe Record"
-            ( arbitrary :: Gen (Maybe (Record Int Int))
-            ),
+            (arbitrary :: Gen (Maybe (Record Int Int))),
           propertyPFormatRead
             "(Maybe,Either)"
-            ( arbitrary :: Gen (Maybe Int, Either Int Int)
-            ),
+            (arbitrary :: Gen (Maybe Int, Either Int Int)),
           propertyPFormatRead
             "((,),(,))"
-            ( arbitrary :: Gen ((Int, Int), (Int, Int))
-            ),
+            (arbitrary :: Gen ((Int, Int), (Int, Int))),
           propertyPFormatRead
             "(I5,I5)"
-            ( arbitrary :: Gen (I5 Int, I5 Int)
-            ),
+            (arbitrary :: Gen (I5 Int, I5 Int)),
           propertyPFormatRead
             "([],[])"
-            ( arbitrary :: Gen ([Int], [Int])
-            ),
+            (arbitrary :: Gen ([Int], [Int])),
           propertyPFormatRead
             "(Record,Record)"
-            ( arbitrary :: Gen (Record Int Int, Record Int Int)
-            ),
+            (arbitrary :: Gen (Record Int Int, Record Int Int)),
           propertyPFormatRead "I5 (,)" (arbitrary :: Gen (I5 (Int, Int))),
           propertyPFormatRead "I5 I6" (arbitrary :: Gen (I5 (I6 Int))),
           propertyPFormatRead "I5 I5" (arbitrary :: Gen (I5 (I5 Int))),
@@ -661,41 +652,32 @@ pprintTests =
             (arbitrary :: Gen (I5 (Record Int Int))),
           propertyPFormatRead
             "[Maybe]"
-            ( arbitrary :: Gen [Maybe Int]
-            ),
+            (arbitrary :: Gen [Maybe Int]),
           propertyPFormatRead
             "[(,)]"
-            ( arbitrary :: Gen [(Int, Int)]
-            ),
+            (arbitrary :: Gen [(Int, Int)]),
           propertyPFormatRead "[I5]" (arbitrary :: Gen [I5 Int]),
           propertyPFormatRead
             "[[]]"
-            ( arbitrary :: Gen [[Int]]
-            ),
+            (arbitrary :: Gen [[Int]]),
           propertyPFormatRead
             "[Record]"
-            ( arbitrary :: Gen [Record Int Int]
-            ),
+            (arbitrary :: Gen [Record Int Int]),
           propertyPFormatRead
             "Record Maybe Either"
-            ( arbitrary :: Gen (Record (Maybe Int) (Either Int Int))
-            ),
+            (arbitrary :: Gen (Record (Maybe Int) (Either Int Int))),
           propertyPFormatRead
             "Record (,) (,)"
-            ( arbitrary :: Gen (Record (Int, Int) (Int, Int))
-            ),
+            (arbitrary :: Gen (Record (Int, Int) (Int, Int))),
           propertyPFormatRead
             "Record I5 I6"
-            ( arbitrary :: Gen (Record (I5 Int) (I6 Int))
-            ),
+            (arbitrary :: Gen (Record (I5 Int) (I6 Int))),
           propertyPFormatRead
             "Record []"
-            ( arbitrary :: Gen (Record [Int] [Int])
-            ),
+            (arbitrary :: Gen (Record [Int] [Int])),
           propertyPFormatRead
             "Record Record"
-            ( arbitrary :: Gen (Record (Record Int Int) (Record Int Int))
-            ),
+            (arbitrary :: Gen (Record (Record Int Int) (Record Int Int))),
           testPPrint1
             "Identity"
             0

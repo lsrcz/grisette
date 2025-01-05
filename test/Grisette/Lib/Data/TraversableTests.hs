@@ -44,7 +44,7 @@ traversableFunctionTests =
               ("mrgMapM", mrgMapM, mrgMapM),
               ("mrgFor", flip mrgFor, flip mrgFor),
               ("mrgForM", flip mrgForM, flip mrgForM)
-              ]
+            ]
           return $
             testGroup
               name
@@ -87,7 +87,7 @@ traversableFunctionTests =
           (name, func0, func1) <-
             [ ("mrgSequenceA", mrgSequenceA, mrgSequenceA),
               ("mrgSequence", mrgSequence, mrgSequence)
-              ]
+            ]
           return $
             testGroup
               name
@@ -140,7 +140,7 @@ traversableFunctionTests =
                 \f s t -> mrgForAccumM s t f,
                 \f s t -> mrgForAccumM s t f
               )
-              ]
+            ]
           return $
             testGroup
               name

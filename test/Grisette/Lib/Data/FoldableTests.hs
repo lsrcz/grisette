@@ -154,7 +154,7 @@ foldableFunctionTests =
               ("mrgMapM_", mrgMapM_, mrgMapM_),
               ("mrgFor_", flip mrgFor_, flip mrgFor_),
               ("mrgForM_", flip mrgForM_, flip mrgForM_)
-              ]
+            ]
           [ testGroup
               name
               [ testCase "semantics" $ do
@@ -187,7 +187,7 @@ foldableFunctionTests =
           (name, func0, func1) <-
             [ ("mrgSequence_", mrgSequence_, mrgSequence_),
               ("mrgSequenceA_", mrgSequenceA_, mrgSequenceA_)
-              ]
+            ]
           [ testGroup
               name
               [ testCase "semantics" $ do

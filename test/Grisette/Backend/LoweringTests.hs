@@ -889,7 +889,7 @@ loweringTests =
                     ("isNormal", FPIsNormal, SBV.fpIsNormal),
                     ("isSubnormal", FPIsSubnormal, SBV.fpIsSubnormal),
                     ("isPoint", FPIsPoint, SBV.fpIsPoint)
-                    ]
+                  ]
                 return $ testCase name $ do
                   testUnaryOpLowering @FP32 @Bool
                     unboundedConfig
@@ -1026,7 +1026,7 @@ loweringTests =
                     ("sinh", sinh, FloatingSinh),
                     ("cosh", cosh, FloatingCosh),
                     ("tanh", tanh, FloatingTanh)
-                    ]
+                  ]
                 return $
                   testCase name $
                     testUnaryOpLowering @AlgReal @AlgReal
