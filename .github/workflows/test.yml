@@ -164,6 +164,7 @@ jobs:
           name: Tests-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.ghc }}
           path: "**/test-report.xml"
           reporter: java-junit
+          list-tests: 'failed'
         if: matrix.os == 'ubuntu-latest' && (success() || failure ())
 
       - name: Info for coverage
