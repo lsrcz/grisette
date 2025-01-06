@@ -144,14 +144,14 @@ jobs:
           export LANG=en_US.UTF-8
           case "$BUILD" in
             stack)
-              nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --fast --flag grisette:-optimize --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--jxml=test-report.xml"
+              nix develop .#${{ matrix.plan.ghc }} --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --fast --flag grisette:-optimize --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--jxml=test-report.xml"
               ;;
             nix)
               NIX_DEBUG=7 nix build --show-trace -L .#grisette.${{ matrix.plan.ghc }}-ci
               ;;
             cabal)
-              nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c cabal update
-              nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c cabal run --enable-tests --minimize-conflict-set --disable-optimization --flags=-optimize spec $ARGS -- --jxml=test-report.xml
+              nix develop .#${{ matrix.plan.ghc }} --allow-dirty --no-warn-dirty -c cabal update
+              nix develop .#${{ matrix.plan.ghc }} --allow-dirty --no-warn-dirty -c cabal run --enable-tests --minimize-conflict-set --disable-optimization --flags=-optimize spec $ARGS -- --jxml=test-report.xml
               ;;
           esac
           set +ex
