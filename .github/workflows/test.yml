@@ -26,7 +26,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "8107",
-              cachekey: "stack-810",
+              cachekey: "nix-8107",
             }
           - {
               build: stack,
@@ -34,7 +34,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "8107",
-              cachekey: "stack-810-l",
+              cachekey: "stack-8107-lowerbound",
             }
           - {
               build: nix,
@@ -42,7 +42,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "902",
-              cachekey: "stack-90",
+              cachekey: "nix-902",
             }
           - {
               build: nix,
@@ -50,7 +50,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "928",
-              cachekey: "stack-92",
+              cachekey: "nix-928",
             }
           - {
               build: nix,
@@ -58,7 +58,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "948",
-              cachekey: "stack-94",
+              cachekey: "nix-948",
             }
           - {
               build: nix,
@@ -66,7 +66,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "966",
-              cachekey: "stack-96",
+              cachekey: "nix-966",
             }
           - {
               build: nix,
@@ -74,7 +74,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "984",
-              cachekey: "stack-98",
+              cachekey: "nix-984",
             }
           - {
               build: nix,
@@ -82,7 +82,7 @@ jobs:
               ismain: true,
               experimental: false,
               ghc: "9101",
-              cachekey: "stack-910",
+              cachekey: "nix-9101",
             }
           - {
               build: cabal,
@@ -90,7 +90,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "9121",
-              cachekey: "stack-912",
+              cachekey: "cabal-9121",
             }
         include:
           - os: macOS-latest
@@ -101,7 +101,7 @@ jobs:
                 ismain: true,
                 experimental: false,
                 ghc: "9101",
-                cachekey: "stack-910",
+                cachekey: "nix-9101",
               }
 
     runs-on: ${{ matrix.os }}
