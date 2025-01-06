@@ -1,10 +1,7 @@
 { ghcVersion
 , pkgs
-, cabal
-, bitwuzla
-, additional
-, extraBasicDevTools ? [ ]
-, extraAdditionalDevTools ? [ ]
+, withHLS
+, extraBuildInputs ? [ ]
 }:
 let
   stack-wrapped = pkgs.symlinkJoin {
@@ -25,28 +22,22 @@ let
     inherit pkgs;
     ghcVersion = ghcVersion;
   };
-  basicDevTools =
+  basicBuildInputs =
     let hPkgs0 = patchedHPkgs { inherit ghcVersion; }; in [
       hPkgs0.ghc # GHC compiler in the desired version (will be available on PATH)
       stack-wrapped
       pkgs.zlib # External C library needed by some Haskell packages
       pkgs.z3
-    ] ++ extraBasicDevTools;
-  bitwuzlaDevTools = [
-    pkgs.bitwuzla
-  ];
-  cabalDevTools = [
-    stableHPkgs.cabal-install
-  ];
-  additionalDevTools =
+      stableHPkgs.cabal-install
+    ];
+  hlsBuildInputs =
     let hPkgs0 = patchedHPkgs { inherit ghcVersion; }; in [
       hPkgs0.hlint # Haskell codestyle checker
       hPkgs0.haskell-language-server # LSP server for editor
-    ] ++ extraAdditionalDevTools;
-  devTools = basicDevTools ++
-    (if cabal then cabalDevTools else [ ]) ++
-    (if additional then additionalDevTools else [ ]) ++
-    (if bitwuzla then bitwuzlaDevTools else [ ]);
+    ];
+  devTools = basicBuildInputs ++
+    (if withHLS then hlsBuildInputs else [ ]) ++
+    extraBuildInputs;
 in
 pkgs.mkShell {
   buildInputs = devTools;

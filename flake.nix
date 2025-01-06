@@ -68,13 +68,13 @@
               } else { });
             });
 
-        devShellsWithVersion = { ghcVersion, cabal, additional, bitwuzla }:
+        devShellsWithVersion = { ghcVersion, withHLS, bitwuzla }:
           import ./nix/dev-tools.nix {
-            inherit ghcVersion pkgs cabal additional bitwuzla;
-            extraAdditionalDevTools = [
+            inherit ghcVersion pkgs withHLS;
+            extraBuildInputs = [
               pkgs.boolector
               pkgs.cvc5
-            ];
+            ] ++ (if bitwuzla then [ pkgs.bitwuzla ] else [ ]);
           };
 
       in
@@ -82,15 +82,15 @@
         formatter = pkgs.nixpkgs-fmt;
 
         devShells = {
-          "8107" = devShellsWithVersion { ghcVersion = "8107"; cabal = false; additional = false; bitwuzla = false; };
-          "902" = devShellsWithVersion { ghcVersion = "902"; cabal = false; additional = false; bitwuzla = false; };
-          "928" = devShellsWithVersion { ghcVersion = "928"; cabal = false; additional = false; bitwuzla = false; };
-          "948" = devShellsWithVersion { ghcVersion = "948"; cabal = false; additional = false; bitwuzla = false; };
-          "966" = devShellsWithVersion { ghcVersion = "966"; cabal = false; additional = false; bitwuzla = false; };
-          "984" = devShellsWithVersion { ghcVersion = "984"; cabal = false; additional = false; bitwuzla = false; };
-          "9101" = devShellsWithVersion { ghcVersion = "9101"; cabal = true; additional = true; bitwuzla = true; };
-          default = devShellsWithVersion { ghcVersion = "9101"; cabal = true; additional = true; bitwuzla = true; };
-          "9121" = devShellsWithVersion { ghcVersion = "9121"; cabal = true; additional = false; bitwuzla = false; };
+          "8107" = devShellsWithVersion { ghcVersion = "8107"; withHLS = false; bitwuzla = false; };
+          "902" = devShellsWithVersion { ghcVersion = "902"; withHLS = false; bitwuzla = false; };
+          "928" = devShellsWithVersion { ghcVersion = "928"; withHLS = false; bitwuzla = false; };
+          "948" = devShellsWithVersion { ghcVersion = "948"; withHLS = false; bitwuzla = false; };
+          "966" = devShellsWithVersion { ghcVersion = "966"; withHLS = false; bitwuzla = false; };
+          "984" = devShellsWithVersion { ghcVersion = "984"; withHLS = false; bitwuzla = false; };
+          "9101" = devShellsWithVersion { ghcVersion = "9101"; withHLS = true; bitwuzla = true; };
+          default = devShellsWithVersion { ghcVersion = "9101"; withHLS = true; bitwuzla = true; };
+          "9121" = devShellsWithVersion { ghcVersion = "9121"; withHLS = false; bitwuzla = true; };
         };
 
         packages.grisette."8107-ci" = (hPkgs { ghcVersion = "8107"; ci = true; }).grisette;
