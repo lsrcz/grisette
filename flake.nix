@@ -6,29 +6,30 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
+        envLib = import ./nix;
+
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            (import ./nix/z3-overlay.nix)
-            (import ./nix/hlint-src-overlay.nix)
-            (import ./nix/cvc5-overlay.nix)
+            envLib.overlays.z3
+            envLib.overlays.hlintSrc
+            envLib.overlays.cvc5
           ];
         };
 
-        haskell = pkgs.haskell;
-
-        patchedHPkgs = { ghcVersion }: import ./nix/hpkgs.nix {
+        patchedHPkgs = { ghcVersion }: envLib.patchedHaskellPackages {
           inherit pkgs;
           ghcVersion = ghcVersion;
         };
 
         hPkgs = { ghcVersion, ci }:
           (patchedHPkgs { inherit ghcVersion; }).extend (hfinal: hprev:
-            with (import ./nix/hpkgs-extend-helpers.nix {
-              inherit pkgs hfinal hprev ghcVersion;
-            });
+            with envLib.haskellPackagesExtendHelpers
+              {
+                inherit pkgs hfinal hprev ghcVersion;
+              };
             {
-              grisette = (haskell.lib.overrideCabal
+              grisette = (pkgs.haskell.lib.overrideCabal
                 (hfinal.callCabal2nix "grisette" ./. { })
                 (drv: {
                   testToolDepends = byGhcVersion {
@@ -68,38 +69,55 @@
               } else { });
             });
 
-        devShellsWithVersion = { ghcVersion, withHLS, bitwuzla }:
-          import ./nix/dev-tools.nix {
-            inherit ghcVersion pkgs withHLS;
+        devShellWithVersion =
+          { ghcVersion
+          , isDevelopmentEnvironment ? false
+          , bitwuzla ? false
+          }:
+          envLib.devShell {
+            inherit pkgs isDevelopmentEnvironment;
+            haskellPackages = patchedHPkgs { inherit ghcVersion; };
             extraBuildInputs = [
               pkgs.boolector
               pkgs.cvc5
             ] ++ (if bitwuzla then [ pkgs.bitwuzla ] else [ ]);
           };
 
+        plainOutputs = pkgs.lib.foldl'
+          (acc: ghcVersion:
+            pkgs.lib.recursiveUpdate acc
+              {
+                devShells.${ghcVersion} =
+                  devShellWithVersion { ghcVersion = ghcVersion; };
+                packages.grisette.${ghcVersion} =
+                  (hPkgs { ghcVersion = ghcVersion; ci = false; }).grisette;
+                packages.grisette."${ghcVersion}-ci" =
+                  (hPkgs { ghcVersion = ghcVersion; ci = true; }).grisette;
+              })
+          { } [ "8107" "902" "928" "948" "966" "984" "9101" "9121" ];
       in
-      {
-        formatter = pkgs.nixpkgs-fmt;
+      pkgs.lib.recursiveUpdate plainOutputs
+        {
+          formatter = pkgs.nixpkgs-fmt;
 
-        devShells = {
-          "8107" = devShellsWithVersion { ghcVersion = "8107"; withHLS = false; bitwuzla = false; };
-          "902" = devShellsWithVersion { ghcVersion = "902"; withHLS = false; bitwuzla = false; };
-          "928" = devShellsWithVersion { ghcVersion = "928"; withHLS = false; bitwuzla = false; };
-          "948" = devShellsWithVersion { ghcVersion = "948"; withHLS = false; bitwuzla = false; };
-          "966" = devShellsWithVersion { ghcVersion = "966"; withHLS = false; bitwuzla = false; };
-          "984" = devShellsWithVersion { ghcVersion = "984"; withHLS = false; bitwuzla = false; };
-          "9101" = devShellsWithVersion { ghcVersion = "9101"; withHLS = true; bitwuzla = true; };
-          default = devShellsWithVersion { ghcVersion = "9101"; withHLS = true; bitwuzla = true; };
-          "9121" = devShellsWithVersion { ghcVersion = "9121"; withHLS = false; bitwuzla = true; };
-        };
+          devShells = {
+            "9101" = devShellWithVersion {
+              ghcVersion = "9101";
+              isDevelopmentEnvironment = true;
+              bitwuzla = true;
+            };
+            default = devShellWithVersion {
+              ghcVersion = "9101";
+              isDevelopmentEnvironment = true;
+              bitwuzla = true;
+            };
+            "9121" = devShellWithVersion {
+              ghcVersion = "9121";
+              bitwuzla = true;
+            };
+          };
 
-        packages.grisette."8107-ci" = (hPkgs { ghcVersion = "8107"; ci = true; }).grisette;
-        packages.grisette."902-ci" = (hPkgs { ghcVersion = "902"; ci = true; }).grisette;
-        packages.grisette."928-ci" = (hPkgs { ghcVersion = "928"; ci = true; }).grisette;
-        packages.grisette."948-ci" = (hPkgs { ghcVersion = "948"; ci = true; }).grisette;
-        packages.grisette."966-ci" = (hPkgs { ghcVersion = "966"; ci = true; }).grisette;
-        packages.grisette."984-ci" = (hPkgs { ghcVersion = "984"; ci = true; }).grisette;
-        packages.grisette."9101-ci" = (hPkgs { ghcVersion = "9101"; ci = true; }).grisette;
-        packages.default = (hPkgs { ghcVersion = "9101"; ci = false; }).grisette;
-      });
+          packages.default =
+            (hPkgs { ghcVersion = "9101"; ci = false; }).grisette;
+        });
 }

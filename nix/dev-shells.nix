@@ -1,6 +1,6 @@
-{ ghcVersion
-, pkgs
-, withHLS
+{ pkgs
+, haskellPackages
+, isDevelopmentEnvironment ? false
 , extraBuildInputs ? [ ]
 }:
 let
@@ -18,25 +18,21 @@ let
     '';
   };
   stableHPkgs = pkgs.haskell.packages."ghc9101";
-  patchedHPkgs = { ghcVersion }: import ./hpkgs.nix {
-    inherit pkgs;
-    ghcVersion = ghcVersion;
-  };
   basicBuildInputs =
-    let hPkgs0 = patchedHPkgs { inherit ghcVersion; }; in [
-      hPkgs0.ghc # GHC compiler in the desired version (will be available on PATH)
+    with haskellPackages; [
+      ghc # GHC compiler in the desired version (will be available on PATH)
       stack-wrapped
       pkgs.zlib # External C library needed by some Haskell packages
       pkgs.z3
       stableHPkgs.cabal-install
     ];
   hlsBuildInputs =
-    let hPkgs0 = patchedHPkgs { inherit ghcVersion; }; in [
-      hPkgs0.hlint # Haskell codestyle checker
-      hPkgs0.haskell-language-server # LSP server for editor
+    with haskellPackages; [
+      hlint # Haskell codestyle checker
+      haskell-language-server # LSP server for editor
     ];
   devTools = basicBuildInputs ++
-    (if withHLS then hlsBuildInputs else [ ]) ++
+    (if isDevelopmentEnvironment then hlsBuildInputs else [ ]) ++
     extraBuildInputs;
 in
 pkgs.mkShell {
