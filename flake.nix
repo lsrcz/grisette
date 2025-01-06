@@ -2,11 +2,12 @@
   description = "Symbolic evaluation as a library";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.grisette-nix-build-env.url = "github:lsrcz/grisette-nix-build-env/main";
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, grisette-nix-build-env }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        envLib = import ./nix;
+        envLib = grisette-nix-build-env.lib.${system};
 
         pkgs = import nixpkgs {
           inherit system;
@@ -95,6 +96,8 @@
                   (hPkgs { ghcVersion = ghcVersion; ci = true; }).grisette;
               })
           { } [ "8107" "902" "928" "948" "966" "984" "9101" "9121" ];
+
+        grisette = (hPkgs { ghcVersion = "9101"; ci = false; }).grisette;
       in
       pkgs.lib.recursiveUpdate plainOutputs
         {
@@ -117,7 +120,7 @@
             };
           };
 
-          packages.default =
-            (hPkgs { ghcVersion = "9101"; ci = false; }).grisette;
+          packages.grisette = grisette;
+          packages.default = grisette;
         });
 }
