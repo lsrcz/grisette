@@ -636,10 +636,7 @@ termRewritingTests =
               ( Arbitrary a,
                 PEvalBitCastTerm a b,
                 SupportedNonFuncPrim a,
-                SupportedNonFuncPrim b,
-                Show a,
-                Typeable a,
-                Typeable b
+                SupportedNonFuncPrim b
               ) =>
               Test
             bitCastCase = testProperty
@@ -658,11 +655,7 @@ termRewritingTests =
                 PEvalBitCastOrTerm a b,
                 RealFloat a,
                 SupportedNonFuncPrim a,
-                SupportedNonFuncPrim b,
-                Show b,
-                Show a,
-                Typeable b,
-                Typeable a
+                SupportedNonFuncPrim b
               ) =>
               Test
             fromFPCase = testProperty
@@ -681,10 +674,7 @@ termRewritingTests =
                 PEvalBitCastTerm a b,
                 RealFloat b,
                 SupportedNonFuncPrim a,
-                SupportedNonFuncPrim b,
-                Show a,
-                Typeable a,
-                Typeable b
+                SupportedNonFuncPrim b
               ) =>
               Test
             toFPCase = testProperty
@@ -762,9 +752,7 @@ termRewritingTests =
               ( ValidFP eb sb,
                 Arbitrary b,
                 PEvalIEEEFPConvertibleTerm b,
-                TermRewritingSpec spec b,
-                Show b,
-                Typeable b
+                TermRewritingSpec spec b
               ) =>
               Bool ->
               Test
@@ -833,9 +821,7 @@ termRewritingTests =
                 SupportedNonFuncPrim b,
                 LinkedRep b bs,
                 Solvable b bs,
-                SymEq bs,
-                Show b,
-                Typeable b
+                SymEq bs
               ) =>
               Test
             toFPCase = testProperty
