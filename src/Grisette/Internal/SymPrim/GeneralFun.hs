@@ -57,14 +57,7 @@ import Grisette.Internal.Core.Data.Symbol
   ( Symbol (IndexedSymbol),
   )
 import Grisette.Internal.SymPrim.FunInstanceGen (supportedPrimFunUpTo)
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-  ( pevalFPBinaryTerm,
-    pevalFPFMATerm,
-    pevalFPRoundingBinaryTerm,
-    pevalFPRoundingUnaryTerm,
-    pevalFPTraitTerm,
-    pevalFPUnaryTerm,
-  )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP ()
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind,
@@ -84,6 +77,14 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalDivModIntegralTerm
       ( pevalDivIntegralTerm,
         pevalModIntegralTerm
+      ),
+    PEvalFPTerm
+      ( pevalFPBinaryTerm,
+        pevalFPFMATerm,
+        pevalFPRoundingBinaryTerm,
+        pevalFPRoundingUnaryTerm,
+        pevalFPTraitTerm,
+        pevalFPUnaryTerm
       ),
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),

@@ -169,7 +169,7 @@ someTermSize term = someTermsSize [term]
 
 -- | Compute the size of a list of terms. Do not count the same term twice.
 termsSize :: [Term a] -> Int
-termsSize terms = someTermsSize $ (\x -> someTerm x) <$> terms
+termsSize terms = someTermsSize $ someTerm <$> terms
 {-# INLINEABLE termsSize #-}
 
 -- | Compute the size of a term.
