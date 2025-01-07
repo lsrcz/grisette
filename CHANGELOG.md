@@ -21,6 +21,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#271](https://github.com/lsrcz/grisette/pull/271))
 - Added unconstrained positions for derivation.
   ([#273](https://github.com/lsrcz/grisette/pull/273))
+- Added `AsMetadata` type class and `Metadata` pattern for embedding and
+  extracting values from metadata represented as an S-expression.
+  ([#277](https://github.com/lsrcz/grisette/pull/277))
 
 ### Changed
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.
