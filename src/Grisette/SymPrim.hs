@@ -211,6 +211,11 @@ module Grisette.SymPrim
 
     -- * Analysis on the terms
     Term,
+    SomeTerm (..),
+    termSize,
+    someTermSize,
+    termsSize,
+    someTermsSize,
     pattern SupportedTerm,
     pattern SupportedTypedSymbol,
     pattern SupportedConstantTypedSymbol,
@@ -319,6 +324,9 @@ import Grisette.Internal.SymPrim.Prim.Model
     SymbolSet (..),
   )
 import Grisette.Internal.SymPrim.Prim.Pattern (pattern SubTerms)
+import Grisette.Internal.SymPrim.Prim.SomeTerm
+  ( SomeTerm (..),
+  )
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (..),
     IsSymbolKind (..),
@@ -386,6 +394,12 @@ import Grisette.Internal.SymPrim.Prim.Term
     pattern SymTerm,
     pattern ToFPTerm,
     pattern XorBitsTerm,
+  )
+import Grisette.Internal.SymPrim.Prim.TermUtils
+  ( someTermSize,
+    someTermsSize,
+    termSize,
+    termsSize,
   )
 import Grisette.Internal.SymPrim.Quantifier
   ( existsFresh,
