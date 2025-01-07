@@ -79,6 +79,7 @@ type StableIdent = StableName Any
 -- | A digest of a term.
 type Digest = Word32
 
+-- | Information about a cached term.
 data CachedInfo = CachedInfo
   { cachedThreadId :: {-# UNPACK #-} !WeakThreadId,
     cachedDigest :: {-# UNPACK #-} !Digest,
