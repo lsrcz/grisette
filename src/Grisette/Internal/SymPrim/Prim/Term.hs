@@ -10,7 +10,6 @@
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Term
   ( module Grisette.Internal.SymPrim.Prim.Internal.Term,
-    module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP,
     module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm,
     module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm,
     module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm,
@@ -24,7 +23,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFloatingTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm ()

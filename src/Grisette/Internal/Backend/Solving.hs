@@ -151,14 +151,6 @@ import Grisette.Internal.Core.Data.Class.Solver
   )
 import Grisette.Internal.Core.Data.MemoUtils (htmemo)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm)
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-  ( sbvFPBinaryTerm,
-    sbvFPFMATerm,
-    sbvFPRoundingBinaryTerm,
-    sbvFPRoundingUnaryTerm,
-    sbvFPTraitTerm,
-    sbvFPUnaryTerm,
-  )
 import Grisette.Internal.SymPrim.Prim.Model as PM
   ( Model,
   )
@@ -179,6 +171,14 @@ import Grisette.Internal.SymPrim.Prim.Term
         sbvModIntegralTerm,
         sbvQuotIntegralTerm,
         sbvRemIntegralTerm
+      ),
+    PEvalFPTerm
+      ( sbvFPBinaryTerm,
+        sbvFPFMATerm,
+        sbvFPRoundingBinaryTerm,
+        sbvFPRoundingUnaryTerm,
+        sbvFPTraitTerm,
+        sbvFPUnaryTerm
       ),
     PEvalFloatingTerm (sbvFloatingUnaryTerm, sbvPowerTerm),
     PEvalFractionalTerm (sbvFdivTerm, sbvRecipTerm),
@@ -745,9 +745,9 @@ lowerSinglePrimCached t' m' = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvRemIntegralTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (FPTraitTerm trait a) = do
+      goCachedIntermediate qs (FPTraitTerm trait (a :: Term (fp eb sb))) = do
         a' <- goCached qs a
-        return $ sbvFPTraitTerm trait . a'
+        return $ sbvFPTraitTerm @fp @eb @sb trait . a'
       goCachedIntermediate qs (FdivTerm a b) = do
         a <- goCached qs a
         b <- goCached qs b
@@ -762,28 +762,28 @@ lowerSinglePrimCached t' m' = do
         a <- goCached qs a
         b <- goCached qs b
         return $ \qst -> sbvPowerTerm @a (a qst) (b qst)
-      goCachedIntermediate qs (FPUnaryTerm op a) = do
+      goCachedIntermediate qs (FPUnaryTerm op (a :: Term (fp eb sb))) = do
         a <- goCached qs a
-        return $ sbvFPUnaryTerm op . a
-      goCachedIntermediate qs (FPBinaryTerm op a b) = do
-        a <- goCached qs a
-        b <- goCached qs b
-        return $ \qst -> sbvFPBinaryTerm op (a qst) (b qst)
-      goCachedIntermediate qs (FPRoundingUnaryTerm op round a) = do
-        round <- goCached qs round
-        a <- goCached qs a
-        return $ \qst -> sbvFPRoundingUnaryTerm op (round qst) (a qst)
-      goCachedIntermediate qs (FPRoundingBinaryTerm op round a b) = do
-        round <- goCached qs round
+        return $ sbvFPUnaryTerm @fp @eb @sb op . a
+      goCachedIntermediate qs (FPBinaryTerm op (a :: Term (fp eb sb)) b) = do
         a <- goCached qs a
         b <- goCached qs b
-        return $ \qst -> sbvFPRoundingBinaryTerm op (round qst) (a qst) (b qst)
-      goCachedIntermediate qs (FPFMATerm round a b c) = do
+        return $ \qst -> sbvFPBinaryTerm @fp @eb @sb op (a qst) (b qst)
+      goCachedIntermediate qs (FPRoundingUnaryTerm op round (a :: Term (fp eb sb))) = do
+        round <- goCached qs round
+        a <- goCached qs a
+        return $ \qst -> sbvFPRoundingUnaryTerm @fp @eb @sb op (round qst) (a qst)
+      goCachedIntermediate qs (FPRoundingBinaryTerm op round (a :: Term (fp eb sb)) b) = do
+        round <- goCached qs round
+        a <- goCached qs a
+        b <- goCached qs b
+        return $ \qst -> sbvFPRoundingBinaryTerm @fp @eb @sb op (round qst) (a qst) (b qst)
+      goCachedIntermediate qs (FPFMATerm round (a :: Term (fp eb sb)) b c) = do
         round <- goCached qs round
         a <- goCached qs a
         b <- goCached qs b
         c <- goCached qs c
-        return $ \qst -> sbvFPFMATerm (round qst) (a qst) (b qst) (c qst)
+        return $ \qst -> sbvFPFMATerm @fp @eb @sb (round qst) (a qst) (b qst) (c qst)
       goCachedIntermediate qs (FromIntegralTerm (b :: Term b)) = do
         b <- goCached qs b
         return $ sbvFromIntegralTerm @b @a . b

@@ -83,8 +83,8 @@ pevalBitCastOr ::
   Term b ->
   Term a ->
   Term b
-pevalBitCastOr d@SupportedTerm a =
-  binaryUnfoldOnce doPevalBitCastOr bitCastOrTerm d a
+pevalBitCastOr d@SupportedTerm =
+  binaryUnfoldOnce doPevalBitCastOr bitCastOrTerm d
 
 instance PEvalBitCastTerm Bool (IntN 1) where
   pevalBitCastTerm = pevalBitCastGeneral

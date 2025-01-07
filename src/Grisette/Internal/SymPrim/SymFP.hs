@@ -108,14 +108,7 @@ import Grisette.Internal.SymPrim.FP
     ValidFP,
     withValidFPProofs,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-  ( pevalFPBinaryTerm,
-    pevalFPFMATerm,
-    pevalFPRoundingBinaryTerm,
-    pevalFPRoundingUnaryTerm,
-    pevalFPTraitTerm,
-    pevalFPUnaryTerm,
-  )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
@@ -140,6 +133,14 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalBitCastOrTerm (pevalBitCastOrTerm),
     PEvalBitCastTerm (pevalBitCastTerm),
+    PEvalFPTerm
+      ( pevalFPBinaryTerm,
+        pevalFPFMATerm,
+        pevalFPRoundingBinaryTerm,
+        pevalFPRoundingUnaryTerm,
+        pevalFPTraitTerm,
+        pevalFPUnaryTerm
+      ),
     PEvalFloatingTerm (pevalFloatingUnaryTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     PEvalIEEEFPConvertibleTerm (pevalFromFPOrTerm, pevalToFPTerm),

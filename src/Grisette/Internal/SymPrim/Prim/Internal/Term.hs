@@ -64,6 +64,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalBitCastOrTerm (..),
     PEvalBVTerm (..),
     PEvalFractionalTerm (..),
+    PEvalFPTerm (..),
     PEvalFloatingTerm (..),
     PEvalFromIntegralTerm (..),
     PEvalIEEEFPConvertibleTerm (..),
@@ -906,6 +907,68 @@ instance Show FloatingUnaryOp where
   show FloatingAcosh = "acosh"
   show FloatingAtanh = "atanh"
 
+class PEvalFPTerm fp where
+  pevalFPTraitTerm :: (ValidFP eb sb) => FPTrait -> Term (fp eb sb) -> Term Bool
+  pevalFPUnaryTerm ::
+    (ValidFP eb sb) =>
+    FPUnaryOp -> Term (fp eb sb) -> Term (fp eb sb)
+  pevalFPBinaryTerm ::
+    (ValidFP eb sb) =>
+    FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
+  pevalFPRoundingUnaryTerm ::
+    (ValidFP eb sb) =>
+    FPRoundingUnaryOp ->
+    Term FPRoundingMode ->
+    Term (fp eb sb) ->
+    Term (fp eb sb)
+  pevalFPRoundingBinaryTerm ::
+    (ValidFP eb sb) =>
+    FPRoundingBinaryOp ->
+    Term FPRoundingMode ->
+    Term (fp eb sb) ->
+    Term (fp eb sb) ->
+    Term (fp eb sb)
+  pevalFPFMATerm ::
+    (ValidFP eb sb) =>
+    Term FPRoundingMode ->
+    Term (fp eb sb) ->
+    Term (fp eb sb) ->
+    Term (fp eb sb) ->
+    Term (fp eb sb)
+  sbvFPTraitTerm ::
+    (ValidFP eb sb) => FPTrait -> SBVType (fp eb sb) -> SBVType Bool
+  sbvFPUnaryTerm ::
+    (ValidFP eb sb) =>
+    FPUnaryOp ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb)
+  sbvFPBinaryTerm ::
+    (ValidFP eb sb) =>
+    FPBinaryOp ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb)
+  sbvFPRoundingUnaryTerm ::
+    (ValidFP eb sb) =>
+    FPRoundingUnaryOp ->
+    SBVType FPRoundingMode ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb)
+  sbvFPRoundingBinaryTerm ::
+    (ValidFP eb sb) =>
+    FPRoundingBinaryOp ->
+    SBVType FPRoundingMode ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb)
+  sbvFPFMATerm ::
+    (ValidFP eb sb) =>
+    SBVType FPRoundingMode ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb) ->
+    SBVType (fp eb sb)
+
 -- | Partial evaluation and lowering for floating point terms.
 class PEvalFloatingTerm t where
   pevalFloatingUnaryTerm :: FloatingUnaryOp -> Term t -> Term t
@@ -1485,10 +1548,10 @@ data Term t where
     !(Term t) ->
     Term t
   FPTraitTerm' ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     {-# UNPACK #-} !CachedInfo ->
     !FPTrait ->
-    !(Term (FP eb sb)) ->
+    !(Term (fp eb sb)) ->
     Term Bool
   FdivTerm' ::
     (SupportedPrim t, PEvalFractionalTerm t) =>
@@ -1514,41 +1577,41 @@ data Term t where
     !(Term t) ->
     Term t
   FPUnaryTerm' ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp)  =>
     {-# UNPACK #-} !CachedInfo ->
     !FPUnaryOp ->
-    !(Term (FP eb sb)) ->
-    Term (FP eb sb)
+    !(Term (fp eb sb)) ->
+    Term (fp eb sb)
   FPBinaryTerm' ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     {-# UNPACK #-} !CachedInfo ->
     !FPBinaryOp ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    Term (FP eb sb)
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    Term (fp eb sb)
   FPRoundingUnaryTerm' ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     {-# UNPACK #-} !CachedInfo ->
     !FPRoundingUnaryOp ->
     !(Term FPRoundingMode) ->
-    !(Term (FP eb sb)) ->
-    Term (FP eb sb)
+    !(Term (fp eb sb)) ->
+    Term (fp eb sb)
   FPRoundingBinaryTerm' ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     {-# UNPACK #-} !CachedInfo ->
     !FPRoundingBinaryOp ->
     !(Term FPRoundingMode) ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    Term (FP eb sb)
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    Term (fp eb sb)
   FPFMATerm' ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     {-# UNPACK #-} !CachedInfo ->
     !(Term FPRoundingMode) ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    Term (FP eb sb)
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    Term (fp eb sb)
   FromIntegralTerm' ::
     (PEvalFromIntegralTerm a b, SupportedPrim b) =>
     {-# UNPACK #-} !CachedInfo ->
@@ -1686,17 +1749,17 @@ pattern ExistsTerm sym body <-
 pattern NotTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term r
 pattern NotTerm body <- (NotTerm' _ body)
   where
-    NotTerm = notTerm
+    NotTerm = pevalNotTerm
 
 pattern OrTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
 pattern OrTerm l r <- (OrTerm' _ l r)
   where
-    OrTerm = orTerm
+    OrTerm = pevalOrTerm
 
 pattern AndTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
 pattern AndTerm l r <- (AndTerm' _ l r)
   where
-    AndTerm = andTerm
+    AndTerm = pevalAndTerm
 
 pattern EqTerm ::
   forall r.
@@ -1706,7 +1769,7 @@ pattern EqTerm ::
   Term t -> Term t -> Term r
 pattern EqTerm l r <- (EqTerm' _ l r@SupportedTerm)
   where
-    EqTerm = eqTerm
+    EqTerm = pevalEqTerm
 
 pattern DistinctTerm ::
   forall r.
@@ -1716,7 +1779,7 @@ pattern DistinctTerm ::
   NonEmpty (Term t) -> Term r
 pattern DistinctTerm ts <- (DistinctTerm' _ ts@(SupportedTerm :| _))
   where
-    DistinctTerm = distinctTerm
+    DistinctTerm = pevalDistinctTerm
 
 pattern ITETerm ::
   forall t.
@@ -1728,7 +1791,7 @@ pattern ITETerm ::
   Term t
 pattern ITETerm cond t1 t2 <- (ITETerm' _ cond t1 t2)
   where
-    ITETerm = iteTerm
+    ITETerm = pevalITETerm
 
 pattern AddNumTerm ::
   forall t.
@@ -1739,7 +1802,7 @@ pattern AddNumTerm ::
   Term t
 pattern AddNumTerm l r <- (AddNumTerm' _ l r)
   where
-    AddNumTerm = addNumTerm
+    AddNumTerm = pevalAddNumTerm
 
 pattern NegNumTerm ::
   forall t.
@@ -1748,7 +1811,7 @@ pattern NegNumTerm ::
   Term t -> Term t
 pattern NegNumTerm t <- (NegNumTerm' _ t)
   where
-    NegNumTerm = negNumTerm
+    NegNumTerm = pevalNegNumTerm
 
 pattern MulNumTerm ::
   forall t.
@@ -1757,7 +1820,7 @@ pattern MulNumTerm ::
   Term t -> Term t -> Term t
 pattern MulNumTerm l r <- (MulNumTerm' _ l r)
   where
-    MulNumTerm = mulNumTerm
+    MulNumTerm = pevalMulNumTerm
 
 pattern AbsNumTerm ::
   forall t.
@@ -1766,7 +1829,7 @@ pattern AbsNumTerm ::
   Term t -> Term t
 pattern AbsNumTerm t <- (AbsNumTerm' _ t)
   where
-    AbsNumTerm = absNumTerm
+    AbsNumTerm = pevalAbsNumTerm
 
 pattern SignumNumTerm ::
   forall t.
@@ -1775,7 +1838,7 @@ pattern SignumNumTerm ::
   Term t -> Term t
 pattern SignumNumTerm t <- (SignumNumTerm' _ t)
   where
-    SignumNumTerm = signumNumTerm
+    SignumNumTerm = pevalSignumNumTerm
 
 pattern LtOrdTerm ::
   forall r.
@@ -1785,7 +1848,7 @@ pattern LtOrdTerm ::
   Term t -> Term t -> Term r
 pattern LtOrdTerm l r <- (LtOrdTerm' _ l r@SupportedTerm)
   where
-    LtOrdTerm = ltOrdTerm
+    LtOrdTerm = pevalLtOrdTerm
 
 pattern LeOrdTerm ::
   forall r.
@@ -1795,7 +1858,7 @@ pattern LeOrdTerm ::
   Term t -> Term t -> Term r
 pattern LeOrdTerm l r <- (LeOrdTerm' _ l r@SupportedTerm)
   where
-    LeOrdTerm = leOrdTerm
+    LeOrdTerm = pevalLeOrdTerm
 
 pattern AndBitsTerm ::
   forall t.
@@ -1804,7 +1867,7 @@ pattern AndBitsTerm ::
   Term t -> Term t -> Term t
 pattern AndBitsTerm l r <- (AndBitsTerm' _ l r)
   where
-    AndBitsTerm = andBitsTerm
+    AndBitsTerm = pevalAndBitsTerm
 
 pattern OrBitsTerm ::
   forall t.
@@ -1813,7 +1876,7 @@ pattern OrBitsTerm ::
   Term t -> Term t -> Term t
 pattern OrBitsTerm l r <- (OrBitsTerm' _ l r)
   where
-    OrBitsTerm = orBitsTerm
+    OrBitsTerm = pevalOrBitsTerm
 
 pattern XorBitsTerm ::
   forall t.
@@ -1822,7 +1885,7 @@ pattern XorBitsTerm ::
   Term t -> Term t -> Term t
 pattern XorBitsTerm l r <- (XorBitsTerm' _ l r)
   where
-    XorBitsTerm = xorBitsTerm
+    XorBitsTerm = pevalXorBitsTerm
 
 pattern ComplementBitsTerm ::
   forall t.
@@ -1831,7 +1894,7 @@ pattern ComplementBitsTerm ::
   Term t -> Term t
 pattern ComplementBitsTerm t <- (ComplementBitsTerm' _ t)
   where
-    ComplementBitsTerm = complementBitsTerm
+    ComplementBitsTerm = pevalComplementBitsTerm
 
 pattern ShiftLeftTerm ::
   forall t.
@@ -1840,7 +1903,7 @@ pattern ShiftLeftTerm ::
   Term t -> Term t -> Term t
 pattern ShiftLeftTerm l r <- (ShiftLeftTerm' _ l r)
   where
-    ShiftLeftTerm = shiftLeftTerm
+    ShiftLeftTerm = pevalShiftLeftTerm
 
 pattern ShiftRightTerm ::
   forall t.
@@ -1849,7 +1912,7 @@ pattern ShiftRightTerm ::
   Term t -> Term t -> Term t
 pattern ShiftRightTerm l r <- (ShiftRightTerm' _ l r)
   where
-    ShiftRightTerm = shiftRightTerm
+    ShiftRightTerm = pevalShiftRightTerm
 
 pattern RotateLeftTerm ::
   forall t.
@@ -1858,7 +1921,7 @@ pattern RotateLeftTerm ::
   Term t -> Term t -> Term t
 pattern RotateLeftTerm l r <- (RotateLeftTerm' _ l r)
   where
-    RotateLeftTerm = rotateLeftTerm
+    RotateLeftTerm = pevalRotateLeftTerm
 
 pattern RotateRightTerm ::
   forall t.
@@ -1867,7 +1930,7 @@ pattern RotateRightTerm ::
   Term t -> Term t -> Term t
 pattern RotateRightTerm l r <- (RotateRightTerm' _ l r)
   where
-    RotateRightTerm = rotateRightTerm
+    RotateRightTerm = pevalRotateRightTerm
 
 pattern BitCastTerm ::
   forall b.
@@ -1877,7 +1940,7 @@ pattern BitCastTerm ::
   Term a -> Term b
 pattern BitCastTerm t <- (BitCastTerm' _ t@SupportedTerm)
   where
-    BitCastTerm = bitCastTerm
+    BitCastTerm = pevalBitCastTerm
 
 pattern BitCastOrTerm ::
   forall b.
@@ -1887,7 +1950,7 @@ pattern BitCastOrTerm ::
   Term b -> Term a -> Term b
 pattern BitCastOrTerm t1 t2 <- (BitCastOrTerm' _ t1 t2@SupportedTerm)
   where
-    BitCastOrTerm = bitCastOrTerm
+    BitCastOrTerm = pevalBitCastOrTerm
 
 pattern BVConcatTerm ::
   forall ret.
@@ -1908,7 +1971,7 @@ pattern BVConcatTerm ::
   Term (bv l) -> Term (bv r) -> Term ret
 pattern BVConcatTerm l r <- (BVConcatTerm' _ l@SupportedTerm r@SupportedTerm)
   where
-    BVConcatTerm = bvConcatTerm
+    BVConcatTerm = pevalBVConcatTerm
 
 pattern BVSelectTerm ::
   forall ret.
@@ -1928,7 +1991,7 @@ pattern BVSelectTerm ::
   Proxy ix -> Proxy w -> Term (bv n) -> Term ret
 pattern BVSelectTerm ix w t <- (BVSelectTerm' _ ix w t@SupportedTerm)
   where
-    BVSelectTerm = bvSelectTerm
+    BVSelectTerm = pevalBVSelectTerm
 
 pattern BVExtendTerm ::
   forall ret.
@@ -1947,7 +2010,7 @@ pattern BVExtendTerm ::
   Bool -> Proxy r -> Term (bv l) -> Term ret
 pattern BVExtendTerm signed p t <- (BVExtendTerm' _ signed p t@SupportedTerm)
   where
-    BVExtendTerm = bvExtendTerm
+    BVExtendTerm = pevalBVExtendTerm
 
 pattern ApplyTerm ::
   forall b.
@@ -1957,7 +2020,7 @@ pattern ApplyTerm ::
   Term f -> Term a -> Term b
 pattern ApplyTerm f x <- (ApplyTerm' _ f@SupportedTerm x@SupportedTerm)
   where
-    ApplyTerm = applyTerm
+    ApplyTerm = pevalApplyTerm
 
 pattern DivIntegralTerm ::
   forall t.
@@ -1966,7 +2029,7 @@ pattern DivIntegralTerm ::
   Term t -> Term t -> Term t
 pattern DivIntegralTerm l r <- (DivIntegralTerm' _ l r)
   where
-    DivIntegralTerm = divIntegralTerm
+    DivIntegralTerm = pevalDivIntegralTerm
 
 pattern ModIntegralTerm ::
   forall t.
@@ -1975,7 +2038,7 @@ pattern ModIntegralTerm ::
   Term t -> Term t -> Term t
 pattern ModIntegralTerm l r <- (ModIntegralTerm' _ l r)
   where
-    ModIntegralTerm = modIntegralTerm
+    ModIntegralTerm = pevalModIntegralTerm
 
 pattern QuotIntegralTerm ::
   forall t.
@@ -1984,7 +2047,7 @@ pattern QuotIntegralTerm ::
   Term t -> Term t -> Term t
 pattern QuotIntegralTerm l r <- (QuotIntegralTerm' _ l r)
   where
-    QuotIntegralTerm = quotIntegralTerm
+    QuotIntegralTerm = pevalQuotIntegralTerm
 
 pattern RemIntegralTerm ::
   forall t.
@@ -1993,17 +2056,17 @@ pattern RemIntegralTerm ::
   Term t -> Term t -> Term t
 pattern RemIntegralTerm l r <- (RemIntegralTerm' _ l r)
   where
-    RemIntegralTerm = remIntegralTerm
+    RemIntegralTerm = pevalRemIntegralTerm
 
 pattern FPTraitTerm ::
   forall r.
   () =>
-  forall eb sb.
-  (r ~ Bool, ValidFP eb sb, SupportedPrim (FP eb sb)) =>
-  FPTrait -> Term (FP eb sb) -> Term r
+  forall eb sb fp.
+  (r ~ Bool, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
+  FPTrait -> Term (fp eb sb) -> Term r
 pattern FPTraitTerm trait t <- (FPTraitTerm' _ trait t)
   where
-    FPTraitTerm = fpTraitTerm
+    FPTraitTerm = pevalFPTraitTerm
 
 pattern FdivTerm ::
   forall t.
@@ -2012,7 +2075,7 @@ pattern FdivTerm ::
   Term t -> Term t -> Term t
 pattern FdivTerm l r <- (FdivTerm' _ l r)
   where
-    FdivTerm = fdivTerm
+    FdivTerm = pevalFdivTerm
 
 pattern RecipTerm ::
   forall t.
@@ -2021,7 +2084,7 @@ pattern RecipTerm ::
   Term t -> Term t
 pattern RecipTerm t <- (RecipTerm' _ t)
   where
-    RecipTerm = recipTerm
+    RecipTerm = pevalRecipTerm
 
 pattern FloatingUnaryTerm ::
   forall t.
@@ -2030,7 +2093,7 @@ pattern FloatingUnaryTerm ::
   FloatingUnaryOp -> Term t -> Term t
 pattern FloatingUnaryTerm op t <- (FloatingUnaryTerm' _ op t)
   where
-    FloatingUnaryTerm = floatingUnaryTerm
+    FloatingUnaryTerm = pevalFloatingUnaryTerm
 
 pattern PowerTerm ::
   forall t.
@@ -2039,57 +2102,57 @@ pattern PowerTerm ::
   Term t -> Term t -> Term t
 pattern PowerTerm l r <- (PowerTerm' _ l r)
   where
-    PowerTerm = powerTerm
+    PowerTerm = pevalPowerTerm
 
 pattern FPUnaryTerm ::
   forall ret.
   () =>
-  forall eb sb.
-  (ret ~ FP eb sb, ValidFP eb sb, SupportedPrim (FP eb sb)) =>
-  FPUnaryOp -> Term (FP eb sb) -> Term ret
+  forall fp eb sb.
+  (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
+  FPUnaryOp -> Term (fp eb sb) -> Term ret
 pattern FPUnaryTerm op t <- (FPUnaryTerm' _ op t)
   where
-    FPUnaryTerm = fpUnaryTerm
+    FPUnaryTerm = pevalFPUnaryTerm
 
 pattern FPBinaryTerm ::
   forall ret.
   () =>
-  forall eb sb.
-  (ret ~ FP eb sb, ValidFP eb sb, SupportedPrim (FP eb sb)) =>
-  FPBinaryOp -> Term (FP eb sb) -> Term (FP eb sb) -> Term ret
+  forall fp eb sb.
+  (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
+  FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
 pattern FPBinaryTerm op l r <- (FPBinaryTerm' _ op l r)
   where
-    FPBinaryTerm = fpBinaryTerm
+    FPBinaryTerm = pevalFPBinaryTerm
 
 pattern FPRoundingUnaryTerm ::
   forall ret.
   () =>
-  forall eb sb.
-  (ret ~ FP eb sb, ValidFP eb sb, SupportedPrim (FP eb sb)) =>
-  FPRoundingUnaryOp -> Term FPRoundingMode -> Term (FP eb sb) -> Term ret
+  forall fp eb sb.
+  (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
+  FPRoundingUnaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term ret
 pattern FPRoundingUnaryTerm op rm t <- (FPRoundingUnaryTerm' _ op rm t)
   where
-    FPRoundingUnaryTerm = fpRoundingUnaryTerm
+    FPRoundingUnaryTerm = pevalFPRoundingUnaryTerm
 
 pattern FPRoundingBinaryTerm ::
   forall ret.
   () =>
-  forall eb sb.
-  (ret ~ FP eb sb, ValidFP eb sb, SupportedPrim (FP eb sb)) =>
-  FPRoundingBinaryOp -> Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb) -> Term ret
+  forall fp eb sb.
+  (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
+  FPRoundingBinaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
 pattern FPRoundingBinaryTerm op rm l r <- (FPRoundingBinaryTerm' _ op rm l r)
   where
-    FPRoundingBinaryTerm = fpRoundingBinaryTerm
+    FPRoundingBinaryTerm = pevalFPRoundingBinaryTerm
 
 pattern FPFMATerm ::
   forall ret.
   () =>
-  forall eb sb.
-  (ret ~ FP eb sb, ValidFP eb sb, SupportedPrim (FP eb sb)) =>
-  Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb) -> Term ret
+  forall fp eb sb.
+  (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
+  Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
 pattern FPFMATerm rm t1 t2 t3 <- (FPFMATerm' _ rm t1 t2 t3)
   where
-    FPFMATerm = fpFMATerm
+    FPFMATerm = pevalFPFMATerm
 
 pattern FromIntegralTerm ::
   forall b.
@@ -2099,7 +2162,7 @@ pattern FromIntegralTerm ::
   Term a -> Term b
 pattern FromIntegralTerm t <- (FromIntegralTerm' _ t@SupportedTerm)
   where
-    FromIntegralTerm = fromIntegralTerm
+    FromIntegralTerm = pevalFromIntegralTerm
 
 pattern FromFPOrTerm ::
   forall a.
@@ -2112,7 +2175,7 @@ pattern FromFPOrTerm ::
   Term a -> Term FPRoundingMode -> Term (FP eb sb) -> Term a
 pattern FromFPOrTerm t1 rm t2 <- (FromFPOrTerm' _ t1 rm t2)
   where
-    FromFPOrTerm = fromFPOrTerm
+    FromFPOrTerm = pevalFromFPOrTerm
 
 pattern ToFPTerm ::
   forall ret.
@@ -2127,7 +2190,7 @@ pattern ToFPTerm ::
   Term FPRoundingMode -> Term a -> Proxy eb -> Proxy sb -> Term ret
 pattern ToFPTerm rm t eb sb <- (ToFPTerm' _ rm t@SupportedTerm eb sb)
   where
-    ToFPTerm rm t _ _ = toFPTerm rm t
+    ToFPTerm rm t _ _ = pevalToFPTerm rm t
 
 #if MIN_VERSION_base(4, 16, 4)
 {-# COMPLETE
@@ -3101,9 +3164,9 @@ data UTerm t where
     !(Term t) ->
     UTerm t
   UFPTraitTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     !FPTrait ->
-    !(Term (FP eb sb)) ->
+    !(Term (fp eb sb)) ->
     UTerm Bool
   UFdivTerm ::
     (SupportedPrim t, PEvalFractionalTerm t) =>
@@ -3119,36 +3182,36 @@ data UTerm t where
   UPowerTerm ::
     (SupportedPrim t, PEvalFloatingTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UFPUnaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     !FPUnaryOp ->
-    !(Term (FP eb sb)) ->
-    UTerm (FP eb sb)
+    !(Term (fp eb sb)) ->
+    UTerm (fp eb sb)
   UFPBinaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     !FPBinaryOp ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    UTerm (FP eb sb)
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    UTerm (fp eb sb)
   UFPRoundingUnaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     !FPRoundingUnaryOp ->
     !(Term FPRoundingMode) ->
-    !(Term (FP eb sb)) ->
-    UTerm (FP eb sb)
+    !(Term (fp eb sb)) ->
+    UTerm (fp eb sb)
   UFPRoundingBinaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     !FPRoundingBinaryOp ->
     !(Term FPRoundingMode) ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    UTerm (FP eb sb)
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    UTerm (fp eb sb)
   UFPFMATerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     !(Term FPRoundingMode) ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    !(Term (FP eb sb)) ->
-    UTerm (FP eb sb)
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    !(Term (fp eb sb)) ->
+    UTerm (fp eb sb)
   UFromIntegralTerm ::
     (PEvalFromIntegralTerm a b, SupportedPrim b) =>
     !(Term a) ->
@@ -3634,36 +3697,41 @@ instance Interned (Term t) where
       {-# UNPACK #-} !HashId ->
       Description (Term a)
     DFPUnaryTerm ::
+      forall fp (eb :: Nat) (sb :: Nat).
       {-# UNPACK #-} !Digest ->
       FPUnaryOp ->
       {-# UNPACK #-} !HashId ->
-      Description (Term (FP eb sb))
+      Description (Term (fp eb sb))
     DFPBinaryTerm ::
+      forall fp (eb :: Nat) (sb :: Nat).
       {-# UNPACK #-} !Digest ->
       FPBinaryOp ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
-      Description (Term (FP eb sb))
+      Description (Term (fp eb sb))
     DFPRoundingUnaryTerm ::
+      forall fp (eb :: Nat) (sb :: Nat).
       {-# UNPACK #-} !Digest ->
       FPRoundingUnaryOp ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
-      Description (Term (FP eb sb))
+      Description (Term (fp eb sb))
     DFPRoundingBinaryTerm ::
+      forall fp (eb :: Nat) (sb :: Nat).
       {-# UNPACK #-} !Digest ->
       FPRoundingBinaryOp ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
-      Description (Term (FP eb sb))
+      Description (Term (fp eb sb))
     DFPFMATerm ::
+      forall fp (eb :: Nat) (sb :: Nat).
       {-# UNPACK #-} !Digest ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
-      Description (Term (FP eb sb))
+      Description (Term (fp eb sb))
     DFromIntegralTerm ::
       {-# UNPACK #-} !Digest ->
       {-# UNPACK #-} !TypeHashId ->
@@ -4192,71 +4260,71 @@ goPhantomApply info PhantomDict f arg = ApplyTerm' info f arg
 
 {-# NOINLINE goPhantomFPTrait #-}
 goPhantomFPTrait ::
-  (ValidFP eb sb) =>
+  (ValidFP eb sb, PEvalFPTerm fp) =>
   CachedInfo ->
-  PhantomDict (FP eb sb) ->
+  PhantomDict (fp eb sb) ->
   FPTrait ->
-  Term (FP eb sb) ->
+  Term (fp eb sb) ->
   Term Bool
 goPhantomFPTrait info PhantomDict trait arg = FPTraitTerm' info trait arg
 
 {-# NOINLINE goPhantomFPUnary #-}
 goPhantomFPUnary ::
-  (ValidFP eb sb) =>
+  (ValidFP eb sb, PEvalFPTerm fp) =>
   CachedInfo ->
-  PhantomDict (FP eb sb) ->
+  PhantomDict (fp eb sb) ->
   FPUnaryOp ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 goPhantomFPUnary info PhantomDict op arg = FPUnaryTerm' info op arg
 
 {-# NOINLINE goPhantomFPBinary #-}
 goPhantomFPBinary ::
-  (ValidFP eb sb) =>
+  (ValidFP eb sb, PEvalFPTerm fp) =>
   CachedInfo ->
-  PhantomDict (FP eb sb) ->
+  PhantomDict (fp eb sb) ->
   FPBinaryOp ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 goPhantomFPBinary info PhantomDict op arg1 arg2 =
   FPBinaryTerm' info op arg1 arg2
 
 {-# NOINLINE goPhantomFPRoundingUnary #-}
 goPhantomFPRoundingUnary ::
-  (ValidFP eb sb) =>
+  (ValidFP eb sb, PEvalFPTerm fp) =>
   CachedInfo ->
-  PhantomDict (FP eb sb) ->
+  PhantomDict (fp eb sb) ->
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 goPhantomFPRoundingUnary info PhantomDict op mode arg =
   FPRoundingUnaryTerm' info op mode arg
 
 {-# NOINLINE goPhantomFPRoundingBinary #-}
 goPhantomFPRoundingBinary ::
-  (ValidFP eb sb) =>
+  (ValidFP eb sb, PEvalFPTerm fp) =>
   CachedInfo ->
-  PhantomDict (FP eb sb) ->
+  PhantomDict (fp eb sb) ->
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 goPhantomFPRoundingBinary info PhantomDict op mode arg1 arg2 =
   FPRoundingBinaryTerm' info op mode arg1 arg2
 
 {-# NOINLINE goPhantomFPFMA #-}
 goPhantomFPFMA ::
-  (ValidFP eb sb) =>
+  (ValidFP eb sb, PEvalFPTerm fp) =>
   CachedInfo ->
-  PhantomDict (FP eb sb) ->
+  PhantomDict (fp eb sb) ->
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 goPhantomFPFMA info PhantomDict mode arg1 arg2 arg3 =
   FPFMATerm' info mode arg1 arg2 arg3
 
@@ -4786,9 +4854,9 @@ curThreadRemIntegralTerm l@SupportedTerm r = intern $ URemIntegralTerm l r
 
 -- | Construct and internalizing a 'FPTraitTerm'.
 curThreadFpTraitTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPTrait ->
-  Term (FP eb sb) ->
+  Term (fp eb sb) ->
   IO (Term Bool)
 curThreadFpTraitTerm trait v = intern $ UFPTraitTerm trait v
 {-# INLINE curThreadFpTraitTerm #-}
@@ -4816,53 +4884,53 @@ curThreadPowerTerm l@SupportedTerm r = intern $ UPowerTerm l r
 
 -- | Construct and internalizing a 'FPUnaryTerm'.
 curThreadFpUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPUnaryOp ->
-  Term (FP eb sb) ->
-  IO (Term (FP eb sb))
+  Term (fp eb sb) ->
+  IO (Term (fp eb sb))
 curThreadFpUnaryTerm op v = intern $ UFPUnaryTerm op v
 {-# INLINE curThreadFpUnaryTerm #-}
 
 -- | Construct and internalizing a 'FPBinaryTerm'.
 curThreadFpBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPBinaryOp ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  IO (Term (FP eb sb))
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  IO (Term (fp eb sb))
 curThreadFpBinaryTerm op l r = intern $ UFPBinaryTerm op l r
 {-# INLINE curThreadFpBinaryTerm #-}
 
 -- | Construct and internalizing a 'FPRoundingUnaryTerm'.
 curThreadFpRoundingUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  IO (Term (FP eb sb))
+  Term (fp eb sb) ->
+  IO (Term (fp eb sb))
 curThreadFpRoundingUnaryTerm op mode v = intern $ UFPRoundingUnaryTerm op mode v
 {-# INLINE curThreadFpRoundingUnaryTerm #-}
 
 -- | Construct and internalizing a 'FPRoundingBinaryTerm'.
 curThreadFpRoundingBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  IO (Term (FP eb sb))
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  IO (Term (fp eb sb))
 curThreadFpRoundingBinaryTerm op mode l r =
   intern $ UFPRoundingBinaryTerm op mode l r
 {-# INLINE curThreadFpRoundingBinaryTerm #-}
 
 -- | Construct and internalizing a 'FPFMATerm'.
 curThreadFpFMATerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  IO (Term (FP eb sb))
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  IO (Term (fp eb sb))
 curThreadFpFMATerm mode l r s = intern $ UFPFMATerm mode l r s
 {-# INLINE curThreadFpFMATerm #-}
 
@@ -5246,9 +5314,9 @@ remIntegralTerm = unsafeInCurThread2 curThreadRemIntegralTerm
 
 -- | Construct and internalizing a 'FPTraitTerm'.
 fpTraitTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPTrait ->
-  Term (FP eb sb) ->
+  Term (fp eb sb) ->
   Term Bool
 fpTraitTerm trait = unsafeInCurThread1 (curThreadFpTraitTerm trait)
 {-# NOINLINE fpTraitTerm #-}
@@ -5275,52 +5343,52 @@ powerTerm = unsafeInCurThread2 curThreadPowerTerm
 
 -- | Construct and internalizing a 'FPUnaryTerm'.
 fpUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPUnaryOp ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 fpUnaryTerm op = unsafeInCurThread1 (curThreadFpUnaryTerm op)
 {-# NOINLINE fpUnaryTerm #-}
 
 -- | Construct and internalizing a 'FPBinaryTerm'.
 fpBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPBinaryOp ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 fpBinaryTerm op = unsafeInCurThread2 (curThreadFpBinaryTerm op)
 {-# NOINLINE fpBinaryTerm #-}
 
 -- | Construct and internalizing a 'FPRoundingUnaryTerm'.
 fpRoundingUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 fpRoundingUnaryTerm op = unsafeInCurThread2 (curThreadFpRoundingUnaryTerm op)
 {-# NOINLINE fpRoundingUnaryTerm #-}
 
 -- | Construct and internalizing a 'FPRoundingBinaryTerm'.
 fpRoundingBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 fpRoundingBinaryTerm op = unsafeInCurThread3 (curThreadFpRoundingBinaryTerm op)
 {-# NOINLINE fpRoundingBinaryTerm #-}
 
 -- | Construct and internalizing a 'FPFMATerm'.
 fpFMATerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
   Term FPRoundingMode ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb) ->
-  Term (FP eb sb)
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb)
 fpFMATerm mode a b c = unsafePerformIO $ do
   tid <- myWeakThreadId
   mode' <- toCurThreadImpl tid mode
