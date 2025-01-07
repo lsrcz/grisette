@@ -723,13 +723,13 @@ identifier :: Text -> Identifier
 --   
 --   The user may need to use unique identifiers or additional metadata to
 --   avoid unintentional identifier collision.
-withMetadata :: Text -> SExpr -> Identifier
+withMetadata :: AsMetadata a => Text -> a -> Identifier
 
 -- | Identifier with the file location.
 withLocation :: Text -> SpliceQ Identifier
 
 -- | Modify the metadata of an identifier.
-mapMetadata :: (SExpr -> SExpr) -> Identifier -> Identifier
+mapMetadata :: AsMetadata a => (SExpr -> a) -> Identifier -> Identifier
 
 -- | Get a globally unique identifier within the <a>IO</a> monad.
 uniqueIdentifier :: Text -> IO Identifier
@@ -752,6 +752,17 @@ symbolIdentifier :: Symbol -> Identifier
 
 -- | Modify the identifier of a symbol.
 mapIdentifier :: (Identifier -> Identifier) -> Symbol -> Symbol
+
+-- | A type class for embedding a type into a metadata represented as an
+--   S-expression.
+class AsMetadata a
+asMetadata :: AsMetadata a => a -> SExpr
+fromMetadata :: AsMetadata a => SExpr -> Maybe a
+
+-- | A pattern for extracting a value from a metadata represented as an
+--   S-expression.
+pattern Metadata :: AsMetadata a => a -> SExpr
+instance Grisette.Internal.Core.Data.Symbol.AsMetadata Grisette.Internal.Core.Data.SExpr.SExpr
 instance Data.Binary.Class.Binary Grisette.Internal.Core.Data.Symbol.Identifier
 instance Data.Binary.Class.Binary Grisette.Internal.Core.Data.Symbol.Symbol
 instance GHC.Classes.Eq Grisette.Internal.Core.Data.Symbol.Identifier
@@ -14602,6 +14613,16 @@ data Symbol
 --   identifier collision.
 identifier :: Text -> Identifier
 
+-- | A type class for embedding a type into a metadata represented as an
+--   S-expression.
+class AsMetadata a
+asMetadata :: AsMetadata a => a -> SExpr
+fromMetadata :: AsMetadata a => SExpr -> Maybe a
+
+-- | A pattern for extracting a value from a metadata represented as an
+--   S-expression.
+pattern Metadata :: AsMetadata a => a -> SExpr
+
 -- | Identifier with extra metadata.
 --   
 --   The same identifier with the same metadata refers to the same symbolic
@@ -14609,10 +14630,10 @@ identifier :: Text -> Identifier
 --   
 --   The user may need to use unique identifiers or additional metadata to
 --   avoid unintentional identifier collision.
-withMetadata :: Text -> SExpr -> Identifier
+withMetadata :: AsMetadata a => Text -> a -> Identifier
 
 -- | Modify the metadata of an identifier.
-mapMetadata :: (SExpr -> SExpr) -> Identifier -> Identifier
+mapMetadata :: AsMetadata a => (SExpr -> a) -> Identifier -> Identifier
 
 -- | Identifier with the file location.
 withLocation :: Text -> SpliceQ Identifier

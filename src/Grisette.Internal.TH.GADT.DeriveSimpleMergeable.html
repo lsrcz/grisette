@@ -57,11 +57,11 @@
 </span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#extraPatNames"><span class="hs-identifier hs-var">extraPatNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;c&quot;</span></span><span class="hs-special">]</span><span class="hs-special">,</span><span>
 </span><span id="line-55"></span><span>              </span><span class="annot"><span class="annottext">fieldResFun :: [Exp] -&gt; (Exp, Exp) -&gt; Exp -&gt; Q (Exp, [Bool])
-</span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#fieldResFun"><span class="hs-identifier hs-var">fieldResFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">[</span><span id="local-6989586621682279813"><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279813"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682279814"><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279814"><span class="hs-identifier hs-var">lhs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682279815"><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279815"><span class="hs-identifier hs-var">rhs</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682279816"><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279816"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#fieldResFun"><span class="hs-identifier hs-var">fieldResFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">[</span><span id="local-6989586621682280451"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682280451"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682280452"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682280452"><span class="hs-identifier hs-var">lhs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682280453"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682280453"><span class="hs-identifier hs-var">rhs</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682280454"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682280454"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-56"></span><span>                </span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">[</span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
 </span><span id="line-57"></span><span>                  </span><span class="annot"><span class="annottext">(Exp -&gt; (Exp, [Bool])) -&gt; Q Exp -&gt; Q (Exp, [Bool])
@@ -70,24 +70,24 @@ forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279816"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+</span><a href="#local-6989586621682280454"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279813"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+</span><a href="#local-6989586621682280451"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279814"><span class="hs-identifier hs-var">lhs</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+</span><a href="#local-6989586621682280452"><span class="hs-identifier hs-var">lhs</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682279815"><span class="hs-identifier hs-var">rhs</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span class="hs-special">,</span><span>
+</span><a href="#local-6989586621682280453"><span class="hs-identifier hs-var">rhs</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span class="hs-special">,</span><span>
 </span><span id="line-58"></span><span>              </span><span class="annot"><span class="annottext">fieldCombineFun :: Name -&gt; [Exp] -&gt; Q (Exp, [Bool])
 </span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#fieldCombineFun"><span class="hs-identifier hs-var">fieldCombineFun</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-59"></span><span>                </span><span class="hs-glyph">\</span><span id="local-6989586621682279818"><span class="annot"><span class="annottext">Name
-</span><a href="#local-6989586621682279818"><span class="hs-identifier hs-var">con</span></a></span></span><span> </span><span id="local-6989586621682279819"><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682279819"><span class="hs-identifier hs-var">lst</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp, [Bool]) -&gt; Q (Exp, [Bool])
+</span><span id="line-59"></span><span>                </span><span class="hs-glyph">\</span><span id="local-6989586621682280456"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682280456"><span class="hs-identifier hs-var">con</span></a></span></span><span> </span><span id="local-6989586621682280457"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682280457"><span class="hs-identifier hs-var">lst</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp, [Bool]) -&gt; Q (Exp, [Bool])
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Exp -&gt; Exp -&gt; Exp) -&gt; Exp -&gt; [Exp] -&gt; Exp
@@ -98,8 +98,8 @@ Foldable t =&gt;
 </span><span class="hs-identifier hs-var">foldl</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp -&gt; Exp
 </span><span class="hs-identifier hs-var">AppE</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Exp
 </span><span class="hs-identifier hs-var">ConE</span></span><span> </span><span class="annot"><span class="annottext">Name
-</span><a href="#local-6989586621682279818"><span class="hs-identifier hs-var">con</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682279819"><span class="hs-identifier hs-var">lst</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682280456"><span class="hs-identifier hs-var">con</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682280457"><span class="hs-identifier hs-var">lst</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
 </span><span id="line-60"></span><span>              </span><span class="annot"><span class="annottext">fieldDifferentExistentialFun :: Exp -&gt; Q Exp
 </span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#fieldDifferentExistentialFun"><span class="hs-identifier hs-var">fieldDifferentExistentialFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Q Exp -&gt; Exp -&gt; Q Exp
@@ -131,33 +131,33 @@ forall a b. a -&gt; b -&gt; a
 </span><span id="line-74"></span><span class="annot"><span class="hs-comment">-- | Derive 'SimpleMergeable' instance for a GADT.</span></span><span>
 </span><span id="line-75"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable"><span class="hs-identifier hs-type">deriveGADTSimpleMergeable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-76"></span><span id="deriveGADTSimpleMergeable"><span class="annot"><span class="annottext">deriveGADTSimpleMergeable :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable"><span class="hs-identifier hs-var hs-var">deriveGADTSimpleMergeable</span></a></span></span><span> </span><span id="local-6989586621682279823"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682279823"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable"><span class="hs-identifier hs-var hs-var">deriveGADTSimpleMergeable</span></a></span></span><span> </span><span id="local-6989586621682280461"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682280461"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-77"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; BinaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#genBinaryOpClass"><span class="hs-identifier hs-var">genBinaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682279823"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">BinaryOpClassConfig
+</span><a href="#local-6989586621682280461"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">BinaryOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#simpleMergeableConfig"><span class="hs-identifier hs-var">simpleMergeableConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-78"></span><span>
 </span><span id="line-79"></span><span class="annot"><span class="hs-comment">-- | Derive 'SimpleMergeable1' instance for a GADT.</span></span><span>
 </span><span id="line-80"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable1"><span class="hs-identifier hs-type">deriveGADTSimpleMergeable1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-81"></span><span id="deriveGADTSimpleMergeable1"><span class="annot"><span class="annottext">deriveGADTSimpleMergeable1 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable1"><span class="hs-identifier hs-var hs-var">deriveGADTSimpleMergeable1</span></a></span></span><span> </span><span id="local-6989586621682279824"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682279824"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable1"><span class="hs-identifier hs-var hs-var">deriveGADTSimpleMergeable1</span></a></span></span><span> </span><span id="local-6989586621682280462"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682280462"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-82"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; BinaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#genBinaryOpClass"><span class="hs-identifier hs-var">genBinaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682279824"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">BinaryOpClassConfig
+</span><a href="#local-6989586621682280462"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">BinaryOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#simpleMergeableConfig"><span class="hs-identifier hs-var">simpleMergeableConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span>
 </span><span id="line-83"></span><span>
 </span><span id="line-84"></span><span class="annot"><span class="hs-comment">-- | Derive 'SimpleMergeable2' instance for a GADT.</span></span><span>
 </span><span id="line-85"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable2"><span class="hs-identifier hs-type">deriveGADTSimpleMergeable2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-86"></span><span id="deriveGADTSimpleMergeable2"><span class="annot"><span class="annottext">deriveGADTSimpleMergeable2 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable2"><span class="hs-identifier hs-var hs-var">deriveGADTSimpleMergeable2</span></a></span></span><span> </span><span id="local-6989586621682279825"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682279825"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#deriveGADTSimpleMergeable2"><span class="hs-identifier hs-var hs-var">deriveGADTSimpleMergeable2</span></a></span></span><span> </span><span id="local-6989586621682280463"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682280463"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-87"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; BinaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.BinaryOpCommon.html#genBinaryOpClass"><span class="hs-identifier hs-var">genBinaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682279825"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">BinaryOpClassConfig
+</span><a href="#local-6989586621682280463"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">BinaryOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveSimpleMergeable.html#simpleMergeableConfig"><span class="hs-identifier hs-var">simpleMergeableConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">2</span></span><span>
 </span><span id="line-88"></span></pre></body></html>

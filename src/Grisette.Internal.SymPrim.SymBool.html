@@ -58,7 +58,7 @@
 </span><span id="line-58"></span><span class="hs-comment">-- more information.</span><span>
 </span><span id="line-59"></span><span class="hs-keyword">newtype</span><span> </span><span id="SymBool"><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SymBool"><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span></span><span> </span><span class="hs-special">{</span><span id="underlyingBoolTerm"><span class="annot"><span class="annottext">SymBool -&gt; Term Bool
 </span><a href="Grisette.Internal.SymPrim.SymBool.html#underlyingBoolTerm"><span class="hs-identifier hs-var hs-var">underlyingBoolTerm</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">}</span><span>
-</span><span id="line-60"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682264641"><span id="local-6989586621682264648"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). Quote m =&gt; SymBool -&gt; m Exp)
+</span><span id="line-60"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621682265275"><span id="local-6989586621682265282"><span class="annot"><span class="annottext">(forall (m :: * -&gt; *). Quote m =&gt; SymBool -&gt; m Exp)
 -&gt; (forall (m :: * -&gt; *). Quote m =&gt; SymBool -&gt; Code m SymBool)
 -&gt; Lift SymBool
 forall t.
@@ -70,12 +70,12 @@ $clift :: forall (m :: * -&gt; *). Quote m =&gt; SymBool -&gt; m Exp
 lift :: forall (m :: * -&gt; *). Quote m =&gt; SymBool -&gt; m Exp
 $cliftTyped :: forall (m :: * -&gt; *). Quote m =&gt; SymBool -&gt; Code m SymBool
 liftTyped :: forall (m :: * -&gt; *). Quote m =&gt; SymBool -&gt; Code m SymBool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Lift</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682264656"><span class="annot"><span class="annottext">SymBool -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Lift</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682265290"><span class="annot"><span class="annottext">SymBool -&gt; ()
 (SymBool -&gt; ()) -&gt; NFData SymBool
 forall a. (a -&gt; ()) -&gt; NFData a
 $crnf :: SymBool -&gt; ()
 rnf :: SymBool -&gt; ()
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682264664"><span id="local-6989586621682264666"><span class="annot"><span class="annottext">(forall x. SymBool -&gt; Rep SymBool x)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621682265298"><span id="local-6989586621682265300"><span class="annot"><span class="annottext">(forall x. SymBool -&gt; Rep SymBool x)
 -&gt; (forall x. Rep SymBool x -&gt; SymBool) -&gt; Generic SymBool
 forall x. Rep SymBool x -&gt; SymBool
 forall x. SymBool -&gt; Rep SymBool x
@@ -94,51 +94,51 @@ to :: forall x. Rep SymBool x -&gt; SymBool
 </span><span id="line-66"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="SymType"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymType"><span class="hs-identifier hs-var">SymType</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span>
 </span><span id="line-67"></span><span>
 </span><span id="line-68"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LinkedRep"><span class="hs-identifier hs-type">LinkedRep</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-69"></span><span>  </span><span id="local-6989586621682264692"><span class="annot"><span class="annottext">underlyingTerm :: SymBool -&gt; Term Bool
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#underlyingTerm"><span class="hs-identifier hs-var hs-var hs-var">underlyingTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682264693"><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264693"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264693"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-70"></span><span>  </span><span id="local-6989586621682264694"><span class="annot"><span class="annottext">wrapTerm :: Term Bool -&gt; SymBool
+</span><span id="line-69"></span><span>  </span><span id="local-6989586621682265326"><span class="annot"><span class="annottext">underlyingTerm :: SymBool -&gt; Term Bool
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#underlyingTerm"><span class="hs-identifier hs-var hs-var hs-var">underlyingTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682265327"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682265327"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682265327"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-70"></span><span>  </span><span id="local-6989586621682265328"><span class="annot"><span class="annottext">wrapTerm :: Term Bool -&gt; SymBool
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#wrapTerm"><span class="hs-identifier hs-var hs-var hs-var">wrapTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; SymBool
 </span><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span><span>
 </span><span id="line-71"></span><span>
 </span><span id="line-72"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#Apply"><span class="hs-identifier hs-type">Apply</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-73"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="FunType"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Function.html#FunType"><span class="hs-identifier hs-var">FunType</span></a></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span>
-</span><span id="line-74"></span><span>  </span><span id="local-6989586621682264698"><span class="annot"><span class="annottext">apply :: SymBool -&gt; FunType SymBool
+</span><span id="line-74"></span><span>  </span><span id="local-6989586621682265332"><span class="annot"><span class="annottext">apply :: SymBool -&gt; FunType SymBool
 </span><a href="Grisette.Internal.Core.Data.Class.Function.html#apply"><span class="hs-identifier hs-var hs-var hs-var">apply</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; FunType SymBool
 SymBool -&gt; SymBool
 forall a. a -&gt; a
 </span><span class="hs-identifier hs-var">id</span></span><span>
 </span><span id="line-75"></span><span>
-</span><span id="line-76"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682264702"><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-77"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682264709"><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264709"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682264710"><span class="annot"><span class="annottext">== :: SymBool -&gt; SymBool -&gt; Bool
-</span><span class="hs-operator hs-var hs-var hs-var">==</span></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682264711"><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264711"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264709"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; Term Bool -&gt; Bool
+</span><span id="line-76"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682265336"><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682265343"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682265343"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682265344"><span class="annot"><span class="annottext">== :: SymBool -&gt; SymBool -&gt; Bool
+</span><span class="hs-operator hs-var hs-var hs-var">==</span></span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682265345"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682265345"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682265343"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; Term Bool -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264711"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><a href="#local-6989586621682265345"><span class="hs-identifier hs-var">r</span></a></span><span>
 </span><span id="line-78"></span><span>
-</span><span id="line-79"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682264716"><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-80"></span><span>  </span><span id="local-6989586621682264723"><span class="annot"><span class="annottext">hashWithSalt :: Int -&gt; SymBool -&gt; Int
-</span><span class="hs-identifier hs-var hs-var hs-var">hashWithSalt</span></span></span><span> </span><span id="local-6989586621682264724"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682264724"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682264725"><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264725"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682264724"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Term Bool -&gt; Int
+</span><span id="line-79"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682265350"><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-80"></span><span>  </span><span id="local-6989586621682265357"><span class="annot"><span class="annottext">hashWithSalt :: Int -&gt; SymBool -&gt; Int
+</span><span class="hs-identifier hs-var hs-var hs-var">hashWithSalt</span></span></span><span> </span><span id="local-6989586621682265358"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682265358"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682265359"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682265359"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682265358"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Term Bool -&gt; Int
 forall a. Hashable a =&gt; Int -&gt; a -&gt; Int
 </span><span class="hs-operator hs-var">`hashWithSalt`</span></span><span> </span><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264725"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><a href="#local-6989586621682265359"><span class="hs-identifier hs-var">v</span></a></span><span>
 </span><span id="line-81"></span><span>
-</span><span id="line-82"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682264733"><span id="local-6989586621682264737"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-83"></span><span>  </span><span id="local-6989586621682264741"><span class="annot"><span class="annottext">con :: Bool -&gt; SymBool
+</span><span id="line-82"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682265367"><span id="local-6989586621682265371"><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#Solvable"><span class="hs-identifier hs-type">Solvable</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-83"></span><span>  </span><span id="local-6989586621682265375"><span class="annot"><span class="annottext">con :: Bool -&gt; SymBool
 </span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#con"><span class="hs-identifier hs-var hs-var hs-var">con</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; SymBool
 </span><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; SymBool) -&gt; (Bool -&gt; Term Bool) -&gt; Bool -&gt; SymBool
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Term Bool
 forall t. SupportedPrim t =&gt; t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span>
-</span><span id="line-84"></span><span>  </span><span id="local-6989586621682264745"><span class="annot"><span class="annottext">sym :: Symbol -&gt; SymBool
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621682265379"><span class="annot"><span class="annottext">sym :: Symbol -&gt; SymBool
 </span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#sym"><span class="hs-identifier hs-var hs-var hs-var">sym</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; SymBool
 </span><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; SymBool)
 -&gt; (Symbol -&gt; Term Bool) -&gt; Symbol -&gt; SymBool
@@ -155,23 +155,23 @@ forall t.
 SupportedNonFuncPrim t =&gt;
 Symbol -&gt; TypedSymbol 'ConstantKind t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#typedConstantSymbol"><span class="hs-identifier hs-var">typedConstantSymbol</span></a></span><span>
-</span><span id="line-85"></span><span>  </span><span id="local-6989586621682264746"><span class="annot"><span class="annottext">conView :: SymBool -&gt; Maybe Bool
+</span><span id="line-85"></span><span>  </span><span id="local-6989586621682265380"><span class="annot"><span class="annottext">conView :: SymBool -&gt; Maybe Bool
 </span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier hs-var hs-var hs-var">conView</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">WeakThreadId
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Digest
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ident
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682264748"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682264748"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Maybe Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682265382"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682265382"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Maybe Bool
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682264748"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><a href="#local-6989586621682265382"><span class="hs-identifier hs-var">t</span></a></span><span>
 </span><span id="line-86"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Core.Data.Class.Solvable.html#conView"><span class="hs-identifier hs-var">conView</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Bool
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-87"></span><span>
 </span><span id="line-88"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IsString</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-89"></span><span>  </span><span id="local-6989586621682264754"><span class="annot"><span class="annottext">fromString :: String -&gt; SymBool
+</span><span id="line-89"></span><span>  </span><span id="local-6989586621682265388"><span class="annot"><span class="annottext">fromString :: String -&gt; SymBool
 </span><span class="hs-identifier hs-var hs-var hs-var">fromString</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; SymBool
 forall c t. Solvable c t =&gt; Identifier -&gt; t
 </span><a href="Grisette.Internal.Core.Data.Class.Solvable.html#ssym"><span class="hs-identifier hs-var">ssym</span></a></span><span> </span><span class="annot"><span class="annottext">(Identifier -&gt; SymBool)
@@ -181,26 +181,26 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 forall a. IsString a =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">fromString</span></span><span>
 </span><span id="line-90"></span><span>
-</span><span id="line-91"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682264756"><span id="local-6989586621682264761"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-92"></span><span>  </span><span id="local-6989586621682264764"><span class="annot"><span class="annottext">show :: SymBool -&gt; String
-</span><a href="#local-6989586621682264764"><span class="hs-identifier hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682264766"><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264766"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; String
+</span><span id="line-91"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682265390"><span id="local-6989586621682265395"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-92"></span><span>  </span><span id="local-6989586621682265398"><span class="annot"><span class="annottext">show :: SymBool -&gt; String
+</span><a href="#local-6989586621682265398"><span class="hs-identifier hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span id="local-6989586621682265400"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682265400"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; String
 forall t. Term t -&gt; String
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pformatTerm"><span class="hs-identifier hs-var">pformatTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
-</span><a href="#local-6989586621682264766"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><a href="#local-6989586621682265400"><span class="hs-identifier hs-var">t</span></a></span><span>
 </span><span id="line-93"></span><span>
-</span><span id="line-94"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682264769"><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier hs-type">AllSyms</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-95"></span><span>  </span><span id="local-6989586621682264774"><span class="annot"><span class="annottext">allSymsS :: SymBool -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var hs-var hs-var">allSymsS</span></a></span></span><span> </span><span id="local-6989586621682264775"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682264775"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool -&gt; SomeSym
+</span><span id="line-94"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682265403"><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier hs-type">AllSyms</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-95"></span><span>  </span><span id="local-6989586621682265408"><span class="annot"><span class="annottext">allSymsS :: SymBool -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var hs-var hs-var">allSymsS</span></a></span></span><span> </span><span id="local-6989586621682265409"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682265409"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SymBool -&gt; SomeSym
 forall con sym. LinkedRep con sym =&gt; sym -&gt; SomeSym
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#SomeSym"><span class="hs-identifier hs-var">SomeSym</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682264775"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">SomeSym -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682265409"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">SomeSym -&gt; [SomeSym] -&gt; [SomeSym]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span class="hs-special">)</span><span>
 </span><span id="line-96"></span><span>
 </span><span id="line-97"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-98"></span><span>  </span><span id="local-6989586621682264785"><span class="annot"><span class="annottext">serialize :: forall (m :: * -&gt; *). MonadPut m =&gt; SymBool -&gt; m ()
+</span><span id="line-98"></span><span>  </span><span id="local-6989586621682265419"><span class="annot"><span class="annottext">serialize :: forall (m :: * -&gt; *). MonadPut m =&gt; SymBool -&gt; m ()
 </span><span class="hs-identifier hs-var hs-var hs-var">serialize</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; m ()
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; Term Bool -&gt; m ()
@@ -208,7 +208,7 @@ forall (m :: * -&gt; *). MonadPut m =&gt; Term Bool -&gt; m ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; Term Bool
 </span><a href="Grisette.Internal.SymPrim.SymBool.html#underlyingBoolTerm"><span class="hs-identifier hs-var">underlyingBoolTerm</span></a></span><span>
-</span><span id="line-99"></span><span>  </span><span id="local-6989586621682264795"><span class="annot"><span class="annottext">deserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m SymBool
+</span><span id="line-99"></span><span>  </span><span id="local-6989586621682265429"><span class="annot"><span class="annottext">deserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m SymBool
 </span><span class="hs-identifier hs-var hs-var hs-var">deserialize</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; SymBool
 </span><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-var">SymBool</span></a></span><span> </span><span class="annot"><span class="annottext">(Term Bool -&gt; SymBool) -&gt; m (Term Bool) -&gt; m SymBool
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
@@ -218,25 +218,25 @@ forall (m :: * -&gt; *). MonadGet m =&gt; m (Term Bool)
 </span><span class="hs-identifier hs-var">deserialize</span></span><span>
 </span><span id="line-100"></span><span>
 </span><span id="line-101"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-102"></span><span>  </span><span id="local-6989586621682264804"><span class="annot"><span class="annottext">put :: Putter SymBool
-</span><a href="#local-6989586621682264804"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter SymBool
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682265438"><span class="annot"><span class="annottext">put :: Putter SymBool
+</span><a href="#local-6989586621682265438"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter SymBool
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; SymBool -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span>
-</span><span id="line-103"></span><span>  </span><span id="local-6989586621682264809"><span class="annot"><span class="annottext">get :: Get SymBool
-</span><a href="#local-6989586621682264809"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SymBool
+</span><span id="line-103"></span><span>  </span><span id="local-6989586621682265443"><span class="annot"><span class="annottext">get :: Get SymBool
+</span><a href="#local-6989586621682265443"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SymBool
 forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
 forall (m :: * -&gt; *). MonadGet m =&gt; m SymBool
 </span><span class="hs-identifier hs-var">deserialize</span></span><span>
 </span><span id="line-104"></span><span>
-</span><span id="line-105"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682264814"><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-106"></span><span>  </span><span id="local-6989586621682264821"><span class="annot"><span class="annottext">put :: SymBool -&gt; Put
-</span><a href="#local-6989586621682264821"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; Put
+</span><span id="line-105"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682265448"><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.SymBool.html#SymBool"><span class="hs-identifier hs-type">SymBool</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-106"></span><span>  </span><span id="local-6989586621682265455"><span class="annot"><span class="annottext">put :: SymBool -&gt; Put
+</span><a href="#local-6989586621682265455"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; Put
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; SymBool -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span>
-</span><span id="line-107"></span><span>  </span><span id="local-6989586621682264826"><span class="annot"><span class="annottext">get :: Get SymBool
-</span><a href="#local-6989586621682264826"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SymBool
+</span><span id="line-107"></span><span>  </span><span id="local-6989586621682265460"><span class="annot"><span class="annottext">get :: Get SymBool
+</span><a href="#local-6989586621682265460"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SymBool
 forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
 forall (m :: * -&gt; *). MonadGet m =&gt; m SymBool
 </span><span class="hs-identifier hs-var">deserialize</span></span><span>
