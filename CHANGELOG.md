@@ -28,6 +28,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#278](https://github.com/lsrcz/grisette/pull/278))
 - Provided better patterns for term analysis.
   ([#280](https://github.com/lsrcz/grisette/pull/280))
+- Added `PPrint` instances for `SomeTerm` and `Term`.
+  ([#281](https://github.com/lsrcz/grisette/pull/281))
 
 ### Changed
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.

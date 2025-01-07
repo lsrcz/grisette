@@ -86,7 +86,7 @@ import Grisette.Internal.SymPrim.FP
     ValidFP,
   )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
-import Grisette.Internal.SymPrim.Prim.Internal.Term ()
+import Grisette.Internal.SymPrim.Prim.Internal.Term (Term)
 import Grisette.Internal.SymPrim.Prim.Model
   ( Model (Model),
     SymbolSet (SymbolSet),
@@ -112,6 +112,7 @@ import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
 import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 
 #define FORMAT_SIMPLE(type) \
 instance PPrint type where pformatPrec = viaShowsPrec showsPrec
@@ -173,6 +174,12 @@ instance (Show a, Show b) => PPrint (a =-> b) where
 
 instance PPrint (a --> b) where
   pformat = viaShow
+
+instance PPrint (Term t) where
+  pformat = prettyPrintTerm
+
+instance PPrint SomeTerm where
+  pformat (SomeTerm t) = prettyPrintTerm t
 
 -- Prettyprint
 #define FORMAT_SYM_SIMPLE(symtype) \
