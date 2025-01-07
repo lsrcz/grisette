@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.ModelRep
@@ -18,7 +19,7 @@ import Grisette.Internal.Core.Data.Class.ModelOps
 import Grisette.Internal.SymPrim.Prim.Model (Model)
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep (underlyingTerm),
-    Term (SymTerm),
+    pattern SymTerm,
   )
 
 -- $setup
@@ -40,5 +41,5 @@ data ModelSymPair ct st where
 instance ModelRep (ModelSymPair ct st) Model where
   buildModel (sym := val) =
     case underlyingTerm sym of
-      SymTerm _ _ _ _ symbol -> insertValue symbol val emptyModel
+      SymTerm symbol -> insertValue symbol val emptyModel
       _ -> error "buildModel: should only use symbolic constants"

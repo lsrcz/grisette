@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
@@ -64,7 +65,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     FPUnaryOp (FPAbs, FPNeg),
     SupportedPrim,
-    Term (ConTerm),
+    Term,
     conTerm,
     fpBinaryTerm,
     fpFMATerm,
@@ -72,6 +73,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     fpRoundingUnaryTerm,
     fpTraitTerm,
     fpUnaryTerm,
+    pattern ConTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
@@ -83,7 +85,7 @@ pevalFPTraitTerm ::
   Term Bool
 pevalFPTraitTerm trait = unaryUnfoldOnce doPevalFPTraitTerm (fpTraitTerm trait)
   where
-    doPevalFPTraitTerm (ConTerm _ _ _ _ a) = case trait of
+    doPevalFPTraitTerm (ConTerm a) = case trait of
       FPIsNaN -> Just $ conTerm $ isNaN a
       FPIsPositive ->
         Just $
@@ -172,7 +174,7 @@ pevalFPBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPBinaryTerm bop (ConTerm _ _ _ _ l) (ConTerm _ _ _ _ r) =
+pevalFPBinaryTerm bop (ConTerm l) (ConTerm r) =
   case bop of
     FPMaximum -> conTerm $ fpMaximum l r
     FPMaximumNumber -> conTerm $ fpMaximumNumber l r
@@ -228,7 +230,7 @@ pevalFPRoundingUnaryTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPRoundingUnaryTerm uop (ConTerm _ _ _ _ rd) (ConTerm _ _ _ _ l) =
+pevalFPRoundingUnaryTerm uop (ConTerm rd) (ConTerm l) =
   case uop of
     FPSqrt -> conTerm $ fpSqrt rd l
     FPRoundToIntegral -> conTerm $ fpRoundToIntegral rd l
@@ -254,7 +256,7 @@ pevalFPRoundingBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPRoundingBinaryTerm bop (ConTerm _ _ _ _ rd) (ConTerm _ _ _ _ l) (ConTerm _ _ _ _ r) =
+pevalFPRoundingBinaryTerm bop (ConTerm rd) (ConTerm l) (ConTerm r) =
   case bop of
     FPAdd -> conTerm $ fpAdd rd l r
     FPSub -> conTerm $ fpSub rd l r
@@ -286,10 +288,10 @@ pevalFPFMATerm ::
   Term (FP eb sb) ->
   Term (FP eb sb)
 pevalFPFMATerm
-  (ConTerm _ _ _ _ rd)
-  (ConTerm _ _ _ _ x)
-  (ConTerm _ _ _ _ y)
-  (ConTerm _ _ _ _ z) =
+  (ConTerm rd)
+  (ConTerm x)
+  (ConTerm y)
+  (ConTerm z) =
     conTerm $ fpFMA rd x y z
 pevalFPFMATerm rd x y z = fpFMATerm rd x y z
 {-# INLINE pevalFPFMATerm #-}

@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- |
@@ -33,11 +34,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
     SymRep (SymType),
-    Term (ConTerm),
+    Term,
     conTerm,
     pformatTerm,
     symTerm,
     typedConstantSymbol,
+    pattern ConTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -82,7 +84,7 @@ instance Hashable SymBool where
 instance Solvable Bool SymBool where
   con = SymBool . conTerm
   sym = SymBool . symTerm . typedConstantSymbol
-  conView (SymBool (ConTerm _ _ _ _ t)) = Just t
+  conView (SymBool (ConTerm  t)) = Just t
   conView _ = Nothing
 
 instance IsString SymBool where

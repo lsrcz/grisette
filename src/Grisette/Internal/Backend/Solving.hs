@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -89,7 +90,7 @@ import Control.Monad.State.Strict
 import Data.Dynamic (fromDyn, toDyn)
 import qualified Data.HashSet as HS
 import Data.IORef (modifyIORef', newIORef, readIORef, writeIORef)
-import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.List.NonEmpty (NonEmpty)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBVC
@@ -158,7 +159,11 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
     sbvFPTraitTerm,
     sbvFPUnaryTerm,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Term
+import Grisette.Internal.SymPrim.Prim.Model as PM
+  ( Model,
+  )
+import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalApplyTerm (sbvApplyTerm),
     PEvalBVTerm (sbvBVConcatTerm, sbvBVExtendTerm, sbvBVSelectTerm),
     PEvalBitCastOrTerm (sbvBitCastOr),
@@ -204,68 +209,62 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         symSBVTerm,
         withPrim
       ),
-    Term
-      ( AbsNumTerm,
-        AddNumTerm,
-        AndBitsTerm,
-        AndTerm,
-        ApplyTerm,
-        BVConcatTerm,
-        BVExtendTerm,
-        BVSelectTerm,
-        BitCastOrTerm,
-        BitCastTerm,
-        ComplementBitsTerm,
-        ConTerm,
-        DistinctTerm,
-        DivIntegralTerm,
-        EqTerm,
-        ExistsTerm,
-        FPBinaryTerm,
-        FPFMATerm,
-        FPRoundingBinaryTerm,
-        FPRoundingUnaryTerm,
-        FPTraitTerm,
-        FPUnaryTerm,
-        FdivTerm,
-        FloatingUnaryTerm,
-        ForallTerm,
-        FromFPOrTerm,
-        FromIntegralTerm,
-        ITETerm,
-        LeOrdTerm,
-        LtOrdTerm,
-        ModIntegralTerm,
-        MulNumTerm,
-        NegNumTerm,
-        NotTerm,
-        OrBitsTerm,
-        OrTerm,
-        PowerTerm,
-        QuotIntegralTerm,
-        RecipTerm,
-        RemIntegralTerm,
-        RotateLeftTerm,
-        RotateRightTerm,
-        ShiftLeftTerm,
-        ShiftRightTerm,
-        SignumNumTerm,
-        SymTerm,
-        ToFPTerm,
-        XorBitsTerm
-      ),
+    SymbolKind (AnyKind),
+    Term,
     TypedConstantSymbol,
-    TypedSymbol,
-    introSupportedPrimConstraint,
+    TypedSymbol (TypedSymbol),
     someTypedSymbol,
     symTerm,
-    withConstantSymbolSupported,
-    withSymbolSupported,
+    pattern AbsNumTerm,
+    pattern AddNumTerm,
+    pattern AndBitsTerm,
+    pattern AndTerm,
+    pattern ApplyTerm,
+    pattern BVConcatTerm,
+    pattern BVExtendTerm,
+    pattern BVSelectTerm,
+    pattern BitCastOrTerm,
+    pattern BitCastTerm,
+    pattern ComplementBitsTerm,
+    pattern ConTerm,
+    pattern DistinctTerm,
+    pattern DivIntegralTerm,
+    pattern EqTerm,
+    pattern ExistsTerm,
+    pattern FPBinaryTerm,
+    pattern FPFMATerm,
+    pattern FPRoundingBinaryTerm,
+    pattern FPRoundingUnaryTerm,
+    pattern FPTraitTerm,
+    pattern FPUnaryTerm,
+    pattern FdivTerm,
+    pattern FloatingUnaryTerm,
+    pattern ForallTerm,
+    pattern FromFPOrTerm,
+    pattern FromIntegralTerm,
+    pattern ITETerm,
+    pattern LeOrdTerm,
+    pattern LtOrdTerm,
+    pattern ModIntegralTerm,
+    pattern MulNumTerm,
+    pattern NegNumTerm,
+    pattern NotTerm,
+    pattern OrBitsTerm,
+    pattern OrTerm,
+    pattern PowerTerm,
+    pattern QuotIntegralTerm,
+    pattern RecipTerm,
+    pattern RemIntegralTerm,
+    pattern RotateLeftTerm,
+    pattern RotateRightTerm,
+    pattern ShiftLeftTerm,
+    pattern ShiftRightTerm,
+    pattern SignumNumTerm,
+    pattern SupportedTerm,
+    pattern SymTerm,
+    pattern ToFPTerm,
+    pattern XorBitsTerm,
   )
-import Grisette.Internal.SymPrim.Prim.Model as PM
-  ( Model,
-  )
-import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 
 -- $setup
@@ -531,7 +530,7 @@ lowerSinglePrimCached t' m' = do
         QuantifiedSymbols ->
         Term x ->
         m (QuantifiedStack -> SBVType x)
-      goCached qs t = introSupportedPrimConstraint t $ do
+      goCached qs t@SupportedTerm = do
         mp <- liftIO $ readIORef mapState
         case lookupTerm (SomeTerm t) mp of
           Just x -> return (\qst -> withPrim @x $ fromDyn (x qst) undefined)
@@ -542,9 +541,9 @@ lowerSinglePrimCached t' m' = do
         QuantifiedSymbols ->
         Term a ->
         m (QuantifiedStack -> SBVType a)
-      goCachedImpl _ (ConTerm _ _ _ _ v) =
+      goCachedImpl _ (ConTerm v) =
         return $ const $ conSBVTerm v
-      goCachedImpl qs t@(SymTerm _ _ _ _ ts) = do
+      goCachedImpl qs t@(SymTerm ts) = do
         if isQuantifiedSymbol ts qs
           then withPrim @a $ do
             let retDyn qst =
@@ -571,36 +570,34 @@ lowerSinglePrimCached t' m' = do
               modifyIORef' mapState $
                 addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts)
             return $ const g
-      goCachedImpl qs t@(ForallTerm _ _ _ _ (ts :: TypedConstantSymbol t1) v) =
-        withConstantSymbolSupported ts $
-          withNonFuncPrim @t1 $ do
-            do
-              m <- liftIO $ readIORef mapState
-              let (newm, sb) =
-                    attachNextQuantifiedSymbolInfo m ts
-              liftIO $ writeIORef mapState newm
-              let substedTerm = substTerm ts (symTerm sb) HS.empty v
-              r <- goCached (addQuantifiedSymbol sb qs) substedTerm
-              let ret = sbvForall sb r
-              liftIO $
-                modifyIORef' mapState $
-                  addBiMapIntermediate (SomeTerm t) (toDyn . ret)
-              return ret
-      goCachedImpl qs t@(ExistsTerm _ _ _ _ (ts :: TypedConstantSymbol t1) v) =
-        withConstantSymbolSupported ts $
-          withNonFuncPrim @t1 $ do
-            do
-              m <- liftIO $ readIORef mapState
-              let (newm, sb) =
-                    attachNextQuantifiedSymbolInfo m ts
-              liftIO $ writeIORef mapState newm
-              let substedTerm = substTerm ts (symTerm sb) HS.empty v
-              r <- goCached (addQuantifiedSymbol sb qs) substedTerm
-              let ret = sbvExists sb r
-              liftIO $
-                modifyIORef' mapState $
-                  addBiMapIntermediate (SomeTerm t) (toDyn . ret)
-              return ret
+      goCachedImpl qs t@(ForallTerm (ts :: TypedConstantSymbol t1) v) =
+        withNonFuncPrim @t1 $ do
+          do
+            m <- liftIO $ readIORef mapState
+            let (newm, sb) =
+                  attachNextQuantifiedSymbolInfo m ts
+            liftIO $ writeIORef mapState newm
+            let substedTerm = substTerm ts (symTerm sb) HS.empty v
+            r <- goCached (addQuantifiedSymbol sb qs) substedTerm
+            let ret = sbvForall sb r
+            liftIO $
+              modifyIORef' mapState $
+                addBiMapIntermediate (SomeTerm t) (toDyn . ret)
+            return ret
+      goCachedImpl qs t@(ExistsTerm (ts :: TypedConstantSymbol t1) v) =
+        withNonFuncPrim @t1 $ do
+          do
+            m <- liftIO $ readIORef mapState
+            let (newm, sb) =
+                  attachNextQuantifiedSymbolInfo m ts
+            liftIO $ writeIORef mapState newm
+            let substedTerm = substTerm ts (symTerm sb) HS.empty v
+            r <- goCached (addQuantifiedSymbol sb qs) substedTerm
+            let ret = sbvExists sb r
+            liftIO $
+              modifyIORef' mapState $
+                addBiMapIntermediate (SomeTerm t) (toDyn . ret)
+            return ret
       goCachedImpl qs t =
         withPrim @a $ do
           r <- goCachedIntermediate qs t
@@ -616,107 +613,104 @@ lowerSinglePrimCached t' m' = do
         QuantifiedSymbols ->
         Term a ->
         m (QuantifiedStack -> SBVType a)
-      goCachedIntermediate qs (NotTerm _ _ _ _ t) = do
+      goCachedIntermediate qs (NotTerm t) = do
         r <- goCached qs t
         return $ \qst -> SBV.sNot (r qst)
-      goCachedIntermediate qs (OrTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (OrTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> a' qst SBV..|| b' qst
-      goCachedIntermediate qs (AndTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (AndTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> a' qst SBV..&& b' qst
-      goCachedIntermediate qs (EqTerm _ _ _ _ (a :: Term v) b) = do
+      goCachedIntermediate qs (EqTerm (a :: Term v) b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $
-          introSupportedPrimConstraint a $
-            \qst -> sbvEq @v (a' qst) (b' qst)
+          \qst -> sbvEq @v (a' qst) (b' qst)
       goCachedIntermediate
         qs
-        (DistinctTerm _ _ _ _ (args@(arg1 :| _) :: NonEmpty (Term t0))) = do
+        (DistinctTerm (args :: NonEmpty (Term t0))) = do
           args' <- traverse (goCached qs) args
-          return $
-            introSupportedPrimConstraint arg1 $
-              \qst -> sbvDistinct @t0 (fmap ($ qst) args')
-      goCachedIntermediate qs (ITETerm _ _ _ _ c a b) = do
+          return $ \qst -> sbvDistinct @t0 (fmap ($ qst) args')
+      goCachedIntermediate qs (ITETerm c a b) = do
         c' <- goCached qs c
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvIte @a (c' qst) (a' qst) (b' qst)
-      goCachedIntermediate qs (AddNumTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (AddNumTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvAddNumTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (NegNumTerm _ _ _ _ a) = do
+      goCachedIntermediate qs (NegNumTerm a) = do
         a' <- goCached qs a
         return $ sbvNegNumTerm @a . a'
-      goCachedIntermediate qs (MulNumTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (MulNumTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvMulNumTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (AbsNumTerm _ _ _ _ a) = do
+      goCachedIntermediate qs (AbsNumTerm a) = do
         a' <- goCached qs a
         return $ sbvAbsNumTerm @a . a'
-      goCachedIntermediate qs (SignumNumTerm _ _ _ _ a) = do
+      goCachedIntermediate qs (SignumNumTerm a) = do
         a' <- goCached qs a
         return $ sbvSignumNumTerm @a . a'
-      goCachedIntermediate qs (LtOrdTerm _ _ _ _ (a :: Term v) b) = do
+      goCachedIntermediate qs (LtOrdTerm (a :: Term v) b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvLtOrdTerm @v (a' qst) (b' qst)
-      goCachedIntermediate qs (LeOrdTerm _ _ _ _ (a :: Term v) b) = do
+      goCachedIntermediate qs (LeOrdTerm (a :: Term v) b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvLeOrdTerm @v (a' qst) (b' qst)
-      goCachedIntermediate qs (AndBitsTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (AndBitsTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvAndBitsTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (OrBitsTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (OrBitsTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvOrBitsTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (XorBitsTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (XorBitsTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvXorBitsTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (ComplementBitsTerm _ _ _ _ a) = do
+      goCachedIntermediate qs (ComplementBitsTerm a) = do
         a' <- goCached qs a
         return $ sbvComplementBitsTerm @a . a'
-      goCachedIntermediate qs (ShiftLeftTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (ShiftLeftTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvShiftLeftTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (ShiftRightTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (ShiftRightTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvShiftRightTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (RotateLeftTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (RotateLeftTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvRotateLeftTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (RotateRightTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (RotateRightTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvRotateRightTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (ApplyTerm _ _ _ _ (f :: Term f) a) = do
+      goCachedIntermediate qs (ApplyTerm (f :: Term f) a) = do
         l1 <- goCached qs f
         l2 <- goCached qs a
         return $ \qst -> sbvApplyTerm @f (l1 qst) (l2 qst)
-      goCachedIntermediate qs (BitCastTerm _ _ _ _ (a :: Term x)) = do
+      goCachedIntermediate qs (BitCastTerm (a :: Term x)) = do
         a' <- goCached qs a
         return $ sbvBitCast @x @a . a'
       goCachedIntermediate
         qs
-        (BitCastOrTerm _ _ _ _ (d :: Term a) (a :: Term x)) = do
+        (BitCastOrTerm (d :: Term a) (a :: Term x)) = do
           d' <- goCached qs d
           a' <- goCached qs a
           return $ \qst -> sbvBitCastOr @x @a (d' qst) (a' qst)
       goCachedIntermediate
         qs
-        (BVConcatTerm _ _ _ _ (a :: Term (bv l)) (b :: Term (bv r))) =
+        (BVConcatTerm (a :: Term (bv l)) (b :: Term (bv r))) =
           do
             a' <- goCached qs a
             b' <- goCached qs b
@@ -725,80 +719,80 @@ lowerSinglePrimCached t' m' = do
                 sbvBVConcatTerm @bv (Proxy @l) (Proxy @r) (a' qst) (b' qst)
       goCachedIntermediate
         qs
-        (BVExtendTerm _ _ _ _ signed (pr :: p r) (a :: Term (bv l))) =
+        (BVExtendTerm signed (pr :: p r) (a :: Term (bv l))) =
           do
             a' <- goCached qs a
             return $ sbvBVExtendTerm @bv (Proxy @l) pr signed . a'
       goCachedIntermediate
         qs
-        (BVSelectTerm _ _ _ _ (pix :: p ix) (pw :: q w) (a :: Term (bv n))) =
+        (BVSelectTerm (pix :: p ix) (pw :: q w) (a :: Term (bv n))) =
           do
             a' <- goCached qs a
             return $ sbvBVSelectTerm @bv pix pw (Proxy @n) . a'
-      goCachedIntermediate qs (DivIntegralTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (DivIntegralTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvDivIntegralTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (ModIntegralTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (ModIntegralTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvModIntegralTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (QuotIntegralTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (QuotIntegralTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvQuotIntegralTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (RemIntegralTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (RemIntegralTerm a b) = do
         a' <- goCached qs a
         b' <- goCached qs b
         return $ \qst -> sbvRemIntegralTerm @a (a' qst) (b' qst)
-      goCachedIntermediate qs (FPTraitTerm _ _ _ _ trait a) = do
+      goCachedIntermediate qs (FPTraitTerm trait a) = do
         a' <- goCached qs a
         return $ sbvFPTraitTerm trait . a'
-      goCachedIntermediate qs (FdivTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (FdivTerm a b) = do
         a <- goCached qs a
         b <- goCached qs b
         return $ \qst -> sbvFdivTerm @a (a qst) (b qst)
-      goCachedIntermediate qs (RecipTerm _ _ _ _ a) = do
+      goCachedIntermediate qs (RecipTerm a) = do
         a <- goCached qs a
         return $ sbvRecipTerm @a . a
-      goCachedIntermediate qs (FloatingUnaryTerm _ _ _ _ op a) = do
+      goCachedIntermediate qs (FloatingUnaryTerm op a) = do
         a <- goCached qs a
         return $ sbvFloatingUnaryTerm @a op . a
-      goCachedIntermediate qs (PowerTerm _ _ _ _ a b) = do
+      goCachedIntermediate qs (PowerTerm a b) = do
         a <- goCached qs a
         b <- goCached qs b
         return $ \qst -> sbvPowerTerm @a (a qst) (b qst)
-      goCachedIntermediate qs (FPUnaryTerm _ _ _ _ op a) = do
+      goCachedIntermediate qs (FPUnaryTerm op a) = do
         a <- goCached qs a
         return $ sbvFPUnaryTerm op . a
-      goCachedIntermediate qs (FPBinaryTerm _ _ _ _ op a b) = do
+      goCachedIntermediate qs (FPBinaryTerm op a b) = do
         a <- goCached qs a
         b <- goCached qs b
         return $ \qst -> sbvFPBinaryTerm op (a qst) (b qst)
-      goCachedIntermediate qs (FPRoundingUnaryTerm _ _ _ _ op round a) = do
+      goCachedIntermediate qs (FPRoundingUnaryTerm op round a) = do
         round <- goCached qs round
         a <- goCached qs a
         return $ \qst -> sbvFPRoundingUnaryTerm op (round qst) (a qst)
-      goCachedIntermediate qs (FPRoundingBinaryTerm _ _ _ _ op round a b) = do
+      goCachedIntermediate qs (FPRoundingBinaryTerm op round a b) = do
         round <- goCached qs round
         a <- goCached qs a
         b <- goCached qs b
         return $ \qst -> sbvFPRoundingBinaryTerm op (round qst) (a qst) (b qst)
-      goCachedIntermediate qs (FPFMATerm _ _ _ _ round a b c) = do
+      goCachedIntermediate qs (FPFMATerm round a b c) = do
         round <- goCached qs round
         a <- goCached qs a
         b <- goCached qs b
         c <- goCached qs c
         return $ \qst -> sbvFPFMATerm (round qst) (a qst) (b qst) (c qst)
-      goCachedIntermediate qs (FromIntegralTerm _ _ _ _ (b :: Term b)) = do
+      goCachedIntermediate qs (FromIntegralTerm (b :: Term b)) = do
         b <- goCached qs b
         return $ sbvFromIntegralTerm @b @a . b
-      goCachedIntermediate qs (FromFPOrTerm _ _ _ _ d mode arg) = do
+      goCachedIntermediate qs (FromFPOrTerm d mode arg) = do
         d <- goCached qs d
         mode <- goCached qs mode
         arg <- goCached qs arg
         return $ \qst -> sbvFromFPOrTerm @a (d qst) (mode qst) (arg qst)
-      goCachedIntermediate qs (ToFPTerm _ _ _ _ mode (arg :: Term b) _ _) = do
+      goCachedIntermediate qs (ToFPTerm mode (arg :: Term b) _ _) = do
         mode <- goCached qs mode
         arg <- goCached qs arg
         return $ \qst -> sbvToFPTerm @b (mode qst) (arg qst)
@@ -806,7 +800,7 @@ lowerSinglePrimCached t' m' = do
       goCachedIntermediate _ SymTerm {} = error "Should not happen"
       goCachedIntermediate _ ForallTerm {} = error "Should not happen"
       goCachedIntermediate _ ExistsTerm {} = error "Should not happen"
-  r <- introSupportedPrimConstraint t' $ goCached emptyQuantifiedSymbols t'
+  r <- goCached emptyQuantifiedSymbols t'
   m <- liftIO $ readIORef mapState
   constraint <- liftIO $ readIORef accumulatedDummyConstraints
   return (m, r, constraint)
@@ -859,9 +853,11 @@ parseModel _ model@(SBVI.SMTModel _ _ assoc origFuncs) mp =
     assocFuncs = (\(s, v) -> (s, ([], v))) <$> assoc
     goSingle :: (String, ([([SBVD.CV], SBVD.CV)], SBVD.CV)) -> PM.Model -> PM.Model
     goSingle (name, cv) m = case findStringToSymbol name mp of
-      Just (SomeTypedSymbol (s :: TypedSymbol knd r)) ->
-        withSymbolSupported s $
-          insertValue s (parseSMTModelResult 0 cv :: r) m
+      Just (SomeTypedSymbol (s@TypedSymbol {} :: TypedSymbol 'AnyKind r)) ->
+        insertValue
+          s
+          (parseSMTModelResult 0 cv :: r)
+          m
       Nothing ->
         error $
           "BUG: Please send a bug report. The model is not consistent with the "

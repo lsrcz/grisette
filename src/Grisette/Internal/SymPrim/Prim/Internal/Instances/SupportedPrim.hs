@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -76,7 +77,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SupportedPrimConstraint
       ( PrimConstraint
       ),
-    Term (ConTerm),
+    Term,
     TypedSymbol (unTypedSymbol),
     conTerm,
     distinctTerm,
@@ -88,6 +89,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     sbvFresh,
     typedAnySymbol,
     typedConstantSymbol,
+    pattern ConTerm,
   )
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 
@@ -112,7 +114,7 @@ pairwiseHasConcreteEqual (x : xs) =
 
 getAllConcrete :: [Term a] -> Maybe [a]
 getAllConcrete [] = return []
-getAllConcrete (ConTerm _ _ _ _ x : xs) = (x :) <$> getAllConcrete xs
+getAllConcrete (ConTerm x : xs) = (x :) <$> getAllConcrete xs
 getAllConcrete _ = Nothing
 
 checkConcreteDistinct :: (Eq t) => [t] -> Bool
@@ -275,7 +277,7 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
     | otherwise = hashWithSalt s a
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm (ConTerm _ _ _ _ l) (ConTerm _ _ _ _ r) = conTerm $ l == r
+  pevalEqTerm (ConTerm l) (ConTerm r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
   pevalDistinctTerm (_ :| []) = conTerm True
@@ -332,7 +334,7 @@ instance SBVRep FPRoundingMode where
 instance SupportedPrim FPRoundingMode where
   defaultValue = RNE
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm (ConTerm _ _ _ _ l) (ConTerm _ _ _ _ r) = conTerm $ l == r
+  pevalEqTerm (ConTerm l) (ConTerm r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
   pevalDistinctTerm = pevalGeneralDistinct
@@ -383,7 +385,7 @@ instance SBVRep AlgReal where
 instance SupportedPrim AlgReal where
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm (ConTerm _ _ _ _ l) (ConTerm _ _ _ _ r) = conTerm $ l == r
+  pevalEqTerm (ConTerm l) (ConTerm r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
   pevalDistinctTerm = pevalGeneralDistinct

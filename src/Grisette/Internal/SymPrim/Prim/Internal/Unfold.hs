@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -31,8 +32,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.PartialEval
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SupportedPrim (pevalITETerm),
-    Term (ConTerm, ITETerm),
+    Term,
     conTerm,
+    pattern ConTerm,
+    pattern ITETerm,
   )
 
 unaryPartialUnfoldOnce ::
@@ -45,7 +48,7 @@ unaryPartialUnfoldOnce partial fallback = ret
   where
     oneLevel :: TotalRuleUnary a b -> PartialRuleUnary a b
     oneLevel fallback' x = case (x, partial x) of
-      (ITETerm _ _ _ _ cond vt vf, pr) ->
+      (ITETerm cond vt vf, pr) ->
         let pt = partial vt
             pf = partial vf
          in case (pt, pf) of
@@ -81,13 +84,13 @@ binaryPartialUnfoldOnce partial fallback = ret
         (partial' x y)
         ( \_ ->
             case (x, y) of
-              (ITETerm _ _ _ _ _ ITETerm {} _, ITETerm {}) -> Nothing
-              (ITETerm _ _ _ _ _ _ ITETerm {}, ITETerm {}) -> Nothing
-              (ITETerm {}, ITETerm _ _ _ _ _ ITETerm {} _) -> Nothing
-              (ITETerm {}, ITETerm _ _ _ _ _ _ ITETerm {}) -> Nothing
-              (ITETerm _ _ _ _ cond vt vf, _) ->
+              (ITETerm _ ITETerm {} _, ITETerm {}) -> Nothing
+              (ITETerm _ _ ITETerm {}, ITETerm {}) -> Nothing
+              (ITETerm {}, ITETerm _ ITETerm {} _) -> Nothing
+              (ITETerm {}, ITETerm _ _ ITETerm {}) -> Nothing
+              (ITETerm cond vt vf, _) ->
                 left cond vt vf y partial' fallback'
-              (_, ITETerm _ _ _ _ cond vt vf) ->
+              (_, ITETerm cond vt vf) ->
                 left cond vt vf x (flip partial') (flip fallback')
               _ -> Nothing
         )
@@ -131,7 +134,7 @@ generalUnaryUnfolded ::
 generalUnaryUnfolded compute =
   unaryUnfoldOnce
     ( \case
-        ConTerm _ _ _ _ lv -> Just $ conTerm $ compute lv
+        ConTerm lv -> Just $ conTerm $ compute lv
         _ -> Nothing
     )
 
@@ -147,6 +150,6 @@ generalBinaryUnfolded ::
 generalBinaryUnfolded compute =
   binaryUnfoldOnce
     ( \l r -> case (l, r) of
-        (ConTerm _ _ _ _ lv, ConTerm _ _ _ _ rv) -> Just $ conTerm $ compute lv rv
+        (ConTerm lv, ConTerm rv) -> Just $ conTerm $ compute lv rv
         _ -> Nothing
     )

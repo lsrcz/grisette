@@ -5,6 +5,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -150,12 +151,13 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalSignumNumTerm
       ),
     SymRep (SymType),
-    Term (ConTerm),
+    Term,
     conTerm,
     pevalSubNumTerm,
     pformatTerm,
     symTerm,
     typedConstantSymbol,
+    pattern ConTerm,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
@@ -218,7 +220,7 @@ instance (ValidFP eb sb) => IsString (SymFP eb sb) where
 instance (ValidFP eb sb) => Solvable (FP eb sb) (SymFP eb sb) where
   con = SymFP . conTerm
   sym = SymFP . symTerm . typedConstantSymbol
-  conView (SymFP (ConTerm _ _ _ _ t)) = Just t
+  conView (SymFP (ConTerm t)) = Just t
   conView _ = Nothing
 
 instance (ValidFP eb sb) => Show (SymFP eb sb) where
@@ -290,7 +292,7 @@ instance IsString SymFPRoundingMode where
 instance Solvable FPRoundingMode SymFPRoundingMode where
   con = SymFPRoundingMode . conTerm
   sym = SymFPRoundingMode . symTerm . typedConstantSymbol
-  conView (SymFPRoundingMode (ConTerm _ _ _ _ t)) = Just t
+  conView (SymFPRoundingMode (ConTerm t)) = Just t
   conView _ = Nothing
 
 instance Show SymFPRoundingMode where

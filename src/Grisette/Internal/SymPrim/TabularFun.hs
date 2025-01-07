@@ -6,6 +6,7 @@
 {-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -59,12 +60,13 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
-    Term (ConTerm),
+    Term,
     applyTerm,
     conTerm,
     partitionCVArg,
     pevalEqTerm,
     pevalITEBasicTerm,
+    pattern ConTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -131,8 +133,8 @@ instance
         Term (a =-> b) ->
         Term a ->
         Maybe (Term b)
-      doPevalApplyTerm (ConTerm _ _ _ _ f) (ConTerm _ _ _ _ a) = Just $ conTerm $ f # a
-      doPevalApplyTerm (ConTerm _ _ _ _ (TabularFun f d)) a = Just $ go f
+      doPevalApplyTerm (ConTerm f) (ConTerm a) = Just $ conTerm $ f # a
+      doPevalApplyTerm (ConTerm (TabularFun f d)) a = Just $ go f
         where
           go [] = conTerm d
           go ((x, y) : xs) =

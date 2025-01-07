@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -62,10 +63,11 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     SBVRep (SBVType),
     SupportedPrim (conSBVTerm),
-    Term (ConTerm),
+    Term,
     conTerm,
     fromFPOrTerm,
     toFPTerm,
+    pattern ConTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce)
 
@@ -143,9 +145,9 @@ generalPevalFromFPOrTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term a
-generalPevalFromFPOrTerm (ConTerm _ _ _ _ d) (ConTerm _ _ _ _ rd) (ConTerm _ _ _ _ f) =
+generalPevalFromFPOrTerm (ConTerm d) (ConTerm rd) (ConTerm f) =
   conTerm $ fromFPOr d rd f
-generalPevalFromFPOrTerm d _ (ConTerm _ _ _ _ f) | fpIsNaN f || fpIsInfinite f = d
+generalPevalFromFPOrTerm d _ (ConTerm f) | fpIsNaN f || fpIsInfinite f = d
 generalPevalFromFPOrTerm d rd f = fromFPOrTerm d rd f
 
 algRealPevalFromFPOrTerm ::
@@ -157,9 +159,9 @@ algRealPevalFromFPOrTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term AlgReal
-algRealPevalFromFPOrTerm (ConTerm _ _ _ _ d) _ (ConTerm _ _ _ _ f) =
+algRealPevalFromFPOrTerm (ConTerm d) _ (ConTerm f) =
   conTerm $ fromFPOr d RNE f
-algRealPevalFromFPOrTerm d _ (ConTerm _ _ _ _ f) | fpIsNaN f || fpIsInfinite f = d
+algRealPevalFromFPOrTerm d _ (ConTerm f) | fpIsNaN f || fpIsInfinite f = d
 algRealPevalFromFPOrTerm d _ f = fromFPOrTerm d (conTerm RNE) f
 
 generalDoPevalToFPTerm ::
@@ -170,7 +172,7 @@ generalDoPevalToFPTerm ::
   Term FPRoundingMode ->
   Term a ->
   Maybe (Term (FP eb sb))
-generalDoPevalToFPTerm (ConTerm _ _ _ _ rd) (ConTerm _ _ _ _ f) =
+generalDoPevalToFPTerm (ConTerm rd) (ConTerm f) =
   Just $ conTerm $ toFP rd f
 generalDoPevalToFPTerm _ _ = Nothing
 
@@ -192,9 +194,9 @@ fpDoPevalToFPTerm ::
   Term FPRoundingMode ->
   Term (FP eb1 sb1) ->
   Maybe (Term (FP eb sb))
-fpDoPevalToFPTerm (ConTerm _ _ _ _ rd) (ConTerm _ _ _ _ f) =
+fpDoPevalToFPTerm (ConTerm rd) (ConTerm f) =
   Just $ conTerm $ toFP rd f
-fpDoPevalToFPTerm _ (ConTerm _ _ _ _ f)
+fpDoPevalToFPTerm _ (ConTerm f)
   | fpIsNaN f = Just $ conTerm fpNaN
   | fpIsPositiveInfinite f = Just $ conTerm fpPositiveInfinite
   | fpIsNegativeInfinite f = Just $ conTerm fpNegativeInfinite

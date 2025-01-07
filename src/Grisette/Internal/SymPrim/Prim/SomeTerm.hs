@@ -1,5 +1,6 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -25,9 +26,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Caches (Id)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SupportedPrim (primTypeRep),
     Term,
-    introSupportedPrimConstraint,
     termId,
-    withSupportedPrimTypeable,
+    pattern SupportedTerm,
   )
 
 -- | Existential wrapper for symbolic Grisette terms.
@@ -36,11 +36,9 @@ data SomeTerm where
 
 instance Eq SomeTerm where
   (SomeTerm (t1 :: Term a)) == (SomeTerm (t2 :: Term b)) =
-    withSupportedPrimTypeable @a $
-      withSupportedPrimTypeable @b $
-        case eqT @a @b of
-          Just Refl -> t1 == t2
-          Nothing -> False
+    case eqT @a @b of
+      Just Refl -> t1 == t2
+      Nothing -> False
 
 instance Hashable SomeTerm where
   hashWithSalt s (SomeTerm t) = hashWithSalt s t
@@ -51,7 +49,7 @@ instance Show SomeTerm where
 
 -- | Wrap a symbolic term into t'SomeTerm'.
 someTerm :: Term a -> SomeTerm
-someTerm v = introSupportedPrimConstraint v $ SomeTerm v
+someTerm v@SupportedTerm = SomeTerm v
 {-# INLINE someTerm #-}
 
 -- | Get the unique identifier of a symbolic term.

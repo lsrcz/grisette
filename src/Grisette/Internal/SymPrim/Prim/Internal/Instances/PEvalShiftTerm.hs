@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -25,16 +26,23 @@ import Data.Proxy (Proxy (Proxy))
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift (symShift))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim (bvIsNonZeroFromGEq1)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
+  ( bvIsNonZeroFromGEq1,
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm, withSbvShiftTermConstraint),
+  ( PEvalShiftTerm
+      ( pevalShiftLeftTerm,
+        pevalShiftRightTerm,
+        withSbvShiftTermConstraint
+      ),
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim,
-    Term (ConTerm),
+    Term,
     conTerm,
-    introSupportedPrimConstraint,
     shiftLeftTerm,
     shiftRightTerm,
+    pattern ConTerm,
+    pattern SupportedTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
@@ -45,12 +53,11 @@ pevalFiniteBitsSymShiftShiftLeftTerm ::
   Term a ->
   Term a ->
   Term a
-pevalFiniteBitsSymShiftShiftLeftTerm t n =
-  introSupportedPrimConstraint t $
-    unaryUnfoldOnce
-      (`doPevalFiniteBitsSymShiftShiftLeftTerm` n)
-      (`shiftLeftTerm` n)
-      t
+pevalFiniteBitsSymShiftShiftLeftTerm t@SupportedTerm n =
+  unaryUnfoldOnce
+    (`doPevalFiniteBitsSymShiftShiftLeftTerm` n)
+    (`shiftLeftTerm` n)
+    t
 
 doPevalFiniteBitsSymShiftShiftLeftTerm ::
   forall a.
@@ -58,16 +65,16 @@ doPevalFiniteBitsSymShiftShiftLeftTerm ::
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalFiniteBitsSymShiftShiftLeftTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymShiftShiftLeftTerm (ConTerm a) (ConTerm n)
   | n >= 0 =
       if (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n)
         then Just $ conTerm zeroBits
         else Just $ conTerm $ symShift a n
-doPevalFiniteBitsSymShiftShiftLeftTerm x (ConTerm _ _ _ _ 0) = Just x
+doPevalFiniteBitsSymShiftShiftLeftTerm x (ConTerm 0) = Just x
 -- TODO: Need to handle the overflow case.
--- doPevalShiftLeftTerm (ShiftLeftTerm _ x (ConTerm _ _ _ _ n)) (ConTerm _ _ _ _ n1)
+-- doPevalShiftLeftTerm (ShiftLeftTerm _ x (ConTerm  n)) (ConTerm  n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalShiftLeftTerm x (conTerm $ n + n1)
-doPevalFiniteBitsSymShiftShiftLeftTerm _ (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymShiftShiftLeftTerm _ (ConTerm n)
   | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n) =
       Just $ conTerm zeroBits
 doPevalFiniteBitsSymShiftShiftLeftTerm _ _ = Nothing
@@ -79,12 +86,11 @@ pevalFiniteBitsSymShiftShiftRightTerm ::
   Term a ->
   Term a ->
   Term a
-pevalFiniteBitsSymShiftShiftRightTerm t n =
-  introSupportedPrimConstraint t $
-    unaryUnfoldOnce
-      (`doPevalFiniteBitsSymShiftShiftRightTerm` n)
-      (`shiftRightTerm` n)
-      t
+pevalFiniteBitsSymShiftShiftRightTerm t@SupportedTerm n =
+  unaryUnfoldOnce
+    (`doPevalFiniteBitsSymShiftShiftRightTerm` n)
+    (`shiftRightTerm` n)
+    t
 
 doPevalFiniteBitsSymShiftShiftRightTerm ::
   forall a.
@@ -92,18 +98,18 @@ doPevalFiniteBitsSymShiftShiftRightTerm ::
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalFiniteBitsSymShiftShiftRightTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymShiftShiftRightTerm (ConTerm a) (ConTerm n)
   | n >= 0 && not (isSigned a) =
       if (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n)
         then Just $ conTerm zeroBits
         else Just $ conTerm $ shiftR a (fromIntegral n)
-doPevalFiniteBitsSymShiftShiftRightTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymShiftShiftRightTerm (ConTerm a) (ConTerm n)
   -- if n >= 0 then -n must be in the range
   | n >= 0 = Just $ conTerm $ symShift a (-n)
-doPevalFiniteBitsSymShiftShiftRightTerm x (ConTerm _ _ _ _ 0) = Just x
--- doPevalFiniteBitsSymShiftShiftRightTerm (ShiftRightTerm _ x (ConTerm _ _ _ _ n)) (ConTerm _ _ _ _ n1)
+doPevalFiniteBitsSymShiftShiftRightTerm x (ConTerm 0) = Just x
+-- doPevalFiniteBitsSymShiftShiftRightTerm (ShiftRightTerm _ x (ConTerm  n)) (ConTerm  n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalFiniteBitsSymShiftShiftRightTerm x (conTerm $ n + n1)
-doPevalFiniteBitsSymShiftShiftRightTerm _ (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymShiftShiftRightTerm _ (ConTerm n)
   | not (isSigned n)
       && (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n) =
       Just $ conTerm zeroBits

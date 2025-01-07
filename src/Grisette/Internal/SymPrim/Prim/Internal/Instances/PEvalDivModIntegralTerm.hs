@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE TypeApplications #-}
@@ -37,28 +38,28 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         withSbvDivModIntegralTermConstraint
       ),
     SupportedPrim (withPrim),
-    Term (ConTerm),
+    Term,
     conTerm,
     divIntegralTerm,
-    introSupportedPrimConstraint,
     modIntegralTerm,
     quotIntegralTerm,
     remIntegralTerm,
+    pattern ConTerm,
+    pattern SupportedTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce)
 
 -- | Default partial evaluation of division operation for integral types.
 pevalDefaultDivIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultDivIntegralTerm l r =
-  introSupportedPrimConstraint l $
-    binaryUnfoldOnce doPevalDefaultDivIntegralTerm divIntegralTerm l r
+pevalDefaultDivIntegralTerm l@SupportedTerm r =
+  binaryUnfoldOnce doPevalDefaultDivIntegralTerm divIntegralTerm l r
 
 doPevalDefaultDivIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultDivIntegralTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b)
+doPevalDefaultDivIntegralTerm (ConTerm a) (ConTerm b)
   | b /= 0 = Just $ conTerm $ a `div` b
-doPevalDefaultDivIntegralTerm a (ConTerm _ _ _ _ 1) = Just a
+doPevalDefaultDivIntegralTerm a (ConTerm 1) = Just a
 doPevalDefaultDivIntegralTerm _ _ = Nothing
 
 -- | Default partial evaluation of division operation for bounded integral
@@ -68,80 +69,78 @@ pevalDefaultDivBoundedIntegralTerm ::
   Term a ->
   Term a ->
   Term a
-pevalDefaultDivBoundedIntegralTerm l r =
-  introSupportedPrimConstraint l $
-    binaryUnfoldOnce doPevalDefaultDivBoundedIntegralTerm divIntegralTerm l r
+pevalDefaultDivBoundedIntegralTerm l@SupportedTerm r =
+  binaryUnfoldOnce doPevalDefaultDivBoundedIntegralTerm divIntegralTerm l r
 
 doPevalDefaultDivBoundedIntegralTerm ::
   (PEvalDivModIntegralTerm a, Bounded a, Integral a) =>
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalDefaultDivBoundedIntegralTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b)
+doPevalDefaultDivBoundedIntegralTerm (ConTerm a) (ConTerm b)
   | b /= 0 && (b /= -1 || a /= minBound) = Just $ conTerm $ a `div` b
-doPevalDefaultDivBoundedIntegralTerm a (ConTerm _ _ _ _ 1) = Just a
+doPevalDefaultDivBoundedIntegralTerm a (ConTerm 1) = Just a
 doPevalDefaultDivBoundedIntegralTerm _ _ = Nothing
 
 -- | Default partial evaluation of modulo operation for integral types.
 pevalDefaultModIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultModIntegralTerm l r =
-  introSupportedPrimConstraint l $
-    binaryUnfoldOnce doPevalDefaultModIntegralTerm modIntegralTerm l r
+pevalDefaultModIntegralTerm l@SupportedTerm r =
+  binaryUnfoldOnce doPevalDefaultModIntegralTerm modIntegralTerm l r
 
 doPevalDefaultModIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultModIntegralTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b)
+doPevalDefaultModIntegralTerm (ConTerm a) (ConTerm b)
   | b /= 0 = Just $ conTerm $ a `mod` b
-doPevalDefaultModIntegralTerm _ (ConTerm _ _ _ _ 1) = Just $ conTerm 0
-doPevalDefaultModIntegralTerm _ (ConTerm _ _ _ _ (-1)) = Just $ conTerm 0
+doPevalDefaultModIntegralTerm _ (ConTerm 1) = Just $ conTerm 0
+doPevalDefaultModIntegralTerm _ (ConTerm (-1)) = Just $ conTerm 0
 doPevalDefaultModIntegralTerm _ _ = Nothing
 
 -- | Default partial evaluation of quotient operation for integral types.
 pevalDefaultQuotIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultQuotIntegralTerm l r =
-  introSupportedPrimConstraint l $
-    binaryUnfoldOnce doPevalDefaultQuotIntegralTerm quotIntegralTerm l r
+pevalDefaultQuotIntegralTerm l@SupportedTerm r =
+  binaryUnfoldOnce doPevalDefaultQuotIntegralTerm quotIntegralTerm l r
 
 doPevalDefaultQuotIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultQuotIntegralTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b)
+doPevalDefaultQuotIntegralTerm (ConTerm a) (ConTerm b)
   | b /= 0 = Just $ conTerm $ a `quot` b
-doPevalDefaultQuotIntegralTerm a (ConTerm _ _ _ _ 1) = Just a
+doPevalDefaultQuotIntegralTerm a (ConTerm 1) = Just a
 doPevalDefaultQuotIntegralTerm _ _ = Nothing
 
 -- | Default partial evaluation of quotient operation for bounded integral
 -- types.
 pevalDefaultQuotBoundedIntegralTerm ::
-  (PEvalDivModIntegralTerm a, Bounded a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultQuotBoundedIntegralTerm l r =
-  introSupportedPrimConstraint l $
-    binaryUnfoldOnce doPevalDefaultQuotBoundedIntegralTerm quotIntegralTerm l r
+  (PEvalDivModIntegralTerm a, Bounded a, Integral a) =>
+  Term a ->
+  Term a ->
+  Term a
+pevalDefaultQuotBoundedIntegralTerm l@SupportedTerm r =
+  binaryUnfoldOnce doPevalDefaultQuotBoundedIntegralTerm quotIntegralTerm l r
 
 doPevalDefaultQuotBoundedIntegralTerm ::
   (PEvalDivModIntegralTerm a, Bounded a, Integral a) =>
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalDefaultQuotBoundedIntegralTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b)
+doPevalDefaultQuotBoundedIntegralTerm (ConTerm a) (ConTerm b)
   | b /= 0 && (b /= -1 || a /= minBound) = Just $ conTerm $ a `quot` b
-doPevalDefaultQuotBoundedIntegralTerm a (ConTerm _ _ _ _ 1) = Just a
+doPevalDefaultQuotBoundedIntegralTerm a (ConTerm 1) = Just a
 doPevalDefaultQuotBoundedIntegralTerm _ _ = Nothing
 
 -- | Default partial evaluation of remainder operation for integral types.
 pevalDefaultRemIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultRemIntegralTerm l r =
-  introSupportedPrimConstraint l $
-    binaryUnfoldOnce doPevalDefaultRemIntegralTerm remIntegralTerm l r
+pevalDefaultRemIntegralTerm l@SupportedTerm r =
+  binaryUnfoldOnce doPevalDefaultRemIntegralTerm remIntegralTerm l r
 
 doPevalDefaultRemIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultRemIntegralTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b)
+doPevalDefaultRemIntegralTerm (ConTerm a) (ConTerm b)
   | b /= 0 = Just $ conTerm $ a `rem` b
-doPevalDefaultRemIntegralTerm _ (ConTerm _ _ _ _ 1) = Just $ conTerm 0
-doPevalDefaultRemIntegralTerm _ (ConTerm _ _ _ _ (-1)) = Just $ conTerm 0
+doPevalDefaultRemIntegralTerm _ (ConTerm 1) = Just $ conTerm 0
+doPevalDefaultRemIntegralTerm _ (ConTerm (-1)) = Just $ conTerm 0
 doPevalDefaultRemIntegralTerm _ _ = Nothing
 
 instance PEvalDivModIntegralTerm Integer where

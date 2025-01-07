@@ -26,6 +26,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#277](https://github.com/lsrcz/grisette/pull/277))
 - Improved `SupportedNonFuncPrim` and `BasicSymPrim` constraints.
   ([#278](https://github.com/lsrcz/grisette/pull/278))
+- Provided better patterns for term analysis.
+  ([#280](https://github.com/lsrcz/grisette/pull/280))
 
 ### Changed
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.
