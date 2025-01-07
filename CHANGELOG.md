@@ -24,6 +24,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `AsMetadata` type class and `Metadata` pattern for embedding and
   extracting values from metadata represented as an S-expression.
   ([#277](https://github.com/lsrcz/grisette/pull/277))
+- Improved `SupportedNonFuncPrim` and `BasicSymPrim` constraints.
+  ([#278](https://github.com/lsrcz/grisette/pull/278))
 
 ### Changed
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.

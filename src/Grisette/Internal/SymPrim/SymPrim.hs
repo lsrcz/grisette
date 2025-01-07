@@ -1,6 +1,8 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.SymPrim
@@ -19,7 +21,7 @@ import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
-import Grisette.Internal.Core.Data.Class.Function (Apply)
+import Grisette.Internal.Core.Data.Class.Function (Apply (FunType))
 import Grisette.Internal.Core.Data.Class.GenSym (GenSymSimple)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
@@ -35,6 +37,7 @@ import Grisette.Internal.SymPrim.AllSyms (AllSyms)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     LinkedRep,
+    SupportedNonFuncPrim,
   )
 import Language.Haskell.TH.Syntax (Lift)
 import Type.Reflection (Typeable)
@@ -78,10 +81,12 @@ type BasicSymPrim a =
   ( SymPrim a,
     SimpleMergeable a,
     GenSymSimple () a,
-    Apply a,
     Solvable (ConType a) a,
     ConRep a,
     LinkedRep (ConType a) a,
     ToCon a (ConType a),
-    ToSym (ConType a) a
+    ToSym (ConType a) a,
+    Apply a,
+    a ~ FunType a,
+    SupportedNonFuncPrim (ConType a)
   )

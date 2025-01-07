@@ -22,7 +22,6 @@ module Grisette.Internal.SymPrim.FunInstanceGen
   )
 where
 
-import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind,
@@ -73,7 +72,7 @@ import Language.Haskell.TH.Datatype.TyVarBndr
   ( plainTVInferred,
     plainTVSpecified,
   )
-import Type.Reflection (TypeRep, Typeable, typeRep, type (:~~:) (HRefl))
+import Type.Reflection (TypeRep, typeRep, type (:~~:) (HRefl))
 
 instanceWithOverlapDescD ::
   Maybe Overlap -> Q Cxt -> Q Type -> [DecsQ] -> DecsQ
@@ -219,17 +218,7 @@ supportedPrimFun
           |]
 
       constraints =
-        fmap concat
-          . traverse
-            ( \ty ->
-                sequence
-                  [ [t|SupportedNonFuncPrim $ty|],
-                    [t|Eq $ty|],
-                    [t|Show $ty|],
-                    [t|Hashable $ty|],
-                    [t|Typeable $ty|]
-                  ]
-            )
+        fmap concat . traverse (\ty -> sequence [[t|SupportedNonFuncPrim $ty|]])
       funType =
         foldl1 (\fty ty -> [t|$(varT funTypeName) $ty $fty|]) . reverse
       withPrims :: [Q Type] -> Q Exp

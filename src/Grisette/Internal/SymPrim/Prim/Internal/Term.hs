@@ -257,9 +257,7 @@ import GHC.IO (unsafePerformIO)
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast, BitCastOr)
-import Grisette.Internal.Core.Data.Class.BitVector
-  ( SizedBV,
-  )
+import Grisette.Internal.Core.Data.Class.BitVector (SizedBV)
 import Grisette.Internal.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
@@ -351,7 +349,16 @@ translateTypeError (Just reason) ta =
 
 -- | Type class for resolving the base type for the SBV type for the primitive
 -- type.
-class (SupportedPrim a, Ord a) => NonFuncSBVRep a where
+class
+  ( SupportedPrim a,
+    Ord a,
+    Eq a,
+    Show a,
+    Hashable a,
+    Typeable a
+  ) =>
+  NonFuncSBVRep a
+  where
   type NonFuncSBVBaseType a
 
 -- | Type class for resolving the constraint for a supported non-function
