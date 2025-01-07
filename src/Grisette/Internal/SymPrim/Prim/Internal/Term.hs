@@ -907,6 +907,7 @@ instance Show FloatingUnaryOp where
   show FloatingAcosh = "acosh"
   show FloatingAtanh = "atanh"
 
+-- | Partial evaluation and lowering for floating point terms.
 class PEvalFPTerm fp where
   pevalFPTraitTerm :: (ValidFP eb sb) => FPTrait -> Term (fp eb sb) -> Term Bool
   pevalFPUnaryTerm ::
@@ -1642,6 +1643,7 @@ data Term t where
 data SupportedPrimEvidence t where
   SupportedPrimEvidence :: (SupportedPrim t) => SupportedPrimEvidence t
 
+-- | Pattern synonym to introduce the SupportedPrim constraint.
 pattern SupportedTerm :: forall t. () => (SupportedPrim t) => Term t
 pattern SupportedTerm <-
   ( ( \v ->
@@ -1665,6 +1667,7 @@ supportedTypedSymbolViewPat ::
   TypedSymbol k t -> Maybe (SupportedTypedSymbolEvidence k t)
 supportedTypedSymbolViewPat (TypedSymbol _) = Just SupportedTypedSymbolEvidence
 
+-- | Pattern synonym to introduce constraints from a t'TypedSymbol'.
 pattern SupportedTypedSymbol ::
   forall (k :: SymbolKind) t.
   () =>
@@ -1695,6 +1698,8 @@ supportedConstantTypedSymbolViewPat (TypedSymbol _) =
     Left HRefl -> Just SupportedConstantTypedSymbolEvidence
     Right _ -> Nothing
 
+-- | Pattern synonym to introduce constraints from a t'TypedSymbol'. Also checks
+-- that the symbol kind is 'ConstantKind'.
 pattern SupportedConstantTypedSymbol ::
   forall k t.
   () =>
@@ -1709,17 +1714,23 @@ pattern SupportedConstantTypedSymbol <-
       Just SupportedConstantTypedSymbolEvidence
     )
 
+-- | Pattern synonym for 'ConTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern ConTerm :: forall t. () => (SupportedPrim t) => t -> Term t
 pattern ConTerm t <- (ConTerm' _ t)
   where
     ConTerm = conTerm
 
+-- | Pattern synonym for 'SymTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern SymTerm ::
   forall t. () => (SupportedPrim t) => TypedSymbol 'AnyKind t -> Term t
 pattern SymTerm t <- (SymTerm' _ t@SupportedTypedSymbol)
   where
     SymTerm = symTerm
 
+-- | Pattern synonym for 'ForallTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern ForallTerm ::
   forall r.
   () =>
@@ -1733,6 +1744,8 @@ pattern ForallTerm sym body <-
   where
     ForallTerm = forallTerm
 
+-- | Pattern synonym for 'ExistsTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern ExistsTerm ::
   forall r.
   () =>
@@ -1746,21 +1759,29 @@ pattern ExistsTerm sym body <-
   where
     ExistsTerm = existsTerm
 
+-- | Pattern synonym for 'NotTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern NotTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term r
 pattern NotTerm body <- (NotTerm' _ body)
   where
     NotTerm = pevalNotTerm
 
+-- | Pattern synonym for 'OrTerm''. Note that using this pattern to construct a
+-- 'Term' will do term simplification.
 pattern OrTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
 pattern OrTerm l r <- (OrTerm' _ l r)
   where
     OrTerm = pevalOrTerm
 
+-- | Pattern synonym for 'AndTerm''. Note that using this pattern to construct a
+-- 'Term' will do term simplification.
 pattern AndTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
 pattern AndTerm l r <- (AndTerm' _ l r)
   where
     AndTerm = pevalAndTerm
 
+-- | Pattern synonym for 'EqTerm''. Note that using this pattern to construct a
+-- 'Term' will do term simplification.
 pattern EqTerm ::
   forall r.
   () =>
@@ -1771,6 +1792,8 @@ pattern EqTerm l r <- (EqTerm' _ l r@SupportedTerm)
   where
     EqTerm = pevalEqTerm
 
+-- | Pattern synonym for 'DistinctTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern DistinctTerm ::
   forall r.
   () =>
@@ -1781,6 +1804,8 @@ pattern DistinctTerm ts <- (DistinctTerm' _ ts@(SupportedTerm :| _))
   where
     DistinctTerm = pevalDistinctTerm
 
+-- | Pattern synonym for 'ITETerm''. Note that using this pattern to construct a
+-- 'Term' will do term simplification.
 pattern ITETerm ::
   forall t.
   () =>
@@ -1793,6 +1818,8 @@ pattern ITETerm cond t1 t2 <- (ITETerm' _ cond t1 t2)
   where
     ITETerm = pevalITETerm
 
+-- | Pattern synonym for 'AddNumTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern AddNumTerm ::
   forall t.
   () =>
@@ -1804,6 +1831,8 @@ pattern AddNumTerm l r <- (AddNumTerm' _ l r)
   where
     AddNumTerm = pevalAddNumTerm
 
+-- | Pattern synonym for 'NegNumTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern NegNumTerm ::
   forall t.
   () =>
@@ -1813,6 +1842,8 @@ pattern NegNumTerm t <- (NegNumTerm' _ t)
   where
     NegNumTerm = pevalNegNumTerm
 
+-- | Pattern synonym for 'MulNumTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern MulNumTerm ::
   forall t.
   () =>
@@ -1822,6 +1853,8 @@ pattern MulNumTerm l r <- (MulNumTerm' _ l r)
   where
     MulNumTerm = pevalMulNumTerm
 
+-- | Pattern synonym for 'AbsNumTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern AbsNumTerm ::
   forall t.
   () =>
@@ -1831,6 +1864,8 @@ pattern AbsNumTerm t <- (AbsNumTerm' _ t)
   where
     AbsNumTerm = pevalAbsNumTerm
 
+-- | Pattern synonym for 'SignumNumTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern SignumNumTerm ::
   forall t.
   () =>
@@ -1840,6 +1875,8 @@ pattern SignumNumTerm t <- (SignumNumTerm' _ t)
   where
     SignumNumTerm = pevalSignumNumTerm
 
+-- | Pattern synonym for 'LtOrdTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern LtOrdTerm ::
   forall r.
   () =>
@@ -1850,6 +1887,8 @@ pattern LtOrdTerm l r <- (LtOrdTerm' _ l r@SupportedTerm)
   where
     LtOrdTerm = pevalLtOrdTerm
 
+-- | Pattern synonym for 'LeOrdTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern LeOrdTerm ::
   forall r.
   () =>
@@ -1860,6 +1899,8 @@ pattern LeOrdTerm l r <- (LeOrdTerm' _ l r@SupportedTerm)
   where
     LeOrdTerm = pevalLeOrdTerm
 
+-- | Pattern synonym for 'AndBitsTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern AndBitsTerm ::
   forall t.
   () =>
@@ -1869,6 +1910,8 @@ pattern AndBitsTerm l r <- (AndBitsTerm' _ l r)
   where
     AndBitsTerm = pevalAndBitsTerm
 
+-- | Pattern synonym for 'OrBitsTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern OrBitsTerm ::
   forall t.
   () =>
@@ -1878,6 +1921,8 @@ pattern OrBitsTerm l r <- (OrBitsTerm' _ l r)
   where
     OrBitsTerm = pevalOrBitsTerm
 
+-- | Pattern synonym for 'XorBitsTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern XorBitsTerm ::
   forall t.
   () =>
@@ -1887,6 +1932,8 @@ pattern XorBitsTerm l r <- (XorBitsTerm' _ l r)
   where
     XorBitsTerm = pevalXorBitsTerm
 
+-- | Pattern synonym for 'ComplementBitsTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern ComplementBitsTerm ::
   forall t.
   () =>
@@ -1896,6 +1943,8 @@ pattern ComplementBitsTerm t <- (ComplementBitsTerm' _ t)
   where
     ComplementBitsTerm = pevalComplementBitsTerm
 
+-- | Pattern synonym for 'ShiftLeftTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern ShiftLeftTerm ::
   forall t.
   () =>
@@ -1905,6 +1954,8 @@ pattern ShiftLeftTerm l r <- (ShiftLeftTerm' _ l r)
   where
     ShiftLeftTerm = pevalShiftLeftTerm
 
+-- | Pattern synonym for 'ShiftRightTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern ShiftRightTerm ::
   forall t.
   () =>
@@ -1914,6 +1965,8 @@ pattern ShiftRightTerm l r <- (ShiftRightTerm' _ l r)
   where
     ShiftRightTerm = pevalShiftRightTerm
 
+-- | Pattern synonym for 'RotateLeftTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern RotateLeftTerm ::
   forall t.
   () =>
@@ -1923,6 +1976,8 @@ pattern RotateLeftTerm l r <- (RotateLeftTerm' _ l r)
   where
     RotateLeftTerm = pevalRotateLeftTerm
 
+-- | Pattern synonym for 'RotateRightTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern RotateRightTerm ::
   forall t.
   () =>
@@ -1932,6 +1987,8 @@ pattern RotateRightTerm l r <- (RotateRightTerm' _ l r)
   where
     RotateRightTerm = pevalRotateRightTerm
 
+-- | Pattern synonym for 'BitCastTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern BitCastTerm ::
   forall b.
   () =>
@@ -1942,6 +1999,8 @@ pattern BitCastTerm t <- (BitCastTerm' _ t@SupportedTerm)
   where
     BitCastTerm = pevalBitCastTerm
 
+-- | Pattern synonym for 'BitCastOrTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern BitCastOrTerm ::
   forall b.
   () =>
@@ -1952,6 +2011,8 @@ pattern BitCastOrTerm t1 t2 <- (BitCastOrTerm' _ t1 t2@SupportedTerm)
   where
     BitCastOrTerm = pevalBitCastOrTerm
 
+-- | Pattern synonym for 'BVConcatTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern BVConcatTerm ::
   forall ret.
   () =>
@@ -1973,6 +2034,8 @@ pattern BVConcatTerm l r <- (BVConcatTerm' _ l@SupportedTerm r@SupportedTerm)
   where
     BVConcatTerm = pevalBVConcatTerm
 
+-- | Pattern synonym for 'BVSelectTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern BVSelectTerm ::
   forall ret.
   () =>
@@ -1993,6 +2056,8 @@ pattern BVSelectTerm ix w t <- (BVSelectTerm' _ ix w t@SupportedTerm)
   where
     BVSelectTerm = pevalBVSelectTerm
 
+-- | Pattern synonym for 'BVExtendTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern BVExtendTerm ::
   forall ret.
   () =>
@@ -2012,6 +2077,8 @@ pattern BVExtendTerm signed p t <- (BVExtendTerm' _ signed p t@SupportedTerm)
   where
     BVExtendTerm = pevalBVExtendTerm
 
+-- | Pattern synonym for 'ApplyTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern ApplyTerm ::
   forall b.
   () =>
@@ -2022,6 +2089,8 @@ pattern ApplyTerm f x <- (ApplyTerm' _ f@SupportedTerm x@SupportedTerm)
   where
     ApplyTerm = pevalApplyTerm
 
+-- | Pattern synonym for 'DivIntegralTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern DivIntegralTerm ::
   forall t.
   () =>
@@ -2031,6 +2100,8 @@ pattern DivIntegralTerm l r <- (DivIntegralTerm' _ l r)
   where
     DivIntegralTerm = pevalDivIntegralTerm
 
+-- | Pattern synonym for 'ModIntegralTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern ModIntegralTerm ::
   forall t.
   () =>
@@ -2040,6 +2111,8 @@ pattern ModIntegralTerm l r <- (ModIntegralTerm' _ l r)
   where
     ModIntegralTerm = pevalModIntegralTerm
 
+-- | Pattern synonym for 'QuotIntegralTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern QuotIntegralTerm ::
   forall t.
   () =>
@@ -2049,6 +2122,8 @@ pattern QuotIntegralTerm l r <- (QuotIntegralTerm' _ l r)
   where
     QuotIntegralTerm = pevalQuotIntegralTerm
 
+-- | Pattern synonym for 'RemIntegralTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern RemIntegralTerm ::
   forall t.
   () =>
@@ -2058,6 +2133,8 @@ pattern RemIntegralTerm l r <- (RemIntegralTerm' _ l r)
   where
     RemIntegralTerm = pevalRemIntegralTerm
 
+-- | Pattern synonym for 'FPTraitTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern FPTraitTerm ::
   forall r.
   () =>
@@ -2068,6 +2145,8 @@ pattern FPTraitTerm trait t <- (FPTraitTerm' _ trait t)
   where
     FPTraitTerm = pevalFPTraitTerm
 
+-- | Pattern synonym for 'FdivTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern FdivTerm ::
   forall t.
   () =>
@@ -2077,6 +2156,8 @@ pattern FdivTerm l r <- (FdivTerm' _ l r)
   where
     FdivTerm = pevalFdivTerm
 
+-- | Pattern synonym for 'RecipTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern RecipTerm ::
   forall t.
   () =>
@@ -2086,6 +2167,8 @@ pattern RecipTerm t <- (RecipTerm' _ t)
   where
     RecipTerm = pevalRecipTerm
 
+-- | Pattern synonym for 'FloatingUnaryTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern FloatingUnaryTerm ::
   forall t.
   () =>
@@ -2095,6 +2178,8 @@ pattern FloatingUnaryTerm op t <- (FloatingUnaryTerm' _ op t)
   where
     FloatingUnaryTerm = pevalFloatingUnaryTerm
 
+-- | Pattern synonym for 'PowerTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern PowerTerm ::
   forall t.
   () =>
@@ -2104,6 +2189,8 @@ pattern PowerTerm l r <- (PowerTerm' _ l r)
   where
     PowerTerm = pevalPowerTerm
 
+-- | Pattern synonym for 'FPUnaryTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern FPUnaryTerm ::
   forall ret.
   () =>
@@ -2114,6 +2201,8 @@ pattern FPUnaryTerm op t <- (FPUnaryTerm' _ op t)
   where
     FPUnaryTerm = pevalFPUnaryTerm
 
+-- | Pattern synonym for 'FPBinaryTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern FPBinaryTerm ::
   forall ret.
   () =>
@@ -2124,6 +2213,8 @@ pattern FPBinaryTerm op l r <- (FPBinaryTerm' _ op l r)
   where
     FPBinaryTerm = pevalFPBinaryTerm
 
+-- | Pattern synonym for 'FPRoundingUnaryTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern FPRoundingUnaryTerm ::
   forall ret.
   () =>
@@ -2134,6 +2225,8 @@ pattern FPRoundingUnaryTerm op rm t <- (FPRoundingUnaryTerm' _ op rm t)
   where
     FPRoundingUnaryTerm = pevalFPRoundingUnaryTerm
 
+-- | Pattern synonym for 'FPRoundingBinaryTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern FPRoundingBinaryTerm ::
   forall ret.
   () =>
@@ -2144,6 +2237,8 @@ pattern FPRoundingBinaryTerm op rm l r <- (FPRoundingBinaryTerm' _ op rm l r)
   where
     FPRoundingBinaryTerm = pevalFPRoundingBinaryTerm
 
+-- | Pattern synonym for 'FPFMATerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern FPFMATerm ::
   forall ret.
   () =>
@@ -2154,6 +2249,8 @@ pattern FPFMATerm rm t1 t2 t3 <- (FPFMATerm' _ rm t1 t2 t3)
   where
     FPFMATerm = pevalFPFMATerm
 
+-- | Pattern synonym for 'FromIntegralTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
 pattern FromIntegralTerm ::
   forall b.
   () =>
@@ -2164,6 +2261,8 @@ pattern FromIntegralTerm t <- (FromIntegralTerm' _ t@SupportedTerm)
   where
     FromIntegralTerm = pevalFromIntegralTerm
 
+-- | Pattern synonym for 'FromFPOrTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern FromFPOrTerm ::
   forall a.
   () =>
@@ -2177,6 +2276,8 @@ pattern FromFPOrTerm t1 rm t2 <- (FromFPOrTerm' _ t1 rm t2)
   where
     FromFPOrTerm = pevalFromFPOrTerm
 
+-- | Pattern synonym for 'ToFPTerm''. Note that using this pattern to construct
+-- a 'Term' will do term simplification.
 pattern ToFPTerm ::
   forall ret.
   () =>
@@ -2245,6 +2346,7 @@ pattern ToFPTerm rm t eb sb <- (ToFPTerm' _ rm t@SupportedTerm eb sb)
   #-}
 #endif
 
+-- | Get the cached information for a term.
 termInfo :: Term t -> CachedInfo
 termInfo (ConTerm' i _) = i
 termInfo (SymTerm' i _) = i
@@ -2295,18 +2397,22 @@ termInfo (FromIntegralTerm' i _) = i
 termInfo (FromFPOrTerm' i _ _ _) = i
 termInfo (ToFPTerm' i _ _ _ _) = i
 
+-- | Get the thread ID for a term.
 {-# INLINE termThreadId #-}
 termThreadId :: Term t -> WeakThreadId
 termThreadId = cachedThreadId . termInfo
 
+-- | Get the digest for a term.
 {-# INLINE termDigest #-}
 termDigest :: Term t -> Digest
 termDigest = cachedDigest . termInfo
 
+-- | Get the ID for a term.
 {-# INLINE termId #-}
 termId :: Term t -> Id
 termId = cachedId . termInfo
 
+-- | Get the stable identifier for a term.
 {-# INLINE termStableIdent #-}
 termStableIdent :: Term t -> StableIdent
 termStableIdent = cachedStableIdent . termInfo

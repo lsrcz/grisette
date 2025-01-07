@@ -3,6 +3,14 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
+-- |
+-- Module      :   Grisette.Internal.SymPrim.Prim.Pattern
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Pattern
   ( pattern SubTerms,
   )
@@ -115,6 +123,7 @@ subTermsViewPattern (FromIntegralTerm t) = return [SomeTerm t]
 subTermsViewPattern (FromFPOrTerm t1 rd t2) = return [SomeTerm t1, SomeTerm rd, SomeTerm t2]
 subTermsViewPattern (ToFPTerm rd t1 _ _) = return [SomeTerm rd, SomeTerm t1]
 
+-- | Extract all the subterms of a term.
 pattern SubTerms :: [SomeTerm] -> Term a
 pattern SubTerms ts <- (subTermsViewPattern -> Just ts)
 
