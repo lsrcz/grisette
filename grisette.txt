@@ -12255,6 +12255,22 @@ data ModelSymPair ct st
 -- | Internal representation for Grisette symbolic terms.
 data Term t
 
+-- | Existential wrapper for symbolic Grisette terms.
+data SomeTerm
+[SomeTerm] :: forall a. SupportedPrim a => Term a -> SomeTerm
+
+-- | Compute the size of a term.
+termSize :: Term a -> Int
+
+-- | Compute the size of a list of terms. Do not count the same term twice.
+someTermSize :: SomeTerm -> Int
+
+-- | Compute the size of a list of terms. Do not count the same term twice.
+termsSize :: [Term a] -> Int
+
+-- | Compute the size of a list of terms. Do not count the same term twice.
+someTermsSize :: [SomeTerm] -> Int
+
 -- | Pattern synonym to introduce the SupportedPrim constraint.
 pattern SupportedTerm :: () => SupportedPrim t => Term t
 
