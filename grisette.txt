@@ -1078,10 +1078,18 @@ data SomeStableName
 type Id = Word32
 
 -- | The identity of a term.
-type Ident = StableName Any :: Type
+type StableIdent = StableName Any :: Type
 
 -- | A digest of a term.
 type Digest = Word32
+
+-- | Information about a cached term.
+data CachedInfo
+CachedInfo :: {-# UNPACK #-} !WeakThreadId -> {-# UNPACK #-} !Digest -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !StableIdent -> CachedInfo
+[cachedThreadId] :: CachedInfo -> {-# UNPACK #-} !WeakThreadId
+[cachedDigest] :: CachedInfo -> {-# UNPACK #-} !Digest
+[cachedId] :: CachedInfo -> {-# UNPACK #-} !Id
+[cachedStableIdent] :: CachedInfo -> {-# UNPACK #-} !StableIdent
 
 -- | A class for interning terms.
 class Interned t where {
@@ -1089,7 +1097,7 @@ class Interned t where {
     type Uninterned t;
 }
 describe :: Interned t => Uninterned t -> Description t
-identify :: Interned t => WeakThreadId -> Digest -> Id -> Ident -> Uninterned t -> t
+identify :: Interned t => CachedInfo -> Uninterned t -> t
 threadId :: Interned t => t -> WeakThreadId
 descriptionDigest :: Interned t => Description t -> Digest
 
@@ -1926,7 +1934,7 @@ class SupportedPrimConstraint t where {
 
 -- | Indicates that a type is supported, can be represented as a symbolic
 --   term, and can be lowered to an SBV term.
-class (Lift t, NFData t, SupportedPrimConstraint t, SBVRep t) => SupportedPrim t
+class (Lift t, NFData t, Typeable t, SupportedPrimConstraint t, SBVRep t) => SupportedPrim t
 primTypeRep :: SupportedPrim t => TypeRep t
 ($dmprimTypeRep) :: (SupportedPrim t, Typeable t) => TypeRep t
 sameCon :: SupportedPrim t => t -> t -> Bool
@@ -1952,9 +1960,6 @@ sbvDistinct :: SupportedPrim t => NonEmpty (SBVType t) -> SBV Bool
 parseSMTModelResult :: SupportedPrim t => Int -> ([([CV], CV)], CV) -> t
 castTypedSymbol :: forall (knd' :: SymbolKind) (knd :: SymbolKind). (SupportedPrim t, IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
 funcDummyConstraint :: SupportedPrim t => SBVType t -> SBV Bool
-
--- | Introduce the <a>Typeable</a> constraint from <a>SupportedPrim</a>.
-withSupportedPrimTypeable :: SupportedPrim a => (Typeable a => b) -> b
 
 -- | Type family to resolve the symbolic type associated with a concrete
 --   type.
@@ -2084,6 +2089,21 @@ sbvFdivTerm :: PEvalFractionalTerm t => SBVType t -> SBVType t -> SBVType t
 sbvRecipTerm :: PEvalFractionalTerm t => SBVType t -> SBVType t
 
 -- | Partial evaluation and lowering for floating point terms.
+class PEvalFPTerm (fp :: Nat -> Nat -> Type)
+pevalFPTraitTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPTrait -> Term (fp eb sb) -> Term Bool
+pevalFPUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPUnaryOp -> Term (fp eb sb) -> Term (fp eb sb)
+pevalFPBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
+pevalFPRoundingUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPRoundingUnaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb)
+pevalFPRoundingBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPRoundingBinaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
+pevalFPFMATerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
+sbvFPTraitTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPTrait -> SBVType (fp eb sb) -> SBVType Bool
+sbvFPUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPUnaryOp -> SBVType (fp eb sb) -> SBVType (fp eb sb)
+sbvFPBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPBinaryOp -> SBVType (fp eb sb) -> SBVType (fp eb sb) -> SBVType (fp eb sb)
+sbvFPRoundingUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPRoundingUnaryOp -> SBVType FPRoundingMode -> SBVType (fp eb sb) -> SBVType (fp eb sb)
+sbvFPRoundingBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => FPRoundingBinaryOp -> SBVType FPRoundingMode -> SBVType (fp eb sb) -> SBVType (fp eb sb) -> SBVType (fp eb sb)
+sbvFPFMATerm :: forall (eb :: Nat) (sb :: Nat). (PEvalFPTerm fp, ValidFP eb sb) => SBVType FPRoundingMode -> SBVType (fp eb sb) -> SBVType (fp eb sb) -> SBVType (fp eb sb) -> SBVType (fp eb sb)
+
+-- | Partial evaluation and lowering for floating point terms.
 class PEvalFloatingTerm t
 pevalFloatingUnaryTerm :: PEvalFloatingTerm t => FloatingUnaryOp -> Term t -> Term t
 pevalPowerTerm :: PEvalFloatingTerm t => Term t -> Term t -> Term t
@@ -2149,21 +2169,14 @@ type SomeTypedConstantSymbol = SomeTypedSymbol 'ConstantKind
 type SomeTypedAnySymbol = SomeTypedSymbol 'AnyKind
 
 -- | Decision procedure for symbol kinds.
-class IsSymbolKind (ty :: SymbolKind) where {
-    type SymbolKindConstraint (ty :: SymbolKind) :: Type -> Constraint;
+class IsSymbolKind (knd :: SymbolKind) where {
+    type SymbolKindConstraint (knd :: SymbolKind) :: Type -> Constraint;
 }
-decideSymbolKind :: IsSymbolKind ty => Either (ty :~~: 'ConstantKind) (ty :~~: 'AnyKind)
+decideSymbolKind :: IsSymbolKind knd => Either (knd :~~: 'ConstantKind) (knd :~~: 'AnyKind)
+withSymbolKindConstraint :: IsSymbolKind knd => TypedSymbol knd t -> (SymbolKindConstraint knd t => a) -> a
 
 -- | Show a typed symbol without the type information.
 showUntyped :: forall (knd :: SymbolKind) t. TypedSymbol knd t -> String
-
--- | Introduce the <a>SupportedPrim</a> constraint from the
---   <a>TypedSymbol</a>.
-withSymbolSupported :: forall (knd :: SymbolKind) t a. TypedSymbol knd t -> ((SupportedPrim t, Typeable t) => a) -> a
-
--- | Introduce the <a>SupportedPrim</a> constraint from the
---   <a>TypedSymbol</a>.
-withConstantSymbolSupported :: TypedSymbol 'ConstantKind t -> ((SupportedNonFuncPrim t, Typeable t) => a) -> a
 
 -- | Construct a <a>SomeTypedSymbol</a> from a <a>TypedSymbol</a>.
 someTypedSymbol :: forall (knd :: SymbolKind) t. TypedSymbol knd t -> SomeTypedSymbol knd
@@ -2174,10 +2187,6 @@ eqHeteroSymbol :: forall (ta :: SymbolKind) a (tb :: SymbolKind) b. TypedSymbol 
 -- | Cast a typed symbol to a different kind. Check if the kind is
 --   compatible.
 castSomeTypedSymbol :: forall (knd' :: SymbolKind) (knd :: SymbolKind). IsSymbolKind knd' => SomeTypedSymbol knd -> Maybe (SomeTypedSymbol knd')
-
--- | Introduce the <a>IsSymbolKind</a> constraint from the
---   <a>TypedSymbol</a>.
-withSymbolKind :: forall (knd :: SymbolKind) t a. TypedSymbol knd t -> (IsSymbolKind knd => a) -> a
 
 -- | Traits for IEEE floating point numbers.
 data FPTrait
@@ -2239,54 +2248,54 @@ FloatingAtanh :: FloatingUnaryOp
 
 -- | Internal representation for Grisette symbolic terms.
 data Term t
-[ConTerm] :: forall t. SupportedPrim t => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !t -> Term t
-[SymTerm] :: forall t. WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !TypedSymbol 'AnyKind t -> Term t
-[ForallTerm] :: forall t1. WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !TypedSymbol 'ConstantKind t1 -> !Term Bool -> Term Bool
-[ExistsTerm] :: forall t1. WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !TypedSymbol 'ConstantKind t1 -> !Term Bool -> Term Bool
-[NotTerm] :: WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term Bool -> Term Bool
-[OrTerm] :: WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term Bool -> !Term Bool -> Term Bool
-[AndTerm] :: WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term Bool -> !Term Bool -> Term Bool
-[EqTerm] :: forall t1. WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t1 -> !Term t1 -> Term Bool
-[DistinctTerm] :: forall t1. WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !NonEmpty (Term t1) -> Term Bool
-[ITETerm] :: forall t. SupportedPrim t => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term Bool -> !Term t -> !Term t -> Term t
-[AddNumTerm] :: forall t. (SupportedPrim t, PEvalNumTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[NegNumTerm] :: forall t. (SupportedPrim t, PEvalNumTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> Term t
-[MulNumTerm] :: forall t. (SupportedPrim t, PEvalNumTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[AbsNumTerm] :: forall t. (SupportedPrim t, PEvalNumTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> Term t
-[SignumNumTerm] :: forall t. (SupportedPrim t, PEvalNumTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> Term t
-[LtOrdTerm] :: forall t1. (SupportedPrim t1, PEvalOrdTerm t1) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t1 -> !Term t1 -> Term Bool
-[LeOrdTerm] :: forall t1. (SupportedPrim t1, PEvalOrdTerm t1) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t1 -> !Term t1 -> Term Bool
-[AndBitsTerm] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[OrBitsTerm] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[XorBitsTerm] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[ComplementBitsTerm] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> Term t
-[ShiftLeftTerm] :: forall t. (SupportedPrim t, PEvalShiftTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[ShiftRightTerm] :: forall t. (SupportedPrim t, PEvalShiftTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[RotateLeftTerm] :: forall t. (SupportedPrim t, PEvalRotateTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[RotateRightTerm] :: forall t. (SupportedPrim t, PEvalRotateTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[BitCastTerm] :: forall t a. (SupportedPrim t, PEvalBitCastTerm a t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term a -> Term t
-[BitCastOrTerm] :: forall t a. (SupportedPrim t, PEvalBitCastOrTerm a t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term a -> Term t
-[BVConcatTerm] :: forall (bv :: Natural -> Type) (l :: Nat) (r :: Nat). (PEvalBVTerm bv, KnownNat l, KnownNat r, KnownNat (l + r), 1 <= l, 1 <= r, 1 <= (l + r), SupportedPrim (bv (l + r))) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term (bv l) -> !Term (bv r) -> Term (bv (l + r))
-[BVSelectTerm] :: forall (bv :: Natural -> Type) (n :: Nat) (ix :: Nat) (w :: Nat). (PEvalBVTerm bv, KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, (ix + w) <= n, SupportedPrim (bv w)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Proxy ix -> !Proxy w -> !Term (bv n) -> Term (bv w)
-[BVExtendTerm] :: forall (bv :: Natural -> Type) (l :: Nat) (r :: Nat). (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r, SupportedPrim (bv r)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Bool -> !Proxy r -> !Term (bv l) -> Term (bv r)
-[ApplyTerm] :: forall f a t. (PEvalApplyTerm f a t, SupportedPrim t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term f -> !Term a -> Term t
-[DivIntegralTerm] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[ModIntegralTerm] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[QuotIntegralTerm] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[RemIntegralTerm] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[FPTraitTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !FPTrait -> !Term (FP eb sb) -> Term Bool
-[FdivTerm] :: forall t. (SupportedPrim t, PEvalFractionalTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[RecipTerm] :: forall t. (SupportedPrim t, PEvalFractionalTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> Term t
-[FloatingUnaryTerm] :: forall t. (SupportedPrim t, PEvalFloatingTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !FloatingUnaryOp -> !Term t -> Term t
-[PowerTerm] :: forall t. (SupportedPrim t, PEvalFloatingTerm t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term t -> Term t
-[FPUnaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !FPUnaryOp -> !Term (FP eb sb) -> Term (FP eb sb)
-[FPBinaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !FPBinaryOp -> !Term (FP eb sb) -> !Term (FP eb sb) -> Term (FP eb sb)
-[FPRoundingUnaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !FPRoundingUnaryOp -> !Term FPRoundingMode -> !Term (FP eb sb) -> Term (FP eb sb)
-[FPRoundingBinaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !FPRoundingBinaryOp -> !Term FPRoundingMode -> !Term (FP eb sb) -> !Term (FP eb sb) -> Term (FP eb sb)
-[FPFMATerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term FPRoundingMode -> !Term (FP eb sb) -> !Term (FP eb sb) -> !Term (FP eb sb) -> Term (FP eb sb)
-[FromIntegralTerm] :: forall a t. (PEvalFromIntegralTerm a t, SupportedPrim t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term a -> Term t
-[FromFPOrTerm] :: forall t (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm t, ValidFP eb sb, SupportedPrim t) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term t -> !Term FPRoundingMode -> !Term (FP eb sb) -> Term t
-[ToFPTerm] :: forall a (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim (FP eb sb)) => WeakThreadId -> {-# UNPACK #-} !Digest -> Id -> Ident -> !Term FPRoundingMode -> !Term a -> Proxy eb -> Proxy sb -> Term (FP eb sb)
+[ConTerm'] :: forall t. SupportedPrim t => {-# UNPACK #-} !CachedInfo -> !t -> Term t
+[SymTerm'] :: forall t. {-# UNPACK #-} !CachedInfo -> !TypedSymbol 'AnyKind t -> Term t
+[ForallTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !TypedSymbol 'ConstantKind t1 -> !Term Bool -> Term Bool
+[ExistsTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !TypedSymbol 'ConstantKind t1 -> !Term Bool -> Term Bool
+[NotTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> Term Bool
+[OrTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term Bool -> Term Bool
+[AndTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term Bool -> Term Bool
+[EqTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !Term t1 -> !Term t1 -> Term Bool
+[DistinctTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !NonEmpty (Term t1) -> Term Bool
+[ITETerm'] :: forall t. SupportedPrim t => {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term t -> !Term t -> Term t
+[AddNumTerm'] :: forall t. (SupportedPrim t, PEvalNumTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[NegNumTerm'] :: forall t. (SupportedPrim t, PEvalNumTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> Term t
+[MulNumTerm'] :: forall t. (SupportedPrim t, PEvalNumTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[AbsNumTerm'] :: forall t. (SupportedPrim t, PEvalNumTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> Term t
+[SignumNumTerm'] :: forall t. (SupportedPrim t, PEvalNumTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> Term t
+[LtOrdTerm'] :: forall t1. (SupportedPrim t1, PEvalOrdTerm t1) => {-# UNPACK #-} !CachedInfo -> !Term t1 -> !Term t1 -> Term Bool
+[LeOrdTerm'] :: forall t1. (SupportedPrim t1, PEvalOrdTerm t1) => {-# UNPACK #-} !CachedInfo -> !Term t1 -> !Term t1 -> Term Bool
+[AndBitsTerm'] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[OrBitsTerm'] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[XorBitsTerm'] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[ComplementBitsTerm'] :: forall t. (SupportedPrim t, PEvalBitwiseTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> Term t
+[ShiftLeftTerm'] :: forall t. (SupportedPrim t, PEvalShiftTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[ShiftRightTerm'] :: forall t. (SupportedPrim t, PEvalShiftTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[RotateLeftTerm'] :: forall t. (SupportedPrim t, PEvalRotateTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[RotateRightTerm'] :: forall t. (SupportedPrim t, PEvalRotateTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[BitCastTerm'] :: forall t a. (SupportedPrim t, PEvalBitCastTerm a t) => {-# UNPACK #-} !CachedInfo -> !Term a -> Term t
+[BitCastOrTerm'] :: forall t a. (SupportedPrim t, PEvalBitCastOrTerm a t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term a -> Term t
+[BVConcatTerm'] :: forall (bv :: Natural -> Type) (l :: Nat) (r :: Nat). (PEvalBVTerm bv, KnownNat l, KnownNat r, KnownNat (l + r), 1 <= l, 1 <= r, 1 <= (l + r), SupportedPrim (bv (l + r))) => {-# UNPACK #-} !CachedInfo -> !Term (bv l) -> !Term (bv r) -> Term (bv (l + r))
+[BVSelectTerm'] :: forall (bv :: Natural -> Type) (n :: Nat) (ix :: Nat) (w :: Nat). (PEvalBVTerm bv, KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, (ix + w) <= n, SupportedPrim (bv w)) => {-# UNPACK #-} !CachedInfo -> !Proxy ix -> !Proxy w -> !Term (bv n) -> Term (bv w)
+[BVExtendTerm'] :: forall (bv :: Natural -> Type) (l :: Nat) (r :: Nat). (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r, SupportedPrim (bv r)) => {-# UNPACK #-} !CachedInfo -> !Bool -> !Proxy r -> !Term (bv l) -> Term (bv r)
+[ApplyTerm'] :: forall f a t. (PEvalApplyTerm f a t, SupportedPrim t) => {-# UNPACK #-} !CachedInfo -> !Term f -> !Term a -> Term t
+[DivIntegralTerm'] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[ModIntegralTerm'] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[QuotIntegralTerm'] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[RemIntegralTerm'] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[FPTraitTerm'] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => {-# UNPACK #-} !CachedInfo -> !FPTrait -> !Term (fp eb sb) -> Term Bool
+[FdivTerm'] :: forall t. (SupportedPrim t, PEvalFractionalTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[RecipTerm'] :: forall t. (SupportedPrim t, PEvalFractionalTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> Term t
+[FloatingUnaryTerm'] :: forall t. (SupportedPrim t, PEvalFloatingTerm t) => {-# UNPACK #-} !CachedInfo -> !FloatingUnaryOp -> !Term t -> Term t
+[PowerTerm'] :: forall t. (SupportedPrim t, PEvalFloatingTerm t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term t -> Term t
+[FPUnaryTerm'] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => {-# UNPACK #-} !CachedInfo -> !FPUnaryOp -> !Term (fp eb sb) -> Term (fp eb sb)
+[FPBinaryTerm'] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => {-# UNPACK #-} !CachedInfo -> !FPBinaryOp -> !Term (fp eb sb) -> !Term (fp eb sb) -> Term (fp eb sb)
+[FPRoundingUnaryTerm'] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => {-# UNPACK #-} !CachedInfo -> !FPRoundingUnaryOp -> !Term FPRoundingMode -> !Term (fp eb sb) -> Term (fp eb sb)
+[FPRoundingBinaryTerm'] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => {-# UNPACK #-} !CachedInfo -> !FPRoundingBinaryOp -> !Term FPRoundingMode -> !Term (fp eb sb) -> !Term (fp eb sb) -> Term (fp eb sb)
+[FPFMATerm'] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => {-# UNPACK #-} !CachedInfo -> !Term FPRoundingMode -> !Term (fp eb sb) -> !Term (fp eb sb) -> !Term (fp eb sb) -> Term (fp eb sb)
+[FromIntegralTerm'] :: forall a t. (PEvalFromIntegralTerm a t, SupportedPrim t) => {-# UNPACK #-} !CachedInfo -> !Term a -> Term t
+[FromFPOrTerm'] :: forall t (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm t, ValidFP eb sb, SupportedPrim t) => {-# UNPACK #-} !CachedInfo -> !Term t -> !Term FPRoundingMode -> !Term (FP eb sb) -> Term t
+[ToFPTerm'] :: forall a (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim (FP eb sb)) => {-# UNPACK #-} !CachedInfo -> !Term FPRoundingMode -> !Term a -> Proxy eb -> Proxy sb -> Term (FP eb sb)
 
 -- | The default value in a dynamic <a>ModelValue</a>.
 defaultValueDynamic :: SupportedPrim t => proxy t -> ModelValue
@@ -2297,17 +2306,28 @@ pattern DynTerm :: SupportedPrim a => Term a -> Term b
 -- | Convert a term to the current thread.
 toCurThread :: Term t -> IO (Term t)
 
--- | Return the ID of a term.
+-- | Information about a cached term.
+data CachedInfo
+CachedInfo :: {-# UNPACK #-} !WeakThreadId -> {-# UNPACK #-} !Digest -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !StableIdent -> CachedInfo
+[cachedThreadId] :: CachedInfo -> {-# UNPACK #-} !WeakThreadId
+[cachedDigest] :: CachedInfo -> {-# UNPACK #-} !Digest
+[cachedId] :: CachedInfo -> {-# UNPACK #-} !Id
+[cachedStableIdent] :: CachedInfo -> {-# UNPACK #-} !StableIdent
+
+-- | Get the cached information for a term.
+termInfo :: Term t -> CachedInfo
+
+-- | Get the thread ID for a term.
+termThreadId :: Term t -> WeakThreadId
+
+-- | Get the digest for a term.
+termDigest :: Term t -> Digest
+
+-- | Get the ID for a term.
 termId :: Term t -> Id
 
--- | The identity of the term.
-termIdent :: Term t -> Ident
-
--- | Return the ID and the type representation of a term.
-typeHashId :: Term t -> TypeHashId
-
--- | Introduce the <a>SupportedPrim</a> constraint from a term.
-introSupportedPrimConstraint :: Term t -> ((SupportedPrim t, Typeable t) => a) -> a
+-- | Get the stable identifier for a term.
+termStableIdent :: Term t -> StableIdent
 
 -- | Pretty-print a term.
 pformatTerm :: Term t -> String
@@ -2359,28 +2379,22 @@ data UTerm t
 [UModIntegralTerm] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => !Term t -> !Term t -> UTerm t
 [UQuotIntegralTerm] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => !Term t -> !Term t -> UTerm t
 [URemIntegralTerm] :: forall t. (SupportedPrim t, PEvalDivModIntegralTerm t) => !Term t -> !Term t -> UTerm t
-[UFPTraitTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => !FPTrait -> !Term (FP eb sb) -> UTerm Bool
+[UFPTraitTerm] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => !FPTrait -> !Term (fp eb sb) -> UTerm Bool
 [UFdivTerm] :: forall t. (SupportedPrim t, PEvalFractionalTerm t) => !Term t -> !Term t -> UTerm t
 [URecipTerm] :: forall t. (SupportedPrim t, PEvalFractionalTerm t) => !Term t -> UTerm t
 [UFloatingUnaryTerm] :: forall t. (SupportedPrim t, PEvalFloatingTerm t) => !FloatingUnaryOp -> !Term t -> UTerm t
 [UPowerTerm] :: forall t. (SupportedPrim t, PEvalFloatingTerm t) => !Term t -> !Term t -> UTerm t
-[UFPUnaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => !FPUnaryOp -> !Term (FP eb sb) -> UTerm (FP eb sb)
-[UFPBinaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => !FPBinaryOp -> !Term (FP eb sb) -> !Term (FP eb sb) -> UTerm (FP eb sb)
-[UFPRoundingUnaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => !FPRoundingUnaryOp -> !Term FPRoundingMode -> !Term (FP eb sb) -> UTerm (FP eb sb)
-[UFPRoundingBinaryTerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => !FPRoundingBinaryOp -> !Term FPRoundingMode -> !Term (FP eb sb) -> !Term (FP eb sb) -> UTerm (FP eb sb)
-[UFPFMATerm] :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => !Term FPRoundingMode -> !Term (FP eb sb) -> !Term (FP eb sb) -> !Term (FP eb sb) -> UTerm (FP eb sb)
+[UFPUnaryTerm] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => !FPUnaryOp -> !Term (fp eb sb) -> UTerm (fp eb sb)
+[UFPBinaryTerm] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => !FPBinaryOp -> !Term (fp eb sb) -> !Term (fp eb sb) -> UTerm (fp eb sb)
+[UFPRoundingUnaryTerm] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => !FPRoundingUnaryOp -> !Term FPRoundingMode -> !Term (fp eb sb) -> UTerm (fp eb sb)
+[UFPRoundingBinaryTerm] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => !FPRoundingBinaryOp -> !Term FPRoundingMode -> !Term (fp eb sb) -> !Term (fp eb sb) -> UTerm (fp eb sb)
+[UFPFMATerm] :: forall (eb :: Nat) (sb :: Nat) (fp :: Nat -> Nat -> Type). (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => !Term FPRoundingMode -> !Term (fp eb sb) -> !Term (fp eb sb) -> !Term (fp eb sb) -> UTerm (fp eb sb)
 [UFromIntegralTerm] :: forall a t. (PEvalFromIntegralTerm a t, SupportedPrim t) => !Term a -> UTerm t
 [UFromFPOrTerm] :: forall t (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm t, SupportedPrim t, ValidFP eb sb) => Term t -> !Term FPRoundingMode -> !Term (FP eb sb) -> UTerm t
 [UToFPTerm] :: forall a (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim (FP eb sb)) => !Term FPRoundingMode -> !Term a -> Proxy eb -> Proxy sb -> UTerm (FP eb sb)
 
 -- | Pretty-print a term, possibly eliding parts of it.
 prettyPrintTerm :: Term t -> Doc ann
-
--- | Construct and internalizing a <a>ForallTerm</a>.
-forallTerm :: TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
-
--- | Construct and internalizing a <a>ExistsTerm</a>.
-existsTerm :: TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
 
 -- | Construct and internalizing a <a>ConTerm</a>.
 conTerm :: SupportedPrim t => t -> Term t
@@ -2395,6 +2409,12 @@ ssymTerm :: SupportedPrim t => Identifier -> Term t
 -- | Construct and internalizing a <a>SymTerm</a> with an identifier and an
 --   index, using indexed symbols.
 isymTerm :: SupportedPrim t => Identifier -> Int -> Term t
+
+-- | Construct and internalizing a <a>ForallTerm</a>.
+forallTerm :: TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
+
+-- | Construct and internalizing a <a>ExistsTerm</a>.
+existsTerm :: TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
 
 -- | Construct and internalizing a <a>NotTerm</a>.
 notTerm :: Term Bool -> Term Bool
@@ -2450,11 +2470,11 @@ complementBitsTerm :: PEvalBitwiseTerm a => Term a -> Term a
 -- | Construct and internalizing a <a>ShiftLeftTerm</a>.
 shiftLeftTerm :: PEvalShiftTerm a => Term a -> Term a -> Term a
 
--- | Construct and internalizing a <a>ShiftRightTerm</a>.
-shiftRightTerm :: PEvalShiftTerm a => Term a -> Term a -> Term a
-
 -- | Construct and internalizing a <a>RotateLeftTerm</a>.
 rotateLeftTerm :: PEvalRotateTerm a => Term a -> Term a -> Term a
+
+-- | Construct and internalizing a <a>ShiftRightTerm</a>.
+shiftRightTerm :: PEvalShiftTerm a => Term a -> Term a -> Term a
 
 -- | Construct and internalizing a <a>RotateRightTerm</a>.
 rotateRightTerm :: PEvalRotateTerm a => Term a -> Term a -> Term a
@@ -2496,7 +2516,7 @@ quotIntegralTerm :: PEvalDivModIntegralTerm a => Term a -> Term a -> Term a
 remIntegralTerm :: PEvalDivModIntegralTerm a => Term a -> Term a -> Term a
 
 -- | Construct and internalizing a <a>FPTraitTerm</a>.
-fpTraitTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPTrait -> Term (FP eb sb) -> Term Bool
+fpTraitTerm :: forall (eb :: Nat) (sb :: Nat) fp. (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPTrait -> Term (fp eb sb) -> Term Bool
 
 -- | Construct and internalizing a <a>FdivTerm</a>.
 fdivTerm :: PEvalFractionalTerm a => Term a -> Term a -> Term a
@@ -2511,19 +2531,19 @@ floatingUnaryTerm :: PEvalFloatingTerm a => FloatingUnaryOp -> Term a -> Term a
 powerTerm :: PEvalFloatingTerm a => Term a -> Term a -> Term a
 
 -- | Construct and internalizing a <a>FPUnaryTerm</a>.
-fpUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPUnaryOp -> Term (FP eb sb) -> Term (FP eb sb)
+fpUnaryTerm :: forall (eb :: Nat) (sb :: Nat) fp. (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPUnaryOp -> Term (fp eb sb) -> Term (fp eb sb)
 
 -- | Construct and internalizing a <a>FPBinaryTerm</a>.
-fpBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPBinaryOp -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb)
+fpBinaryTerm :: forall (eb :: Nat) (sb :: Nat) fp. (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
 
 -- | Construct and internalizing a <a>FPRoundingUnaryTerm</a>.
-fpRoundingUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPRoundingUnaryOp -> Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb)
+fpRoundingUnaryTerm :: forall (eb :: Nat) (sb :: Nat) fp. (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPRoundingUnaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb)
 
 -- | Construct and internalizing a <a>FPRoundingBinaryTerm</a>.
-fpRoundingBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPRoundingBinaryOp -> Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb)
+fpRoundingBinaryTerm :: forall (eb :: Nat) (sb :: Nat) fp. (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPRoundingBinaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
 
 -- | Construct and internalizing a <a>FPFMATerm</a>.
-fpFMATerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb)
+fpFMATerm :: forall (eb :: Nat) (sb :: Nat) fp. (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
 
 -- | Construct and internalizing a <a>FromIntegralTerm</a>.
 fromIntegralTerm :: (PEvalFromIntegralTerm a b, SupportedPrim b) => Term a -> Term b
@@ -2533,6 +2553,208 @@ fromFPOrTerm :: forall a (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm a,
 
 -- | Construct and internalizing a <a>ToFPTerm</a>.
 toFPTerm :: forall a (eb :: Nat) (sb :: Nat). (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim (FP eb sb)) => Term FPRoundingMode -> Term a -> Term (FP eb sb)
+
+-- | Pattern synonym to introduce the SupportedPrim constraint.
+pattern SupportedTerm :: () => SupportedPrim t => Term t
+
+-- | Pattern synonym to introduce constraints from a <a>TypedSymbol</a>.
+pattern SupportedTypedSymbol :: () => (SupportedPrim t, SymbolKindConstraint k t, IsSymbolKind k) => TypedSymbol k t
+
+-- | Pattern synonym to introduce constraints from a <a>TypedSymbol</a>.
+--   Also checks that the symbol kind is <a>ConstantKind</a>.
+pattern SupportedConstantTypedSymbol :: () => (SupportedPrim t, SymbolKindConstraint k t, IsSymbolKind k, k ~ 'ConstantKind) => TypedSymbol k t
+
+-- | Pattern synonym for <a>ConTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ConTerm :: () => SupportedPrim t => t -> Term t
+
+-- | Pattern synonym for <a>SymTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern SymTerm :: () => SupportedPrim t => TypedSymbol 'AnyKind t -> Term t
+
+-- | Pattern synonym for <a>ForallTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern ForallTerm :: forall r t. () => (r ~ Bool, SupportedNonFuncPrim t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>ExistsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern ExistsTerm :: forall r t. () => (r ~ Bool, SupportedNonFuncPrim t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>NotTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern NotTerm :: () => r ~ Bool => Term Bool -> Term r
+
+-- | Pattern synonym for <a>OrTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern OrTerm :: () => r ~ Bool => Term Bool -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>AndTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern AndTerm :: () => r ~ Bool => Term Bool -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>EqTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern EqTerm :: forall r t. () => (r ~ Bool, SupportedPrim t) => Term t -> Term t -> Term r
+
+-- | Pattern synonym for <a>DistinctTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern DistinctTerm :: forall r t. () => (r ~ Bool, SupportedPrim t) => NonEmpty (Term t) -> Term r
+
+-- | Pattern synonym for <a>ITETerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ITETerm :: () => SupportedPrim t => Term Bool -> Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>AddNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern AddNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>NegNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern NegNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>MulNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern MulNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>AbsNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern AbsNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>SignumNumTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern SignumNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>LtOrdTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern LtOrdTerm :: forall r t. () => (r ~ Bool, SupportedPrim t, PEvalOrdTerm t) => Term t -> Term t -> Term r
+
+-- | Pattern synonym for <a>LeOrdTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern LeOrdTerm :: forall r t. () => (r ~ Bool, SupportedPrim t, PEvalOrdTerm t) => Term t -> Term t -> Term r
+
+-- | Pattern synonym for <a>AndBitsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern AndBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>OrBitsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern OrBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>XorBitsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern XorBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>ComplementBitsTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ComplementBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>ShiftLeftTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ShiftLeftTerm :: () => (SupportedPrim t, PEvalShiftTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RotateLeftTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern RotateLeftTerm :: () => (SupportedPrim t, PEvalRotateTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>ShiftRightTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ShiftRightTerm :: () => (SupportedPrim t, PEvalShiftTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RotateRightTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern RotateRightTerm :: () => (SupportedPrim t, PEvalRotateTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>BitCastTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BitCastTerm :: forall b a. () => (SupportedPrim a, SupportedPrim b, PEvalBitCastTerm a b) => Term a -> Term b
+
+-- | Pattern synonym for <a>BitCastOrTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern BitCastOrTerm :: () => (SupportedPrim a, SupportedPrim b, PEvalBitCastOrTerm a b) => Term b -> Term a -> Term b
+
+-- | Pattern synonym for <a>BVConcatTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BVConcatTerm :: forall ret bv (l :: Nat) (r :: Nat). () => (PEvalBVTerm bv, KnownNat l, KnownNat r, KnownNat (l + r), 1 <= l, 1 <= r, 1 <= (l + r), SupportedPrim (bv l), SupportedPrim (bv r), SupportedPrim (bv (l + r)), ret ~ bv (l + r)) => Term (bv l) -> Term (bv r) -> Term ret
+
+-- | Pattern synonym for <a>BVSelectTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BVSelectTerm :: forall ret bv (w :: Nat) (n :: Nat) (ix :: Nat). () => (PEvalBVTerm bv, KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, (ix + w) <= n, SupportedPrim (bv n), SupportedPrim (bv w), ret ~ bv w) => Proxy ix -> Proxy w -> Term (bv n) -> Term ret
+
+-- | Pattern synonym for <a>BVExtendTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BVExtendTerm :: forall ret bv (l :: Nat) (r :: Nat). () => (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r, SupportedPrim (bv l), SupportedPrim (bv r), ret ~ bv r) => Bool -> Proxy r -> Term (bv l) -> Term ret
+
+-- | Pattern synonym for <a>ApplyTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ApplyTerm :: forall b f a. () => (PEvalApplyTerm f a b, SupportedPrim f, SupportedPrim a, SupportedPrim b) => Term f -> Term a -> Term b
+
+-- | Pattern synonym for <a>DivIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern DivIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>ModIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ModIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>QuotIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern QuotIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RemIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern RemIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>FPTraitTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FPTraitTerm :: forall r (eb :: Nat) (sb :: Nat) fp. () => (r ~ Bool, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPTrait -> Term (fp eb sb) -> Term r
+
+-- | Pattern synonym for <a>FdivTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern FdivTerm :: () => (SupportedPrim t, PEvalFractionalTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RecipTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern RecipTerm :: () => (SupportedPrim t, PEvalFractionalTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>FloatingUnaryTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FloatingUnaryTerm :: () => (SupportedPrim t, PEvalFloatingTerm t) => FloatingUnaryOp -> Term t -> Term t
+
+-- | Pattern synonym for <a>PowerTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern PowerTerm :: () => (SupportedPrim t, PEvalFloatingTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>FPUnaryTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FPUnaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPUnaryOp -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPBinaryTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FPBinaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPRoundingUnaryTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FPRoundingUnaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPRoundingUnaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPRoundingBinaryTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FPRoundingBinaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPRoundingBinaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPFMATerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern FPFMATerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FromIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FromIntegralTerm :: forall b a. () => (PEvalFromIntegralTerm a b, SupportedPrim a, SupportedPrim b) => Term a -> Term b
+
+-- | Pattern synonym for <a>FromFPOrTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FromFPOrTerm :: forall a (eb :: Nat) (sb :: Nat). () => (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim a) => Term a -> Term FPRoundingMode -> Term (FP eb sb) -> Term a
+
+-- | Pattern synonym for <a>ToFPTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ToFPTerm :: forall ret (eb :: Nat) (sb :: Nat) a. () => (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim a, ret ~ FP eb sb) => Term FPRoundingMode -> Term a -> Proxy eb -> Proxy sb -> Term ret
 
 -- | Construct and internalizing <a>True</a> term.
 trueTerm :: Term Bool
@@ -2665,6 +2887,7 @@ instance Language.Haskell.TH.Syntax.Lift Grisette.Internal.SymPrim.Prim.Internal
 instance Language.Haskell.TH.Syntax.Lift (Grisette.Internal.SymPrim.Prim.Internal.Term.SomeTypedSymbol knd)
 instance Language.Haskell.TH.Syntax.Lift (Grisette.Internal.SymPrim.Prim.Internal.Term.Term t)
 instance Language.Haskell.TH.Syntax.Lift (Grisette.Internal.SymPrim.Prim.Internal.Term.TypedSymbol knd t)
+instance Control.DeepSeq.NFData Grisette.Internal.SymPrim.Prim.Internal.Caches.CachedInfo
 instance Control.DeepSeq.NFData Grisette.Internal.SymPrim.Prim.Internal.Term.FPBinaryOp
 instance Control.DeepSeq.NFData Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingBinaryOp
 instance Control.DeepSeq.NFData Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingUnaryOp
@@ -2931,6 +3154,12 @@ instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim GHC.Num.Inte
 instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim (Grisette.Internal.SymPrim.BV.WordN w)
 
 
+module Grisette.Internal.SymPrim.Prim.Pattern
+
+-- | Extract all the subterms of a term.
+pattern SubTerms :: [SomeTerm] -> Term a
+
+
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
 
 -- | Partial evaluation of symbolic shift left term for finite bits types.
@@ -3054,42 +3283,7 @@ instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim
 
 
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-
--- | Partially evaluate a floating-point trait term.
-pevalFPTraitTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPTrait -> Term (FP eb sb) -> Term Bool
-
--- | Lowering an floating-point trait term to sbv.
-sbvFPTraitTerm :: forall (eb :: Nat) (sb :: Nat). ValidFP eb sb => FPTrait -> SFloatingPoint eb sb -> SBool
-
--- | Partially evaluate a floating-point unary term.
-pevalFPUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPUnaryOp -> Term (FP eb sb) -> Term (FP eb sb)
-
--- | Lowering an floating-point unary term to sbv.
-sbvFPUnaryTerm :: forall (eb :: Nat) (sb :: Nat). ValidFP eb sb => FPUnaryOp -> SFloatingPoint eb sb -> SFloatingPoint eb sb
-
--- | Partially evaluate a floating-point binary term.
-pevalFPBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPBinaryOp -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb)
-
--- | Lowering an floating-point binary term to sbv.
-sbvFPBinaryTerm :: forall (eb :: Nat) (sb :: Nat). ValidFP eb sb => FPBinaryOp -> SFloatingPoint eb sb -> SFloatingPoint eb sb -> SFloatingPoint eb sb
-
--- | Partially evaluate a floating-point rounding unary term.
-pevalFPRoundingUnaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPRoundingUnaryOp -> Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb)
-
--- | Lowering an floating-point rounding unary term to sbv.
-sbvFPRoundingUnaryTerm :: forall (eb :: Nat) (sb :: Nat). ValidFP eb sb => FPRoundingUnaryOp -> SRoundingMode -> SFloatingPoint eb sb -> SFloatingPoint eb sb
-
--- | Partially evaluate a floating-point rounding binary term.
-pevalFPRoundingBinaryTerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => FPRoundingBinaryOp -> Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb)
-
--- | Lowering an floating-point rounding binary term to sbv.
-sbvFPRoundingBinaryTerm :: forall (eb :: Nat) (sb :: Nat). ValidFP eb sb => FPRoundingBinaryOp -> SRoundingMode -> SFloatingPoint eb sb -> SFloatingPoint eb sb -> SFloatingPoint eb sb
-
--- | Partially evaluate a floating-point fused multiply-add term.
-pevalFPFMATerm :: forall (eb :: Nat) (sb :: Nat). (ValidFP eb sb, SupportedPrim (FP eb sb)) => Term FPRoundingMode -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb) -> Term (FP eb sb)
-
--- | Lowering an floating-point fused multiply-add term to sbv.
-sbvFPFMATerm :: forall (eb :: Nat) (sb :: Nat). ValidFP eb sb => SRoundingMode -> SFloatingPoint eb sb -> SFloatingPoint eb sb -> SFloatingPoint eb sb -> SFloatingPoint eb sb
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalFPTerm Grisette.Internal.SymPrim.FP.FP
 
 
 module Grisette.Internal.SymPrim.GeneralFun
@@ -11848,7 +12042,7 @@ existsFresh :: (HasCallStack, ExtractSym v, MonadFresh m, GenSym spec v, TryMerg
 
 -- | Indicates that a type is supported, can be represented as a symbolic
 --   term, and can be lowered to an SBV term.
-class (Lift t, NFData t, SupportedPrimConstraint t, SBVRep t) => SupportedPrim t
+class (Lift t, NFData t, Typeable t, SupportedPrimConstraint t, SBVRep t) => SupportedPrim t
 
 -- | Type family to resolve the symbolic type associated with a concrete
 --   type.
@@ -11864,6 +12058,8 @@ class ConRep sym where {
 
 -- | One-to-one mapping between symbolic types and concrete types.
 class (ConRep sym, SymRep con, sym ~ SymType con, con ~ ConType sym) => LinkedRep con sym | con -> sym, sym -> con
+underlyingTerm :: LinkedRep con sym => sym -> Term con
+wrapTerm :: LinkedRep con sym => Term con -> sym
 
 -- | Some symbolic value with <a>LinkedRep</a> constraint.
 data SomeSym
@@ -11977,10 +12173,11 @@ ConstantKind :: SymbolKind
 AnyKind :: SymbolKind
 
 -- | Decision procedure for symbol kinds.
-class IsSymbolKind (ty :: SymbolKind) where {
-    type SymbolKindConstraint (ty :: SymbolKind) :: Type -> Constraint;
+class IsSymbolKind (knd :: SymbolKind) where {
+    type SymbolKindConstraint (knd :: SymbolKind) :: Type -> Constraint;
 }
-decideSymbolKind :: IsSymbolKind ty => Either (ty :~~: 'ConstantKind) (ty :~~: 'AnyKind)
+decideSymbolKind :: IsSymbolKind knd => Either (knd :~~: 'ConstantKind) (knd :~~: 'AnyKind)
+withSymbolKindConstraint :: IsSymbolKind knd => TypedSymbol knd t -> (SymbolKindConstraint knd t => a) -> a
 
 -- | A typed symbol is a symbol that is associated with a type. Note that
 --   the same symbol bodies with different types are considered different
@@ -12054,6 +12251,214 @@ data ModelValuePair t
 --   </pre>
 data ModelSymPair ct st
 [:=] :: forall ct st. LinkedRep ct st => st -> ct -> ModelSymPair ct st
+
+-- | Internal representation for Grisette symbolic terms.
+data Term t
+
+-- | Pattern synonym to introduce the SupportedPrim constraint.
+pattern SupportedTerm :: () => SupportedPrim t => Term t
+
+-- | Pattern synonym to introduce constraints from a <a>TypedSymbol</a>.
+pattern SupportedTypedSymbol :: () => (SupportedPrim t, SymbolKindConstraint k t, IsSymbolKind k) => TypedSymbol k t
+
+-- | Pattern synonym to introduce constraints from a <a>TypedSymbol</a>.
+--   Also checks that the symbol kind is <a>ConstantKind</a>.
+pattern SupportedConstantTypedSymbol :: () => (SupportedPrim t, SymbolKindConstraint k t, IsSymbolKind k, k ~ 'ConstantKind) => TypedSymbol k t
+
+-- | Pattern synonym for <a>ConTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ConTerm :: () => SupportedPrim t => t -> Term t
+
+-- | Pattern synonym for <a>SymTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern SymTerm :: () => SupportedPrim t => TypedSymbol 'AnyKind t -> Term t
+
+-- | Pattern synonym for <a>ForallTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern ForallTerm :: forall r t. () => (r ~ Bool, SupportedNonFuncPrim t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>ExistsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern ExistsTerm :: forall r t. () => (r ~ Bool, SupportedNonFuncPrim t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>NotTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern NotTerm :: () => r ~ Bool => Term Bool -> Term r
+
+-- | Pattern synonym for <a>OrTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern OrTerm :: () => r ~ Bool => Term Bool -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>AndTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern AndTerm :: () => r ~ Bool => Term Bool -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>EqTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern EqTerm :: forall r t. () => (r ~ Bool, SupportedPrim t) => Term t -> Term t -> Term r
+
+-- | Pattern synonym for <a>DistinctTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern DistinctTerm :: forall r t. () => (r ~ Bool, SupportedPrim t) => NonEmpty (Term t) -> Term r
+
+-- | Pattern synonym for <a>ITETerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ITETerm :: () => SupportedPrim t => Term Bool -> Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>AddNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern AddNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>NegNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern NegNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>MulNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern MulNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>AbsNumTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern AbsNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>SignumNumTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern SignumNumTerm :: () => (SupportedPrim t, PEvalNumTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>LtOrdTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern LtOrdTerm :: forall r t. () => (r ~ Bool, SupportedPrim t, PEvalOrdTerm t) => Term t -> Term t -> Term r
+
+-- | Pattern synonym for <a>LeOrdTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern LeOrdTerm :: forall r t. () => (r ~ Bool, SupportedPrim t, PEvalOrdTerm t) => Term t -> Term t -> Term r
+
+-- | Pattern synonym for <a>AndBitsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern AndBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>OrBitsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern OrBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>XorBitsTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern XorBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>ComplementBitsTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ComplementBitsTerm :: () => (SupportedPrim t, PEvalBitwiseTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>ShiftLeftTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ShiftLeftTerm :: () => (SupportedPrim t, PEvalShiftTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RotateLeftTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern RotateLeftTerm :: () => (SupportedPrim t, PEvalRotateTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>ShiftRightTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ShiftRightTerm :: () => (SupportedPrim t, PEvalShiftTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RotateRightTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern RotateRightTerm :: () => (SupportedPrim t, PEvalRotateTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>BitCastTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BitCastTerm :: forall b a. () => (SupportedPrim a, SupportedPrim b, PEvalBitCastTerm a b) => Term a -> Term b
+
+-- | Pattern synonym for <a>BitCastOrTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern BitCastOrTerm :: () => (SupportedPrim a, SupportedPrim b, PEvalBitCastOrTerm a b) => Term b -> Term a -> Term b
+
+-- | Pattern synonym for <a>BVConcatTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BVConcatTerm :: forall ret bv (l :: Nat) (r :: Nat). () => (PEvalBVTerm bv, KnownNat l, KnownNat r, KnownNat (l + r), 1 <= l, 1 <= r, 1 <= (l + r), SupportedPrim (bv l), SupportedPrim (bv r), SupportedPrim (bv (l + r)), ret ~ bv (l + r)) => Term (bv l) -> Term (bv r) -> Term ret
+
+-- | Pattern synonym for <a>BVSelectTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BVSelectTerm :: forall ret bv (w :: Nat) (n :: Nat) (ix :: Nat). () => (PEvalBVTerm bv, KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, (ix + w) <= n, SupportedPrim (bv n), SupportedPrim (bv w), ret ~ bv w) => Proxy ix -> Proxy w -> Term (bv n) -> Term ret
+
+-- | Pattern synonym for <a>BVExtendTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern BVExtendTerm :: forall ret bv (l :: Nat) (r :: Nat). () => (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r, SupportedPrim (bv l), SupportedPrim (bv r), ret ~ bv r) => Bool -> Proxy r -> Term (bv l) -> Term ret
+
+-- | Pattern synonym for <a>ApplyTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ApplyTerm :: forall b f a. () => (PEvalApplyTerm f a b, SupportedPrim f, SupportedPrim a, SupportedPrim b) => Term f -> Term a -> Term b
+
+-- | Pattern synonym for <a>DivIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern DivIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>ModIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern ModIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>QuotIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern QuotIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RemIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern RemIntegralTerm :: () => (SupportedPrim t, PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>FPTraitTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FPTraitTerm :: forall r (eb :: Nat) (sb :: Nat) fp. () => (r ~ Bool, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPTrait -> Term (fp eb sb) -> Term r
+
+-- | Pattern synonym for <a>FdivTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern FdivTerm :: () => (SupportedPrim t, PEvalFractionalTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>RecipTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern RecipTerm :: () => (SupportedPrim t, PEvalFractionalTerm t) => Term t -> Term t
+
+-- | Pattern synonym for <a>FloatingUnaryTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FloatingUnaryTerm :: () => (SupportedPrim t, PEvalFloatingTerm t) => FloatingUnaryOp -> Term t -> Term t
+
+-- | Pattern synonym for <a>PowerTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern PowerTerm :: () => (SupportedPrim t, PEvalFloatingTerm t) => Term t -> Term t -> Term t
+
+-- | Pattern synonym for <a>FPUnaryTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FPUnaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPUnaryOp -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPBinaryTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FPBinaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPRoundingUnaryTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FPRoundingUnaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPRoundingUnaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPRoundingBinaryTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FPRoundingBinaryTerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => FPRoundingBinaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FPFMATerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern FPFMATerm :: forall ret fp (eb :: Nat) (sb :: Nat). () => (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) => Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+
+-- | Pattern synonym for <a>FromIntegralTerm'</a>. Note that using this
+--   pattern to construct a <a>Term</a> will do term simplification.
+pattern FromIntegralTerm :: forall b a. () => (PEvalFromIntegralTerm a b, SupportedPrim a, SupportedPrim b) => Term a -> Term b
+
+-- | Pattern synonym for <a>FromFPOrTerm'</a>. Note that using this pattern
+--   to construct a <a>Term</a> will do term simplification.
+pattern FromFPOrTerm :: forall a (eb :: Nat) (sb :: Nat). () => (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim a) => Term a -> Term FPRoundingMode -> Term (FP eb sb) -> Term a
+
+-- | Pattern synonym for <a>ToFPTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern ToFPTerm :: forall ret (eb :: Nat) (sb :: Nat) a. () => (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim a, ret ~ FP eb sb) => Term FPRoundingMode -> Term a -> Proxy eb -> Proxy sb -> Term ret
+
+-- | Extract all the subterms of a term.
+pattern SubTerms :: [SomeTerm] -> Term a
 
 
 module Grisette.Internal.Unified.Class.UnifiedSafeSymShift

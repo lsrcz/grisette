@@ -1,0 +1,624 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE PatternSynonyms #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE ViewPatterns #-}</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Module      :   Grisette.Internal.SymPrim.Prim.Pattern</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Copyright   :   (c) Sirui Lu 2024</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- License     :   BSD-3-Clause (see the LICENSE file)</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Maintainer  :   siruilu@cs.washington.edu</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Stability   :   Experimental</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- Portability :   GHC only</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Pattern</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#SubTerms"><span class="hs-identifier">SubTerms</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Foldable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">toList</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AbsNumTerm"><span class="hs-identifier">AbsNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier">AddNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AndBitsTerm"><span class="hs-identifier">AndBitsTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AndTerm"><span class="hs-identifier">AndTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ApplyTerm"><span class="hs-identifier">ApplyTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BVConcatTerm"><span class="hs-identifier">BVConcatTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BVExtendTerm"><span class="hs-identifier">BVExtendTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BVSelectTerm"><span class="hs-identifier">BVSelectTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BitCastOrTerm"><span class="hs-identifier">BitCastOrTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BitCastTerm"><span class="hs-identifier">BitCastTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier">ComplementBitsTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#DistinctTerm"><span class="hs-identifier">DistinctTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#DivIntegralTerm"><span class="hs-identifier">DivIntegralTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#EqTerm"><span class="hs-identifier">EqTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ExistsTerm"><span class="hs-identifier">ExistsTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPBinaryTerm"><span class="hs-identifier">FPBinaryTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPFMATerm"><span class="hs-identifier">FPFMATerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPRoundingBinaryTerm"><span class="hs-identifier">FPRoundingBinaryTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPRoundingUnaryTerm"><span class="hs-identifier">FPRoundingUnaryTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPTraitTerm"><span class="hs-identifier">FPTraitTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPUnaryTerm"><span class="hs-identifier">FPUnaryTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FdivTerm"><span class="hs-identifier">FdivTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingUnaryTerm"><span class="hs-identifier">FloatingUnaryTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ForallTerm"><span class="hs-identifier">ForallTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FromFPOrTerm"><span class="hs-identifier">FromFPOrTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FromIntegralTerm"><span class="hs-identifier">FromIntegralTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier">ITETerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LeOrdTerm"><span class="hs-identifier">LeOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LtOrdTerm"><span class="hs-identifier">LtOrdTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ModIntegralTerm"><span class="hs-identifier">ModIntegralTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#MulNumTerm"><span class="hs-identifier">MulNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NegNumTerm"><span class="hs-identifier">NegNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NotTerm"><span class="hs-identifier">NotTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#OrBitsTerm"><span class="hs-identifier">OrBitsTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#OrTerm"><span class="hs-identifier">OrTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PowerTerm"><span class="hs-identifier">PowerTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#QuotIntegralTerm"><span class="hs-identifier">QuotIntegralTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RecipTerm"><span class="hs-identifier">RecipTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RemIntegralTerm"><span class="hs-identifier">RemIntegralTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RotateLeftTerm"><span class="hs-identifier">RotateLeftTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RotateRightTerm"><span class="hs-identifier">RotateRightTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ShiftLeftTerm"><span class="hs-identifier">ShiftLeftTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ShiftRightTerm"><span class="hs-identifier">ShiftRightTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SignumNumTerm"><span class="hs-identifier">SignumNumTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymTerm"><span class="hs-identifier">SymTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ToFPTerm"><span class="hs-identifier">ToFPTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#XorBitsTerm"><span class="hs-identifier">XorBitsTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.SomeTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier">SomeTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier">SomeTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span id="local-6989586621682246948"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-type">subTermsViewPattern</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682246948"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-type">SomeTerm</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-75"></span><span id="subTermsViewPattern"><span class="annot"><span class="annottext">subTermsViewPattern :: forall a. Term a -&gt; Maybe [SomeTerm]
+</span><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var hs-var">subTermsViewPattern</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-76"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SymTerm"><span class="hs-identifier hs-type">SymTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'AnyKind a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-77"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ForallTerm"><span class="hs-identifier hs-type">ForallTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247108"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247108"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247108"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-78"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ExistsTerm"><span class="hs-identifier hs-type">ExistsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TypedSymbol 'ConstantKind t
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247113"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247113"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247113"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NotTerm"><span class="hs-identifier hs-type">NotTerm</span></a></span><span> </span><span id="local-6989586621682247117"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247117"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247117"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#OrTerm"><span class="hs-identifier hs-type">OrTerm</span></a></span><span> </span><span id="local-6989586621682247122"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247122"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247123"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247123"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247122"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247123"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-81"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AndTerm"><span class="hs-identifier hs-type">AndTerm</span></a></span><span> </span><span id="local-6989586621682247128"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247128"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247129"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247129"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247128"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247129"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-82"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#EqTerm"><span class="hs-identifier hs-type">EqTerm</span></a></span><span> </span><span id="local-6989586621682247135"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247135"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247136"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247136"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term t -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247135"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247136"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-83"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#DistinctTerm"><span class="hs-identifier hs-type">DistinctTerm</span></a></span><span> </span><span id="local-6989586621682247145"><span class="annot"><span class="annottext">NonEmpty (Term t)
+</span><a href="#local-6989586621682247145"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term t -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; SomeTerm) -&gt; [Term t] -&gt; [SomeTerm]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty (Term t) -&gt; [Term t]
+forall a. NonEmpty a -&gt; [a]
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; [a]
+</span><span class="hs-identifier hs-var">toList</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty (Term t)
+</span><a href="#local-6989586621682247145"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ITETerm"><span class="hs-identifier hs-type">ITETerm</span></a></span><span> </span><span id="local-6989586621682247152"><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247152"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247153"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247153"><span class="hs-identifier hs-var">t2</span></a></span></span><span> </span><span id="local-6989586621682247154"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247154"><span class="hs-identifier hs-var">t3</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-85"></span><span>  </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term Bool -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term Bool
+</span><a href="#local-6989586621682247152"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247153"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247154"><span class="hs-identifier hs-var">t3</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-86"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AddNumTerm"><span class="hs-identifier hs-type">AddNumTerm</span></a></span><span> </span><span id="local-6989586621682247160"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247160"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247161"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247161"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247160"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247161"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#NegNumTerm"><span class="hs-identifier hs-type">NegNumTerm</span></a></span><span> </span><span id="local-6989586621682247166"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247166"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247166"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#MulNumTerm"><span class="hs-identifier hs-type">MulNumTerm</span></a></span><span> </span><span id="local-6989586621682247172"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247172"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247173"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247173"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247172"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247173"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-89"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AbsNumTerm"><span class="hs-identifier hs-type">AbsNumTerm</span></a></span><span> </span><span id="local-6989586621682247178"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247178"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247178"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-90"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SignumNumTerm"><span class="hs-identifier hs-type">SignumNumTerm</span></a></span><span> </span><span id="local-6989586621682247183"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247183"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247183"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LtOrdTerm"><span class="hs-identifier hs-type">LtOrdTerm</span></a></span><span> </span><span id="local-6989586621682247190"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247190"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247191"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247191"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term t -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247190"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247191"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-92"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#LeOrdTerm"><span class="hs-identifier hs-type">LeOrdTerm</span></a></span><span> </span><span id="local-6989586621682247198"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247198"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247199"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247199"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term t -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247198"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682247199"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-93"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#AndBitsTerm"><span class="hs-identifier hs-type">AndBitsTerm</span></a></span><span> </span><span id="local-6989586621682247205"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247205"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247206"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247206"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247205"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247206"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-94"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#OrBitsTerm"><span class="hs-identifier hs-type">OrBitsTerm</span></a></span><span> </span><span id="local-6989586621682247212"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247212"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247213"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247213"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247212"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247213"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#XorBitsTerm"><span class="hs-identifier hs-type">XorBitsTerm</span></a></span><span> </span><span id="local-6989586621682247219"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247219"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247220"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247220"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247219"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247220"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682247225"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247225"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247225"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-97"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ShiftLeftTerm"><span class="hs-identifier hs-type">ShiftLeftTerm</span></a></span><span> </span><span id="local-6989586621682247231"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247231"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247232"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247232"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247231"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247232"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ShiftRightTerm"><span class="hs-identifier hs-type">ShiftRightTerm</span></a></span><span> </span><span id="local-6989586621682247238"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247238"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247239"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247239"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247238"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247239"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-99"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RotateLeftTerm"><span class="hs-identifier hs-type">RotateLeftTerm</span></a></span><span> </span><span id="local-6989586621682247245"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247245"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247246"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247246"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247245"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247246"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-100"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RotateRightTerm"><span class="hs-identifier hs-type">RotateRightTerm</span></a></span><span> </span><span id="local-6989586621682247252"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247252"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247253"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247253"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247252"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247253"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-101"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BitCastTerm"><span class="hs-identifier hs-type">BitCastTerm</span></a></span><span> </span><span id="local-6989586621682247259"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247259"><span class="hs-identifier hs-var">t1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247259"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-102"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BitCastOrTerm"><span class="hs-identifier hs-type">BitCastOrTerm</span></a></span><span> </span><span id="local-6989586621682247266"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247266"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247267"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247267"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247266"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247267"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-103"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BVConcatTerm"><span class="hs-identifier hs-type">BVConcatTerm</span></a></span><span> </span><span id="local-6989586621682247282"><span class="annot"><span class="annottext">Term (bv l)
+</span><a href="#local-6989586621682247282"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247283"><span class="annot"><span class="annottext">Term (bv r)
+</span><a href="#local-6989586621682247283"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term (bv l) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (bv l)
+</span><a href="#local-6989586621682247282"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (bv r) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (bv r)
+</span><a href="#local-6989586621682247283"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BVSelectTerm"><span class="hs-identifier hs-type">BVSelectTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Proxy ix
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Proxy w
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247296"><span class="annot"><span class="annottext">Term (bv n)
+</span><a href="#local-6989586621682247296"><span class="hs-identifier hs-var">t1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term (bv n) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (bv n)
+</span><a href="#local-6989586621682247296"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-105"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#BVExtendTerm"><span class="hs-identifier hs-type">BVExtendTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Proxy r
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247308"><span class="annot"><span class="annottext">Term (bv l)
+</span><a href="#local-6989586621682247308"><span class="hs-identifier hs-var">t1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term (bv l) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (bv l)
+</span><a href="#local-6989586621682247308"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-106"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ApplyTerm"><span class="hs-identifier hs-type">ApplyTerm</span></a></span><span> </span><span id="local-6989586621682247316"><span class="annot"><span class="annottext">Term f
+</span><a href="#local-6989586621682247316"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247317"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247317"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term f -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term f
+</span><a href="#local-6989586621682247316"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247317"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-107"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#DivIntegralTerm"><span class="hs-identifier hs-type">DivIntegralTerm</span></a></span><span> </span><span id="local-6989586621682247323"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247323"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247324"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247324"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247323"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247324"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-108"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ModIntegralTerm"><span class="hs-identifier hs-type">ModIntegralTerm</span></a></span><span> </span><span id="local-6989586621682247330"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247330"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247331"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247331"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247330"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247331"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-109"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#QuotIntegralTerm"><span class="hs-identifier hs-type">QuotIntegralTerm</span></a></span><span> </span><span id="local-6989586621682247337"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247337"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247338"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247338"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247337"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247338"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-110"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RemIntegralTerm"><span class="hs-identifier hs-type">RemIntegralTerm</span></a></span><span> </span><span id="local-6989586621682247344"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247344"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247345"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247345"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247344"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247345"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-111"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPTraitTerm"><span class="hs-identifier hs-type">FPTraitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FPTrait
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247352"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247352"><span class="hs-identifier hs-var">t1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247352"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-112"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FdivTerm"><span class="hs-identifier hs-type">FdivTerm</span></a></span><span> </span><span id="local-6989586621682247358"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247358"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247359"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247359"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247358"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247359"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-113"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#RecipTerm"><span class="hs-identifier hs-type">RecipTerm</span></a></span><span> </span><span id="local-6989586621682247364"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247364"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247364"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-114"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingUnaryTerm"><span class="hs-identifier hs-type">FloatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247369"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247369"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247369"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-115"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PowerTerm"><span class="hs-identifier hs-type">PowerTerm</span></a></span><span> </span><span id="local-6989586621682247375"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247375"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247376"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247376"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247375"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247376"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-116"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPUnaryTerm"><span class="hs-identifier hs-type">FPUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FPUnaryOp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247383"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247383"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247383"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-117"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPBinaryTerm"><span class="hs-identifier hs-type">FPBinaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FPBinaryOp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247391"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247391"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247392"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247392"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247391"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247392"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-118"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPRoundingUnaryTerm"><span class="hs-identifier hs-type">FPRoundingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingUnaryOp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247401"><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247401"><span class="hs-identifier hs-var">rd</span></a></span></span><span> </span><span id="local-6989586621682247402"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247402"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247401"><span class="hs-identifier hs-var">rd</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247402"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-119"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPRoundingBinaryTerm"><span class="hs-identifier hs-type">FPRoundingBinaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FPRoundingBinaryOp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682247411"><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247411"><span class="hs-identifier hs-var">rd</span></a></span></span><span> </span><span id="local-6989586621682247412"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247412"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247413"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247413"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247411"><span class="hs-identifier hs-var">rd</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247412"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247413"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-120"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FPFMATerm"><span class="hs-identifier hs-type">FPFMATerm</span></a></span><span> </span><span id="local-6989586621682247423"><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247423"><span class="hs-identifier hs-var">rd</span></a></span></span><span> </span><span id="local-6989586621682247424"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247424"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247425"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247425"><span class="hs-identifier hs-var">t2</span></a></span></span><span> </span><span id="local-6989586621682247426"><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247426"><span class="hs-identifier hs-var">t3</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-121"></span><span>  </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247423"><span class="hs-identifier hs-var">rd</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247424"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247425"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (fp eb sb)
+</span><a href="#local-6989586621682247426"><span class="hs-identifier hs-var">t3</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-122"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FromIntegralTerm"><span class="hs-identifier hs-type">FromIntegralTerm</span></a></span><span> </span><span id="local-6989586621682247432"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247432"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247432"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-123"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FromFPOrTerm"><span class="hs-identifier hs-type">FromFPOrTerm</span></a></span><span> </span><span id="local-6989586621682247443"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247443"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682247444"><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247444"><span class="hs-identifier hs-var">rd</span></a></span></span><span> </span><span id="local-6989586621682247445"><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682247445"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247443"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247444"><span class="hs-identifier hs-var">rd</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb) -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term (FP eb sb)
+</span><a href="#local-6989586621682247445"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-124"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-var">subTermsViewPattern</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ToFPTerm"><span class="hs-identifier hs-type">ToFPTerm</span></a></span><span> </span><span id="local-6989586621682247454"><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247454"><span class="hs-identifier hs-var">rd</span></a></span></span><span> </span><span id="local-6989586621682247455"><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247455"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span class="annot"><span class="annottext">Proxy eb
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Proxy sb
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SomeTerm] -&gt; Maybe [SomeTerm]
+forall a. a -&gt; Maybe a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Term FPRoundingMode -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term FPRoundingMode
+</span><a href="#local-6989586621682247454"><span class="hs-identifier hs-var">rd</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term a -&gt; SomeTerm
+forall a. SupportedPrim a =&gt; Term a -&gt; SomeTerm
+</span><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-var">SomeTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term a
+</span><a href="#local-6989586621682247455"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span class="annot"><span class="hs-comment">-- | Extract all the subterms of a term.</span></span><span>
+</span><span id="line-127"></span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#SubTerms"><span class="hs-identifier hs-type">SubTerms</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621682247044"><span class="hs-special">[</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.SomeTerm.html#SomeTerm"><span class="hs-identifier hs-type">SomeTerm</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682247044"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-128"></span><span class="hs-keyword">pattern</span><span> </span><span id="SubTerms"><span id="%24mSubTerms"><span class="annot"><span class="annottext">$mSubTerms :: forall {r} {a}. Term a -&gt; ([SomeTerm] -&gt; r) -&gt; ((# #) -&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#SubTerms"><span class="hs-identifier hs-var hs-var">SubTerms</span></a></span></span></span><span> </span><span class="annot"><a href="#local-6989586621682247457"><span class="hs-identifier hs-type">ts</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#subTermsViewPattern"><span class="hs-identifier hs-type">subTermsViewPattern</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621682247457"><span class="annot"><a href="#local-6989586621682247457"><span class="hs-identifier hs-var">ts</span></a></span></span><span class="hs-special">)</span><span class="hs-cpp">
+
+#if MIN_VERSION_base(4, 16, 4)
+</span><span class="hs-pragma">{-# COMPLETE</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Pattern.html#SubTerms"><span class="hs-pragma hs-type">SubTerms</span></a></span><span> </span><span class="hs-pragma">#-}</span><span class="hs-cpp">
+#endif
+</span></pre></body></html>

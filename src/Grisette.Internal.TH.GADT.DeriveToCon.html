@@ -42,36 +42,36 @@
 </span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#toConClassConfig"><span class="hs-identifier hs-var hs-var">toConClassConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-42"></span><span>  </span><span class="annot"><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#ConvertOpClassConfig"><span class="hs-identifier hs-type">ConvertOpClassConfig</span></a></span><span>
 </span><span id="line-43"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">convertFieldResFun :: Exp -&gt; Exp -&gt; Q Exp
-</span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#convertFieldResFun"><span class="hs-identifier hs-var">convertFieldResFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682294910"><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682294910"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682294911"><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682294911"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+</span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#convertFieldResFun"><span class="hs-identifier hs-var">convertFieldResFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682289110"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682289110"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span id="local-6989586621682289111"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621682289111"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682294911"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+</span><a href="#local-6989586621682289111"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Exp
-</span><a href="#local-6989586621682294910"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span class="hs-special">,</span><span>
+</span><a href="#local-6989586621682289110"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span class="hs-special">,</span><span>
 </span><span id="line-44"></span><span>      </span><span class="annot"><span class="annottext">convertFieldCombineFun :: Name -&gt; [Exp] -&gt; Q Exp
-</span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#convertFieldCombineFun"><span class="hs-identifier hs-var">convertFieldCombineFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682294912"><span class="annot"><span class="annottext">Name
-</span><a href="#local-6989586621682294912"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682294913"><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682294913"><span class="hs-identifier hs-var">args</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#convertFieldCombineFun"><span class="hs-identifier hs-var">convertFieldCombineFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682289112"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682289112"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682289113"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682289113"><span class="hs-identifier hs-var">args</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-45"></span><span>        </span><span class="annot"><span class="annottext">(Q Exp -&gt; Q Exp -&gt; Q Exp) -&gt; Q Exp -&gt; [Q Exp] -&gt; Q Exp
 forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-46"></span><span>          </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621682294915"><span class="annot"><span class="annottext">Q Exp
-</span><a href="#local-6989586621682294915"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621682294916"><span class="annot"><span class="annottext">Q Exp
-</span><a href="#local-6989586621682294916"><span class="hs-identifier hs-var">arg</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Q Exp
-</span><a href="#local-6989586621682294915"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;*&gt;</span></span><span> </span><span class="hs-special">$</span><span class="annot"><span class="annottext">Q Exp
-</span><a href="#local-6989586621682294916"><span class="hs-identifier hs-var">arg</span></a></span><span class="hs-special">|]</span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span>          </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621682289115"><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682289115"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621682289116"><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682289116"><span class="hs-identifier hs-var">arg</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[|</span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682289115"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;*&gt;</span></span><span> </span><span class="hs-special">$</span><span class="annot"><span class="annottext">Q Exp
+</span><a href="#local-6989586621682289116"><span class="hs-identifier hs-var">arg</span></a></span><span class="hs-special">|]</span><span class="hs-special">)</span><span>
 </span><span id="line-47"></span><span>          </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="hs-special">$</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Q Exp
 forall (m :: * -&gt; *). Quote m =&gt; Name -&gt; m Exp
 </span><span class="hs-identifier hs-var">conE</span></span><span> </span><span class="annot"><span class="annottext">Name
-</span><a href="#local-6989586621682294912"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span>
+</span><a href="#local-6989586621682289112"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span class="hs-special">|]</span><span>
 </span><span id="line-48"></span><span>          </span><span class="annot"><span class="annottext">([Q Exp] -&gt; Q Exp) -&gt; [Q Exp] -&gt; Q Exp
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Q Exp) -&gt; [Exp] -&gt; [Q Exp]
@@ -81,7 +81,7 @@ forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682294913"><span class="hs-identifier hs-var">args</span></a></span><span class="hs-special">,</span><span>
+</span><a href="#local-6989586621682289113"><span class="hs-identifier hs-var">args</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-49"></span><span>      </span><span class="annot"><span class="annottext">convertFieldFunExp :: FieldFunExp
 </span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#convertFieldFunExp"><span class="hs-identifier hs-var">convertFieldFunExp</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; FieldFunExp
 </span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#defaultFieldFunExp"><span class="hs-identifier hs-var">defaultFieldFunExp</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">'</span><span class="hs-identifier">toCon</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftToCon</span><span class="hs-special">,</span><span> </span><span class="hs-special">'</span><span class="hs-identifier">liftToCon2</span><span class="hs-special">]</span><span class="hs-special">,</span><span>
@@ -97,32 +97,32 @@ forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span id="line-55"></span><span class="annot"><span class="hs-comment">-- | Derive 'ToCon' instance for a GADT.</span></span><span>
 </span><span id="line-56"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon"><span class="hs-identifier hs-type">deriveGADTToCon</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-57"></span><span id="deriveGADTToCon"><span class="annot"><span class="annottext">deriveGADTToCon :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon"><span class="hs-identifier hs-var hs-var">deriveGADTToCon</span></a></span></span><span> </span><span id="local-6989586621682294917"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682294917"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; ConvertOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon"><span class="hs-identifier hs-var hs-var">deriveGADTToCon</span></a></span></span><span> </span><span id="local-6989586621682289117"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682289117"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; ConvertOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#genConvertOpClass"><span class="hs-identifier hs-var">genConvertOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682294917"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">ConvertOpClassConfig
+</span><a href="#local-6989586621682289117"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">ConvertOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#toConClassConfig"><span class="hs-identifier hs-var">toConClassConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-58"></span><span>
 </span><span id="line-59"></span><span class="annot"><span class="hs-comment">-- | Derive 'ToCon1' instance for a GADT.</span></span><span>
 </span><span id="line-60"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon1"><span class="hs-identifier hs-type">deriveGADTToCon1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-61"></span><span id="deriveGADTToCon1"><span class="annot"><span class="annottext">deriveGADTToCon1 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon1"><span class="hs-identifier hs-var hs-var">deriveGADTToCon1</span></a></span></span><span> </span><span id="local-6989586621682294918"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682294918"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon1"><span class="hs-identifier hs-var hs-var">deriveGADTToCon1</span></a></span></span><span> </span><span id="local-6989586621682289118"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682289118"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-62"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; ConvertOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#genConvertOpClass"><span class="hs-identifier hs-var">genConvertOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682294918"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">ConvertOpClassConfig
+</span><a href="#local-6989586621682289118"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">ConvertOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#toConClassConfig"><span class="hs-identifier hs-var">toConClassConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span>
 </span><span id="line-63"></span><span>
 </span><span id="line-64"></span><span class="annot"><span class="hs-comment">-- | Derive 'ToCon2' instance for a GADT.</span></span><span>
 </span><span id="line-65"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon2"><span class="hs-identifier hs-type">deriveGADTToCon2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-66"></span><span id="deriveGADTToCon2"><span class="annot"><span class="annottext">deriveGADTToCon2 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon2"><span class="hs-identifier hs-var hs-var">deriveGADTToCon2</span></a></span></span><span> </span><span id="local-6989586621682294919"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682294919"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#deriveGADTToCon2"><span class="hs-identifier hs-var hs-var">deriveGADTToCon2</span></a></span></span><span> </span><span id="local-6989586621682289119"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682289119"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-67"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; ConvertOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.ConvertOpCommon.html#genConvertOpClass"><span class="hs-identifier hs-var">genConvertOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682294919"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">ConvertOpClassConfig
+</span><a href="#local-6989586621682289119"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">ConvertOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveToCon.html#toConClassConfig"><span class="hs-identifier hs-var">toConClassConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">2</span></span><span>
 </span><span id="line-68"></span></pre></body></html>
