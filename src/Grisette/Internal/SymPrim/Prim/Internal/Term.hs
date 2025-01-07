@@ -1578,7 +1578,7 @@ data Term t where
     !(Term t) ->
     Term t
   FPUnaryTerm' ::
-    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp)  =>
+    (ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
     {-# UNPACK #-} !CachedInfo ->
     !FPUnaryOp ->
     !(Term (fp eb sb)) ->
