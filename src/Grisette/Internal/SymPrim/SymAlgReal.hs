@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- |
@@ -61,10 +62,11 @@ import Grisette.Internal.SymPrim.Prim.Term
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalNumTerm (pevalAddNumTerm),
     SymRep (SymType),
-    Term (ConTerm),
+    Term,
     conTerm,
     pformatTerm,
     symTerm,
+    pattern ConTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -99,7 +101,7 @@ instance IsString SymAlgReal where
 instance Solvable AlgReal SymAlgReal where
   con = SymAlgReal . conTerm
   sym = SymAlgReal . symTerm . typedConstantSymbol
-  conView (SymAlgReal (ConTerm _ _ _ _ t)) = Just t
+  conView (SymAlgReal (ConTerm t)) = Just t
   conView _ = Nothing
 
 instance Show SymAlgReal where

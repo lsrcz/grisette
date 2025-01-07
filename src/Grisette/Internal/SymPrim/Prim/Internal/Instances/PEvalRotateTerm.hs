@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -36,11 +37,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         withSbvRotateTermConstraint
       ),
     SupportedNonFuncPrim (withNonFuncPrim),
-    Term (ConTerm),
+    Term,
     conTerm,
-    introSupportedPrimConstraint,
     rotateLeftTerm,
     rotateRightTerm,
+    pattern ConTerm,
+    pattern SupportedTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
@@ -51,12 +53,11 @@ pevalFiniteBitsSymRotateRotateLeftTerm ::
   Term a ->
   Term a ->
   Term a
-pevalFiniteBitsSymRotateRotateLeftTerm t n =
-  introSupportedPrimConstraint t $
-    unaryUnfoldOnce
-      (`doPevalFiniteBitsSymRotateRotateLeftTerm` n)
-      (`rotateLeftTerm` n)
-      t
+pevalFiniteBitsSymRotateRotateLeftTerm t@SupportedTerm n =
+  unaryUnfoldOnce
+    (`doPevalFiniteBitsSymRotateRotateLeftTerm` n)
+    (`rotateLeftTerm` n)
+    t
 
 doPevalFiniteBitsSymRotateRotateLeftTerm ::
   forall a.
@@ -64,12 +65,12 @@ doPevalFiniteBitsSymRotateRotateLeftTerm ::
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalFiniteBitsSymRotateRotateLeftTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymRotateRotateLeftTerm (ConTerm a) (ConTerm n)
   | n >= 0 = Just $ conTerm $ symRotate a n -- Just $ conTerm $ rotateL a (fromIntegral n)
-doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm _ _ _ _ 0) = Just x
--- doPevalFiniteBitsSymRotateRotateLeftTerm (RotateLeftTerm _ x (ConTerm _ _ _ _ n)) (ConTerm _ _ _ _ n1)
+doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm 0) = Just x
+-- doPevalFiniteBitsSymRotateRotateLeftTerm (RotateLeftTerm _ x (ConTerm  n)) (ConTerm  n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalFiniteBitsSymRotateRotateLeftTerm x (conTerm $ n + n1)
-doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm n)
   | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral bs =
       Just $
         pevalFiniteBitsSymRotateRotateLeftTerm
@@ -86,12 +87,11 @@ pevalFiniteBitsSymRotateRotateRightTerm ::
   Term a ->
   Term a ->
   Term a
-pevalFiniteBitsSymRotateRotateRightTerm t n =
-  introSupportedPrimConstraint t $
-    unaryUnfoldOnce
-      (`doPevalFiniteBitsSymRotateRotateRightTerm` n)
-      (`rotateRightTerm` n)
-      t
+pevalFiniteBitsSymRotateRotateRightTerm t@SupportedTerm n =
+  unaryUnfoldOnce
+    (`doPevalFiniteBitsSymRotateRotateRightTerm` n)
+    (`rotateRightTerm` n)
+    t
 
 doPevalFiniteBitsSymRotateRotateRightTerm ::
   forall a.
@@ -99,7 +99,7 @@ doPevalFiniteBitsSymRotateRotateRightTerm ::
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalFiniteBitsSymRotateRotateRightTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymRotateRotateRightTerm (ConTerm a) (ConTerm n)
   | n >= 0 =
       Just . conTerm $
         rotateR
@@ -108,10 +108,10 @@ doPevalFiniteBitsSymRotateRotateRightTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ n
               (fromIntegral n :: Integer)
                 `mod` fromIntegral (finiteBitSize n)
           )
-doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm _ _ _ _ 0) = Just x
--- doPevalFiniteBitsSymRotateRotateRightTerm (RotateRightTerm _ x (ConTerm _ _ _ _ n)) (ConTerm _ _ _ _ n1)
+doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm 0) = Just x
+-- doPevalFiniteBitsSymRotateRotateRightTerm (RotateRightTerm _ x (ConTerm  n)) (ConTerm  n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalFiniteBitsSymRotateRotateRightTerm x (conTerm $ n + n1)
-doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm _ _ _ _ n)
+doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm n)
   | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral bs =
       Just $
         pevalFiniteBitsSymRotateRotateRightTerm

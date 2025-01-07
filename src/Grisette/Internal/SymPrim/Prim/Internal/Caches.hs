@@ -21,8 +21,9 @@
 module Grisette.Internal.SymPrim.Prim.Internal.Caches
   ( SomeStableName (..),
     Id,
-    Ident,
+    StableIdent,
     Digest,
+    CachedInfo (..),
     Interned (..),
     intern,
     haveCache,
@@ -73,10 +74,17 @@ import Unsafe.Coerce (unsafeCoerce)
 type Id = Word32
 
 -- | The identity of a term.
-type Ident = StableName Any
+type StableIdent = StableName Any
 
 -- | A digest of a term.
 type Digest = Word32
+
+data CachedInfo = CachedInfo
+  { cachedThreadId :: {-# UNPACK #-} !WeakThreadId,
+    cachedDigest :: {-# UNPACK #-} !Digest,
+    cachedId :: {-# UNPACK #-} !Id,
+    cachedStableIdent :: {-# UNPACK #-} !StableIdent
+  }
 
 newtype Cache t = Cache {getCache :: A.Array Int (CacheState t)}
 
@@ -86,7 +94,7 @@ data CacheState t where
   CacheState ::
     { _sem :: MVar (),
       _nextId :: M.IOVector Id,
-      _currentThread :: HashTable (Description t) (Id, Weak Ident)
+      _currentThread :: HashTable (Description t) (Id, Weak StableIdent)
     } ->
     CacheState t
 
@@ -103,7 +111,7 @@ class Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
-  identify :: WeakThreadId -> Digest -> Id -> Ident -> Uninterned t -> t
+  identify :: CachedInfo -> Uninterned t -> t
   threadId :: t -> WeakThreadId
   descriptionDigest :: Description t -> Digest
 
@@ -216,11 +224,11 @@ intern !bt = do
       M.unsafeWrite nextId 0 (newId0 + 1)
       let newId = newId0 * cacheWidth + r
       newIdent <- makeStableName dt
-      let anyNewIdent = unsafeCoerce newIdent :: Ident
+      let anyNewIdent = unsafeCoerce newIdent :: StableIdent
       identRef <-
         mkWeakStableNameRefWithFinalizer anyNewIdent $
           reclaimTerm wtid fingerprint (fromIntegral r) dt
-      let !t = identify (weakThreadId tid) hdt newId anyNewIdent bt
+      let !t = identify (CachedInfo (weakThreadId tid) hdt newId anyNewIdent) bt
       writeIORef s $ HM.insert dt (newId, identRef) current
       putMVar sem ()
       return t
@@ -232,17 +240,20 @@ intern !bt = do
           M.unsafeWrite nextId 0 (newId0 + 1)
           let newId = newId0 * cacheWidth + r
           newIdent <- makeStableName dt
-          let anyNewIdent = unsafeCoerce newIdent :: Ident
+          let anyNewIdent = unsafeCoerce newIdent :: StableIdent
           identRef <-
             mkWeakStableNameRefWithFinalizer anyNewIdent $
               reclaimTerm wtid fingerprint (fromIntegral r) dt
-          let !term = identify (weakThreadId tid) hdt newId anyNewIdent bt
+          let !term =
+                identify
+                  (CachedInfo (weakThreadId tid) hdt newId anyNewIdent)
+                  bt
           writeIORef s $ HM.insert dt (newId, identRef) current
           putMVar sem ()
           return term
         Just t1 -> do
           putMVar sem ()
-          return $! identify (weakThreadId tid) hdt oldId t1 bt
+          return $! identify (CachedInfo (weakThreadId tid) hdt oldId t1) bt
 {-# NOINLINE intern #-}
 
 -- | Check if the current thread has a cache.

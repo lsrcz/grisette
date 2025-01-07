@@ -9,6 +9,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -90,7 +91,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     symTerm,
     toModelValue,
     unsafeFromModelValue,
-    withSymbolSupported,
+    pattern SupportedTypedSymbol,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -179,7 +180,7 @@ instance Show Model where
 -- | Given a typed symbol and a model, return the equation (symbol = value)
 -- encoded in the model.
 equation :: TypedAnySymbol a -> Model -> Maybe (Term Bool)
-equation tsym m = withSymbolSupported tsym $
+equation tsym@SupportedTypedSymbol m =
   case valueOf tsym m of
     Just v -> Just $ pevalEqTerm (symTerm tsym) (conTerm v)
     Nothing -> Nothing
@@ -363,10 +364,8 @@ instance ModelOps Model AnySymbolSet TypedAnySymbol where
   emptyModel = Model M.empty
   isEmptyModel (Model m) = M.null m
   valueOf :: forall t. TypedAnySymbol t -> Model -> Maybe t
-  valueOf sym (Model m) =
-    withSymbolSupported sym $
-      (unsafeFromModelValue @t)
-        <$> M.lookup (someTypedSymbol sym) m
+  valueOf sym@SupportedTypedSymbol (Model m) =
+    (unsafeFromModelValue @t) <$> M.lookup (someTypedSymbol sym) m
   modelContains sym (Model m) = M.member (someTypedSymbol sym) m
   exceptFor (SymbolSet s) (Model m) = Model $ S.foldl' (flip M.delete) m s
   exceptFor' s (Model m) = Model $ M.delete (someTypedSymbol s) m
@@ -382,16 +381,16 @@ instance ModelOps Model AnySymbolSet TypedAnySymbol where
   extendTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
-        ( \acc sym@(SomeTypedSymbol (tsym :: TypedAnySymbol t)) -> case M.lookup sym acc of
-            Just _ -> acc
-            Nothing -> withSymbolSupported tsym $ M.insert sym (defaultValueDynamic (Proxy @t)) acc
+        ( \acc
+           sym@(SomeTypedSymbol (SupportedTypedSymbol :: TypedAnySymbol t)) ->
+              case M.lookup sym acc of
+                Just _ -> acc
+                Nothing -> M.insert sym (defaultValueDynamic (Proxy @t)) acc
         )
         m
         s
-  insertValue sym (v :: t) (Model m) =
-    withSymbolSupported sym $
-      Model $
-        M.insert (someTypedSymbol sym) (toModelValue v) m
+  insertValue sym@SupportedTypedSymbol (v :: t) (Model m) =
+    Model $ M.insert (someTypedSymbol sym) (toModelValue v) m
 
 -- | Evaluate a term in the given model.
 evalTerm ::
@@ -403,15 +402,14 @@ evalTerm ::
   Term a
 evalTerm fillDefault (Model ma) =
   generalSubstSomeTerm
-    ( \(sym :: TypedSymbol 'AnyKind a) ->
-        withSymbolSupported sym $
-          case (M.lookup (someTypedSymbol sym) ma) of
-            Nothing ->
-              if fillDefault
-                then conTerm (defaultValue @a)
-                else symTerm sym
-            Just dy ->
-              conTerm (unsafeFromModelValue @a dy)
+    ( \(sym@SupportedTypedSymbol :: TypedSymbol 'AnyKind a) ->
+        case (M.lookup (someTypedSymbol sym) ma) of
+          Nothing ->
+            if fillDefault
+              then conTerm (defaultValue @a)
+              else symTerm sym
+          Just dy ->
+            conTerm (unsafeFromModelValue @a dy)
     )
 
 -- |

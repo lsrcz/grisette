@@ -93,56 +93,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SomeTypedSymbol (SomeTypedSymbol),
     SupportedNonFuncPrim,
     SupportedPrim (primTypeRep, withPrim),
-    Term
-      ( AbsNumTerm,
-        AddNumTerm,
-        AndBitsTerm,
-        AndTerm,
-        ApplyTerm,
-        BVConcatTerm,
-        BVExtendTerm,
-        BVSelectTerm,
-        BitCastOrTerm,
-        BitCastTerm,
-        ComplementBitsTerm,
-        ConTerm,
-        DistinctTerm,
-        DivIntegralTerm,
-        EqTerm,
-        ExistsTerm,
-        FPBinaryTerm,
-        FPFMATerm,
-        FPRoundingBinaryTerm,
-        FPRoundingUnaryTerm,
-        FPTraitTerm,
-        FPUnaryTerm,
-        FdivTerm,
-        FloatingUnaryTerm,
-        ForallTerm,
-        FromFPOrTerm,
-        FromIntegralTerm,
-        ITETerm,
-        LeOrdTerm,
-        LtOrdTerm,
-        ModIntegralTerm,
-        MulNumTerm,
-        NegNumTerm,
-        NotTerm,
-        OrBitsTerm,
-        OrTerm,
-        PowerTerm,
-        QuotIntegralTerm,
-        RecipTerm,
-        RemIntegralTerm,
-        RotateLeftTerm,
-        RotateRightTerm,
-        ShiftLeftTerm,
-        ShiftRightTerm,
-        SignumNumTerm,
-        SymTerm,
-        ToFPTerm,
-        XorBitsTerm
-      ),
+    Term,
     TypedAnySymbol,
     TypedConstantSymbol,
     TypedSymbol (TypedSymbol),
@@ -173,7 +124,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     fpUnaryTerm,
     fromFPOrTerm,
     fromIntegralTerm,
-    introSupportedPrimConstraint,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
@@ -196,8 +146,56 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     symTerm,
     termId,
     toFPTerm,
-    withSupportedPrimTypeable,
     xorBitsTerm,
+    pattern AbsNumTerm,
+    pattern AddNumTerm,
+    pattern AndBitsTerm,
+    pattern AndTerm,
+    pattern ApplyTerm,
+    pattern BVConcatTerm,
+    pattern BVExtendTerm,
+    pattern BVSelectTerm,
+    pattern BitCastOrTerm,
+    pattern BitCastTerm,
+    pattern ComplementBitsTerm,
+    pattern ConTerm,
+    pattern DistinctTerm,
+    pattern DivIntegralTerm,
+    pattern EqTerm,
+    pattern ExistsTerm,
+    pattern FPBinaryTerm,
+    pattern FPFMATerm,
+    pattern FPRoundingBinaryTerm,
+    pattern FPRoundingUnaryTerm,
+    pattern FPTraitTerm,
+    pattern FPUnaryTerm,
+    pattern FdivTerm,
+    pattern FloatingUnaryTerm,
+    pattern ForallTerm,
+    pattern FromFPOrTerm,
+    pattern FromIntegralTerm,
+    pattern ITETerm,
+    pattern LeOrdTerm,
+    pattern LtOrdTerm,
+    pattern ModIntegralTerm,
+    pattern MulNumTerm,
+    pattern NegNumTerm,
+    pattern NotTerm,
+    pattern OrBitsTerm,
+    pattern OrTerm,
+    pattern PowerTerm,
+    pattern QuotIntegralTerm,
+    pattern RecipTerm,
+    pattern RemIntegralTerm,
+    pattern RotateLeftTerm,
+    pattern RotateRightTerm,
+    pattern ShiftLeftTerm,
+    pattern ShiftRightTerm,
+    pattern SignumNumTerm,
+    pattern SupportedTerm,
+    pattern SymTerm,
+    pattern ToFPTerm,
+    pattern XorBitsTerm,
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -900,11 +898,10 @@ asSameTypeNonEmptyTermList (SomeTerm (t :: Term a) :| ts) f =
   f $ t :| fmap (unsafeCastTerm t) ts
   where
     unsafeCastTerm :: Term a -> SomeTerm -> Term a
-    unsafeCastTerm t (SomeTerm b) =
-      introSupportedPrimConstraint t $
-        case castTerm b of
-          Just r -> r
-          Nothing -> error "asSameTypeNonEmptyTermList: type mismatch"
+    unsafeCastTerm _ (SomeTerm b) =
+      case castTerm b of
+        Just r -> r
+        Nothing -> error "asSameTypeNonEmptyTermList: type mismatch"
 
 asNumTypeTerm ::
   (HasCallStack) =>
@@ -1043,11 +1040,10 @@ asFPTypeTerm (SomeTerm (t1 :: Term a)) f =
 
 asSameType ::
   (HasCallStack) => Term a -> SomeTerm -> (Term a -> r) -> r
-asSameType (t1 :: Term a) (SomeTerm (t2 :: Term b)) f =
-  introSupportedPrimConstraint t1 $
-    case eqTypeRep (primTypeRep @a) (primTypeRep @b) of
-      Just HRefl -> f t2
-      Nothing -> error "asSameType: type mismatch"
+asSameType (SupportedTerm :: Term a) (SomeTerm (t2 :: Term b)) f =
+  case eqTypeRep (primTypeRep @a) (primTypeRep @b) of
+    Just HRefl -> f t2
+    Nothing -> error "asSameType: type mismatch"
 
 asFPRoundingTerm ::
   (HasCallStack) => SomeTerm -> (Term FPRoundingMode -> r) -> r
@@ -1302,39 +1298,37 @@ constructFromIntegralTerm' ::
   Term a ->
   KnownType ->
   SomeTerm
-constructFromIntegralTerm' ta retType =
+constructFromIntegralTerm' ta@SupportedTerm retType =
   case witnessKnownType retType of
     KnownTypeWitness (_ :: Proxy b) -> do
       let tb = primTypeRep @b
-      introSupportedPrimConstraint ta $
-        withPrim @a $
-          withPrim @b $
-            case ( eqTypeRep tb (typeRep @Integer),
-                   eqTypeRep tb (typeRep @AlgReal),
-                   tb
-                 ) of
-              (Just HRefl, _, _) -> someTerm (fromIntegralTerm ta :: Term b)
-              (_, Just HRefl, _) -> someTerm (fromIntegralTerm ta :: Term b)
-              (_, _, App tw@Con {} _) ->
-                case ( eqTypeRep tw (typeRep @WordN),
-                       eqTypeRep tw (typeRep @IntN)
-                     ) of
-                  (Just HRefl, _) -> someTerm (fromIntegralTerm ta :: Term b)
-                  (_, Just HRefl) -> someTerm (fromIntegralTerm ta :: Term b)
-                  _ -> err
-              (_, _, App (App tw@Con {} _) _) ->
-                case eqTypeRep tw (typeRep @FP) of
-                  Just HRefl -> someTerm (fromIntegralTerm ta :: Term b)
-                  _ -> err
-              _ -> err
+      withPrim @a $
+        withPrim @b $
+          case ( eqTypeRep tb (typeRep @Integer),
+                 eqTypeRep tb (typeRep @AlgReal),
+                 tb
+               ) of
+            (Just HRefl, _, _) -> someTerm (fromIntegralTerm ta :: Term b)
+            (_, Just HRefl, _) -> someTerm (fromIntegralTerm ta :: Term b)
+            (_, _, App tw@Con {} _) ->
+              case ( eqTypeRep tw (typeRep @WordN),
+                     eqTypeRep tw (typeRep @IntN)
+                   ) of
+                (Just HRefl, _) -> someTerm (fromIntegralTerm ta :: Term b)
+                (_, Just HRefl) -> someTerm (fromIntegralTerm ta :: Term b)
+                _ -> err
+            (_, _, App (App tw@Con {} _) _) ->
+              case eqTypeRep tw (typeRep @FP) of
+                Just HRefl -> someTerm (fromIntegralTerm ta :: Term b)
+                _ -> err
+            _ -> err
   where
     err :: SomeTerm
     err =
-      introSupportedPrimConstraint ta $
-        error $
-          "constructFromIntegralTerm: unsupported type: "
-            <> show (primTypeRep @a)
-            <> show retType
+      error $
+        "constructFromIntegralTerm: unsupported type: "
+          <> show (primTypeRep @a)
+          <> show retType
 
 constructFromIntegralTerm ::
   (HasCallStack) => SomeTerm -> KnownType -> SomeTerm
@@ -1356,7 +1350,7 @@ constructFromIntegralTerm (SomeTerm (t1 :: Term a)) retType =
     err = error $ "constructFromIntegralTerm: unsupported type: " <> show tra
 
 knownTypeTermId :: Term a -> (KnownType, Id)
-knownTypeTermId t = introSupportedPrimConstraint t (knownType t, termId t)
+knownTypeTermId t@SupportedTerm = (knownType t, termId t)
 
 statefulDeserializeSomeTerm ::
   (MonadGet m) =>
@@ -1659,7 +1653,7 @@ serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
     then return ()
     else do
       case tm of
-        ConTerm _ _ _ _ (v :: v) -> do
+        ConTerm (v :: v) -> do
           serialize ktTmId
           putWord8 conTermTag
           let kt = knownType (Proxy @v)
@@ -1672,100 +1666,100 @@ serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
                 Nothing ->
                   error
                     "serializeSingleSomeTerm: should not happen: type mismatch"
-        SymTerm _ _ _ _ (v :: TypedAnySymbol v) -> do
+        SymTerm (v :: TypedAnySymbol v) -> do
           serialize ktTmId
           putWord8 symTermTag
           serialize $ someTypedSymbol v
-        ForallTerm _ _ _ _ ts t -> serializeQuantified ktTmId forallTermTag ts t
-        ExistsTerm _ _ _ _ ts t -> serializeQuantified ktTmId existsTermTag ts t
-        NotTerm _ _ _ _ t -> do
+        ForallTerm ts t -> serializeQuantified ktTmId forallTermTag ts t
+        ExistsTerm ts t -> serializeQuantified ktTmId existsTermTag ts t
+        NotTerm t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           putWord8 notTermTag
           serialize $ knownTypeTermId t
-        OrTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId orTermTag t1 t2
-        AndTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId andTermTag t1 t2
-        EqTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId eqTermTag t1 t2
-        DistinctTerm _ _ _ _ ts -> do
+        OrTerm t1 t2 -> serializeBinary ktTmId orTermTag t1 t2
+        AndTerm t1 t2 -> serializeBinary ktTmId andTermTag t1 t2
+        EqTerm t1 t2 -> serializeBinary ktTmId eqTermTag t1 t2
+        DistinctTerm ts -> do
           traverse_ (serializeSingleSomeTerm . someTerm) ts
           serialize ktTmId
           putWord8 distinctTermTag
           serialize $ fmap knownTypeTermId ts
-        ITETerm _ _ _ _ t1 t2 t3 -> serializeTernary ktTmId iteTermTag t1 t2 t3
-        AddNumTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId addNumTermTag t1 t2
-        NegNumTerm _ _ _ _ t -> serializeUnary ktTmId negNumTermTag t
-        MulNumTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId mulNumTermTag t1 t2
-        AbsNumTerm _ _ _ _ t -> serializeUnary ktTmId absNumTermTag t
-        SignumNumTerm _ _ _ _ t -> serializeUnary ktTmId signumNumTermTag t
-        LtOrdTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId ltOrdTermTag t1 t2
-        LeOrdTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId leOrdTermTag t1 t2
-        AndBitsTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId andBitsTermTag t1 t2
-        OrBitsTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId orBitsTermTag t1 t2
-        XorBitsTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId xorBitsTermTag t1 t2
-        ComplementBitsTerm _ _ _ _ t ->
+        ITETerm t1 t2 t3 -> serializeTernary ktTmId iteTermTag t1 t2 t3
+        AddNumTerm t1 t2 -> serializeBinary ktTmId addNumTermTag t1 t2
+        NegNumTerm t -> serializeUnary ktTmId negNumTermTag t
+        MulNumTerm t1 t2 -> serializeBinary ktTmId mulNumTermTag t1 t2
+        AbsNumTerm t -> serializeUnary ktTmId absNumTermTag t
+        SignumNumTerm t -> serializeUnary ktTmId signumNumTermTag t
+        LtOrdTerm t1 t2 -> serializeBinary ktTmId ltOrdTermTag t1 t2
+        LeOrdTerm t1 t2 -> serializeBinary ktTmId leOrdTermTag t1 t2
+        AndBitsTerm t1 t2 -> serializeBinary ktTmId andBitsTermTag t1 t2
+        OrBitsTerm t1 t2 -> serializeBinary ktTmId orBitsTermTag t1 t2
+        XorBitsTerm t1 t2 -> serializeBinary ktTmId xorBitsTermTag t1 t2
+        ComplementBitsTerm t ->
           serializeUnary ktTmId complementBitsTermTag t
-        ShiftLeftTerm _ _ _ _ t1 t2 ->
+        ShiftLeftTerm t1 t2 ->
           serializeBinary ktTmId shiftLeftTermTag t1 t2
-        ShiftRightTerm _ _ _ _ t1 t2 ->
+        ShiftRightTerm t1 t2 ->
           serializeBinary ktTmId shiftRightTermTag t1 t2
-        RotateLeftTerm _ _ _ _ t1 t2 ->
+        RotateLeftTerm t1 t2 ->
           serializeBinary ktTmId rotateLeftTermTag t1 t2
-        RotateRightTerm _ _ _ _ t1 t2 ->
+        RotateRightTerm t1 t2 ->
           serializeBinary ktTmId rotateRightTermTag t1 t2
-        BitCastTerm _ _ _ _ t -> do
+        BitCastTerm t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           serialize bitCastTermTag
           let kt = knownType (Proxy @t)
           serializeKnownType kt
           serialize $ knownTypeTermId t
-        BitCastOrTerm _ _ _ _ d t -> serializeBinary ktTmId bitCastOrTermTag d t
-        BVConcatTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId bvConcatTermTag t1 t2
-        BVSelectTerm _ _ _ _ ix w t -> do
+        BitCastOrTerm d t -> serializeBinary ktTmId bitCastOrTermTag d t
+        BVConcatTerm t1 t2 -> serializeBinary ktTmId bvConcatTermTag t1 t2
+        BVSelectTerm ix w t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           serialize bvSelectTermTag
           serialize $ natVal ix
           serialize $ natVal w
           serialize $ knownTypeTermId t
-        BVExtendTerm _ _ _ _ signed r t -> do
+        BVExtendTerm signed r t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           serialize bvExtendTermTag
           serialize signed
           serialize $ natVal r
           serialize $ knownTypeTermId t
-        ApplyTerm _ _ _ _ f ts -> serializeBinary ktTmId applyTermTag f ts
-        DivIntegralTerm _ _ _ _ t1 t2 ->
+        ApplyTerm f ts -> serializeBinary ktTmId applyTermTag f ts
+        DivIntegralTerm t1 t2 ->
           serializeBinary ktTmId divIntegralTermTag t1 t2
-        ModIntegralTerm _ _ _ _ t1 t2 ->
+        ModIntegralTerm t1 t2 ->
           serializeBinary ktTmId modIntegralTermTag t1 t2
-        QuotIntegralTerm _ _ _ _ t1 t2 ->
+        QuotIntegralTerm t1 t2 ->
           serializeBinary ktTmId quotIntegralTermTag t1 t2
-        RemIntegralTerm _ _ _ _ t1 t2 ->
+        RemIntegralTerm t1 t2 ->
           serializeBinary ktTmId remIntegralTermTag t1 t2
-        FPTraitTerm _ _ _ _ trait t -> do
+        FPTraitTerm trait t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           serialize fpTraitTermTag
           serialize trait
           serialize $ knownTypeTermId t
-        FdivTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId fdivTermTag t1 t2
-        RecipTerm _ _ _ _ t -> serializeUnary ktTmId recipTermTag t
-        FloatingUnaryTerm _ _ _ _ op t -> do
+        FdivTerm t1 t2 -> serializeBinary ktTmId fdivTermTag t1 t2
+        RecipTerm t -> serializeUnary ktTmId recipTermTag t
+        FloatingUnaryTerm op t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           serialize floatingUnaryTermTag
           serialize op
           serialize $ knownTypeTermId t
-        PowerTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId powerTermTag t1 t2
-        FPUnaryTerm _ _ _ _ op t -> do
+        PowerTerm t1 t2 -> serializeBinary ktTmId powerTermTag t1 t2
+        FPUnaryTerm op t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           serialize fpUnaryTermTag
           serialize op
           serialize $ knownTypeTermId t
-        FPBinaryTerm _ _ _ _ op t1 t2 -> do
+        FPBinaryTerm op t1 t2 -> do
           serializeSingleSomeTerm $ someTerm t1
           serializeSingleSomeTerm $ someTerm t2
           serialize ktTmId
@@ -1773,7 +1767,7 @@ serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
           serialize op
           serialize $ knownTypeTermId t1
           serialize $ knownTypeTermId t2
-        FPRoundingUnaryTerm _ _ _ _ op rd t -> do
+        FPRoundingUnaryTerm op rd t -> do
           serializeSingleSomeTerm $ someTerm rd
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
@@ -1781,7 +1775,7 @@ serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
           serialize op
           serialize $ knownTypeTermId rd
           serialize $ knownTypeTermId t
-        FPRoundingBinaryTerm _ _ _ _ op rd t1 t2 -> do
+        FPRoundingBinaryTerm op rd t1 t2 -> do
           serializeSingleSomeTerm $ someTerm rd
           serializeSingleSomeTerm $ someTerm t1
           serializeSingleSomeTerm $ someTerm t2
@@ -1791,7 +1785,7 @@ serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
           serialize $ knownTypeTermId rd
           serialize $ knownTypeTermId t1
           serialize $ knownTypeTermId t2
-        FPFMATerm _ _ _ _ rd t1 t2 t3 -> do
+        FPFMATerm rd t1 t2 t3 -> do
           serializeSingleSomeTerm $ someTerm rd
           serializeSingleSomeTerm $ someTerm t1
           serializeSingleSomeTerm $ someTerm t2
@@ -1802,16 +1796,16 @@ serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
           serialize $ knownTypeTermId t1
           serialize $ knownTypeTermId t2
           serialize $ knownTypeTermId t3
-        FromIntegralTerm _ _ _ _ t -> do
+        FromIntegralTerm t -> do
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
           serialize fromIntegralTermTag
           let kt = knownType (Proxy @t)
           serializeKnownType kt
           serialize $ knownTypeTermId t
-        FromFPOrTerm _ _ _ _ d rd t ->
+        FromFPOrTerm d rd t ->
           serializeTernary ktTmId fromFPOrTermTag d rd t
-        ToFPTerm _ _ _ _ rd t eb sb -> do
+        ToFPTerm rd t eb sb -> do
           serializeSingleSomeTerm $ someTerm rd
           serializeSingleSomeTerm $ someTerm t
           serialize ktTmId
@@ -1879,7 +1873,7 @@ instance (SupportedPrim a) => Serial (Term a) where
   serialize = serializeSomeTerm . someTerm
   deserialize = do
     SomeTerm tm <- deserialize
-    withSupportedPrimTypeable @a $ case castTerm tm of
+    case castTerm tm of
       Just r -> return r
       Nothing -> fail "deserialize Term: type mismatch"
 

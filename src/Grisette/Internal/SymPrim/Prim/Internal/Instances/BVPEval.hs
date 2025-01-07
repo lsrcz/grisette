@@ -54,18 +54,17 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     PEvalBitCastTerm (pevalBitCastTerm, sbvBitCast),
     SupportedPrim,
-    Term
-      ( BVConcatTerm,
-        BVExtendTerm,
-        BVSelectTerm,
-        BitCastTerm,
-        ConTerm
-      ),
+    Term,
     bitCastTerm,
     bvConcatTerm,
     bvExtendTerm,
     bvSelectTerm,
     conTerm,
+    pattern BVConcatTerm,
+    pattern BVExtendTerm,
+    pattern BVSelectTerm,
+    pattern BitCastTerm,
+    pattern ConTerm,
     pattern DynTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
@@ -152,14 +151,14 @@ doPevalDefaultBVSelectTerm _ _ rhs
   | isJust (sameNat (Proxy @ix) (Proxy @0))
       && isJust (sameNat (Proxy @w) (Proxy @n)) =
       Just rhs >>= castTerm
-doPevalDefaultBVSelectTerm ix w (ConTerm _ _ _ _ b) =
+doPevalDefaultBVSelectTerm ix w (ConTerm b) =
   Just $ conTerm $ sizedBVSelect ix w b
-doPevalDefaultBVSelectTerm ix w (BitCastTerm _ _ _ _ (DynTerm (b :: Term (bv2 n)))) =
+doPevalDefaultBVSelectTerm ix w (BitCastTerm (DynTerm (b :: Term (bv2 n)))) =
   Just $ pevalBitCastTerm $ pevalBVSelectTerm ix w b
 doPevalDefaultBVSelectTerm
   pix
   pw
-  (BVConcatTerm _ _ _ _ (b1 :: Term (bv n1)) (b2 :: Term (bv n2)))
+  (BVConcatTerm (b1 :: Term (bv n1)) (b2 :: Term (bv n2)))
     | ix + w <= n2 = Just $ unsafePevalBVSelectTerm n2Repr ixRepr wRepr b2
     | ix >= n2 =
         case mkNatRepr (ix - n2) of
@@ -189,7 +188,7 @@ doPevalDefaultBVSelectTerm
 doPevalDefaultBVSelectTerm
   _
   _
-  (BVSelectTerm _ _ _ _ (_ :: proxy ix1) _ (b :: Term (bv n1))) =
+  (BVSelectTerm (_ :: proxy ix1) _ (b :: Term (bv n1))) =
     Just $
       unsafePevalBVSelectTerm
         (natRepr @n1)
@@ -199,7 +198,7 @@ doPevalDefaultBVSelectTerm
 doPevalDefaultBVSelectTerm
   pix
   pw
-  (BVExtendTerm _ _ _ _ signed _ (b :: Term (bv n1)))
+  (BVExtendTerm signed _ (b :: Term (bv n1)))
     | ix + w <= n1 = Just $ unsafePevalBVSelectTerm n1Repr ixRepr wRepr b
     | ix < n1 =
         case mkNatRepr (n1 - ix) of
@@ -264,7 +263,7 @@ doPevalDefaultBVExtendTerm ::
   proxy r ->
   Term (bv l) ->
   Maybe (Term (bv r))
-doPevalDefaultBVExtendTerm signed p (ConTerm _ _ _ _ b) =
+doPevalDefaultBVExtendTerm signed p (ConTerm b) =
   Just $ conTerm $ if signed then sizedBVSext p b else sizedBVZext p b
 doPevalDefaultBVExtendTerm _ _ b
   | isJust $ sameNat (Proxy @l) (Proxy @r) =
@@ -284,7 +283,7 @@ doPevalDefaultBVExtendTerm False pr b =
     rRepr = natRepr @r
     l = natVal @l (Proxy @l)
     r = natVal @r pr
-doPevalDefaultBVExtendTerm True p (BVExtendTerm _ _ _ _ True _ (b :: Term (bv l1))) =
+doPevalDefaultBVExtendTerm True p (BVExtendTerm True _ (b :: Term (bv l1))) =
   case unsafeLeqProof @l1 @r of
     LeqProof -> Just $ pevalBVExtendTerm True p b
 doPevalDefaultBVExtendTerm _ _ _ = Nothing
@@ -364,15 +363,15 @@ doPevalDefaultBVConcatTerm ::
   Term (bv r) ->
   Maybe (Term (bv (l + r)))
 -- 1. [c1 c2] -> c1c2
-doPevalDefaultBVConcatTerm (ConTerm _ _ _ _ v) (ConTerm _ _ _ _ v') =
+doPevalDefaultBVConcatTerm (ConTerm v) (ConTerm v') =
   withKnownNat (addNat (natRepr @l) (natRepr @r)) $
     Just $
       conTerm $
         sizedBVConcat v v'
 -- 2. [c1 (c2 ?)] -> (c1c2 ?)
 doPevalDefaultBVConcatTerm
-  (ConTerm _ _ _ _ vl)
-  (BVConcatTerm _ _ _ _ (ConTerm _ _ _ _ (vrl :: bv rl)) (rr :: Term (bv rr))) =
+  (ConTerm vl)
+  (BVConcatTerm (ConTerm (vrl :: bv rl)) (rr :: Term (bv rr))) =
     case unsafeLeqProof @1 @(l + rl) of
       LeqProof ->
         Just $
@@ -386,10 +385,10 @@ doPevalDefaultBVConcatTerm
     where
       lRlRepr = addNat (natRepr @l) (natRepr @rl)
 -- 3. [c1 (s c2)] -> (c1 (s c2))
-doPevalDefaultBVConcatTerm (ConTerm {}) (BVConcatTerm _ _ _ _ _ ConTerm {}) = Nothing
+doPevalDefaultBVConcatTerm (ConTerm {}) (BVConcatTerm _ ConTerm {}) = Nothing
 -- 4. [(c s) ?) -> (c [s ?])
 doPevalDefaultBVConcatTerm
-  (BVConcatTerm _ _ _ _ (ll@ConTerm {} :: Term (bv ll)) (lr :: Term (bv lr)))
+  (BVConcatTerm (ll@ConTerm {} :: Term (bv ll)) (lr :: Term (bv lr)))
   r =
     Just $ unsafeBVConcatTerm llRepr lrRRepr lRRepr ll rhs
     where
@@ -405,12 +404,8 @@ doPevalDefaultBVConcatTerm
 doPevalDefaultBVConcatTerm
   l
   ( BVConcatTerm
-      _
-      _
-      _
-      _
       (rl@ConTerm {} :: Term (bv rl))
-      (BVConcatTerm _ _ _ _ (rrl :: Term (bv rrl)) (rrr@ConTerm {} :: Term (bv rrr)))
+      (BVConcatTerm (rrl :: Term (bv rrl)) (rrr@ConTerm {} :: Term (bv rrr)))
     ) =
     Just $ unsafeBVConcatTerm lRlRrlRepr rrrRepr lRRepr lRlRrl rrr
     where
@@ -426,8 +421,8 @@ doPevalDefaultBVConcatTerm
       lRlRrl = unsafeBVConcatTerm lRlRepr rrlRepr lRlRrlRepr lRl rrl
 -- 6. [(s1 c1) c2] -> (s1 c1c2)
 doPevalDefaultBVConcatTerm
-  (BVConcatTerm _ _ _ _ (ll :: Term (bv ll)) ((ConTerm _ _ _ _ vlr) :: Term (bv lr)))
-  (ConTerm _ _ _ _ vr) =
+  (BVConcatTerm (ll :: Term (bv ll)) ((ConTerm vlr) :: Term (bv lr)))
+  (ConTerm vr) =
     Just $ unsafeBVConcatTerm llRepr lrRRepr lRRepr ll rhs
     where
       llRepr = natRepr @ll
@@ -442,8 +437,8 @@ doPevalDefaultBVConcatTerm
           withKnownNat lrRRepr $ conTerm $ sizedBVConcat vlr vr
 -- 7. [(s1 c1) (c2 s2)] -> (s1 (c1c2 s2))
 doPevalDefaultBVConcatTerm
-  (BVConcatTerm _ _ _ _ (ll :: Term (bv ll)) ((ConTerm _ _ _ _ vlr) :: Term (bv lr)))
-  (BVConcatTerm _ _ _ _ ((ConTerm _ _ _ _ vrl) :: Term (bv rl)) (rr :: Term (bv rr))) =
+  (BVConcatTerm (ll :: Term (bv ll)) ((ConTerm vlr) :: Term (bv lr)))
+  (BVConcatTerm ((ConTerm vrl) :: Term (bv rl)) (rr :: Term (bv rr))) =
     Just $ unsafeBVConcatTerm llRepr lrRlRrRepr lRRepr ll lrRlRR
     where
       lRepr = natRepr @l
@@ -465,7 +460,7 @@ doPevalDefaultBVConcatTerm
 -- 8. [?notc (s2 c)] -> ((s1 s2) c)
 doPevalDefaultBVConcatTerm
   l
-  (BVConcatTerm _ _ _ _ (rl :: Term (bv rl)) (rr@ConTerm {} :: Term (bv rr))) =
+  (BVConcatTerm (rl :: Term (bv rl)) (rr@ConTerm {} :: Term (bv rr))) =
     Just $
       unsafeBVConcatTerm
         lRlRepr
@@ -571,12 +566,12 @@ instance (KnownNat n, 1 <= n) => PEvalBitCastTerm (WordN n) (IntN n) where
     where
       doPevalBitCastBV :: Term (WordN n) -> Maybe (Term (IntN n))
       doPevalBitCastBV
-        (BVConcatTerm _ _ _ _ (l :: Term (WordN l)) (r :: Term (WordN r))) =
+        (BVConcatTerm (l :: Term (WordN l)) (r :: Term (WordN r))) =
           Just $
             pevalBVConcatTerm
               (pevalBitCastTerm @(WordN l) @(IntN l) l)
               (pevalBitCastTerm @(WordN r) @(IntN r) r)
-      doPevalBitCastBV (BVExtendTerm _ _ _ _ signed pr (b :: Term (WordN l))) =
+      doPevalBitCastBV (BVExtendTerm signed pr (b :: Term (WordN l))) =
         Just $
           pevalBVExtendTerm signed pr $
             pevalBitCastTerm @(WordN l) @(IntN l) b
@@ -588,12 +583,12 @@ instance (KnownNat n, 1 <= n) => PEvalBitCastTerm (IntN n) (WordN n) where
     where
       doPevalBitCastBV :: Term (IntN n) -> Maybe (Term (WordN n))
       doPevalBitCastBV
-        (BVConcatTerm _ _ _ _ (l :: Term (IntN l)) (r :: Term (IntN r))) =
+        (BVConcatTerm (l :: Term (IntN l)) (r :: Term (IntN r))) =
           Just $
             pevalBVConcatTerm
               (pevalBitCastTerm @(IntN l) @(WordN l) l)
               (pevalBitCastTerm @(IntN r) @(WordN r) r)
-      doPevalBitCastBV (BVExtendTerm _ _ _ _ signed pr (b :: Term (IntN l))) =
+      doPevalBitCastBV (BVExtendTerm signed pr (b :: Term (IntN l))) =
         Just $
           pevalBVExtendTerm signed pr $
             pevalBitCastTerm @(IntN l) @(WordN l) b

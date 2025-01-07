@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- |
@@ -40,12 +41,13 @@ import Grisette.Internal.SymPrim.Prim.Term
         pevalSignumNumTerm
       ),
     SymRep (SymType),
-    Term (ConTerm),
+    Term,
     conTerm,
     pevalSubNumTerm,
     pformatTerm,
     symTerm,
     typedConstantSymbol,
+    pattern ConTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -97,7 +99,7 @@ instance Hashable SymInteger where
 instance Solvable Integer SymInteger where
   con = SymInteger . conTerm
   sym = SymInteger . symTerm . typedConstantSymbol
-  conView (SymInteger (ConTerm _ _ _ _ t)) = Just t
+  conView (SymInteger (ConTerm t)) = Just t
   conView _ = Nothing
 
 instance IsString SymInteger where

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -47,11 +48,12 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedNonFuncPrim,
     SupportedPrim,
     SymRep (SymType),
-    Term (ConTerm),
+    Term,
     conTerm,
     pformatTerm,
     symTerm,
     typedAnySymbol,
+    pattern ConTerm,
   )
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
@@ -131,7 +133,7 @@ instance
   where
   con = SymTabularFun . conTerm
   sym = SymTabularFun . symTerm . typedAnySymbol
-  conView (SymTabularFun (ConTerm _ _ _ _ t)) = Just t
+  conView (SymTabularFun (ConTerm t)) = Just t
   conView _ = Nothing
 
 instance

@@ -7,6 +7,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -53,12 +54,13 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedNonFuncPrim,
     SupportedPrim,
     SymRep (SymType),
-    Term (ConTerm),
+    Term,
     TypedConstantSymbol,
     conTerm,
     pformatTerm,
     symTerm,
     typedAnySymbol,
+    pattern ConTerm,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 
@@ -177,7 +179,7 @@ instance
   where
   con = SymGeneralFun . conTerm
   sym = SymGeneralFun . symTerm . typedAnySymbol
-  conView (SymGeneralFun (ConTerm _ _ _ _ t)) = Just t
+  conView (SymGeneralFun (ConTerm t)) = Just t
   conView _ = Nothing
 
 instance

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -31,9 +32,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalFromIntegralTerm (pevalFromIntegralTerm, sbvFromIntegralTerm),
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim,
-    Term (ConTerm),
+    Term,
     conTerm,
     fromIntegralTerm,
+    pattern ConTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
@@ -42,7 +44,7 @@ pevalFromIntegralTermGeneric ::
 pevalFromIntegralTermGeneric =
   unaryUnfoldOnce doPEvalFromIntegralTerm fromIntegralTerm
   where
-    doPEvalFromIntegralTerm (ConTerm _ _ _ _ a) = Just $ conTerm $ fromIntegral a
+    doPEvalFromIntegralTerm (ConTerm a) = Just $ conTerm $ fromIntegral a
     doPEvalFromIntegralTerm _ = Nothing
 
 instance PEvalFromIntegralTerm Integer Integer where

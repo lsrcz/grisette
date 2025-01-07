@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
@@ -43,7 +45,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     TypedSymbol (unTypedSymbol),
     castSomeTypedSymbol,
     typedConstantSymbol,
-    withConstantSymbolSupported,
+    pattern SupportedConstantTypedSymbol,
   )
 
 -- | A bidirectional map between symbolic Grisette terms and sbv terms.
@@ -80,11 +82,11 @@ nextQuantifiedSymbolInfo (SymBiMap t s f num) =
 
 attachQuantifiedSymbolInfo ::
   (SExpr -> SExpr) -> TypedConstantSymbol a -> TypedConstantSymbol a
-attachQuantifiedSymbolInfo info tsym =
-  withConstantSymbolSupported tsym $
-    typedConstantSymbol $
-      mapIdentifier (mapMetadata info) $
-        unTypedSymbol tsym
+attachQuantifiedSymbolInfo info tsym@SupportedConstantTypedSymbol =
+  typedConstantSymbol $
+    mapIdentifier (mapMetadata info) $
+      unTypedSymbol tsym
+attachQuantifiedSymbolInfo _ _ = error "Should not happen"
 
 -- | Attach the next quantified symbol info to a symbol.
 attachNextQuantifiedSymbolInfo ::
