@@ -51,6 +51,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pattern SupportedTerm,
     pattern SymTerm,
   )
+import Grisette.Internal.SymPrim.Prim.Pattern (pattern SubTerms)
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
     someTerm,
@@ -63,7 +64,6 @@ import Type.Reflection
     pattern App,
     type (:~~:) (HRefl),
   )
-import Grisette.Internal.SymPrim.Prim.Pattern (pattern SubTerms)
 
 {-# NOINLINE extractSymSomeTerm #-}
 extractSymSomeTerm ::
