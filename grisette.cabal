@@ -462,6 +462,7 @@ test-suite spec
       Grisette.SymPrim.QuantifierTests
       Grisette.SymPrim.SomeBVTests
       Grisette.SymPrim.SymGeneralFunTests
+      Grisette.SymPrim.SymPrimConstraintTests
       Grisette.SymPrim.SymPrimTests
       Grisette.SymPrim.TabularFunTests
       Grisette.TestUtil.NoMerge
