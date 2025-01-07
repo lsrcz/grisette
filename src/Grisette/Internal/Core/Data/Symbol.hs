@@ -6,10 +6,12 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 -- |
@@ -32,6 +34,8 @@ module Grisette.Internal.Core.Data.Symbol
     indexed,
     symbolIdentifier,
     mapIdentifier,
+    AsMetadata (..),
+    pattern Metadata,
   )
 where
 
@@ -113,6 +117,23 @@ instance Show Identifier where
 instance IsString Identifier where
   fromString i = Identifier (T.pack i) $ List []
 
+-- | A type class for embedding a type into a metadata represented as an
+-- S-expression.
+class AsMetadata a where
+  asMetadata :: a -> SExpr
+  fromMetadata :: SExpr -> Maybe a
+
+-- | A pattern for extracting a value from a metadata represented as an
+-- S-expression.
+pattern Metadata :: (AsMetadata a) => a -> SExpr
+pattern Metadata m <- (fromMetadata -> Just m)
+  where
+    Metadata m = asMetadata m
+
+instance AsMetadata SExpr where
+  asMetadata = id
+  fromMetadata = Just
+
 -- | Simple identifier.
 -- The same identifier refers to the same symbolic variable in the whole
 -- program.
@@ -129,16 +150,17 @@ identifier = flip Identifier $ List []
 --
 -- The user may need to use unique identifiers or additional metadata to
 -- avoid unintentional identifier collision.
-withMetadata :: T.Text -> SExpr -> Identifier
-withMetadata = Identifier
+withMetadata :: (AsMetadata a) => T.Text -> a -> Identifier
+withMetadata ident meta = Identifier ident (asMetadata meta)
 
 -- | Identifier with the file location.
 withLocation :: T.Text -> SpliceQ Identifier
 withLocation nm = [||withMetadata nm $$fileLocation||]
 
 -- | Modify the metadata of an identifier.
-mapMetadata :: (SExpr -> SExpr) -> Identifier -> Identifier
-mapMetadata f (Identifier i m) = Identifier i (f m)
+mapMetadata ::
+  (AsMetadata a) => (SExpr -> a) -> Identifier -> Identifier
+mapMetadata f (Identifier i m) = Identifier i (asMetadata $ f m)
 
 identifierCount :: IORef Int
 identifierCount = unsafePerformIO $ newIORef 0

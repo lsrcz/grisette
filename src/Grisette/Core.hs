@@ -306,6 +306,8 @@ module Grisette.Core
     Identifier (..),
     Symbol (..),
     identifier,
+    AsMetadata (..),
+    pattern Metadata,
     withMetadata,
     mapMetadata,
     withLocation,
@@ -1829,7 +1831,8 @@ import Grisette.Internal.Core.Data.SExpr
     showsSExprWithParens,
   )
 import Grisette.Internal.Core.Data.Symbol
-  ( Identifier (..),
+  ( AsMetadata (..),
+    Identifier (..),
     Symbol (..),
     identifier,
     indexed,
@@ -1840,6 +1843,7 @@ import Grisette.Internal.Core.Data.Symbol
     uniqueIdentifier,
     withLocation,
     withMetadata,
+    pattern Metadata,
   )
 import Instances.TH.Lift ()
 
