@@ -8,6 +8,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# HLINT ignore "Eta reduce" #-}
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -912,10 +913,15 @@ class PEvalFPTerm fp where
   pevalFPTraitTerm :: (ValidFP eb sb) => FPTrait -> Term (fp eb sb) -> Term Bool
   pevalFPUnaryTerm ::
     (ValidFP eb sb) =>
-    FPUnaryOp -> Term (fp eb sb) -> Term (fp eb sb)
+    FPUnaryOp ->
+    Term (fp eb sb) ->
+    Term (fp eb sb)
   pevalFPBinaryTerm ::
     (ValidFP eb sb) =>
-    FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb)
+    FPBinaryOp ->
+    Term (fp eb sb) ->
+    Term (fp eb sb) ->
+    Term (fp eb sb)
   pevalFPRoundingUnaryTerm ::
     (ValidFP eb sb) =>
     FPRoundingUnaryOp ->
@@ -1692,7 +1698,8 @@ data SupportedConstantTypedSymbolEvidence k t where
 
 supportedConstantTypedSymbolViewPat ::
   forall k t.
-  TypedSymbol k t -> Maybe (SupportedConstantTypedSymbolEvidence k t)
+  TypedSymbol k t ->
+  Maybe (SupportedConstantTypedSymbolEvidence k t)
 supportedConstantTypedSymbolViewPat (TypedSymbol _) =
   case decideSymbolKind @k of
     Left HRefl -> Just SupportedConstantTypedSymbolEvidence
@@ -1787,7 +1794,9 @@ pattern EqTerm ::
   () =>
   forall t.
   (r ~ Bool, SupportedPrim t) =>
-  Term t -> Term t -> Term r
+  Term t ->
+  Term t ->
+  Term r
 pattern EqTerm l r <- (EqTerm' _ l r@SupportedTerm)
   where
     EqTerm = pevalEqTerm
@@ -1799,7 +1808,8 @@ pattern DistinctTerm ::
   () =>
   forall t.
   (r ~ Bool, SupportedPrim t) =>
-  NonEmpty (Term t) -> Term r
+  NonEmpty (Term t) ->
+  Term r
 pattern DistinctTerm ts <- (DistinctTerm' _ ts@(SupportedTerm :| _))
   where
     DistinctTerm = pevalDistinctTerm
@@ -1837,7 +1847,8 @@ pattern NegNumTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalNumTerm t) =>
-  Term t -> Term t
+  Term t ->
+  Term t
 pattern NegNumTerm t <- (NegNumTerm' _ t)
   where
     NegNumTerm = pevalNegNumTerm
@@ -1848,7 +1859,9 @@ pattern MulNumTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalNumTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern MulNumTerm l r <- (MulNumTerm' _ l r)
   where
     MulNumTerm = pevalMulNumTerm
@@ -1859,7 +1872,8 @@ pattern AbsNumTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalNumTerm t) =>
-  Term t -> Term t
+  Term t ->
+  Term t
 pattern AbsNumTerm t <- (AbsNumTerm' _ t)
   where
     AbsNumTerm = pevalAbsNumTerm
@@ -1870,7 +1884,8 @@ pattern SignumNumTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalNumTerm t) =>
-  Term t -> Term t
+  Term t ->
+  Term t
 pattern SignumNumTerm t <- (SignumNumTerm' _ t)
   where
     SignumNumTerm = pevalSignumNumTerm
@@ -1882,7 +1897,9 @@ pattern LtOrdTerm ::
   () =>
   forall t.
   (r ~ Bool, SupportedPrim t, PEvalOrdTerm t) =>
-  Term t -> Term t -> Term r
+  Term t ->
+  Term t ->
+  Term r
 pattern LtOrdTerm l r <- (LtOrdTerm' _ l r@SupportedTerm)
   where
     LtOrdTerm = pevalLtOrdTerm
@@ -1894,7 +1911,9 @@ pattern LeOrdTerm ::
   () =>
   forall t.
   (r ~ Bool, SupportedPrim t, PEvalOrdTerm t) =>
-  Term t -> Term t -> Term r
+  Term t ->
+  Term t ->
+  Term r
 pattern LeOrdTerm l r <- (LeOrdTerm' _ l r@SupportedTerm)
   where
     LeOrdTerm = pevalLeOrdTerm
@@ -1905,7 +1924,9 @@ pattern AndBitsTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalBitwiseTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern AndBitsTerm l r <- (AndBitsTerm' _ l r)
   where
     AndBitsTerm = pevalAndBitsTerm
@@ -1916,7 +1937,9 @@ pattern OrBitsTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalBitwiseTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern OrBitsTerm l r <- (OrBitsTerm' _ l r)
   where
     OrBitsTerm = pevalOrBitsTerm
@@ -1927,7 +1950,9 @@ pattern XorBitsTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalBitwiseTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern XorBitsTerm l r <- (XorBitsTerm' _ l r)
   where
     XorBitsTerm = pevalXorBitsTerm
@@ -1938,7 +1963,8 @@ pattern ComplementBitsTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalBitwiseTerm t) =>
-  Term t -> Term t
+  Term t ->
+  Term t
 pattern ComplementBitsTerm t <- (ComplementBitsTerm' _ t)
   where
     ComplementBitsTerm = pevalComplementBitsTerm
@@ -1949,7 +1975,9 @@ pattern ShiftLeftTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalShiftTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern ShiftLeftTerm l r <- (ShiftLeftTerm' _ l r)
   where
     ShiftLeftTerm = pevalShiftLeftTerm
@@ -1960,7 +1988,9 @@ pattern ShiftRightTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalShiftTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern ShiftRightTerm l r <- (ShiftRightTerm' _ l r)
   where
     ShiftRightTerm = pevalShiftRightTerm
@@ -1971,7 +2001,9 @@ pattern RotateLeftTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalRotateTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern RotateLeftTerm l r <- (RotateLeftTerm' _ l r)
   where
     RotateLeftTerm = pevalRotateLeftTerm
@@ -1982,7 +2014,9 @@ pattern RotateRightTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalRotateTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern RotateRightTerm l r <- (RotateRightTerm' _ l r)
   where
     RotateRightTerm = pevalRotateRightTerm
@@ -1994,7 +2028,8 @@ pattern BitCastTerm ::
   () =>
   forall a.
   (SupportedPrim a, SupportedPrim b, PEvalBitCastTerm a b) =>
-  Term a -> Term b
+  Term a ->
+  Term b
 pattern BitCastTerm t <- (BitCastTerm' _ t@SupportedTerm)
   where
     BitCastTerm = pevalBitCastTerm
@@ -2006,7 +2041,9 @@ pattern BitCastOrTerm ::
   () =>
   forall a.
   (SupportedPrim a, SupportedPrim b, PEvalBitCastOrTerm a b) =>
-  Term b -> Term a -> Term b
+  Term b ->
+  Term a ->
+  Term b
 pattern BitCastOrTerm t1 t2 <- (BitCastOrTerm' _ t1 t2@SupportedTerm)
   where
     BitCastOrTerm = pevalBitCastOrTerm
@@ -2029,7 +2066,9 @@ pattern BVConcatTerm ::
     SupportedPrim (bv (l + r)),
     ret ~ bv (l + r)
   ) =>
-  Term (bv l) -> Term (bv r) -> Term ret
+  Term (bv l) ->
+  Term (bv r) ->
+  Term ret
 pattern BVConcatTerm l r <- (BVConcatTerm' _ l@SupportedTerm r@SupportedTerm)
   where
     BVConcatTerm = pevalBVConcatTerm
@@ -2051,7 +2090,10 @@ pattern BVSelectTerm ::
     SupportedPrim (bv w),
     ret ~ bv w
   ) =>
-  Proxy ix -> Proxy w -> Term (bv n) -> Term ret
+  Proxy ix ->
+  Proxy w ->
+  Term (bv n) ->
+  Term ret
 pattern BVSelectTerm ix w t <- (BVSelectTerm' _ ix w t@SupportedTerm)
   where
     BVSelectTerm = pevalBVSelectTerm
@@ -2072,7 +2114,10 @@ pattern BVExtendTerm ::
     SupportedPrim (bv r),
     ret ~ bv r
   ) =>
-  Bool -> Proxy r -> Term (bv l) -> Term ret
+  Bool ->
+  Proxy r ->
+  Term (bv l) ->
+  Term ret
 pattern BVExtendTerm signed p t <- (BVExtendTerm' _ signed p t@SupportedTerm)
   where
     BVExtendTerm = pevalBVExtendTerm
@@ -2084,7 +2129,9 @@ pattern ApplyTerm ::
   () =>
   forall f a.
   (PEvalApplyTerm f a b, SupportedPrim f, SupportedPrim a, SupportedPrim b) =>
-  Term f -> Term a -> Term b
+  Term f ->
+  Term a ->
+  Term b
 pattern ApplyTerm f x <- (ApplyTerm' _ f@SupportedTerm x@SupportedTerm)
   where
     ApplyTerm = pevalApplyTerm
@@ -2095,7 +2142,9 @@ pattern DivIntegralTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalDivModIntegralTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern DivIntegralTerm l r <- (DivIntegralTerm' _ l r)
   where
     DivIntegralTerm = pevalDivIntegralTerm
@@ -2106,7 +2155,9 @@ pattern ModIntegralTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalDivModIntegralTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern ModIntegralTerm l r <- (ModIntegralTerm' _ l r)
   where
     ModIntegralTerm = pevalModIntegralTerm
@@ -2117,7 +2168,9 @@ pattern QuotIntegralTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalDivModIntegralTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern QuotIntegralTerm l r <- (QuotIntegralTerm' _ l r)
   where
     QuotIntegralTerm = pevalQuotIntegralTerm
@@ -2128,7 +2181,9 @@ pattern RemIntegralTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalDivModIntegralTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern RemIntegralTerm l r <- (RemIntegralTerm' _ l r)
   where
     RemIntegralTerm = pevalRemIntegralTerm
@@ -2140,7 +2195,9 @@ pattern FPTraitTerm ::
   () =>
   forall eb sb fp.
   (r ~ Bool, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
-  FPTrait -> Term (fp eb sb) -> Term r
+  FPTrait ->
+  Term (fp eb sb) ->
+  Term r
 pattern FPTraitTerm trait t <- (FPTraitTerm' _ trait t)
   where
     FPTraitTerm = pevalFPTraitTerm
@@ -2151,7 +2208,9 @@ pattern FdivTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalFractionalTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern FdivTerm l r <- (FdivTerm' _ l r)
   where
     FdivTerm = pevalFdivTerm
@@ -2162,7 +2221,8 @@ pattern RecipTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalFractionalTerm t) =>
-  Term t -> Term t
+  Term t ->
+  Term t
 pattern RecipTerm t <- (RecipTerm' _ t)
   where
     RecipTerm = pevalRecipTerm
@@ -2173,7 +2233,9 @@ pattern FloatingUnaryTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalFloatingTerm t) =>
-  FloatingUnaryOp -> Term t -> Term t
+  FloatingUnaryOp ->
+  Term t ->
+  Term t
 pattern FloatingUnaryTerm op t <- (FloatingUnaryTerm' _ op t)
   where
     FloatingUnaryTerm = pevalFloatingUnaryTerm
@@ -2184,7 +2246,9 @@ pattern PowerTerm ::
   forall t.
   () =>
   (SupportedPrim t, PEvalFloatingTerm t) =>
-  Term t -> Term t -> Term t
+  Term t ->
+  Term t ->
+  Term t
 pattern PowerTerm l r <- (PowerTerm' _ l r)
   where
     PowerTerm = pevalPowerTerm
@@ -2196,7 +2260,9 @@ pattern FPUnaryTerm ::
   () =>
   forall fp eb sb.
   (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
-  FPUnaryOp -> Term (fp eb sb) -> Term ret
+  FPUnaryOp ->
+  Term (fp eb sb) ->
+  Term ret
 pattern FPUnaryTerm op t <- (FPUnaryTerm' _ op t)
   where
     FPUnaryTerm = pevalFPUnaryTerm
@@ -2208,7 +2274,10 @@ pattern FPBinaryTerm ::
   () =>
   forall fp eb sb.
   (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
-  FPBinaryOp -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+  FPBinaryOp ->
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term ret
 pattern FPBinaryTerm op l r <- (FPBinaryTerm' _ op l r)
   where
     FPBinaryTerm = pevalFPBinaryTerm
@@ -2220,7 +2289,10 @@ pattern FPRoundingUnaryTerm ::
   () =>
   forall fp eb sb.
   (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
-  FPRoundingUnaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term ret
+  FPRoundingUnaryOp ->
+  Term FPRoundingMode ->
+  Term (fp eb sb) ->
+  Term ret
 pattern FPRoundingUnaryTerm op rm t <- (FPRoundingUnaryTerm' _ op rm t)
   where
     FPRoundingUnaryTerm = pevalFPRoundingUnaryTerm
@@ -2232,7 +2304,11 @@ pattern FPRoundingBinaryTerm ::
   () =>
   forall fp eb sb.
   (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
-  FPRoundingBinaryOp -> Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+  FPRoundingBinaryOp ->
+  Term FPRoundingMode ->
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term ret
 pattern FPRoundingBinaryTerm op rm l r <- (FPRoundingBinaryTerm' _ op rm l r)
   where
     FPRoundingBinaryTerm = pevalFPRoundingBinaryTerm
@@ -2244,7 +2320,11 @@ pattern FPFMATerm ::
   () =>
   forall fp eb sb.
   (ret ~ fp eb sb, ValidFP eb sb, SupportedPrim (fp eb sb), PEvalFPTerm fp) =>
-  Term FPRoundingMode -> Term (fp eb sb) -> Term (fp eb sb) -> Term (fp eb sb) -> Term ret
+  Term FPRoundingMode ->
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term (fp eb sb) ->
+  Term ret
 pattern FPFMATerm rm t1 t2 t3 <- (FPFMATerm' _ rm t1 t2 t3)
   where
     FPFMATerm = pevalFPFMATerm
@@ -2256,7 +2336,8 @@ pattern FromIntegralTerm ::
   () =>
   forall a.
   (PEvalFromIntegralTerm a b, SupportedPrim a, SupportedPrim b) =>
-  Term a -> Term b
+  Term a ->
+  Term b
 pattern FromIntegralTerm t <- (FromIntegralTerm' _ t@SupportedTerm)
   where
     FromIntegralTerm = pevalFromIntegralTerm
@@ -2271,7 +2352,10 @@ pattern FromFPOrTerm ::
     ValidFP eb sb,
     SupportedPrim a
   ) =>
-  Term a -> Term FPRoundingMode -> Term (FP eb sb) -> Term a
+  Term a ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term a
 pattern FromFPOrTerm t1 rm t2 <- (FromFPOrTerm' _ t1 rm t2)
   where
     FromFPOrTerm = pevalFromFPOrTerm
@@ -2288,7 +2372,11 @@ pattern ToFPTerm ::
     SupportedPrim a,
     ret ~ FP eb sb
   ) =>
-  Term FPRoundingMode -> Term a -> Proxy eb -> Proxy sb -> Term ret
+  Term FPRoundingMode ->
+  Term a ->
+  Proxy eb ->
+  Proxy sb ->
+  Term ret
 pattern ToFPTerm rm t eb sb <- (ToFPTerm' _ rm t@SupportedTerm eb sb)
   where
     ToFPTerm rm t _ _ = pevalToFPTerm rm t

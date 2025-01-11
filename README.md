@@ -3,9 +3,9 @@
 [![Haskell Tests](https://github.com/lsrcz/grisette/actions/workflows/test.yml/badge.svg)](https://github.com/lsrcz/grisette/actions/workflows/test.yml)
 [![Hackage Version](https://img.shields.io/hackage/v/grisette)](https://hackage.haskell.org/package/grisette)
 
-Grisette is a symbolic evaluation library for Haskell.
-By translating programs into SMT constraints, Grisette can help the development
-of program reasoning tools, including verification and synthesis.
+Grisette is a symbolic evaluation library for Haskell. By translating programs
+into SMT constraints, Grisette can help the development of program reasoning
+tools, including verification and synthesis.
 
 For a detailed description of the system, please refer to our POPL'23 paper
 [Grisette: Symbolic Compilation as a Functional Programming Library](https://lsrcz.github.io/files/POPL23.pdf).
@@ -78,7 +78,8 @@ $ stack new <projectname> github:lsrcz/grisette
 ```
 
 For more details, please see the
-[template file](https://github.com/lsrcz/stack-templates/blob/main/grisette.hsfiles) and the
+[template file](https://github.com/lsrcz/stack-templates/blob/main/grisette.hsfiles)
+and the
 [documentation for stack templates](https://docs.haskellstack.org/en/stable/templates_command/).
 
 You can test your installation by running the following command:
@@ -131,11 +132,12 @@ The following example uses Grisette to build a symbolic domain-specific language
 for boolean and integer expressions.
 
 We will
+
 - define the *syntax* and *semantics* of an arithmetic language, and
 - build a *verifier* to check if a given arithmetic expression is equivalent to
   another, and
-- build a *synthesizer* to find an arithmetic expression that is equivalent to
-  a given expression.
+- build a *synthesizer* to find an arithmetic expression that is equivalent to a
+  given expression.
 
 ### Defining the Syntax
 
@@ -203,9 +205,9 @@ Add {IntVal a} {IntVal 1}
 ```
 
 The introduction of `Union` allows us to represent choices of expressions, and
-the following code chooses between `a + 2` or `a * 2`. A synthesizer can then pick
-true or false for the `choice` variable to decide which expression to pick. If
-the synthesizer picks true, the result is `a + 2`; otherwise, it is `a * 2`.
+the following code chooses between `a + 2` or `a * 2`. A synthesizer can then
+pick true or false for the `choice` variable to decide which expression to pick.
+If the synthesizer picks true, the result is `a + 2`; otherwise, it is `a * 2`.
 
 ```haskell
 add2 = add (intVal "a") (intVal 2)
@@ -215,6 +217,7 @@ mul2 = mul (intVal "a") (intVal 2)
 ```
 
 ### Defining the Semantics
+
 The semantics of the expressions can be defined by the following interpreter.
 Grisette provides various combinators for working with symbolic values. In the
 interpreter, the `.#` operator is very important. It conceptually
@@ -242,6 +245,7 @@ We may also write `eval` with do-notations as `Union` is a monad. Please refer
 to the [tutorials](tutorials) for more details.
 
 ### Get a verifier
+
 With the syntax and semantics defined, we can build a verifier to check if two
 expressions are equivalent. This can be done by checking if there exists a
 counter-example that falsifies the equivalence of the two expressions.
@@ -264,12 +268,13 @@ there exists a counter-example that makes the two expressions evaluate to
 different values. The counter-example is $a=0$, $b=1$, such that $a+b=1$ and
 $a+a=0$.
 
-``` haskell
+```haskell
 > solve z3 $ eval aPlusB ./= eval aPlusA
 Right (Model {a -> 0 :: Integer, b -> 1 :: Integer})
 ```
 
 ### Get a synthesizer
+
 We can also build a synthesizer using the built-in CEGIS algorithm in Grisette.
 Given a target expression, we can synthesize an expression using a sketch with
 "symbolic holes" that is equivalent to the target expression.
@@ -295,7 +300,8 @@ examples are available in Grisette's [tutorials](tutorials).
 - Haddock documentation: [HEAD version](https://lsrcz.github.io/grisette),
   [release version on Hackage](https://hackage.haskell.org/package/grisette).
 - A tutorial to Grisette is in the [tutorials](tutorials) directory. They are
-  provided as jupyter notebooks with the [IHaskell](https://github.com/IHaskell/IHaskell) kernel.
+  provided as jupyter notebooks with the
+  [IHaskell](https://github.com/IHaskell/IHaskell) kernel.
 
 ## License
 
@@ -308,31 +314,32 @@ Grisette is fully compatible with GHC 9.6+, and works in most cases with GHC
 8.10+.
 
 ### CLC proposal #10
+
 As the type classes provided by Grisette implements
 [CLC proposal #10](https://github.com/haskell/core-libraries-committee/issues/10),
 which requires `base-4.18.0.0` to work reliably, Grisette is fully compatible
-with GHC 9.6.
-You may experience instance resolution failure when using older GHCs in the
-client code (Grisette itself is buildable against GHC 8.10+ with some tricks).
+with GHC 9.6. You may experience instance resolution failure when using older
+GHCs in the client code (Grisette itself is buildable against GHC 8.10+ with
+some tricks).
 
 ### Quantifiers
 
-Grisette currently supports universal and existential quantifiers $\forall$ and
-$\exists$, but only when building with sbv >= 10.1. This also means that you
+Grisette currently supports universal and existential quantifiers $\\forall$ and
+$\\exists$, but only when building with sbv >= 10.1. This also means that you
 need to use GHC >= 9.2.
 
 ### Floating-points
 
 Grisette currently supports boolean, uninterpreted functions, bitvector,
 integer, and floating point theories. However, if you want to use the floating
-point theory, please make sure that you have the latest libBF (>=0.6.8) and sbv 
+point theory, please make sure that you have the latest libBF (>=0.6.8) and sbv
 installed (>=10.10.6). We've detected and fixed several bugs that would prevent
 a sound reasoning for floating points.
 
 ### Unified interfaces
 
-Since 0.7.0.0, Grisette provides a [unified
-interface](https://hackage.haskell.org/package/grisette/docs/Grisette-Unified.html)
+Since 0.7.0.0, Grisette provides a
+[unified interface](https://hackage.haskell.org/package/grisette/docs/Grisette-Unified.html)
 to symbolic and concrete evaluations. GHC 9.0 or earlier, without the
 [QuickLook](https://dl.acm.org/doi/10.1145/3408971) type inference algorithm for
 impredicative types, may fail to resolve some constraints. You may need to

@@ -1,7 +1,6 @@
 # Based on https://gist.github.com/mstksg/11f753d891cee5980326a8ea8c865233
 
 name: Haskell Tests
-
 on:
   pull_request:
   push:
@@ -9,121 +8,43 @@ on:
       - main
       - "releases/*"
   workflow_dispatch:
-
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   build:
     strategy:
       matrix:
         os: [ubuntu-latest]
         plan:
-          - {
-              build: nix,
-              arg: "",
-              ismain: false,
-              experimental: false,
-              ghc: "8107",
-              cachekey: "nix-8107",
-            }
-          - {
-              build: stack,
-              arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml",
-              ismain: false,
-              experimental: false,
-              ghc: "8107",
-              cachekey: "stack-8107-lowerbound",
-            }
-          - {
-              build: nix,
-              arg: "",
-              ismain: false,
-              experimental: false,
-              ghc: "902",
-              cachekey: "nix-902",
-            }
-          - {
-              build: nix,
-              arg: "",
-              ismain: false,
-              experimental: false,
-              ghc: "928",
-              cachekey: "nix-928",
-            }
-          - {
-              build: nix,
-              arg: "",
-              ismain: false,
-              experimental: false,
-              ghc: "948",
-              cachekey: "nix-948",
-            }
-          - {
-              build: nix,
-              arg: "",
-              ismain: false,
-              experimental: false,
-              ghc: "966",
-              cachekey: "nix-966",
-            }
-          - {
-              build: nix,
-              arg: "",
-              ismain: false,
-              experimental: false,
-              ghc: "984",
-              cachekey: "nix-984",
-            }
-          - {
-              build: nix,
-              arg: "",
-              ismain: true,
-              experimental: false,
-              ghc: "9101",
-              cachekey: "nix-9101",
-            }
-          - {
-              build: cabal,
-              arg: "",
-              ismain: false,
-              experimental: false,
-              ghc: "9121",
-              cachekey: "cabal-9121",
-            }
+          - {build: nix, arg: "", ismain: false, experimental: false, ghc: "8107", cachekey: "nix-8107"}
+          - {build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml", ismain: false, experimental: false, ghc: "8107", cachekey: "stack-8107-lowerbound"}
+          - {build: nix, arg: "", ismain: false, experimental: false, ghc: "902", cachekey: "nix-902"}
+          - {build: nix, arg: "", ismain: false, experimental: false, ghc: "928", cachekey: "nix-928"}
+          - {build: nix, arg: "", ismain: false, experimental: false, ghc: "948", cachekey: "nix-948"}
+          - {build: nix, arg: "", ismain: false, experimental: false, ghc: "966", cachekey: "nix-966"}
+          - {build: nix, arg: "", ismain: false, experimental: false, ghc: "984", cachekey: "nix-984"}
+          - {build: nix, arg: "", ismain: true, experimental: false, ghc: "9101", cachekey: "nix-9101"}
+          - {build: cabal, arg: "", ismain: false, experimental: false, ghc: "9121", cachekey: "cabal-9121"}
         include:
           - os: macOS-latest
-            plan:
-              {
-                build: nix,
-                arg: "",
-                ismain: true,
-                experimental: false,
-                ghc: "9101",
-                cachekey: "nix-9101",
-              }
-
+            plan: {build: nix, arg: "", ismain: true, experimental: false, ghc: "9101", cachekey: "nix-9101"}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.experimental }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-
       - uses: cachix/cachix-action@v15
         with:
           name: grisette-linux
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
       - name: Cache key
         id: cache_key
         run: |
           echo "stack=$(shasum stack.yaml | awk '{print $1}')" >> $GITHUB_OUTPUT
           echo "package=$(shasum package.yaml | awk '{print $1}')" >> $GITHUB_OUTPUT
-
       - name: Cache dependencies
         id: cache
         uses: actions/cache@v4
@@ -135,7 +56,6 @@ jobs:
           restore-keys: |
             stack-${{ matrix.os }}-${{ matrix.plan.cachekey }}
             stack-${{ matrix.os }}
-
       - name: Build & Test
         id: test
         run: |
@@ -158,7 +78,6 @@ jobs:
         env:
           ARGS: ${{ matrix.plan.arg }}
           BUILD: ${{ matrix.plan.build }}
-
       - uses: phoenix-actions/test-reporting@v15
         with:
           name: Tests-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.ghc }}
@@ -166,27 +85,23 @@ jobs:
           reporter: java-junit
           list-tests: 'failed'
         if: matrix.os == 'ubuntu-latest' && (success() || failure ())
-
       - name: Info for coverage
         id: coverage_info
         run: |
           echo "tix=$(find result/tix -name '*.tix')" >> $GITHUB_OUTPUT
           ln -s result/dist dist
         if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
-
       - name: Generate coverage report
         uses: 8c6794b6/hpc-codecov-action@v4
         with:
           target: ${{ steps.coverage_info.outputs.tix }}
           mix: result/mix
         if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
-
       - name: Send coverage report
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
         if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
-
       - name: Deploy haddock
         uses: peaceiris/actions-gh-pages@v4
         with:
