@@ -1,23 +1,21 @@
 name: Auto format by ormolu
-
 on:
   pull_request:
   push:
     branches:
       - main
       - 'releases/*'
-
 jobs:
   ormolu:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: haskell-actions/run-ormolu@v16
-      with:
-        mode: inplace
-        version: 0.7.7.0
-    - name: apply formatting changes
-      uses: stefanzweifel/git-auto-commit-action@v5
-      if: ${{ always() }}
-      with:
-        commit_message: ":art: automated ormolu commit"
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/run-ormolu@v16
+        with:
+          mode: inplace
+          version: 0.7.7.0
+      - name: apply formatting changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        if: ${{ always() }}
+        with:
+          commit_message: ":art: automated ormolu commit"

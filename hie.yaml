@@ -2,15 +2,11 @@ cradle:
   stack:
     - path: "./src"
       component: "grisette:lib"
-
     - path: "./doctest"
       component: "grisette:test:doctest"
-
     - path: "./test"
       component: "grisette:test:spec"
-
     - path: "examples/basic/Main.hs"
       component: "grisette-examples:exe:basic"
-
     - path: "examples/basic/Paths_grisette_examples.hs"
       component: "grisette-examples:exe:basic"

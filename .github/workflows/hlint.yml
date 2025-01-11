@@ -1,25 +1,20 @@
 name: HLint
-
 on:
   pull_request:
   push:
     branches:
       - main
       - 'releases/*'
-
 jobs:
   hlint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-
-    - name: 'Set up HLint'
-      uses: haskell-actions/hlint-setup@v2.4.10
-      with:
-        version: 3.8
-
-    - name: 'Run HLint'
-      uses: haskell-actions/hlint-run@v2.4.10
-      with:
-        fail-on:
-          warning
+      - uses: actions/checkout@v4
+      - name: 'Set up HLint'
+        uses: haskell-actions/hlint-setup@v2.4.10
+        with:
+          version: 3.8
+      - name: 'Run HLint'
+        uses: haskell-actions/hlint-run@v2.4.10
+        with:
+          fail-on: warning

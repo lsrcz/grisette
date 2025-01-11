@@ -19,7 +19,6 @@
 # resolver: https://example.com/snapshots/2018-01-01.yaml
 resolver:
   url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
-
 # User packages to be built.
 # Various formats can be used as shown in the example below.
 #
@@ -30,9 +29,8 @@ resolver:
 #   - auto-update
 #   - wai
 packages:
-- .
-- examples
-
+  - .
+  - examples
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:

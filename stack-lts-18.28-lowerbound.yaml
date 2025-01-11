@@ -19,7 +19,6 @@
 # resolver: https://example.com/snapshots/2018-01-01.yaml
 resolver:
   url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
-
 # User packages to be built.
 # Various formats can be used as shown in the example below.
 #
@@ -32,7 +31,6 @@ resolver:
 packages:
   - .
   - examples
-
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
@@ -71,13 +69,11 @@ extra-deps:
   - cereal-text-0.1.0.2
   - bytes-0.17.1
   - binary-0.8.8.0
-
   - doctest-0.18.2
   - test-framework-0.8.2.0
   - test-framework-hunit-0.3.0.2
   - test-framework-quickcheck2-0.3.0.5
   - HUnit-1.6.0.0
-
   - splitmix-0.0.5
   - random-1.1
   - call-stack-0.1.0

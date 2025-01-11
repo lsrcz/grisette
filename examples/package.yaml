@@ -12,11 +12,9 @@ github: lsrcz/grisette
 copyright: "2021-2024 Sirui Lu"
 extra-source-files:
   - README.md
-
 dependencies:
   - base >= 4.14 && < 5
   - grisette >= 0.11 && < 0.12
-
 executables:
   basic:
     source-dirs: basic

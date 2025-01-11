@@ -31,3 +31,4 @@ cabal.project.local~
 *.eventlog.html
 *.dump-splices
 result
+.pre-commit-config.yaml

@@ -1,521 +1,555 @@
-cabal-version: 1.12
+cabal-version:      1.12
 
 -- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
-name:           grisette
-version:        0.11.0.0
-synopsis:       Symbolic evaluation as a library
-description:    Grisette is a reusable symbolic evaluation library for Haskell. By
-                translating programs into constraints, Grisette can help the development of
-                program reasoning tools, including verification, synthesis, and more.
-                .
-                The "Grisette" module exports all the core APIs for building a symbolic
-                evaluation tool. A high-level overview of the module structures are available
-                there.
-                .
-                A detailed introduction to Grisette is available at "Grisette.Core". More
-                lifted libraries are provided in @Grisette.Lib.*@ modules.
-                .
-                The "Grisette.Unified" module offers an experimental unified interface for
-                symbolic and concrete evaluation. This module should be imported qualified.
-                .
-                For more details, please checkout the README and 
-                [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials).
-category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
-homepage:       https://github.com/lsrcz/grisette#readme
-bug-reports:    https://github.com/lsrcz/grisette/issues
-author:         Sirui Lu, Rastislav Bodík
-maintainer:     Sirui Lu (siruilu@cs.washington.edu)
-copyright:      2021-2024 Sirui Lu
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+name:               grisette
+version:            0.11.0.0
+synopsis:           Symbolic evaluation as a library
+description:
+  Grisette is a reusable symbolic evaluation library for Haskell. By
+  translating programs into constraints, Grisette can help the development of
+  program reasoning tools, including verification, synthesis, and more.
+  .
+  The "Grisette" module exports all the core APIs for building a symbolic
+  evaluation tool. A high-level overview of the module structures are available
+  there.
+  .
+  A detailed introduction to Grisette is available at "Grisette.Core". More
+  lifted libraries are provided in @Grisette.Lib.*@ modules.
+  .
+  The "Grisette.Unified" module offers an experimental unified interface for
+  symbolic and concrete evaluation. This module should be imported qualified.
+  .
+  For more details, please checkout the README and
+  [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials).
+
+category:           Formal Methods, Theorem Provers, Symbolic Computation, SMT
+homepage:           https://github.com/lsrcz/grisette#readme
+bug-reports:        https://github.com/lsrcz/grisette/issues
+author:             Sirui Lu, Rastislav Bodík
+maintainer:         Sirui Lu (siruilu@cs.washington.edu)
+copyright:          2021-2024 Sirui Lu
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
 tested-with:
-    GHC == 8.10.7
-  , GHC == 9.0.2
-  , GHC == 9.2.8
-  , GHC == 9.4.8
-  , GHC == 9.6.6
-  , GHC == 9.8.4
-  , GHC == 9.10.1
-  , GHC == 9.12.1
+  GHC ==8.10.7
+   || ==9.0.2
+   || ==9.2.8
+   || ==9.4.8
+   || ==9.6.6
+   || ==9.8.4
+   || ==9.10.1
+   || ==9.12.1
+
 extra-source-files:
-    CHANGELOG.md
-    README.md
+  CHANGELOG.md
+  README.md
 
 source-repository head
-  type: git
+  type:     git
   location: https://github.com/lsrcz/grisette
 
 flag optimize
   description: Compile with O2 optimization
-  manual: False
-  default: True
+  manual:      False
+  default:     True
 
 library
   exposed-modules:
-      Grisette
-      Grisette.Backend
-      Grisette.Core
-      Grisette.Experimental
-      Grisette.Experimental.GenSymConstrained
-      Grisette.Experimental.MonadParallelUnion
-      Grisette.Experimental.Qualified.ParallelUnionDo
-      Grisette.Internal.Backend.QuantifiedStack
-      Grisette.Internal.Backend.Solving
-      Grisette.Internal.Backend.SymBiMap
-      Grisette.Internal.Core.Control.Exception
-      Grisette.Internal.Core.Control.Monad.CBMCExcept
-      Grisette.Internal.Core.Control.Monad.Class.Union
-      Grisette.Internal.Core.Control.Monad.Union
-      Grisette.Internal.Core.Data.Class.BitCast
-      Grisette.Internal.Core.Data.Class.BitVector
-      Grisette.Internal.Core.Data.Class.CEGISSolver
-      Grisette.Internal.Core.Data.Class.Error
-      Grisette.Internal.Core.Data.Class.EvalSym
-      Grisette.Internal.Core.Data.Class.ExtractSym
-      Grisette.Internal.Core.Data.Class.Function
-      Grisette.Internal.Core.Data.Class.GenSym
-      Grisette.Internal.Core.Data.Class.IEEEFP
-      Grisette.Internal.Core.Data.Class.ITEOp
-      Grisette.Internal.Core.Data.Class.LogicalOp
-      Grisette.Internal.Core.Data.Class.Mergeable
-      Grisette.Internal.Core.Data.Class.ModelOps
-      Grisette.Internal.Core.Data.Class.PlainUnion
-      Grisette.Internal.Core.Data.Class.PPrint
-      Grisette.Internal.Core.Data.Class.SafeBitCast
-      Grisette.Internal.Core.Data.Class.SafeDiv
-      Grisette.Internal.Core.Data.Class.SafeFdiv
-      Grisette.Internal.Core.Data.Class.SafeFromFP
-      Grisette.Internal.Core.Data.Class.SafeLinearArith
-      Grisette.Internal.Core.Data.Class.SafeLogBase
-      Grisette.Internal.Core.Data.Class.SafeSymRotate
-      Grisette.Internal.Core.Data.Class.SafeSymShift
-      Grisette.Internal.Core.Data.Class.SignConversion
-      Grisette.Internal.Core.Data.Class.SimpleMergeable
-      Grisette.Internal.Core.Data.Class.Solvable
-      Grisette.Internal.Core.Data.Class.Solver
-      Grisette.Internal.Core.Data.Class.SubstSym
-      Grisette.Internal.Core.Data.Class.SymEq
-      Grisette.Internal.Core.Data.Class.SymFiniteBits
-      Grisette.Internal.Core.Data.Class.SymFromIntegral
-      Grisette.Internal.Core.Data.Class.SymIEEEFP
-      Grisette.Internal.Core.Data.Class.SymOrd
-      Grisette.Internal.Core.Data.Class.SymRotate
-      Grisette.Internal.Core.Data.Class.SymShift
-      Grisette.Internal.Core.Data.Class.ToCon
-      Grisette.Internal.Core.Data.Class.ToSym
-      Grisette.Internal.Core.Data.Class.TryMerge
-      Grisette.Internal.Core.Data.MemoUtils
-      Grisette.Internal.Core.Data.SExpr
-      Grisette.Internal.Core.Data.Symbol
-      Grisette.Internal.Core.Data.UnionBase
-      Grisette.Internal.SymPrim.AlgReal
-      Grisette.Internal.SymPrim.AllSyms
-      Grisette.Internal.SymPrim.BV
-      Grisette.Internal.SymPrim.FP
-      Grisette.Internal.SymPrim.FunInstanceGen
-      Grisette.Internal.SymPrim.GeneralFun
-      Grisette.Internal.SymPrim.IntBitwidth
-      Grisette.Internal.SymPrim.ModelRep
-      Grisette.Internal.SymPrim.Prim.Internal.Caches
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFloatingTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
-      Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
-      Grisette.Internal.SymPrim.Prim.Internal.PartialEval
-      Grisette.Internal.SymPrim.Prim.Internal.Serialize
-      Grisette.Internal.SymPrim.Prim.Internal.Term
-      Grisette.Internal.SymPrim.Prim.Internal.Unfold
-      Grisette.Internal.SymPrim.Prim.Internal.Utils
-      Grisette.Internal.SymPrim.Prim.Model
-      Grisette.Internal.SymPrim.Prim.Pattern
-      Grisette.Internal.SymPrim.Prim.SomeTerm
-      Grisette.Internal.SymPrim.Prim.Term
-      Grisette.Internal.SymPrim.Prim.TermUtils
-      Grisette.Internal.SymPrim.Quantifier
-      Grisette.Internal.SymPrim.SomeBV
-      Grisette.Internal.SymPrim.SymAlgReal
-      Grisette.Internal.SymPrim.SymBool
-      Grisette.Internal.SymPrim.SymBV
-      Grisette.Internal.SymPrim.SymFP
-      Grisette.Internal.SymPrim.SymGeneralFun
-      Grisette.Internal.SymPrim.SymInteger
-      Grisette.Internal.SymPrim.SymPrim
-      Grisette.Internal.SymPrim.SymTabularFun
-      Grisette.Internal.SymPrim.TabularFun
-      Grisette.Internal.TH.Ctor.Common
-      Grisette.Internal.TH.Ctor.SmartConstructor
-      Grisette.Internal.TH.Ctor.UnifiedConstructor
-      Grisette.Internal.TH.GADT.BinaryOpCommon
-      Grisette.Internal.TH.GADT.Common
-      Grisette.Internal.TH.GADT.ConvertOpCommon
-      Grisette.Internal.TH.GADT.DeriveAllSyms
-      Grisette.Internal.TH.GADT.DeriveBinary
-      Grisette.Internal.TH.GADT.DeriveCereal
-      Grisette.Internal.TH.GADT.DeriveEq
-      Grisette.Internal.TH.GADT.DeriveEvalSym
-      Grisette.Internal.TH.GADT.DeriveExtractSym
-      Grisette.Internal.TH.GADT.DeriveGADT
-      Grisette.Internal.TH.GADT.DeriveHashable
-      Grisette.Internal.TH.GADT.DeriveMergeable
-      Grisette.Internal.TH.GADT.DeriveNFData
-      Grisette.Internal.TH.GADT.DeriveOrd
-      Grisette.Internal.TH.GADT.DerivePPrint
-      Grisette.Internal.TH.GADT.DeriveSerial
-      Grisette.Internal.TH.GADT.DeriveShow
-      Grisette.Internal.TH.GADT.DeriveSimpleMergeable
-      Grisette.Internal.TH.GADT.DeriveSubstSym
-      Grisette.Internal.TH.GADT.DeriveSymEq
-      Grisette.Internal.TH.GADT.DeriveSymOrd
-      Grisette.Internal.TH.GADT.DeriveToCon
-      Grisette.Internal.TH.GADT.DeriveToSym
-      Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
-      Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
-      Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
-      Grisette.Internal.TH.GADT.SerializeCommon
-      Grisette.Internal.TH.GADT.ShowPPrintCommon
-      Grisette.Internal.TH.GADT.UnaryOpCommon
-      Grisette.Internal.TH.GADT.UnifiedOpCommon
-      Grisette.Internal.TH.Util
-      Grisette.Internal.Unified.BaseConstraint
-      Grisette.Internal.Unified.BaseMonad
-      Grisette.Internal.Unified.BVBVConversion
-      Grisette.Internal.Unified.BVFPConversion
-      Grisette.Internal.Unified.Class.UnifiedFiniteBits
-      Grisette.Internal.Unified.Class.UnifiedFromIntegral
-      Grisette.Internal.Unified.Class.UnifiedITEOp
-      Grisette.Internal.Unified.Class.UnifiedRep
-      Grisette.Internal.Unified.Class.UnifiedSafeBitCast
-      Grisette.Internal.Unified.Class.UnifiedSafeDiv
-      Grisette.Internal.Unified.Class.UnifiedSafeFdiv
-      Grisette.Internal.Unified.Class.UnifiedSafeFromFP
-      Grisette.Internal.Unified.Class.UnifiedSafeLinearArith
-      Grisette.Internal.Unified.Class.UnifiedSafeSymRotate
-      Grisette.Internal.Unified.Class.UnifiedSafeSymShift
-      Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
-      Grisette.Internal.Unified.Class.UnifiedSolvable
-      Grisette.Internal.Unified.Class.UnifiedSymEq
-      Grisette.Internal.Unified.Class.UnifiedSymOrd
-      Grisette.Internal.Unified.EvalMode
-      Grisette.Internal.Unified.EvalModeTag
-      Grisette.Internal.Unified.FPFPConversion
-      Grisette.Internal.Unified.Theories
-      Grisette.Internal.Unified.UnifiedAlgReal
-      Grisette.Internal.Unified.UnifiedBool
-      Grisette.Internal.Unified.UnifiedBV
-      Grisette.Internal.Unified.UnifiedData
-      Grisette.Internal.Unified.UnifiedFP
-      Grisette.Internal.Unified.UnifiedFun
-      Grisette.Internal.Unified.UnifiedInteger
-      Grisette.Internal.Unified.UnifiedPrim
-      Grisette.Internal.Unified.Util
-      Grisette.Internal.Utils.Derive
-      Grisette.Internal.Utils.Parameterized
-      Grisette.Lib.Base
-      Grisette.Lib.Control.Applicative
-      Grisette.Lib.Control.Monad
-      Grisette.Lib.Control.Monad.Except
-      Grisette.Lib.Control.Monad.State.Class
-      Grisette.Lib.Control.Monad.Trans
-      Grisette.Lib.Control.Monad.Trans.Class
-      Grisette.Lib.Control.Monad.Trans.Cont
-      Grisette.Lib.Control.Monad.Trans.Except
-      Grisette.Lib.Control.Monad.Trans.State
-      Grisette.Lib.Control.Monad.Trans.State.Lazy
-      Grisette.Lib.Control.Monad.Trans.State.Strict
-      Grisette.Lib.Data.Bool
-      Grisette.Lib.Data.Either
-      Grisette.Lib.Data.Foldable
-      Grisette.Lib.Data.Functor
-      Grisette.Lib.Data.Functor.Sum
-      Grisette.Lib.Data.List
-      Grisette.Lib.Data.Maybe
-      Grisette.Lib.Data.Traversable
-      Grisette.Lib.Data.Tuple
-      Grisette.SymPrim
-      Grisette.TH
-      Grisette.Unified
-      Grisette.Unified.Lib.Control.Applicative
-      Grisette.Unified.Lib.Control.Monad
-      Grisette.Unified.Lib.Data.Foldable
-      Grisette.Unified.Lib.Data.Functor
-      Grisette.Utils
+    Grisette
+    Grisette.Backend
+    Grisette.Core
+    Grisette.Experimental
+    Grisette.Experimental.GenSymConstrained
+    Grisette.Experimental.MonadParallelUnion
+    Grisette.Experimental.Qualified.ParallelUnionDo
+    Grisette.Internal.Backend.QuantifiedStack
+    Grisette.Internal.Backend.Solving
+    Grisette.Internal.Backend.SymBiMap
+    Grisette.Internal.Core.Control.Exception
+    Grisette.Internal.Core.Control.Monad.CBMCExcept
+    Grisette.Internal.Core.Control.Monad.Class.Union
+    Grisette.Internal.Core.Control.Monad.Union
+    Grisette.Internal.Core.Data.Class.BitCast
+    Grisette.Internal.Core.Data.Class.BitVector
+    Grisette.Internal.Core.Data.Class.CEGISSolver
+    Grisette.Internal.Core.Data.Class.Error
+    Grisette.Internal.Core.Data.Class.EvalSym
+    Grisette.Internal.Core.Data.Class.ExtractSym
+    Grisette.Internal.Core.Data.Class.Function
+    Grisette.Internal.Core.Data.Class.GenSym
+    Grisette.Internal.Core.Data.Class.IEEEFP
+    Grisette.Internal.Core.Data.Class.ITEOp
+    Grisette.Internal.Core.Data.Class.LogicalOp
+    Grisette.Internal.Core.Data.Class.Mergeable
+    Grisette.Internal.Core.Data.Class.ModelOps
+    Grisette.Internal.Core.Data.Class.PlainUnion
+    Grisette.Internal.Core.Data.Class.PPrint
+    Grisette.Internal.Core.Data.Class.SafeBitCast
+    Grisette.Internal.Core.Data.Class.SafeDiv
+    Grisette.Internal.Core.Data.Class.SafeFdiv
+    Grisette.Internal.Core.Data.Class.SafeFromFP
+    Grisette.Internal.Core.Data.Class.SafeLinearArith
+    Grisette.Internal.Core.Data.Class.SafeLogBase
+    Grisette.Internal.Core.Data.Class.SafeSymRotate
+    Grisette.Internal.Core.Data.Class.SafeSymShift
+    Grisette.Internal.Core.Data.Class.SignConversion
+    Grisette.Internal.Core.Data.Class.SimpleMergeable
+    Grisette.Internal.Core.Data.Class.Solvable
+    Grisette.Internal.Core.Data.Class.Solver
+    Grisette.Internal.Core.Data.Class.SubstSym
+    Grisette.Internal.Core.Data.Class.SymEq
+    Grisette.Internal.Core.Data.Class.SymFiniteBits
+    Grisette.Internal.Core.Data.Class.SymFromIntegral
+    Grisette.Internal.Core.Data.Class.SymIEEEFP
+    Grisette.Internal.Core.Data.Class.SymOrd
+    Grisette.Internal.Core.Data.Class.SymRotate
+    Grisette.Internal.Core.Data.Class.SymShift
+    Grisette.Internal.Core.Data.Class.ToCon
+    Grisette.Internal.Core.Data.Class.ToSym
+    Grisette.Internal.Core.Data.Class.TryMerge
+    Grisette.Internal.Core.Data.MemoUtils
+    Grisette.Internal.Core.Data.SExpr
+    Grisette.Internal.Core.Data.Symbol
+    Grisette.Internal.Core.Data.UnionBase
+    Grisette.Internal.SymPrim.AlgReal
+    Grisette.Internal.SymPrim.AllSyms
+    Grisette.Internal.SymPrim.BV
+    Grisette.Internal.SymPrim.FP
+    Grisette.Internal.SymPrim.FunInstanceGen
+    Grisette.Internal.SymPrim.GeneralFun
+    Grisette.Internal.SymPrim.IntBitwidth
+    Grisette.Internal.SymPrim.ModelRep
+    Grisette.Internal.SymPrim.Prim.Internal.Caches
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFloatingTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
+    Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
+    Grisette.Internal.SymPrim.Prim.Internal.PartialEval
+    Grisette.Internal.SymPrim.Prim.Internal.Serialize
+    Grisette.Internal.SymPrim.Prim.Internal.Term
+    Grisette.Internal.SymPrim.Prim.Internal.Unfold
+    Grisette.Internal.SymPrim.Prim.Internal.Utils
+    Grisette.Internal.SymPrim.Prim.Model
+    Grisette.Internal.SymPrim.Prim.Pattern
+    Grisette.Internal.SymPrim.Prim.SomeTerm
+    Grisette.Internal.SymPrim.Prim.Term
+    Grisette.Internal.SymPrim.Prim.TermUtils
+    Grisette.Internal.SymPrim.Quantifier
+    Grisette.Internal.SymPrim.SomeBV
+    Grisette.Internal.SymPrim.SymAlgReal
+    Grisette.Internal.SymPrim.SymBool
+    Grisette.Internal.SymPrim.SymBV
+    Grisette.Internal.SymPrim.SymFP
+    Grisette.Internal.SymPrim.SymGeneralFun
+    Grisette.Internal.SymPrim.SymInteger
+    Grisette.Internal.SymPrim.SymPrim
+    Grisette.Internal.SymPrim.SymTabularFun
+    Grisette.Internal.SymPrim.TabularFun
+    Grisette.Internal.TH.Ctor.Common
+    Grisette.Internal.TH.Ctor.SmartConstructor
+    Grisette.Internal.TH.Ctor.UnifiedConstructor
+    Grisette.Internal.TH.GADT.BinaryOpCommon
+    Grisette.Internal.TH.GADT.Common
+    Grisette.Internal.TH.GADT.ConvertOpCommon
+    Grisette.Internal.TH.GADT.DeriveAllSyms
+    Grisette.Internal.TH.GADT.DeriveBinary
+    Grisette.Internal.TH.GADT.DeriveCereal
+    Grisette.Internal.TH.GADT.DeriveEq
+    Grisette.Internal.TH.GADT.DeriveEvalSym
+    Grisette.Internal.TH.GADT.DeriveExtractSym
+    Grisette.Internal.TH.GADT.DeriveGADT
+    Grisette.Internal.TH.GADT.DeriveHashable
+    Grisette.Internal.TH.GADT.DeriveMergeable
+    Grisette.Internal.TH.GADT.DeriveNFData
+    Grisette.Internal.TH.GADT.DeriveOrd
+    Grisette.Internal.TH.GADT.DerivePPrint
+    Grisette.Internal.TH.GADT.DeriveSerial
+    Grisette.Internal.TH.GADT.DeriveShow
+    Grisette.Internal.TH.GADT.DeriveSimpleMergeable
+    Grisette.Internal.TH.GADT.DeriveSubstSym
+    Grisette.Internal.TH.GADT.DeriveSymEq
+    Grisette.Internal.TH.GADT.DeriveSymOrd
+    Grisette.Internal.TH.GADT.DeriveToCon
+    Grisette.Internal.TH.GADT.DeriveToSym
+    Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
+    Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
+    Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
+    Grisette.Internal.TH.GADT.SerializeCommon
+    Grisette.Internal.TH.GADT.ShowPPrintCommon
+    Grisette.Internal.TH.GADT.UnaryOpCommon
+    Grisette.Internal.TH.GADT.UnifiedOpCommon
+    Grisette.Internal.TH.Util
+    Grisette.Internal.Unified.BaseConstraint
+    Grisette.Internal.Unified.BaseMonad
+    Grisette.Internal.Unified.BVBVConversion
+    Grisette.Internal.Unified.BVFPConversion
+    Grisette.Internal.Unified.Class.UnifiedFiniteBits
+    Grisette.Internal.Unified.Class.UnifiedFromIntegral
+    Grisette.Internal.Unified.Class.UnifiedITEOp
+    Grisette.Internal.Unified.Class.UnifiedRep
+    Grisette.Internal.Unified.Class.UnifiedSafeBitCast
+    Grisette.Internal.Unified.Class.UnifiedSafeDiv
+    Grisette.Internal.Unified.Class.UnifiedSafeFdiv
+    Grisette.Internal.Unified.Class.UnifiedSafeFromFP
+    Grisette.Internal.Unified.Class.UnifiedSafeLinearArith
+    Grisette.Internal.Unified.Class.UnifiedSafeSymRotate
+    Grisette.Internal.Unified.Class.UnifiedSafeSymShift
+    Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
+    Grisette.Internal.Unified.Class.UnifiedSolvable
+    Grisette.Internal.Unified.Class.UnifiedSymEq
+    Grisette.Internal.Unified.Class.UnifiedSymOrd
+    Grisette.Internal.Unified.EvalMode
+    Grisette.Internal.Unified.EvalModeTag
+    Grisette.Internal.Unified.FPFPConversion
+    Grisette.Internal.Unified.Theories
+    Grisette.Internal.Unified.UnifiedAlgReal
+    Grisette.Internal.Unified.UnifiedBool
+    Grisette.Internal.Unified.UnifiedBV
+    Grisette.Internal.Unified.UnifiedData
+    Grisette.Internal.Unified.UnifiedFP
+    Grisette.Internal.Unified.UnifiedFun
+    Grisette.Internal.Unified.UnifiedInteger
+    Grisette.Internal.Unified.UnifiedPrim
+    Grisette.Internal.Unified.Util
+    Grisette.Internal.Utils.Derive
+    Grisette.Internal.Utils.Parameterized
+    Grisette.Lib.Base
+    Grisette.Lib.Control.Applicative
+    Grisette.Lib.Control.Monad
+    Grisette.Lib.Control.Monad.Except
+    Grisette.Lib.Control.Monad.State.Class
+    Grisette.Lib.Control.Monad.Trans
+    Grisette.Lib.Control.Monad.Trans.Class
+    Grisette.Lib.Control.Monad.Trans.Cont
+    Grisette.Lib.Control.Monad.Trans.Except
+    Grisette.Lib.Control.Monad.Trans.State
+    Grisette.Lib.Control.Monad.Trans.State.Lazy
+    Grisette.Lib.Control.Monad.Trans.State.Strict
+    Grisette.Lib.Data.Bool
+    Grisette.Lib.Data.Either
+    Grisette.Lib.Data.Foldable
+    Grisette.Lib.Data.Functor
+    Grisette.Lib.Data.Functor.Sum
+    Grisette.Lib.Data.List
+    Grisette.Lib.Data.Maybe
+    Grisette.Lib.Data.Traversable
+    Grisette.Lib.Data.Tuple
+    Grisette.SymPrim
+    Grisette.TH
+    Grisette.Unified
+    Grisette.Unified.Lib.Control.Applicative
+    Grisette.Unified.Lib.Control.Monad
+    Grisette.Unified.Lib.Data.Foldable
+    Grisette.Unified.Lib.Data.Functor
+    Grisette.Utils
+
   other-modules:
-      Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
-      Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
-      Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
-      Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
-      Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
-      Grisette.Internal.Internal.Decl.Core.Data.Class.Solver
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
-      Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
-      Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
-      Grisette.Internal.Internal.Decl.Core.Data.UnionBase
-      Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
-      Grisette.Internal.Internal.Decl.SymPrim.AllSyms
-      Grisette.Internal.Internal.Decl.Unified.UnifiedBV
-      Grisette.Internal.Internal.Decl.Unified.UnifiedBool
-      Grisette.Internal.Internal.Decl.Unified.BVFPConversion
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
-      Grisette.Internal.Internal.Decl.Unified.UnifiedFP
-      Grisette.Internal.Internal.Decl.Unified.EvalMode
-      Grisette.Internal.Internal.Decl.Unified.FPFPConversion
-      Grisette.Internal.Internal.Impl.Core.Data.Class.ExtractSym
-      Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint
-      Grisette.Internal.Internal.Impl.Core.Data.Class.ToCon
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SubstSym
-      Grisette.Internal.Internal.Impl.Core.Data.Class.ToSym
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
-      Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
-      Grisette.Internal.Internal.Impl.Core.Data.Class.Solver
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SimpleMergeable
-      Grisette.Internal.Internal.Impl.Core.Data.Class.Mergeable
-      Grisette.Internal.Internal.Impl.Core.Data.Class.EvalSym
-      Grisette.Internal.Internal.Impl.Core.Data.UnionBase
-      Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
-      Grisette.Internal.Internal.Impl.SymPrim.AllSyms
-      Grisette.Internal.Internal.Impl.Unified.UnifiedBV
-      Grisette.Internal.Internal.Impl.Unified.UnifiedBool
-      Grisette.Internal.Internal.Impl.Unified.BVFPConversion
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
-      Grisette.Internal.Internal.Impl.Unified.UnifiedFP
-      Grisette.Internal.Internal.Impl.Unified.EvalMode
-      Grisette.Internal.Internal.Impl.Unified.FPFPConversion
-  hs-source-dirs:
-      src
-  ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags
+    Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
+    Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
+    Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
+    Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
+    Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
+    Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
+    Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
+    Grisette.Internal.Internal.Decl.Core.Data.Class.Solver
+    Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
+    Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
+    Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+    Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
+    Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
+    Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
+    Grisette.Internal.Internal.Decl.Core.Data.UnionBase
+    Grisette.Internal.Internal.Decl.SymPrim.AllSyms
+    Grisette.Internal.Internal.Decl.Unified.BVFPConversion
+    Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
+    Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
+    Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
+    Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
+    Grisette.Internal.Internal.Decl.Unified.EvalMode
+    Grisette.Internal.Internal.Decl.Unified.FPFPConversion
+    Grisette.Internal.Internal.Decl.Unified.UnifiedBool
+    Grisette.Internal.Internal.Decl.Unified.UnifiedBV
+    Grisette.Internal.Internal.Decl.Unified.UnifiedFP
+    Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
+    Grisette.Internal.Internal.Impl.Core.Data.Class.EvalSym
+    Grisette.Internal.Internal.Impl.Core.Data.Class.ExtractSym
+    Grisette.Internal.Internal.Impl.Core.Data.Class.Mergeable
+    Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint
+    Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
+    Grisette.Internal.Internal.Impl.Core.Data.Class.SimpleMergeable
+    Grisette.Internal.Internal.Impl.Core.Data.Class.Solver
+    Grisette.Internal.Internal.Impl.Core.Data.Class.SubstSym
+    Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
+    Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
+    Grisette.Internal.Internal.Impl.Core.Data.Class.ToCon
+    Grisette.Internal.Internal.Impl.Core.Data.Class.ToSym
+    Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge
+    Grisette.Internal.Internal.Impl.Core.Data.UnionBase
+    Grisette.Internal.Internal.Impl.SymPrim.AllSyms
+    Grisette.Internal.Internal.Impl.Unified.BVFPConversion
+    Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
+    Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
+    Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq
+    Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
+    Grisette.Internal.Internal.Impl.Unified.EvalMode
+    Grisette.Internal.Internal.Impl.Unified.FPFPConversion
+    Grisette.Internal.Internal.Impl.Unified.UnifiedBool
+    Grisette.Internal.Internal.Impl.Unified.UnifiedBV
+    Grisette.Internal.Internal.Impl.Unified.UnifiedFP
+
+  hs-source-dirs:   src
+  ghc-options:
+    -Wextra -Wcompat -Widentities -Wincomplete-record-updates
+    -Wmissing-export-lists -Wmissing-home-modules
+    -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns
+    -Wno-x-partial -Wno-unrecognised-warning-flags
+
   build-depends:
-      QuickCheck >=2.14 && <2.16
-    , array >=0.5.4 && <0.6
-    , async >=2.2.2 && <2.3
-    , atomic-primops >=0.8.3 && <0.9
-    , base >=4.14 && <5
-    , binary >=0.8.8.0 && <0.9
-    , bytes >=0.17.1 && <0.18
-    , bytestring >=0.10.12 && <0.13
-    , cereal >=0.5.8.1 && <0.6
-    , cereal-text >=0.1.0.2 && <0.2
-    , containers >=0.5.7 && <0.8
-    , deepseq >=1.4.4 && <1.6
-    , generic-deriving >=1.14.1 && <1.15
-    , hashable >=1.3 && <1.6
-    , libBF >=0.6.3 && <0.7
-    , loch-th >=0.2.2 && <0.3
-    , mtl >=2.2.2 && <2.4
-    , parallel >=3.2.2 && <3.3
-    , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <12
-    , stm ==2.5.*
-    , template-haskell >=2.16 && <2.24
-    , text >=1.2.4.1 && <2.2
-    , th-abstraction >=0.4 && <0.8
-    , th-compat >=0.1.2 && <0.2
-    , th-lift-instances >=0.1.16 && <0.2
-    , transformers >=0.5.6.2 && <0.7
-    , unordered-containers >=0.2.17 && <0.3
-    , vector >=0.12.1.2 && <0.14
+      array                 >=0.5.4    && <0.6
+    , async                 >=2.2.2    && <2.3
+    , atomic-primops        >=0.8.3    && <0.9
+    , base                  >=4.14     && <5
+    , binary                >=0.8.8.0  && <0.9
+    , bytes                 >=0.17.1   && <0.18
+    , bytestring            >=0.10.12  && <0.13
+    , cereal                >=0.5.8.1  && <0.6
+    , cereal-text           >=0.1.0.2  && <0.2
+    , containers            >=0.5.7    && <0.8
+    , deepseq               >=1.4.4    && <1.6
+    , generic-deriving      >=1.14.1   && <1.15
+    , hashable              >=1.3      && <1.6
+    , libBF                 >=0.6.3    && <0.7
+    , loch-th               >=0.2.2    && <0.3
+    , mtl                   >=2.2.2    && <2.4
+    , parallel              >=3.2.2    && <3.3
+    , prettyprinter         >=1.5.0    && <1.8
+    , QuickCheck            >=2.14     && <2.16
+    , sbv                   >=8.17     && <12
+    , stm                   >=2.5      && <2.6
+    , template-haskell      >=2.16     && <2.24
+    , text                  >=1.2.4.1  && <2.2
+    , th-abstraction        >=0.4      && <0.8
+    , th-compat             >=0.1.2    && <0.2
+    , th-lift-instances     >=0.1.16   && <0.2
+    , transformers          >=0.5.6.2  && <0.7
+    , unordered-containers  >=0.2.17   && <0.3
+    , vector                >=0.12.1.2 && <0.14
+
   default-language: Haskell2010
+
   if flag(optimize)
     ghc-options: -O2
+
   else
     ghc-options: -O0
-  if impl(ghc >= 9.2)
+
+  if impl(ghc >=9.2)
     ghc-prof-options: -finfo-table-map -fdistinct-constructor-tables
+
   else
 
 test-suite doctest
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-      Paths_grisette
-  hs-source-dirs:
-      doctest
-  ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts -with-rtsopts=-N
+  type:             exitcode-stdio-1.0
+  main-is:          Main.hs
+  other-modules:    Paths_grisette
+  hs-source-dirs:   doctest
+  ghc-options:
+    -Wextra -Wcompat -Widentities -Wincomplete-record-updates
+    -Wmissing-export-lists -Wmissing-home-modules
+    -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns
+    -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts
+    -with-rtsopts=-N
+
   build-depends:
-      QuickCheck >=2.14 && <2.16
-    , array >=0.5.4 && <0.6
-    , async >=2.2.2 && <2.3
-    , atomic-primops >=0.8.3 && <0.9
-    , base >=4.14 && <5
-    , binary >=0.8.8.0 && <0.9
-    , bytes >=0.17.1 && <0.18
-    , bytestring >=0.10.12 && <0.13
-    , cereal >=0.5.8.1 && <0.6
-    , cereal-text >=0.1.0.2 && <0.2
-    , containers >=0.5.7 && <0.8
-    , deepseq >=1.4.4 && <1.6
-    , doctest >=0.18.2 && <0.24
-    , generic-deriving >=1.14.1 && <1.15
+      array                 >=0.5.4    && <0.6
+    , async                 >=2.2.2    && <2.3
+    , atomic-primops        >=0.8.3    && <0.9
+    , base                  >=4.14     && <5
+    , binary                >=0.8.8.0  && <0.9
+    , bytes                 >=0.17.1   && <0.18
+    , bytestring            >=0.10.12  && <0.13
+    , cereal                >=0.5.8.1  && <0.6
+    , cereal-text           >=0.1.0.2  && <0.2
+    , containers            >=0.5.7    && <0.8
+    , deepseq               >=1.4.4    && <1.6
+    , doctest               >=0.18.2   && <0.24
+    , generic-deriving      >=1.14.1   && <1.15
     , grisette
-    , hashable >=1.3 && <1.6
-    , libBF >=0.6.3 && <0.7
-    , loch-th >=0.2.2 && <0.3
-    , mtl >=2.2.2 && <2.4
-    , parallel >=3.2.2 && <3.3
-    , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <12
-    , stm ==2.5.*
-    , template-haskell >=2.16 && <2.24
-    , text >=1.2.4.1 && <2.2
-    , th-abstraction >=0.4 && <0.8
-    , th-compat >=0.1.2 && <0.2
-    , th-lift-instances >=0.1.16 && <0.2
-    , transformers >=0.5.6.2 && <0.7
-    , unordered-containers >=0.2.17 && <0.3
-    , vector >=0.12.1.2 && <0.14
+    , hashable              >=1.3      && <1.6
+    , libBF                 >=0.6.3    && <0.7
+    , loch-th               >=0.2.2    && <0.3
+    , mtl                   >=2.2.2    && <2.4
+    , parallel              >=3.2.2    && <3.3
+    , prettyprinter         >=1.5.0    && <1.8
+    , QuickCheck            >=2.14     && <2.16
+    , sbv                   >=8.17     && <12
+    , stm                   >=2.5      && <2.6
+    , template-haskell      >=2.16     && <2.24
+    , text                  >=1.2.4.1  && <2.2
+    , th-abstraction        >=0.4      && <0.8
+    , th-compat             >=0.1.2    && <0.2
+    , th-lift-instances     >=0.1.16   && <0.2
+    , transformers          >=0.5.6.2  && <0.7
+    , unordered-containers  >=0.2.17   && <0.3
+    , vector                >=0.12.1.2 && <0.14
+
   default-language: Haskell2010
+
   if flag(optimize)
     ghc-options: -O2
+
   else
     ghc-options: -O0
-  if impl(ghc >= 9.2)
+
+  if impl(ghc >=9.2)
     ghc-prof-options: -finfo-table-map -fdistinct-constructor-tables
+
   else
 
 test-suite spec
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
+  type:             exitcode-stdio-1.0
+  main-is:          Main.hs
   other-modules:
-      Grisette.Backend.CEGISTests
-      Grisette.Backend.LoweringTests
-      Grisette.Backend.TermRewritingGen
-      Grisette.Backend.TermRewritingTests
-      Grisette.Core.Control.ExceptionTests
-      Grisette.Core.Control.Monad.UnionTests
-      Grisette.Core.Data.Class.BitCastTests
-      Grisette.Core.Data.Class.BoolTests
-      Grisette.Core.Data.Class.EvalSymTests
-      Grisette.Core.Data.Class.ExtractSymTests
-      Grisette.Core.Data.Class.GenSymTests
-      Grisette.Core.Data.Class.MergeableTests
-      Grisette.Core.Data.Class.PlainUnionTests
-      Grisette.Core.Data.Class.PPrintTests
-      Grisette.Core.Data.Class.SafeDivTests
-      Grisette.Core.Data.Class.SafeLinearArithTests
-      Grisette.Core.Data.Class.SafeSymRotateTests
-      Grisette.Core.Data.Class.SafeSymShiftTests
-      Grisette.Core.Data.Class.SimpleMergeableTests
-      Grisette.Core.Data.Class.SubstSymTests
-      Grisette.Core.Data.Class.SymEqTests
-      Grisette.Core.Data.Class.SymFiniteBitsTests
-      Grisette.Core.Data.Class.SymOrdTests
-      Grisette.Core.Data.Class.SymRotateTests
-      Grisette.Core.Data.Class.SymShiftTests
-      Grisette.Core.Data.Class.TestValues
-      Grisette.Core.Data.Class.ToConTests
-      Grisette.Core.Data.Class.ToSymTests
-      Grisette.Core.Data.Class.TryMergeTests
-      Grisette.Core.Data.UnionBaseTests
-      Grisette.Core.TH.DerivationData
-      Grisette.Core.TH.DerivationTest
-      Grisette.Core.TH.PartialEvalMode
-      Grisette.Lib.Control.ApplicativeTest
-      Grisette.Lib.Control.Monad.ExceptTests
-      Grisette.Lib.Control.Monad.State.ClassTests
-      Grisette.Lib.Control.Monad.Trans.ClassTests
-      Grisette.Lib.Control.Monad.Trans.ExceptTests
-      Grisette.Lib.Control.Monad.Trans.State.Common
-      Grisette.Lib.Control.Monad.Trans.State.LazyTests
-      Grisette.Lib.Control.Monad.Trans.State.StrictTests
-      Grisette.Lib.Control.MonadTests
-      Grisette.Lib.Data.FoldableTests
-      Grisette.Lib.Data.FunctorTests
-      Grisette.Lib.Data.ListTests
-      Grisette.Lib.Data.TraversableTests
-      Grisette.SymPrim.AlgRealTests
-      Grisette.SymPrim.BVTests
-      Grisette.SymPrim.FPTests
-      Grisette.SymPrim.GeneralFunTests
-      Grisette.SymPrim.Prim.BitsTests
-      Grisette.SymPrim.Prim.BoolTests
-      Grisette.SymPrim.Prim.BVTests
-      Grisette.SymPrim.Prim.ConcurrentTests
-      Grisette.SymPrim.Prim.IntegralTests
-      Grisette.SymPrim.Prim.ModelTests
-      Grisette.SymPrim.Prim.NumTests
-      Grisette.SymPrim.Prim.SerializationTests
-      Grisette.SymPrim.Prim.TabularFunTests
-      Grisette.SymPrim.QuantifierTests
-      Grisette.SymPrim.SomeBVTests
-      Grisette.SymPrim.SymGeneralFunTests
-      Grisette.SymPrim.SymPrimConstraintTests
-      Grisette.SymPrim.SymPrimTests
-      Grisette.SymPrim.TabularFunTests
-      Grisette.TestUtil.NoMerge
-      Grisette.TestUtil.PrettyPrint
-      Grisette.TestUtil.SymbolicAssertion
-      Grisette.Unified.EvalModeTest
-      Grisette.Unified.UnifiedClassesTest
-      Grisette.Unified.UnifiedConstructorTest
-      Paths_grisette
-  hs-source-dirs:
-      test
-  ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts -with-rtsopts=-N -Wredundant-constraints
+    Grisette.Backend.CEGISTests
+    Grisette.Backend.LoweringTests
+    Grisette.Backend.TermRewritingGen
+    Grisette.Backend.TermRewritingTests
+    Grisette.Core.Control.ExceptionTests
+    Grisette.Core.Control.Monad.UnionTests
+    Grisette.Core.Data.Class.BitCastTests
+    Grisette.Core.Data.Class.BoolTests
+    Grisette.Core.Data.Class.EvalSymTests
+    Grisette.Core.Data.Class.ExtractSymTests
+    Grisette.Core.Data.Class.GenSymTests
+    Grisette.Core.Data.Class.MergeableTests
+    Grisette.Core.Data.Class.PlainUnionTests
+    Grisette.Core.Data.Class.PPrintTests
+    Grisette.Core.Data.Class.SafeDivTests
+    Grisette.Core.Data.Class.SafeLinearArithTests
+    Grisette.Core.Data.Class.SafeSymRotateTests
+    Grisette.Core.Data.Class.SafeSymShiftTests
+    Grisette.Core.Data.Class.SimpleMergeableTests
+    Grisette.Core.Data.Class.SubstSymTests
+    Grisette.Core.Data.Class.SymEqTests
+    Grisette.Core.Data.Class.SymFiniteBitsTests
+    Grisette.Core.Data.Class.SymOrdTests
+    Grisette.Core.Data.Class.SymRotateTests
+    Grisette.Core.Data.Class.SymShiftTests
+    Grisette.Core.Data.Class.TestValues
+    Grisette.Core.Data.Class.ToConTests
+    Grisette.Core.Data.Class.ToSymTests
+    Grisette.Core.Data.Class.TryMergeTests
+    Grisette.Core.Data.UnionBaseTests
+    Grisette.Core.TH.DerivationData
+    Grisette.Core.TH.DerivationTest
+    Grisette.Core.TH.PartialEvalMode
+    Grisette.Lib.Control.ApplicativeTest
+    Grisette.Lib.Control.Monad.ExceptTests
+    Grisette.Lib.Control.Monad.State.ClassTests
+    Grisette.Lib.Control.Monad.Trans.ClassTests
+    Grisette.Lib.Control.Monad.Trans.ExceptTests
+    Grisette.Lib.Control.Monad.Trans.State.Common
+    Grisette.Lib.Control.Monad.Trans.State.LazyTests
+    Grisette.Lib.Control.Monad.Trans.State.StrictTests
+    Grisette.Lib.Control.MonadTests
+    Grisette.Lib.Data.FoldableTests
+    Grisette.Lib.Data.FunctorTests
+    Grisette.Lib.Data.ListTests
+    Grisette.Lib.Data.TraversableTests
+    Grisette.SymPrim.AlgRealTests
+    Grisette.SymPrim.BVTests
+    Grisette.SymPrim.FPTests
+    Grisette.SymPrim.GeneralFunTests
+    Grisette.SymPrim.Prim.BitsTests
+    Grisette.SymPrim.Prim.BoolTests
+    Grisette.SymPrim.Prim.BVTests
+    Grisette.SymPrim.Prim.ConcurrentTests
+    Grisette.SymPrim.Prim.IntegralTests
+    Grisette.SymPrim.Prim.ModelTests
+    Grisette.SymPrim.Prim.NumTests
+    Grisette.SymPrim.Prim.SerializationTests
+    Grisette.SymPrim.Prim.TabularFunTests
+    Grisette.SymPrim.QuantifierTests
+    Grisette.SymPrim.SomeBVTests
+    Grisette.SymPrim.SymGeneralFunTests
+    Grisette.SymPrim.SymPrimConstraintTests
+    Grisette.SymPrim.SymPrimTests
+    Grisette.SymPrim.TabularFunTests
+    Grisette.TestUtil.NoMerge
+    Grisette.TestUtil.PrettyPrint
+    Grisette.TestUtil.SymbolicAssertion
+    Grisette.Unified.EvalModeTest
+    Grisette.Unified.UnifiedClassesTest
+    Grisette.Unified.UnifiedConstructorTest
+    Paths_grisette
+
+  hs-source-dirs:   test
+  ghc-options:
+    -Wextra -Wcompat -Widentities -Wincomplete-record-updates
+    -Wmissing-export-lists -Wmissing-home-modules
+    -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns
+    -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts
+    -with-rtsopts=-N -Wredundant-constraints
+
   build-depends:
-      HUnit ==1.6.*
-    , QuickCheck >=2.14 && <2.16
-    , array >=0.5.4 && <0.6
-    , async >=2.2.2 && <2.3
-    , atomic-primops >=0.8.3 && <0.9
-    , base >=4.14 && <5
-    , binary >=0.8.8.0 && <0.9
-    , bytes >=0.17.1 && <0.18
-    , bytestring >=0.10.12 && <0.13
-    , cereal >=0.5.8.1 && <0.6
-    , cereal-text >=0.1.0.2 && <0.2
-    , containers >=0.5.7 && <0.8
-    , deepseq >=1.4.4 && <1.6
-    , generic-deriving >=1.14.1 && <1.15
+      array                       >=0.5.4    && <0.6
+    , async                       >=2.2.2    && <2.3
+    , atomic-primops              >=0.8.3    && <0.9
+    , base                        >=4.14     && <5
+    , binary                      >=0.8.8.0  && <0.9
+    , bytes                       >=0.17.1   && <0.18
+    , bytestring                  >=0.10.12  && <0.13
+    , cereal                      >=0.5.8.1  && <0.6
+    , cereal-text                 >=0.1.0.2  && <0.2
+    , containers                  >=0.5.7    && <0.8
+    , deepseq                     >=1.4.4    && <1.6
+    , generic-deriving            >=1.14.1   && <1.15
     , grisette
-    , hashable >=1.3 && <1.6
-    , libBF >=0.6.3 && <0.7
-    , loch-th >=0.2.2 && <0.3
-    , mtl >=2.2.2 && <2.4
-    , parallel >=3.2.2 && <3.3
-    , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <12
-    , stm ==2.5.*
-    , template-haskell >=2.16 && <2.24
-    , test-framework >=0.8.2 && <0.9
-    , test-framework-hunit >=0.3.0.2 && <0.4
-    , test-framework-quickcheck2 >=0.3.0.5 && <0.4
-    , text >=1.2.4.1 && <2.2
-    , th-abstraction >=0.4 && <0.8
-    , th-compat >=0.1.2 && <0.2
-    , th-lift-instances >=0.1.16 && <0.2
-    , transformers >=0.5.6.2 && <0.7
-    , unordered-containers >=0.2.17 && <0.3
-    , vector >=0.12.1.2 && <0.14
+    , hashable                    >=1.3      && <1.6
+    , HUnit                       >=1.6      && <1.7
+    , libBF                       >=0.6.3    && <0.7
+    , loch-th                     >=0.2.2    && <0.3
+    , mtl                         >=2.2.2    && <2.4
+    , parallel                    >=3.2.2    && <3.3
+    , prettyprinter               >=1.5.0    && <1.8
+    , QuickCheck                  >=2.14     && <2.16
+    , sbv                         >=8.17     && <12
+    , stm                         >=2.5      && <2.6
+    , template-haskell            >=2.16     && <2.24
+    , test-framework              >=0.8.2    && <0.9
+    , test-framework-hunit        >=0.3.0.2  && <0.4
+    , test-framework-quickcheck2  >=0.3.0.5  && <0.4
+    , text                        >=1.2.4.1  && <2.2
+    , th-abstraction              >=0.4      && <0.8
+    , th-compat                   >=0.1.2    && <0.2
+    , th-lift-instances           >=0.1.16   && <0.2
+    , transformers                >=0.5.6.2  && <0.7
+    , unordered-containers        >=0.2.17   && <0.3
+    , vector                      >=0.12.1.2 && <0.14
+
   default-language: Haskell2010
+
   if flag(optimize)
     ghc-options: -O2
+
   else
     ghc-options: -O0
-  if impl(ghc >= 9.2)
+
+  if impl(ghc >=9.2)
     ghc-prof-options: -finfo-table-map -fdistinct-constructor-tables
+
   else
