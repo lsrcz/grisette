@@ -112,7 +112,7 @@ import Grisette.Internal.Core.Control.Monad.Union
     unionBase,
   )
 import Grisette.Internal.Core.Data.Class.Mergeable
-  ( Mergeable (rootStrategy),
+  ( Mergeable (rootStrategy, sortByMergeIdx),
     Mergeable1 (liftRootStrategy),
     Mergeable2 (liftRootStrategy2),
     MergingStrategy (SimpleStrategy),
@@ -680,12 +680,14 @@ chooseFresh ::
   ) =>
   [a] ->
   m (Union a)
-chooseFresh [x] = return $ mrgSingle x
-chooseFresh (r : rs) = do
-  b <- simpleFresh ()
-  res <- chooseFresh rs
-  return $ mrgIf b (mrgSingle r) res
-chooseFresh [] = error "chooseFresh expects at least one value"
+chooseFresh l = go $ sortByMergeIdx l
+  where
+    go [x] = return $ mrgSingle x
+    go (r : rs) = do
+      b <- simpleFresh ()
+      res <- go rs
+      return $ mrgIf b (mrgSingle r) res
+    go [] = error "chooseFresh expects at least one value"
 
 -- | A wrapper for `chooseFresh` that executes the `MonadFresh` context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
@@ -715,12 +717,14 @@ chooseSimpleFresh ::
   ) =>
   [a] ->
   m a
-chooseSimpleFresh [x] = return x
-chooseSimpleFresh (r : rs) = do
-  b :: bool <- simpleFresh ()
-  res <- chooseSimpleFresh rs
-  return $ mrgIte b r res
-chooseSimpleFresh [] = error "chooseSimpleFresh expects at least one value"
+chooseSimpleFresh l = go $ sortByMergeIdx l
+  where
+    go [x] = return x
+    go (r : rs) = do
+      b :: bool <- simpleFresh ()
+      res <- go rs
+      return $ mrgIte b r res
+    go [] = error "chooseSimpleFresh expects at least one value"
 
 -- | A wrapper for `chooseSimpleFresh` that executes the `MonadFresh` context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
@@ -752,12 +756,14 @@ chooseUnionFresh ::
   ) =>
   [Union a] ->
   m (Union a)
-chooseUnionFresh [x] = return x
-chooseUnionFresh (r : rs) = do
-  b <- simpleFresh ()
-  res <- chooseUnionFresh rs
-  return $ mrgIf b r res
-chooseUnionFresh [] = error "chooseUnionFresh expects at least one value"
+chooseUnionFresh l = go $ sortByMergeIdx l
+  where
+    go [x] = return x
+    go (r : rs) = do
+      b <- simpleFresh ()
+      res <- go rs
+      return $ mrgIf b r res
+    go [] = error "chooseUnionFresh expects at least one value"
 
 -- | A wrapper for `chooseUnionFresh` that executes the `MonadFresh` context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
