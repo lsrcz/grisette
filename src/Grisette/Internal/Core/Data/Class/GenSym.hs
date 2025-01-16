@@ -92,6 +92,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bifunctor (Bifunctor (first))
 import qualified Data.ByteString as B
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.List (groupBy, sortOn)
 import Data.Ratio (Ratio)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
@@ -112,7 +113,7 @@ import Grisette.Internal.Core.Control.Monad.Union
     unionBase,
   )
 import Grisette.Internal.Core.Data.Class.Mergeable
-  ( Mergeable (rootStrategy, sortByMergeIdx),
+  ( Mergeable (rootStrategy, sortIndices),
     Mergeable1 (liftRootStrategy),
     Mergeable2 (liftRootStrategy2),
     MergingStrategy (SimpleStrategy),
@@ -663,6 +664,51 @@ derivedSameShapeSimpleFresh ::
   m a
 derivedSameShapeSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 
+genGuardsUnion :: (MonadFresh m, Mergeable a) => [Union a] -> m (Union a)
+genGuardsUnion [x] = return x
+genGuardsUnion (r : rs) = do
+  b <- simpleFresh ()
+  res <- genGuardsUnion rs
+  return $ mrgIf b r res
+genGuardsUnion [] = error "chooseFresh expects at least one value"
+
+genGuards :: (MonadFresh m, Mergeable a) => [a] -> m (Union a)
+genGuards [x] = return $ mrgSingle x
+genGuards (r : rs) = do
+  b <- simpleFresh ()
+  res <- genGuards rs
+  return $ mrgIf b (mrgSingle r) res
+genGuards [] = error "chooseFresh expects at least one value"
+
+genGuardsSimple :: (MonadFresh m, SimpleMergeable a) => [a] -> m a
+genGuardsSimple [x] = return x
+genGuardsSimple (r : rs) = do
+  b <- simpleFresh ()
+  res <- genGuardsSimple rs
+  return $ mrgIte b r res
+genGuardsSimple [] = error "chooseFresh expects at least one value"
+
+leveledChoose ::
+  (Monad m, Mergeable b1) =>
+  ([b2] -> m b2) -> ([b1] -> m b2) -> [b1] -> m b2
+leveledChoose gen gen' l = go 0 choicesWithIndices
+  where
+    indices = sortIndices <$> l
+    choicesWithIndices = sortOn snd $ zip l indices
+    go i l = do
+      let grouped =
+            groupBy
+              ( \(_, a) (_, b) ->
+                  (length a <= i && length b <= i) || a !! i == b !! i
+              )
+              l
+      allChoices <- traverse (go' i) grouped
+      gen allChoices
+    go' i l =
+      if length (snd $ head l) <= i
+        then gen' $ fst <$> l
+        else go (i + 1) l
+
 -- | Symbolically chooses one of the provided values.
 -- The procedure creates @n - 1@ fresh symbolic boolean variables every time it
 -- is evaluated, and use these variables to conditionally select one of the @n@
@@ -680,14 +726,7 @@ chooseFresh ::
   ) =>
   [a] ->
   m (Union a)
-chooseFresh l = go $ sortByMergeIdx l
-  where
-    go [x] = return $ mrgSingle x
-    go (r : rs) = do
-      b <- simpleFresh ()
-      res <- go rs
-      return $ mrgIf b (mrgSingle r) res
-    go [] = error "chooseFresh expects at least one value"
+chooseFresh = leveledChoose genGuardsUnion genGuards
 
 -- | A wrapper for `chooseFresh` that executes the `MonadFresh` context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
@@ -717,14 +756,7 @@ chooseSimpleFresh ::
   ) =>
   [a] ->
   m a
-chooseSimpleFresh l = go $ sortByMergeIdx l
-  where
-    go [x] = return x
-    go (r : rs) = do
-      b :: bool <- simpleFresh ()
-      res <- go rs
-      return $ mrgIte b r res
-    go [] = error "chooseSimpleFresh expects at least one value"
+chooseSimpleFresh = leveledChoose genGuardsSimple genGuardsSimple
 
 -- | A wrapper for `chooseSimpleFresh` that executes the `MonadFresh` context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
@@ -756,14 +788,7 @@ chooseUnionFresh ::
   ) =>
   [Union a] ->
   m (Union a)
-chooseUnionFresh l = go $ sortByMergeIdx l
-  where
-    go [x] = return x
-    go (r : rs) = do
-      b <- simpleFresh ()
-      res <- go rs
-      return $ mrgIf b r res
-    go [] = error "chooseUnionFresh expects at least one value"
+chooseUnionFresh = leveledChoose genGuardsUnion genGuardsUnion
 
 -- | A wrapper for `chooseUnionFresh` that executes the `MonadFresh` context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of

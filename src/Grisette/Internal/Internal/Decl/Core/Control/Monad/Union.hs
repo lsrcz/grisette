@@ -28,7 +28,6 @@ module Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
   )
 where
 
-import Data.List (sortOn)
 import Data.String (IsString (fromString))
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion (ifView, singleView, toGuardedList),
@@ -38,7 +37,7 @@ import Grisette.Internal.Core.Data.Class.Solvable
     pattern Con,
   )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
-  ( Mergeable (rootStrategy, sortByMergeIdx),
+  ( Mergeable (rootStrategy, sortIndices),
     Mergeable1 (liftRootStrategy),
     MergingStrategy (SimpleStrategy),
     resolveStrategy,
@@ -231,8 +230,7 @@ instance (Solvable c t, Mergeable t) => Solvable c (Union t) where
 instance (Mergeable a) => Mergeable (Union a) where
   rootStrategy = rootStrategy1
   {-# INLINE rootStrategy #-}
-  sortByMergeIdx =
-    sortOn (fst . resolveStrategy rootStrategy . snd . head . toGuardedList)
+  sortIndices = fst . resolveStrategy rootStrategy . snd . head . toGuardedList
 
 instance (Mergeable a) => SimpleMergeable (Union a) where
   mrgIte = mrgIf

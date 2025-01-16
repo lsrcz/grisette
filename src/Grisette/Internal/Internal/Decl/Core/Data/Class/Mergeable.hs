@@ -64,7 +64,6 @@ import Data.Functor.Classes
     showsPrec1,
   )
 import Data.Kind (Type)
-import Data.List (sortOn)
 import Data.Typeable
   ( Typeable,
     eqT,
@@ -206,8 +205,8 @@ class Mergeable a where
   -- | The root merging strategy for the type.
   rootStrategy :: MergingStrategy a
 
-  sortByMergeIdx :: [a] -> [a]
-  sortByMergeIdx = sortOn (fst . resolveStrategy rootStrategy)
+  sortIndices :: a -> [DynamicSortedIdx]
+  sortIndices = fst . resolveStrategy rootStrategy
 
 -- | Lifting of the 'Mergeable' class to unary type constructors.
 class
