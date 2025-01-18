@@ -60,120 +60,120 @@
 </span><span id="line-60"></span><span>  </span><span class="hs-special">)</span><span>
 </span><span id="line-61"></span><span>
 </span><span id="line-62"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq1</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-63"></span><span>  </span><span id="local-6989586621682346156"><span class="annot"><span class="annottext">liftEq :: forall a b. (a -&gt; b -&gt; Bool) -&gt; UnionBase a -&gt; UnionBase b -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var">liftEq</span></span></span><span> </span><span id="local-6989586621682346157"><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
-</span><a href="#local-6989586621682346157"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346158"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346158"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346159"><span class="annot"><span class="annottext">b
-</span><a href="#local-6989586621682346159"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
-</span><a href="#local-6989586621682346157"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346158"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">b
-</span><a href="#local-6989586621682346159"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-64"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftEq</span></span><span> </span><span id="local-6989586621682346160"><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
-</span><a href="#local-6989586621682346160"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span id="local-6989586621682346161"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346161"><span class="hs-identifier hs-var">l1</span></a></span></span><span> </span><span id="local-6989586621682346162"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682346162"><span class="hs-identifier hs-var">i1</span></a></span></span><span> </span><span id="local-6989586621682346163"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346163"><span class="hs-identifier hs-var">c1</span></a></span></span><span> </span><span id="local-6989586621682346164"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346164"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682346165"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346165"><span class="hs-identifier hs-var">f1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span id="local-6989586621682346166"><span class="annot"><span class="annottext">b
-</span><a href="#local-6989586621682346166"><span class="hs-identifier hs-var">l2</span></a></span></span><span> </span><span id="local-6989586621682346167"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682346167"><span class="hs-identifier hs-var">i2</span></a></span></span><span> </span><span id="local-6989586621682346168"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346168"><span class="hs-identifier hs-var">c2</span></a></span></span><span> </span><span id="local-6989586621682346169"><span class="annot"><span class="annottext">UnionBase b
-</span><a href="#local-6989586621682346169"><span class="hs-identifier hs-var">t2</span></a></span></span><span> </span><span id="local-6989586621682346170"><span class="annot"><span class="annottext">UnionBase b
-</span><a href="#local-6989586621682346170"><span class="hs-identifier hs-var">f2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-63"></span><span>  </span><span id="local-6989586621682333456"><span class="annot"><span class="annottext">liftEq :: forall a b. (a -&gt; b -&gt; Bool) -&gt; UnionBase a -&gt; UnionBase b -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var">liftEq</span></span></span><span> </span><span id="local-6989586621682333457"><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
+</span><a href="#local-6989586621682333457"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333458"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333458"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333459"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682333459"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
+</span><a href="#local-6989586621682333457"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333458"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682333459"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftEq</span></span><span> </span><span id="local-6989586621682333460"><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
+</span><a href="#local-6989586621682333460"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span id="local-6989586621682333461"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333461"><span class="hs-identifier hs-var">l1</span></a></span></span><span> </span><span id="local-6989586621682333462"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682333462"><span class="hs-identifier hs-var">i1</span></a></span></span><span> </span><span id="local-6989586621682333463"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333463"><span class="hs-identifier hs-var">c1</span></a></span></span><span> </span><span id="local-6989586621682333464"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333464"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621682333465"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333465"><span class="hs-identifier hs-var">f1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span id="local-6989586621682333466"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682333466"><span class="hs-identifier hs-var">l2</span></a></span></span><span> </span><span id="local-6989586621682333467"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682333467"><span class="hs-identifier hs-var">i2</span></a></span></span><span> </span><span id="local-6989586621682333468"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333468"><span class="hs-identifier hs-var">c2</span></a></span></span><span> </span><span id="local-6989586621682333469"><span class="annot"><span class="annottext">UnionBase b
+</span><a href="#local-6989586621682333469"><span class="hs-identifier hs-var">t2</span></a></span></span><span> </span><span id="local-6989586621682333470"><span class="annot"><span class="annottext">UnionBase b
+</span><a href="#local-6989586621682333470"><span class="hs-identifier hs-var">f2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-65"></span><span>    </span><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
-</span><a href="#local-6989586621682346160"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346161"><span class="hs-identifier hs-var">l1</span></a></span><span> </span><span class="annot"><span class="annottext">b
-</span><a href="#local-6989586621682346166"><span class="hs-identifier hs-var">l2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621682333460"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333461"><span class="hs-identifier hs-var">l1</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621682333466"><span class="hs-identifier hs-var">l2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682346162"><span class="hs-identifier hs-var">i1</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621682333462"><span class="hs-identifier hs-var">i1</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682346167"><span class="hs-identifier hs-var">i2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621682333467"><span class="hs-identifier hs-var">i2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346163"><span class="hs-identifier hs-var">c1</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; Bool
+</span><a href="#local-6989586621682333463"><span class="hs-identifier hs-var">c1</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SymBool -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346168"><span class="hs-identifier hs-var">c2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621682333468"><span class="hs-identifier hs-var">c2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; b -&gt; Bool) -&gt; UnionBase a -&gt; UnionBase b -&gt; Bool
 forall a b. (a -&gt; b -&gt; Bool) -&gt; UnionBase a -&gt; UnionBase b -&gt; Bool
 forall (f :: * -&gt; *) a b.
 Eq1 f =&gt;
 (a -&gt; b -&gt; Bool) -&gt; f a -&gt; f b -&gt; Bool
 </span><span class="hs-identifier hs-var">liftEq</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
-</span><a href="#local-6989586621682346160"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346164"><span class="hs-identifier hs-var">t1</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase b
-</span><a href="#local-6989586621682346169"><span class="hs-identifier hs-var">t2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621682333460"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333464"><span class="hs-identifier hs-var">t1</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase b
+</span><a href="#local-6989586621682333469"><span class="hs-identifier hs-var">t2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; b -&gt; Bool) -&gt; UnionBase a -&gt; UnionBase b -&gt; Bool
 forall a b. (a -&gt; b -&gt; Bool) -&gt; UnionBase a -&gt; UnionBase b -&gt; Bool
 forall (f :: * -&gt; *) a b.
 Eq1 f =&gt;
 (a -&gt; b -&gt; Bool) -&gt; f a -&gt; f b -&gt; Bool
 </span><span class="hs-identifier hs-var">liftEq</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
-</span><a href="#local-6989586621682346160"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346165"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase b
-</span><a href="#local-6989586621682346170"><span class="hs-identifier hs-var">f2</span></a></span><span>
+</span><a href="#local-6989586621682333460"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333465"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase b
+</span><a href="#local-6989586621682333470"><span class="hs-identifier hs-var">f2</span></a></span><span>
 </span><span id="line-66"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftEq</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b -&gt; Bool
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">UnionBase b
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
 </span><span id="line-67"></span><span>
-</span><span id="line-68"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682345992"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="#local-6989586621682345992"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682345992"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-69"></span><span>  </span><span id="local-6989586621682346179"><span class="annot"><span class="annottext">rnf :: UnionBase a -&gt; ()
+</span><span id="line-68"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333292"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="#local-6989586621682333292"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333292"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-69"></span><span>  </span><span id="local-6989586621682333479"><span class="annot"><span class="annottext">rnf :: UnionBase a -&gt; ()
 </span><span class="hs-identifier hs-var hs-var hs-var">rnf</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; ()
 forall (f :: * -&gt; *) a. (NFData1 f, NFData a) =&gt; f a -&gt; ()
 </span><span class="hs-identifier hs-var">rnf1</span></span><span>
 </span><span id="line-70"></span><span>
 </span><span id="line-71"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData1</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-72"></span><span>  </span><span id="local-6989586621682346190"><span class="annot"><span class="annottext">liftRnf :: forall a. (a -&gt; ()) -&gt; UnionBase a -&gt; ()
-</span><span class="hs-identifier hs-var hs-var hs-var">liftRnf</span></span></span><span> </span><span id="local-6989586621682346191"><span class="annot"><span class="annottext">a -&gt; ()
-</span><a href="#local-6989586621682346191"><span class="hs-identifier hs-var">_a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346192"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346192"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; ()
-</span><a href="#local-6989586621682346191"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346192"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-73"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftRnf</span></span><span> </span><span id="local-6989586621682346193"><span class="annot"><span class="annottext">a -&gt; ()
-</span><a href="#local-6989586621682346193"><span class="hs-identifier hs-var">_a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span id="local-6989586621682346194"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346194"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682346195"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682346195"><span class="hs-identifier hs-var">bo</span></a></span></span><span> </span><span id="local-6989586621682346196"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346196"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621682346197"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346197"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682346198"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346198"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>  </span><span id="local-6989586621682333490"><span class="annot"><span class="annottext">liftRnf :: forall a. (a -&gt; ()) -&gt; UnionBase a -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var">liftRnf</span></span></span><span> </span><span id="local-6989586621682333491"><span class="annot"><span class="annottext">a -&gt; ()
+</span><a href="#local-6989586621682333491"><span class="hs-identifier hs-var">_a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333492"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333492"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; ()
+</span><a href="#local-6989586621682333491"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333492"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftRnf</span></span><span> </span><span id="local-6989586621682333493"><span class="annot"><span class="annottext">a -&gt; ()
+</span><a href="#local-6989586621682333493"><span class="hs-identifier hs-var">_a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span id="local-6989586621682333494"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333494"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682333495"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682333495"><span class="hs-identifier hs-var">bo</span></a></span></span><span> </span><span id="local-6989586621682333496"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333496"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621682333497"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333497"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682333498"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333498"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-74"></span><span>    </span><span class="annot"><span class="annottext">a -&gt; ()
-</span><a href="#local-6989586621682346193"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346194"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+</span><a href="#local-6989586621682333493"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333494"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
 forall a b. a -&gt; b -&gt; b
 </span><span class="hs-operator hs-var">`seq`</span></span><span>
 </span><span id="line-75"></span><span>      </span><span class="annot"><span class="annottext">Bool -&gt; ()
 forall a. NFData a =&gt; a -&gt; ()
 </span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621682346195"><span class="hs-identifier hs-var">bo</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+</span><a href="#local-6989586621682333495"><span class="hs-identifier hs-var">bo</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
 forall a b. a -&gt; b -&gt; b
 </span><span class="hs-operator hs-var">`seq`</span></span><span>
 </span><span id="line-76"></span><span>        </span><span class="annot"><span class="annottext">SymBool -&gt; ()
 forall a. NFData a =&gt; a -&gt; ()
 </span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346196"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+</span><a href="#local-6989586621682333496"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
 forall a b. a -&gt; b -&gt; b
 </span><span class="hs-operator hs-var">`seq`</span></span><span>
 </span><span id="line-77"></span><span>          </span><span class="annot"><span class="annottext">(a -&gt; ()) -&gt; UnionBase a -&gt; ()
 forall a. (a -&gt; ()) -&gt; UnionBase a -&gt; ()
 forall (f :: * -&gt; *) a. NFData1 f =&gt; (a -&gt; ()) -&gt; f a -&gt; ()
 </span><span class="hs-identifier hs-var">liftRnf</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; ()
-</span><a href="#local-6989586621682346193"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346197"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+</span><a href="#local-6989586621682333493"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333497"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
 forall a b. a -&gt; b -&gt; b
 </span><span class="hs-operator hs-var">`seq`</span></span><span>
 </span><span id="line-78"></span><span>            </span><span class="annot"><span class="annottext">(a -&gt; ()) -&gt; UnionBase a -&gt; ()
 forall a. (a -&gt; ()) -&gt; UnionBase a -&gt; ()
 forall (f :: * -&gt; *) a. NFData1 f =&gt; (a -&gt; ()) -&gt; f a -&gt; ()
 </span><span class="hs-identifier hs-var">liftRnf</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; ()
-</span><a href="#local-6989586621682346193"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346198"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><a href="#local-6989586621682333493"><span class="hs-identifier hs-var">_a</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333498"><span class="hs-identifier hs-var">r</span></a></span><span>
 </span><span id="line-79"></span><span>
-</span><span id="line-80"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346011"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346011"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682346011"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346011"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-81"></span><span>  </span><span id="local-6989586621682346226"><span class="annot"><span class="annottext">serialize :: forall (m :: * -&gt; *). MonadPut m =&gt; UnionBase a -&gt; m ()
-</span><span class="hs-identifier hs-var hs-var hs-var">serialize</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346227"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346227"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; m ()
+</span><span id="line-80"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333311"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333311"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682333311"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333311"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>  </span><span id="local-6989586621682333526"><span class="annot"><span class="annottext">serialize :: forall (m :: * -&gt; *). MonadPut m =&gt; UnionBase a -&gt; m ()
+</span><span class="hs-identifier hs-var hs-var hs-var">serialize</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333527"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333527"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; Word8 -&gt; m ()
 </span><span class="hs-identifier hs-var">putWord8</span></span><span> </span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">m () -&gt; m () -&gt; m ()
@@ -183,13 +183,13 @@ forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; m b -&gt; m b
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; a -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346227"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><a href="#local-6989586621682333527"><span class="hs-identifier hs-var">a</span></a></span><span>
 </span><span id="line-82"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">serialize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346228"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346228"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682346229"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346229"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682346230"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346230"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333528"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333528"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682333529"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333529"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682333530"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333530"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-83"></span><span>    </span><span class="annot"><span class="annottext">Word8 -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; Word8 -&gt; m ()
 </span><span class="hs-identifier hs-var">putWord8</span></span><span> </span><span class="annot"><span class="annottext">Word8
@@ -200,27 +200,27 @@ forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; m b -&gt; m b
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; SymBool -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346228"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">m () -&gt; m () -&gt; m ()
+</span><a href="#local-6989586621682333528"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">m () -&gt; m () -&gt; m ()
 forall a b. m a -&gt; m b -&gt; m b
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; m b -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; m ()
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; UnionBase a -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346229"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">m () -&gt; m () -&gt; m ()
+</span><a href="#local-6989586621682333529"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">m () -&gt; m () -&gt; m ()
 forall a b. m a -&gt; m b -&gt; m b
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; m b -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; m ()
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; UnionBase a -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346230"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-84"></span><span>  </span><span id="local-6989586621682346261"><span class="annot"><span class="annottext">deserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m (UnionBase a)
+</span><a href="#local-6989586621682333530"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621682333561"><span class="annot"><span class="annottext">deserialize :: forall (m :: * -&gt; *). MonadGet m =&gt; m (UnionBase a)
 </span><span class="hs-identifier hs-var hs-var hs-var">deserialize</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-85"></span><span>    </span><span id="local-6989586621682346262"><span class="annot"><a href="#local-6989586621682346262"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m Word8
+</span><span id="line-85"></span><span>    </span><span id="local-6989586621682333562"><span class="annot"><a href="#local-6989586621682333562"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m Word8
 forall (m :: * -&gt; *). MonadGet m =&gt; m Word8
 </span><span class="hs-identifier hs-var">getWord8</span></span><span>
-</span><span id="line-86"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621682346262"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621682333562"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-87"></span><span>      </span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; UnionBase a
 forall a. a -&gt; UnionBase a
@@ -270,57 +270,57 @@ forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
 </span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Invalid tag&quot;</span></span><span>
 </span><span id="line-94"></span><span>
-</span><span id="line-95"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346037"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346037"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682346037"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346037"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-96"></span><span>  </span><span id="local-6989586621682346273"><span class="annot"><span class="annottext">put :: Putter (UnionBase a)
-</span><a href="#local-6989586621682346273"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter (UnionBase a)
+</span><span id="line-95"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333337"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333337"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682333337"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333337"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-96"></span><span>  </span><span id="local-6989586621682333573"><span class="annot"><span class="annottext">put :: Putter (UnionBase a)
+</span><a href="#local-6989586621682333573"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter (UnionBase a)
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; UnionBase a -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span>
-</span><span id="line-97"></span><span>  </span><span id="local-6989586621682346278"><span class="annot"><span class="annottext">get :: Get (UnionBase a)
-</span><a href="#local-6989586621682346278"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get (UnionBase a)
+</span><span id="line-97"></span><span>  </span><span id="local-6989586621682333578"><span class="annot"><span class="annottext">get :: Get (UnionBase a)
+</span><a href="#local-6989586621682333578"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get (UnionBase a)
 forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
 forall (m :: * -&gt; *). MonadGet m =&gt; m (UnionBase a)
 </span><span class="hs-identifier hs-var">deserialize</span></span><span>
 </span><span id="line-98"></span><span>
-</span><span id="line-99"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346044"><span id="local-6989586621682346285"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346044"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682346044"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346044"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-100"></span><span>  </span><span id="local-6989586621682346292"><span class="annot"><span class="annottext">put :: UnionBase a -&gt; Put
-</span><a href="#local-6989586621682346292"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; Put
+</span><span id="line-99"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333344"><span id="local-6989586621682333585"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.html#Mergeable"><span class="hs-identifier hs-type">Mergeable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333344"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Serial</span></span><span> </span><span class="annot"><a href="#local-6989586621682333344"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333344"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-100"></span><span>  </span><span id="local-6989586621682333592"><span class="annot"><span class="annottext">put :: UnionBase a -&gt; Put
+</span><a href="#local-6989586621682333592"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; Put
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; UnionBase a -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span>
-</span><span id="line-101"></span><span>  </span><span id="local-6989586621682346297"><span class="annot"><span class="annottext">get :: Get (UnionBase a)
-</span><a href="#local-6989586621682346297"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get (UnionBase a)
+</span><span id="line-101"></span><span>  </span><span id="local-6989586621682333597"><span class="annot"><span class="annottext">get :: Get (UnionBase a)
+</span><a href="#local-6989586621682333597"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get (UnionBase a)
 forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
 forall (m :: * -&gt; *). MonadGet m =&gt; m (UnionBase a)
 </span><span class="hs-identifier hs-var">deserialize</span></span><span>
 </span><span id="line-102"></span><span>
-</span><span id="line-103"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346303"><span class="annot"><span class="hs-identifier hs-type">Show1</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-104"></span><span>  </span><span id="local-6989586621682346314"><span class="annot"><span class="annottext">liftShowsPrec :: forall a.
+</span><span id="line-103"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333603"><span class="annot"><span class="hs-identifier hs-type">Show1</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-104"></span><span>  </span><span id="local-6989586621682333614"><span class="annot"><span class="annottext">liftShowsPrec :: forall a.
 (Int -&gt; a -&gt; ShowS)
 -&gt; ([a] -&gt; ShowS) -&gt; Int -&gt; UnionBase a -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var">liftShowsPrec</span></span></span><span> </span><span id="local-6989586621682346315"><span class="annot"><span class="annottext">Int -&gt; a -&gt; ShowS
-</span><a href="#local-6989586621682346315"><span class="hs-identifier hs-var">sp</span></a></span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; ShowS
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346316"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346316"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346317"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346317"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; ShowS) -&gt; String -&gt; Int -&gt; a -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var">liftShowsPrec</span></span></span><span> </span><span id="local-6989586621682333615"><span class="annot"><span class="annottext">Int -&gt; a -&gt; ShowS
+</span><a href="#local-6989586621682333615"><span class="hs-identifier hs-var">sp</span></a></span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; ShowS
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333616"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333616"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333617"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333617"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; ShowS) -&gt; String -&gt; Int -&gt; a -&gt; ShowS
 forall a. (Int -&gt; a -&gt; ShowS) -&gt; String -&gt; Int -&gt; a -&gt; ShowS
 </span><span class="hs-identifier hs-var">showsUnaryWith</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; ShowS
-</span><a href="#local-6989586621682346315"><span class="hs-identifier hs-var">sp</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621682333615"><span class="hs-identifier hs-var">sp</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Single&quot;</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346316"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346317"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-105"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftShowsPrec</span></span><span> </span><span id="local-6989586621682346318"><span class="annot"><span class="annottext">Int -&gt; a -&gt; ShowS
-</span><a href="#local-6989586621682346318"><span class="hs-identifier hs-var">sp</span></a></span></span><span> </span><span id="local-6989586621682346319"><span class="annot"><span class="annottext">[a] -&gt; ShowS
-</span><a href="#local-6989586621682346319"><span class="hs-identifier hs-var">sl</span></a></span></span><span> </span><span id="local-6989586621682346320"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346320"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333616"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333617"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-105"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftShowsPrec</span></span><span> </span><span id="local-6989586621682333618"><span class="annot"><span class="annottext">Int -&gt; a -&gt; ShowS
+</span><a href="#local-6989586621682333618"><span class="hs-identifier hs-var">sp</span></a></span></span><span> </span><span id="local-6989586621682333619"><span class="annot"><span class="annottext">[a] -&gt; ShowS
+</span><a href="#local-6989586621682333619"><span class="hs-identifier hs-var">sl</span></a></span></span><span> </span><span id="local-6989586621682333620"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333620"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346321"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346321"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682346322"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346322"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682346323"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346323"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333621"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333621"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682333622"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333622"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682333623"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333623"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-106"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; ShowS -&gt; ShowS
 </span><span class="hs-identifier hs-var">showParen</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346320"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+</span><a href="#local-6989586621682333620"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
 forall a. Ord a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">10</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(ShowS -&gt; ShowS) -&gt; ShowS -&gt; ShowS
@@ -340,7 +340,7 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 forall a. Show a =&gt; Int -&gt; a -&gt; ShowS
 </span><span class="hs-identifier hs-var">showsPrec</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346321"><span class="hs-identifier hs-var">cond</span></a></span><span>
+</span><a href="#local-6989586621682333621"><span class="hs-identifier hs-var">cond</span></a></span><span>
 </span><span id="line-110"></span><span>        </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; ShowS
@@ -349,9 +349,9 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span id="line-111"></span><span>        </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; ShowS
-</span><a href="#local-6989586621682346330"><span class="hs-identifier hs-var">sp1</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333630"><span class="hs-identifier hs-var">sp1</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346322"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><a href="#local-6989586621682333622"><span class="hs-identifier hs-var">t</span></a></span><span>
 </span><span id="line-112"></span><span>        </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; ShowS
@@ -360,12 +360,12 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span id="line-113"></span><span>        </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS -&gt; ShowS
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; ShowS
-</span><a href="#local-6989586621682346330"><span class="hs-identifier hs-var">sp1</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333630"><span class="hs-identifier hs-var">sp1</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346323"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621682333623"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-114"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-115"></span><span>      </span><span id="local-6989586621682346330"><span class="annot"><span class="annottext">sp1 :: Int -&gt; UnionBase a -&gt; ShowS
-</span><a href="#local-6989586621682346330"><span class="hs-identifier hs-var hs-var">sp1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; ShowS)
+</span><span id="line-115"></span><span>      </span><span id="local-6989586621682333630"><span class="annot"><span class="annottext">sp1 :: Int -&gt; UnionBase a -&gt; ShowS
+</span><a href="#local-6989586621682333630"><span class="hs-identifier hs-var hs-var">sp1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; ShowS)
 -&gt; ([a] -&gt; ShowS) -&gt; Int -&gt; UnionBase a -&gt; ShowS
 forall a.
 (Int -&gt; a -&gt; ShowS)
@@ -374,44 +374,44 @@ forall (f :: * -&gt; *) a.
 Show1 f =&gt;
 (Int -&gt; a -&gt; ShowS) -&gt; ([a] -&gt; ShowS) -&gt; Int -&gt; f a -&gt; ShowS
 </span><span class="hs-identifier hs-var">liftShowsPrec</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; ShowS
-</span><a href="#local-6989586621682346318"><span class="hs-identifier hs-var">sp</span></a></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; ShowS
-</span><a href="#local-6989586621682346319"><span class="hs-identifier hs-var">sl</span></a></span><span>
+</span><a href="#local-6989586621682333618"><span class="hs-identifier hs-var">sp</span></a></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; ShowS
+</span><a href="#local-6989586621682333619"><span class="hs-identifier hs-var">sl</span></a></span><span>
 </span><span id="line-116"></span><span>
-</span><span id="line-117"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346331"><span id="local-6989586621682346335"><span id="local-6989586621682346339"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621682346331"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346331"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-118"></span><span>  </span><span id="local-6989586621682346344"><span class="annot"><span class="annottext">showsPrec :: Int -&gt; UnionBase a -&gt; ShowS
+</span><span id="line-117"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333631"><span id="local-6989586621682333635"><span id="local-6989586621682333639"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621682333631"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333631"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-118"></span><span>  </span><span id="local-6989586621682333644"><span class="annot"><span class="annottext">showsPrec :: Int -&gt; UnionBase a -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var">showsPrec</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; ShowS
 forall (f :: * -&gt; *) a. (Show1 f, Show a) =&gt; Int -&gt; f a -&gt; ShowS
 </span><span class="hs-identifier hs-var">showsPrec1</span></span><span>
 </span><span id="line-119"></span><span>
-</span><span id="line-120"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346073"><span id="local-6989586621682346347"><span id="local-6989586621682346352"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint"><span class="hs-identifier hs-type">PPrint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346073"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint"><span class="hs-identifier hs-type">PPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346073"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-121"></span><span>  </span><span id="local-6989586621682346358"><span class="annot"><span class="annottext">pformatPrec :: forall ann. Int -&gt; UnionBase a -&gt; Doc ann
+</span><span id="line-120"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333373"><span id="local-6989586621682333647"><span id="local-6989586621682333652"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint"><span class="hs-identifier hs-type">PPrint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333373"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint"><span class="hs-identifier hs-type">PPrint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333373"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-121"></span><span>  </span><span id="local-6989586621682333658"><span class="annot"><span class="annottext">pformatPrec :: forall ann. Int -&gt; UnionBase a -&gt; Doc ann
 </span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatPrec"><span class="hs-identifier hs-var hs-var hs-var">pformatPrec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; Doc ann
 forall (f :: * -&gt; *) a ann.
 (PPrint1 f, PPrint a) =&gt;
 Int -&gt; f a -&gt; Doc ann
 </span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatPrec1"><span class="hs-identifier hs-var">pformatPrec1</span></a></span><span>
 </span><span id="line-122"></span><span>
-</span><span id="line-123"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346363"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint1"><span class="hs-identifier hs-type">PPrint1</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-124"></span><span>  </span><span id="local-6989586621682346376"><span class="annot"><span class="annottext">liftPFormatPrec :: forall a ann.
+</span><span id="line-123"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333663"><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#PPrint1"><span class="hs-identifier hs-type">PPrint1</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-124"></span><span>  </span><span id="local-6989586621682333676"><span class="annot"><span class="annottext">liftPFormatPrec :: forall a ann.
 (Int -&gt; a -&gt; Doc ann)
 -&gt; ([a] -&gt; Doc ann) -&gt; Int -&gt; UnionBase a -&gt; Doc ann
-</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec"><span class="hs-identifier hs-var hs-var hs-var">liftPFormatPrec</span></a></span></span><span> </span><span id="local-6989586621682346377"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
-</span><a href="#local-6989586621682346377"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Doc ann
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346378"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346378"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346379"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346379"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
-</span><a href="#local-6989586621682346377"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346378"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346379"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-125"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec"><span class="hs-identifier hs-var">liftPFormatPrec</span></a></span><span> </span><span id="local-6989586621682346380"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
-</span><a href="#local-6989586621682346380"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span id="local-6989586621682346381"><span class="annot"><span class="annottext">[a] -&gt; Doc ann
-</span><a href="#local-6989586621682346381"><span class="hs-identifier hs-var">fl</span></a></span></span><span> </span><span id="local-6989586621682346382"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346382"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec"><span class="hs-identifier hs-var hs-var hs-var">liftPFormatPrec</span></a></span></span><span> </span><span id="local-6989586621682333677"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
+</span><a href="#local-6989586621682333677"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Doc ann
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333678"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333678"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333679"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333679"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
+</span><a href="#local-6989586621682333677"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333678"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333679"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-125"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec"><span class="hs-identifier hs-var">liftPFormatPrec</span></a></span><span> </span><span id="local-6989586621682333680"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
+</span><a href="#local-6989586621682333680"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span id="local-6989586621682333681"><span class="annot"><span class="annottext">[a] -&gt; Doc ann
+</span><a href="#local-6989586621682333681"><span class="hs-identifier hs-var">fl</span></a></span></span><span> </span><span id="local-6989586621682333682"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333682"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346383"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346383"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682346384"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346384"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682346385"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346385"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333683"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333683"><span class="hs-identifier hs-var">cond</span></a></span></span><span> </span><span id="local-6989586621682333684"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333684"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682333685"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333685"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-126"></span><span>    </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
 forall ann. Doc ann -&gt; Doc ann
 </span><span class="hs-identifier hs-var">group</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
@@ -420,7 +420,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span id="line-127"></span><span>      </span><span class="annot"><span class="annottext">Bool -&gt; Doc ann -&gt; Doc ann -&gt; Doc ann -&gt; Doc ann
 forall ann. Bool -&gt; Doc ann -&gt; Doc ann -&gt; Doc ann -&gt; Doc ann
 </span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#condEnclose"><span class="hs-identifier hs-var">condEnclose</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346382"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+</span><a href="#local-6989586621682333682"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
 forall a. Ord a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">10</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Doc ann
@@ -449,7 +449,7 @@ forall ann. Int -&gt; SymBool -&gt; Doc ann
 forall a ann. PPrint a =&gt; Int -&gt; a -&gt; Doc ann
 </span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#pformatPrec"><span class="hs-identifier hs-var">pformatPrec</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346383"><span class="hs-identifier hs-var">cond</span></a></span><span class="hs-special">,</span><span>
+</span><a href="#local-6989586621682333683"><span class="hs-identifier hs-var">cond</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-133"></span><span>                </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; Doc ann)
 -&gt; ([a] -&gt; Doc ann) -&gt; Int -&gt; UnionBase a -&gt; Doc ann
 forall a ann.
@@ -459,10 +459,10 @@ forall (f :: * -&gt; *) a ann.
 PPrint1 f =&gt;
 (Int -&gt; a -&gt; Doc ann) -&gt; ([a] -&gt; Doc ann) -&gt; Int -&gt; f a -&gt; Doc ann
 </span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec"><span class="hs-identifier hs-var">liftPFormatPrec</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
-</span><a href="#local-6989586621682346380"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Doc ann
-</span><a href="#local-6989586621682346381"><span class="hs-identifier hs-var">fl</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333680"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Doc ann
+</span><a href="#local-6989586621682333681"><span class="hs-identifier hs-var">fl</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346384"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">,</span><span>
+</span><a href="#local-6989586621682333684"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-134"></span><span>                </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; Doc ann)
 -&gt; ([a] -&gt; Doc ann) -&gt; Int -&gt; UnionBase a -&gt; Doc ann
 forall a ann.
@@ -472,14 +472,14 @@ forall (f :: * -&gt; *) a ann.
 PPrint1 f =&gt;
 (Int -&gt; a -&gt; Doc ann) -&gt; ([a] -&gt; Doc ann) -&gt; Int -&gt; f a -&gt; Doc ann
 </span><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint.html#liftPFormatPrec"><span class="hs-identifier hs-var">liftPFormatPrec</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; Doc ann
-</span><a href="#local-6989586621682346380"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Doc ann
-</span><a href="#local-6989586621682346381"><span class="hs-identifier hs-var">fl</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333680"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Doc ann
+</span><a href="#local-6989586621682333681"><span class="hs-identifier hs-var">fl</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346385"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621682333685"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-135"></span><span>              </span><span class="hs-special">]</span><span>
 </span><span id="line-136"></span><span>
-</span><span id="line-137"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346096"><span id="local-6989586621682346393"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="#local-6989586621682346096"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346096"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-138"></span><span>  </span><span id="local-6989586621682346401"><span class="annot"><span class="annottext">hashWithSalt :: Int -&gt; UnionBase a -&gt; Int
+</span><span id="line-137"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333396"><span id="local-6989586621682333693"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="#local-6989586621682333396"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333396"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-138"></span><span>  </span><span id="local-6989586621682333701"><span class="annot"><span class="annottext">hashWithSalt :: Int -&gt; UnionBase a -&gt; Int
 </span><span class="hs-identifier hs-var hs-var hs-var">hashWithSalt</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; Int
 forall (f :: * -&gt; *) a.
 (Hashable1 f, Hashable a) =&gt;
@@ -487,99 +487,99 @@ Int -&gt; f a -&gt; Int
 </span><span class="hs-identifier hs-var">hashWithSalt1</span></span><span>
 </span><span id="line-139"></span><span>
 </span><span id="line-140"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable1</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-141"></span><span>  </span><span id="local-6989586621682346412"><span class="annot"><span class="annottext">liftHashWithSalt :: forall a. (Int -&gt; a -&gt; Int) -&gt; Int -&gt; UnionBase a -&gt; Int
-</span><span class="hs-identifier hs-var hs-var hs-var">liftHashWithSalt</span></span></span><span> </span><span id="local-6989586621682346413"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Int
-</span><a href="#local-6989586621682346413"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682346414"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346414"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346415"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346415"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346414"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><span id="line-141"></span><span>  </span><span id="local-6989586621682333712"><span class="annot"><span class="annottext">liftHashWithSalt :: forall a. (Int -&gt; a -&gt; Int) -&gt; Int -&gt; UnionBase a -&gt; Int
+</span><span class="hs-identifier hs-var hs-var hs-var">liftHashWithSalt</span></span></span><span> </span><span id="local-6989586621682333713"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Int
+</span><a href="#local-6989586621682333713"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682333714"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333714"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333715"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333715"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333714"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Hashable a =&gt; Int -&gt; a -&gt; Int
 </span><span class="hs-operator hs-var">`hashWithSalt`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; Int
-</span><a href="#local-6989586621682346413"><span class="hs-operator hs-var">`f`</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346415"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-142"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftHashWithSalt</span></span><span> </span><span id="local-6989586621682346416"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Int
-</span><a href="#local-6989586621682346416"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682346417"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346417"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333713"><span class="hs-operator hs-var">`f`</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333715"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-142"></span><span>  </span><span class="annot"><span class="hs-identifier hs-var">liftHashWithSalt</span></span><span> </span><span id="local-6989586621682333716"><span class="annot"><span class="annottext">Int -&gt; a -&gt; Int
+</span><a href="#local-6989586621682333716"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621682333717"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621682333717"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346418"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346418"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682346419"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346419"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682346420"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346420"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-143"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682346421"><span class="annot"><span class="annottext">p :: Int -&gt; UnionBase a -&gt; Int
-</span><a href="#local-6989586621682346421"><span class="hs-identifier hs-var hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; Int) -&gt; Int -&gt; UnionBase a -&gt; Int
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333718"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333718"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682333719"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333719"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621682333720"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333720"><span class="hs-identifier hs-var">r</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-143"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621682333721"><span class="annot"><span class="annottext">p :: Int -&gt; UnionBase a -&gt; Int
+</span><a href="#local-6989586621682333721"><span class="hs-identifier hs-var hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a -&gt; Int) -&gt; Int -&gt; UnionBase a -&gt; Int
 forall a. (Int -&gt; a -&gt; Int) -&gt; Int -&gt; UnionBase a -&gt; Int
 forall (t :: * -&gt; *) a.
 Hashable1 t =&gt;
 (Int -&gt; a -&gt; Int) -&gt; Int -&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">liftHashWithSalt</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; a -&gt; Int
-</span><a href="#local-6989586621682346416"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621682333716"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-144"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621682346417"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621682333717"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Hashable a =&gt; Int -&gt; a -&gt; Int
 </span><span class="hs-operator hs-var">`hashWithSalt`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SymBool -&gt; Int
 forall a. Hashable a =&gt; Int -&gt; a -&gt; Int
 </span><span class="hs-operator hs-var">`hashWithSalt`</span></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346418"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; Int
-</span><a href="#local-6989586621682346421"><span class="hs-operator hs-var">`p`</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346419"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; Int
-</span><a href="#local-6989586621682346421"><span class="hs-operator hs-var">`p`</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346420"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><a href="#local-6989586621682333718"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; Int
+</span><a href="#local-6989586621682333721"><span class="hs-operator hs-var">`p`</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333719"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; UnionBase a -&gt; Int
+</span><a href="#local-6989586621682333721"><span class="hs-operator hs-var">`p`</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333720"><span class="hs-identifier hs-var">r</span></a></span><span>
 </span><span id="line-145"></span><span>
-</span><span id="line-146"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682346107"><span id="local-6989586621682346425"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier hs-type">AllSyms</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346107"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier hs-type">AllSyms</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682346107"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-147"></span><span>  </span><span id="local-6989586621682346434"><span class="annot"><span class="annottext">allSymsS :: UnionBase a -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var hs-var hs-var">allSymsS</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346435"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346435"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
+</span><span id="line-146"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682333407"><span id="local-6989586621682333725"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier hs-type">AllSyms</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333407"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms"><span class="hs-identifier hs-type">AllSyms</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682333407"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-147"></span><span>  </span><span id="local-6989586621682333734"><span class="annot"><span class="annottext">allSymsS :: UnionBase a -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var hs-var hs-var">allSymsS</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333735"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333735"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
 forall a. AllSyms a =&gt; a -&gt; [SomeSym] -&gt; [SomeSym]
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var">allSymsS</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346435"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><a href="#local-6989586621682333735"><span class="hs-identifier hs-var">v</span></a></span><span>
 </span><span id="line-148"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var">allSymsS</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346436"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346436"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682346437"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346437"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682346438"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346438"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682346439"><span class="annot"><span class="annottext">[SomeSym]
-</span><a href="#local-6989586621682346439"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SomeSym
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333736"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333736"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682333737"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333737"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682333738"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333738"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621682333739"><span class="annot"><span class="annottext">[SomeSym]
+</span><a href="#local-6989586621682333739"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SomeSym
 forall con sym. LinkedRep con sym =&gt; sym -&gt; SomeSym
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#SomeSym"><span class="hs-identifier hs-var">SomeSym</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346436"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">SomeSym -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682333736"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">SomeSym -&gt; [SomeSym] -&gt; [SomeSym]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">UnionBase a -&gt; [SomeSym] -&gt; [SomeSym]
 forall a. AllSyms a =&gt; a -&gt; [SomeSym] -&gt; [SomeSym]
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var">allSymsS</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346437"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym])
+</span><a href="#local-6989586621682333737"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym])
 -&gt; ([SomeSym] -&gt; [SomeSym]) -&gt; [SomeSym] -&gt; [SomeSym]
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">UnionBase a -&gt; [SomeSym] -&gt; [SomeSym]
 forall a. AllSyms a =&gt; a -&gt; [SomeSym] -&gt; [SomeSym]
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#allSymsS"><span class="hs-identifier hs-var">allSymsS</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346438"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym]) -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682333738"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym]) -&gt; [SomeSym] -&gt; [SomeSym]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[SomeSym]
-</span><a href="#local-6989586621682346439"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621682333739"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-149"></span><span>
 </span><span id="line-150"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#AllSyms1"><span class="hs-identifier hs-type">AllSyms1</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionBase"><span class="hs-identifier hs-type">UnionBase</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-151"></span><span>  </span><span id="local-6989586621682346448"><span class="annot"><span class="annottext">liftAllSymsS :: forall a.
+</span><span id="line-151"></span><span>  </span><span id="local-6989586621682333748"><span class="annot"><span class="annottext">liftAllSymsS :: forall a.
 (a -&gt; [SomeSym] -&gt; [SomeSym])
 -&gt; UnionBase a -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#liftAllSymsS"><span class="hs-identifier hs-var hs-var hs-var">liftAllSymsS</span></a></span></span><span> </span><span id="local-6989586621682346449"><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="#local-6989586621682346449"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682346450"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346450"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="#local-6989586621682346449"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621682346450"><span class="hs-identifier hs-var">v</span></a></span><span>
-</span><span id="line-152"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#liftAllSymsS"><span class="hs-identifier hs-var">liftAllSymsS</span></a></span><span> </span><span id="local-6989586621682346451"><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="#local-6989586621682346451"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#liftAllSymsS"><span class="hs-identifier hs-var hs-var hs-var">liftAllSymsS</span></a></span></span><span> </span><span id="local-6989586621682333749"><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682333749"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionSingle"><span class="hs-identifier hs-type">UnionSingle</span></a></span><span> </span><span id="local-6989586621682333750"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333750"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682333749"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621682333750"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-152"></span><span>  </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#liftAllSymsS"><span class="hs-identifier hs-var">liftAllSymsS</span></a></span><span> </span><span id="local-6989586621682333751"><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682333751"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.UnionBase.html#UnionIf"><span class="hs-identifier hs-type">UnionIf</span></a></span><span> </span><span class="annot"><span class="annottext">a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682346452"><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346452"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682346453"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346453"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682346454"><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346454"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-153"></span><span>    </span><span class="hs-glyph">\</span><span id="local-6989586621682346455"><span class="annot"><span class="annottext">[SomeSym]
-</span><a href="#local-6989586621682346455"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SomeSym
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682333752"><span class="annot"><span class="annottext">SymBool
+</span><a href="#local-6989586621682333752"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621682333753"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333753"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621682333754"><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333754"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-153"></span><span>    </span><span class="hs-glyph">\</span><span id="local-6989586621682333755"><span class="annot"><span class="annottext">[SomeSym]
+</span><a href="#local-6989586621682333755"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SymBool -&gt; SomeSym
 forall con sym. LinkedRep con sym =&gt; sym -&gt; SomeSym
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#SomeSym"><span class="hs-identifier hs-var">SomeSym</span></a></span><span> </span><span class="annot"><span class="annottext">SymBool
-</span><a href="#local-6989586621682346452"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">SomeSym -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682333752"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">SomeSym -&gt; [SomeSym] -&gt; [SomeSym]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(a -&gt; [SomeSym] -&gt; [SomeSym])
 -&gt; UnionBase a -&gt; [SomeSym] -&gt; [SomeSym]
@@ -590,8 +590,8 @@ forall (f :: * -&gt; *) a.
 AllSyms1 f =&gt;
 (a -&gt; [SomeSym] -&gt; [SomeSym]) -&gt; f a -&gt; [SomeSym] -&gt; [SomeSym]
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#liftAllSymsS"><span class="hs-identifier hs-var">liftAllSymsS</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="#local-6989586621682346451"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346453"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym])
+</span><a href="#local-6989586621682333751"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333753"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym])
 -&gt; ([SomeSym] -&gt; [SomeSym]) -&gt; [SomeSym] -&gt; [SomeSym]
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; [SomeSym] -&gt; [SomeSym])
@@ -603,9 +603,9 @@ forall (f :: * -&gt; *) a.
 AllSyms1 f =&gt;
 (a -&gt; [SomeSym] -&gt; [SomeSym]) -&gt; f a -&gt; [SomeSym] -&gt; [SomeSym]
 </span><a href="Grisette.Internal.Internal.Decl.SymPrim.AllSyms.html#liftAllSymsS"><span class="hs-identifier hs-var">liftAllSymsS</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; [SomeSym] -&gt; [SomeSym]
-</span><a href="#local-6989586621682346451"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
-</span><a href="#local-6989586621682346454"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym]) -&gt; [SomeSym] -&gt; [SomeSym]
+</span><a href="#local-6989586621682333751"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">UnionBase a
+</span><a href="#local-6989586621682333754"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">([SomeSym] -&gt; [SomeSym]) -&gt; [SomeSym] -&gt; [SomeSym]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[SomeSym]
-</span><a href="#local-6989586621682346455"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621682333755"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-154"></span></pre></body></html>

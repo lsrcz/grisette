@@ -86,10 +86,10 @@ forall a b. a -&gt; b -&gt; a
 </span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldCombineFun"><span class="hs-identifier hs-var">fieldCombineFun</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">ConstructorVariant
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682303114"><span class="annot"><span class="annottext">Name
-</span><a href="#local-6989586621682303114"><span class="hs-identifier hs-var">con</span></a></span></span><span> </span><span id="local-6989586621682303115"><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682303115"><span class="hs-identifier hs-var">extraPat</span></a></span></span><span> </span><span id="local-6989586621682303116"><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682303116"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682291145"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621682291145"><span class="hs-identifier hs-var">con</span></a></span></span><span> </span><span id="local-6989586621682291146"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682291146"><span class="hs-identifier hs-var">extraPat</span></a></span></span><span> </span><span id="local-6989586621682291147"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682291147"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-64"></span><span>                  </span><span class="annot"><span class="annottext">(Exp, [Bool]) -&gt; Q (Exp, [Bool])
 forall a. a -&gt; Q a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
@@ -101,13 +101,13 @@ Foldable t =&gt;
 </span><span class="hs-identifier hs-var">foldl</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp -&gt; Exp
 </span><span class="hs-identifier hs-var">AppE</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Exp
 </span><span class="hs-identifier hs-var">ConE</span></span><span> </span><span class="annot"><span class="annottext">Name
-</span><a href="#local-6989586621682303114"><span class="hs-identifier hs-var">con</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682303116"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682291145"><span class="hs-identifier hs-var">con</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682291147"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; [Exp] -&gt; [Bool]
 forall a b. a -&gt; [b] -&gt; [a]
 forall (f :: * -&gt; *) a b. Functor f =&gt; a -&gt; f b -&gt; f a
 </span><span class="hs-operator hs-var">&lt;$</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682303115"><span class="hs-identifier hs-var">extraPat</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><a href="#local-6989586621682291146"><span class="hs-identifier hs-var">extraPat</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
 </span><span id="line-65"></span><span>                </span><span class="annot"><span class="annottext">fieldFunExp :: FieldFunExp
 </span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier hs-var">fieldFunExp</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-66"></span><span>                  </span><span class="annot"><span class="annottext">[Name] -&gt; FieldFunExp
@@ -144,30 +144,30 @@ forall a. Maybe a
 </span><span id="line-79"></span><span class="annot"><span class="hs-comment">-- | Derive 'SubstSym' instance for a GADT.</span></span><span>
 </span><span id="line-80"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym"><span class="hs-identifier hs-type">deriveGADTSubstSym</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-81"></span><span id="deriveGADTSubstSym"><span class="annot"><span class="annottext">deriveGADTSubstSym :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym"><span class="hs-identifier hs-var hs-var">deriveGADTSubstSym</span></a></span></span><span> </span><span id="local-6989586621682303119"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682303119"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym"><span class="hs-identifier hs-var hs-var">deriveGADTSubstSym</span></a></span></span><span> </span><span id="local-6989586621682291150"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682291150"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682303119"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="#local-6989586621682291150"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#substSymConfig"><span class="hs-identifier hs-var">substSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-82"></span><span>
 </span><span id="line-83"></span><span class="annot"><span class="hs-comment">-- | Derive 'SubstSym1' instance for a GADT.</span></span><span>
 </span><span id="line-84"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym1"><span class="hs-identifier hs-type">deriveGADTSubstSym1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-85"></span><span id="deriveGADTSubstSym1"><span class="annot"><span class="annottext">deriveGADTSubstSym1 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym1"><span class="hs-identifier hs-var hs-var">deriveGADTSubstSym1</span></a></span></span><span> </span><span id="local-6989586621682303120"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682303120"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym1"><span class="hs-identifier hs-var hs-var">deriveGADTSubstSym1</span></a></span></span><span> </span><span id="local-6989586621682291151"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682291151"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682303120"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="#local-6989586621682291151"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#substSymConfig"><span class="hs-identifier hs-var">substSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span>
 </span><span id="line-86"></span><span>
 </span><span id="line-87"></span><span class="annot"><span class="hs-comment">-- | Derive 'SubstSym2' instance for a GADT.</span></span><span>
 </span><span id="line-88"></span><span class="annot"><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym2"><span class="hs-identifier hs-type">deriveGADTSubstSym2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.GADT.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-89"></span><span id="deriveGADTSubstSym2"><span class="annot"><span class="annottext">deriveGADTSubstSym2 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym2"><span class="hs-identifier hs-var hs-var">deriveGADTSubstSym2</span></a></span></span><span> </span><span id="local-6989586621682303121"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682303121"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#deriveGADTSubstSym2"><span class="hs-identifier hs-var hs-var">deriveGADTSubstSym2</span></a></span></span><span> </span><span id="local-6989586621682291152"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682291152"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.GADT.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682303121"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="#local-6989586621682291152"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
 </span><a href="Grisette.Internal.TH.GADT.DeriveSubstSym.html#substSymConfig"><span class="hs-identifier hs-var">substSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">2</span></span><span>
 </span><span id="line-90"></span></pre></body></html>

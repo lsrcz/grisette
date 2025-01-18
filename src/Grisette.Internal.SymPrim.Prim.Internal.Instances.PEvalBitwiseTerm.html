@@ -47,8 +47,8 @@
 </span><span id="line-47"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier">unaryUnfoldOnce</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-48"></span><span>  </span><span class="hs-special">)</span><span>
 </span><span id="line-49"></span><span>
-</span><span id="line-50"></span><span id="local-6989586621682268520"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultAndBitsTerm"><span class="hs-identifier hs-type">pevalDefaultAndBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-51"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682268520"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268520"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268520"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268520"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268520"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268520"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-50"></span><span id="local-6989586621682256551"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultAndBitsTerm"><span class="hs-identifier hs-type">pevalDefaultAndBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682256551"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256551"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256551"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256551"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256551"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256551"><span class="hs-identifier hs-type">a</span></a></span></span><span>
 </span><span id="line-52"></span><span id="pevalDefaultAndBitsTerm"><span class="annot"><span class="annottext">pevalDefaultAndBitsTerm :: forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a -&gt; Term a
@@ -62,14 +62,14 @@ PartialRuleBinary a b c
 forall {t}.
 (SupportedPrim t, Bits t) =&gt;
 Term t -&gt; Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268629"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a a
+</span><a href="#local-6989586621682256660"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a a
 forall a. PEvalBitwiseTerm a =&gt; Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#andBitsTerm"><span class="hs-identifier hs-var">andBitsTerm</span></a></span><span>
 </span><span id="line-53"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-54"></span><span>    </span><span id="local-6989586621682268629"><span class="annot"><span class="annottext">doPevalAndBitsTerm :: Term t -&gt; Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268629"><span class="hs-identifier hs-var hs-var">doPevalAndBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268653"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268653"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268658"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268658"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-54"></span><span>    </span><span id="local-6989586621682256660"><span class="annot"><span class="annottext">doPevalAndBitsTerm :: Term t -&gt; Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256660"><span class="hs-identifier hs-var hs-var">doPevalAndBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256684"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256684"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256689"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256689"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-55"></span><span>      </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
@@ -77,15 +77,15 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; Term t
 forall t. SupportedPrim t =&gt; t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268653"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
+</span><a href="#local-6989586621682256684"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
 forall a. Bits a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">.&amp;.</span></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268658"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-56"></span><span>    </span><span class="annot"><a href="#local-6989586621682268629"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268668"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268668"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682268669"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268669"><span class="hs-identifier hs-var">b</span></a></span></span><span>
+</span><a href="#local-6989586621682256689"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><a href="#local-6989586621682256660"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256699"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256699"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682256700"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256700"><span class="hs-identifier hs-var">b</span></a></span></span><span>
 </span><span id="line-57"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268668"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256699"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
@@ -99,7 +99,7 @@ forall t. SupportedPrim t =&gt; t -&gt; Term t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span>
 </span><span id="line-58"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268668"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256699"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a. Bits a =&gt; a -&gt; a
@@ -108,12 +108,12 @@ forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268669"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-59"></span><span>    </span><span class="annot"><a href="#local-6989586621682268629"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span id="local-6989586621682268670"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268670"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268680"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268680"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621682256700"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><a href="#local-6989586621682256660"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span id="local-6989586621682256701"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256701"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256711"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256711"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span>
 </span><span id="line-60"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268680"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256711"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
@@ -127,7 +127,7 @@ forall t. SupportedPrim t =&gt; t -&gt; Term t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span>
 </span><span id="line-61"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268680"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256711"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a. Bits a =&gt; a -&gt; a
@@ -136,25 +136,25 @@ forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268670"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-62"></span><span>    </span><span class="annot"><a href="#local-6989586621682268629"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span id="local-6989586621682268681"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268681"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682268682"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268682"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268681"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Bool
+</span><a href="#local-6989586621682256701"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><a href="#local-6989586621682256660"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span id="local-6989586621682256712"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256712"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682256713"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256713"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256712"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268682"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256713"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268681"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-63"></span><span>    </span><span class="annot"><a href="#local-6989586621682268629"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256712"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><a href="#local-6989586621682256660"><span class="hs-identifier hs-var">doPevalAndBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term t)
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-64"></span><span>
-</span><span id="line-65"></span><span id="local-6989586621682268683"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultOrBitsTerm"><span class="hs-identifier hs-type">pevalDefaultOrBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-66"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682268683"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268683"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268683"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268683"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268683"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268683"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-65"></span><span id="local-6989586621682256714"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultOrBitsTerm"><span class="hs-identifier hs-type">pevalDefaultOrBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682256714"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256714"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256714"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256714"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256714"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256714"><span class="hs-identifier hs-type">a</span></a></span></span><span>
 </span><span id="line-67"></span><span id="pevalDefaultOrBitsTerm"><span class="annot"><span class="annottext">pevalDefaultOrBitsTerm :: forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a -&gt; Term a
@@ -168,38 +168,38 @@ PartialRuleBinary a b c
 forall {t}.
 (SupportedPrim t, Bits t) =&gt;
 Term t -&gt; Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268692"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a a
+</span><a href="#local-6989586621682256723"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a a
 forall a. PEvalBitwiseTerm a =&gt; Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#orBitsTerm"><span class="hs-identifier hs-var">orBitsTerm</span></a></span><span>
 </span><span id="line-68"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-69"></span><span>    </span><span id="local-6989586621682268692"><span class="annot"><span class="annottext">doPevalOrBitsTerm :: Term t -&gt; Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268692"><span class="hs-identifier hs-var hs-var">doPevalOrBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268709"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268709"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268714"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268714"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
+</span><span id="line-69"></span><span>    </span><span id="local-6989586621682256723"><span class="annot"><span class="annottext">doPevalOrBitsTerm :: Term t -&gt; Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256723"><span class="hs-identifier hs-var hs-var">doPevalOrBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256740"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256740"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256745"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256745"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; Term t
 forall t. SupportedPrim t =&gt; t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268709"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
+</span><a href="#local-6989586621682256740"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
 forall a. Bits a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">.|.</span></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268714"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-70"></span><span>    </span><span class="annot"><a href="#local-6989586621682268692"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268725"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268725"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682268726"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268726"><span class="hs-identifier hs-var">b</span></a></span></span><span>
+</span><a href="#local-6989586621682256745"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>    </span><span class="annot"><a href="#local-6989586621682256723"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256756"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256756"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682256757"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256757"><span class="hs-identifier hs-var">b</span></a></span></span><span>
 </span><span id="line-71"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268725"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256756"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268726"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><a href="#local-6989586621682256757"><span class="hs-identifier hs-var">b</span></a></span><span>
 </span><span id="line-72"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268725"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256756"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a. Bits a =&gt; a -&gt; a
@@ -218,20 +218,20 @@ forall a. Bits a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">complement</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span>
-</span><span id="line-73"></span><span>    </span><span class="annot"><a href="#local-6989586621682268692"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span id="local-6989586621682268727"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268727"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268738"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268738"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><a href="#local-6989586621682256723"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span id="local-6989586621682256758"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256758"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256769"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256769"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span>
 </span><span id="line-74"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268738"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256769"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268727"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><a href="#local-6989586621682256758"><span class="hs-identifier hs-var">a</span></a></span><span>
 </span><span id="line-75"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268738"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256769"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a. Bits a =&gt; a -&gt; a
@@ -250,24 +250,24 @@ forall a. Bits a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">complement</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span>
-</span><span id="line-76"></span><span>    </span><span class="annot"><a href="#local-6989586621682268692"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span id="local-6989586621682268739"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268739"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682268740"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268740"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268739"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Bool
+</span><span id="line-76"></span><span>    </span><span class="annot"><a href="#local-6989586621682256723"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span id="local-6989586621682256770"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256770"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682256771"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256771"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256770"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268740"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256771"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268739"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-77"></span><span>    </span><span class="annot"><a href="#local-6989586621682268692"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256770"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-77"></span><span>    </span><span class="annot"><a href="#local-6989586621682256723"><span class="hs-identifier hs-var">doPevalOrBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term t)
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-78"></span><span>
-</span><span id="line-79"></span><span id="local-6989586621682268548"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultXorBitsTerm"><span class="hs-identifier hs-type">pevalDefaultXorBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-80"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268548"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268548"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682268548"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268548"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268548"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268548"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-79"></span><span id="local-6989586621682256579"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultXorBitsTerm"><span class="hs-identifier hs-type">pevalDefaultXorBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256579"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256579"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682256579"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256579"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256579"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256579"><span class="hs-identifier hs-type">a</span></a></span></span><span>
 </span><span id="line-81"></span><span id="pevalDefaultXorBitsTerm"><span class="annot"><span class="annottext">pevalDefaultXorBitsTerm :: forall a.
 (PEvalBitwiseTerm a, SupportedPrim a, Bits a) =&gt;
 Term a -&gt; Term a -&gt; Term a
@@ -281,14 +281,14 @@ PartialRuleBinary a b c
 forall {t}.
 (SupportedPrim t, Bits t, PEvalBitwiseTerm t) =&gt;
 Term t -&gt; Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a a
+</span><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleBinary a a a
 forall a. PEvalBitwiseTerm a =&gt; Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#xorBitsTerm"><span class="hs-identifier hs-var">xorBitsTerm</span></a></span><span>
 </span><span id="line-82"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-83"></span><span>    </span><span id="local-6989586621682268750"><span class="annot"><span class="annottext">doPevalXorBitsTerm :: Term t -&gt; Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268750"><span class="hs-identifier hs-var hs-var">doPevalXorBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268771"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268771"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268776"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268776"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-83"></span><span>    </span><span id="local-6989586621682256781"><span class="annot"><span class="annottext">doPevalXorBitsTerm :: Term t -&gt; Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256781"><span class="hs-identifier hs-var hs-var">doPevalXorBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256802"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256802"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256807"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256807"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-84"></span><span>      </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
@@ -296,24 +296,24 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; Term t
 forall t. SupportedPrim t =&gt; t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268771"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
+</span><a href="#local-6989586621682256802"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
 forall a. Bits a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268776"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-85"></span><span>    </span><span class="annot"><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268785"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268785"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682268786"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268786"><span class="hs-identifier hs-var">b</span></a></span></span><span>
+</span><a href="#local-6989586621682256807"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>    </span><span class="annot"><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256816"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256816"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682256817"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256817"><span class="hs-identifier hs-var">b</span></a></span></span><span>
 </span><span id="line-86"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268785"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256816"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268786"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><a href="#local-6989586621682256817"><span class="hs-identifier hs-var">b</span></a></span><span>
 </span><span id="line-87"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268785"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256816"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a. Bits a =&gt; a -&gt; a
@@ -326,21 +326,21 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t
 forall t. PEvalBitwiseTerm t =&gt; Term t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalComplementBitsTerm"><span class="hs-identifier hs-var">pevalComplementBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268786"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-88"></span><span>    </span><span class="annot"><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span id="local-6989586621682268787"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268787"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268796"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268796"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621682256817"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-88"></span><span>    </span><span class="annot"><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span id="local-6989586621682256818"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256818"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256827"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256827"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span>
 </span><span id="line-89"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268796"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256827"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268787"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><a href="#local-6989586621682256818"><span class="hs-identifier hs-var">a</span></a></span><span>
 </span><span id="line-90"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268796"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+</span><a href="#local-6989586621682256827"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a. Bits a =&gt; a -&gt; a
@@ -353,14 +353,14 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t
 forall t. PEvalBitwiseTerm t =&gt; Term t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalComplementBitsTerm"><span class="hs-identifier hs-var">pevalComplementBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268787"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-91"></span><span>    </span><span class="annot"><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span id="local-6989586621682268797"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268797"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682268798"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268798"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268797"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Bool
+</span><a href="#local-6989586621682256818"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span id="local-6989586621682256828"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256828"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621682256829"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256829"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256828"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268798"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256829"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -369,9 +369,9 @@ forall t. SupportedPrim t =&gt; t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier hs-var">conTerm</span></a></span><span> </span><span class="annot"><span class="annottext">t
 forall a. Bits a =&gt; a
 </span><span class="hs-identifier hs-var">zeroBits</span></span><span>
-</span><span id="line-92"></span><span>    </span><span class="annot"><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682268801"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268801"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682268805"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268805"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>    </span><span class="annot"><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682256832"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256832"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682256836"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256836"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-93"></span><span>      </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
@@ -379,11 +379,11 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Term t
 forall a. PEvalBitwiseTerm a =&gt; Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalXorBitsTerm"><span class="hs-identifier hs-var">pevalXorBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268801"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268805"><span class="hs-identifier hs-var">j</span></a></span><span>
-</span><span id="line-94"></span><span>    </span><span class="annot"><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682268810"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268810"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682268811"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268811"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621682256832"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256836"><span class="hs-identifier hs-var">j</span></a></span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682256841"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256841"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621682256842"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256842"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-95"></span><span>      </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
@@ -395,11 +395,11 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Term t
 forall a. PEvalBitwiseTerm a =&gt; Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalXorBitsTerm"><span class="hs-identifier hs-var">pevalXorBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268810"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268811"><span class="hs-identifier hs-var">j</span></a></span><span>
-</span><span id="line-96"></span><span>    </span><span class="annot"><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span id="local-6989586621682268812"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268812"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682268817"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268817"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621682256841"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256842"><span class="hs-identifier hs-var">j</span></a></span><span>
+</span><span id="line-96"></span><span>    </span><span class="annot"><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span id="local-6989586621682256843"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256843"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682256848"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256848"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-97"></span><span>      </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
@@ -411,16 +411,16 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Term t -&gt; Term t
 forall a. PEvalBitwiseTerm a =&gt; Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalXorBitsTerm"><span class="hs-identifier hs-var">pevalXorBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268812"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268817"><span class="hs-identifier hs-var">j</span></a></span><span>
-</span><span id="line-98"></span><span>    </span><span class="annot"><a href="#local-6989586621682268750"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256843"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256848"><span class="hs-identifier hs-var">j</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><a href="#local-6989586621682256781"><span class="hs-identifier hs-var">doPevalXorBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term t)
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-99"></span><span>
-</span><span id="line-100"></span><span id="local-6989586621682268552"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultComplementBitsTerm"><span class="hs-identifier hs-type">pevalDefaultComplementBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-101"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682268552"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268552"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268552"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268552"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268552"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-100"></span><span id="local-6989586621682256583"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultComplementBitsTerm"><span class="hs-identifier hs-type">pevalDefaultComplementBitsTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-101"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Bits</span></span><span> </span><span class="annot"><a href="#local-6989586621682256583"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256583"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256583"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256583"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256583"><span class="hs-identifier hs-type">a</span></a></span></span><span>
 </span><span id="line-102"></span><span id="pevalDefaultComplementBitsTerm"><span class="annot"><span class="annottext">pevalDefaultComplementBitsTerm :: forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a
@@ -431,13 +431,13 @@ SupportedPrim b =&gt;
 PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier hs-var">unaryUnfoldOnce</span></a></span><span> </span><span class="annot"><span class="annottext">PartialRuleUnary a a
 forall {t}. Bits t =&gt; Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268825"><span class="hs-identifier hs-var">doPevalComplementBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a a
+</span><a href="#local-6989586621682256856"><span class="hs-identifier hs-var">doPevalComplementBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a a
 forall t. PEvalBitwiseTerm t =&gt; Term t -&gt; Term t
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#complementBitsTerm"><span class="hs-identifier hs-var">complementBitsTerm</span></a></span><span>
 </span><span id="line-104"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-105"></span><span>    </span><span id="local-6989586621682268825"><span class="annot"><span class="annottext">doPevalComplementBitsTerm :: Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682268825"><span class="hs-identifier hs-var hs-var">doPevalComplementBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682268832"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268832"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
+</span><span id="line-105"></span><span>    </span><span id="local-6989586621682256856"><span class="annot"><span class="annottext">doPevalComplementBitsTerm :: Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256856"><span class="hs-identifier hs-var hs-var">doPevalComplementBitsTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682256863"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682256863"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -448,94 +448,94 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a. Bits a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">complement</span></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682268832"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-106"></span><span>    </span><span class="annot"><a href="#local-6989586621682268825"><span class="hs-identifier hs-var">doPevalComplementBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682268835"><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268835"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682256863"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-106"></span><span>    </span><span class="annot"><a href="#local-6989586621682256856"><span class="hs-identifier hs-var">doPevalComplementBitsTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ComplementBitsTerm"><span class="hs-identifier hs-type">ComplementBitsTerm</span></a></span><span> </span><span id="local-6989586621682256866"><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256866"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Term t
-</span><a href="#local-6989586621682268835"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-107"></span><span>    </span><span class="annot"><a href="#local-6989586621682268825"><span class="hs-identifier hs-var">doPevalComplementBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682256866"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-107"></span><span>    </span><span class="annot"><a href="#local-6989586621682256856"><span class="hs-identifier hs-var">doPevalComplementBitsTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term t)
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-108"></span><span>
-</span><span id="line-109"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268567"><span id="local-6989586621682268844"><span id="local-6989586621682268849"><span id="local-6989586621682268853"><span id="local-6989586621682268857"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682268567"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682268567"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268567"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-110"></span><span>  </span><span id="local-6989586621682268877"><span class="annot"><span class="annottext">pevalAndBitsTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
+</span><span id="line-109"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682256598"><span id="local-6989586621682256875"><span id="local-6989586621682256880"><span id="local-6989586621682256884"><span id="local-6989586621682256888"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682256598"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682256598"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256598"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-110"></span><span>  </span><span id="local-6989586621682256908"><span class="annot"><span class="annottext">pevalAndBitsTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalAndBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalAndBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
 forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultAndBitsTerm"><span class="hs-identifier hs-var">pevalDefaultAndBitsTerm</span></a></span><span>
-</span><span id="line-111"></span><span>  </span><span id="local-6989586621682268887"><span class="annot"><span class="annottext">pevalOrBitsTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
+</span><span id="line-111"></span><span>  </span><span id="local-6989586621682256918"><span class="annot"><span class="annottext">pevalOrBitsTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalOrBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalOrBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
 forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultOrBitsTerm"><span class="hs-identifier hs-var">pevalDefaultOrBitsTerm</span></a></span><span>
-</span><span id="line-112"></span><span>  </span><span id="local-6989586621682268897"><span class="annot"><span class="annottext">pevalXorBitsTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
+</span><span id="line-112"></span><span>  </span><span id="local-6989586621682256928"><span class="annot"><span class="annottext">pevalXorBitsTerm :: Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalXorBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalXorBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n) -&gt; Term (WordN n)
 forall a.
 (PEvalBitwiseTerm a, SupportedPrim a, Bits a) =&gt;
 Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultXorBitsTerm"><span class="hs-identifier hs-var">pevalDefaultXorBitsTerm</span></a></span><span>
-</span><span id="line-113"></span><span>  </span><span id="local-6989586621682268907"><span class="annot"><span class="annottext">pevalComplementBitsTerm :: Term (WordN n) -&gt; Term (WordN n)
+</span><span id="line-113"></span><span>  </span><span id="local-6989586621682256938"><span class="annot"><span class="annottext">pevalComplementBitsTerm :: Term (WordN n) -&gt; Term (WordN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalComplementBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalComplementBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN n)
 forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultComplementBitsTerm"><span class="hs-identifier hs-var">pevalDefaultComplementBitsTerm</span></a></span><span>
-</span><span id="line-114"></span><span>  </span><span id="local-6989586621682268911"><span class="annot"><span class="annottext">withSbvBitwiseTermConstraint :: forall r. (Bits (SBVType (WordN n)) =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvBitwiseTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvBitwiseTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682268912"><span class="annot"><span class="annottext">Bits (SBVType (WordN n)) =&gt; r
-</span><a href="#local-6989586621682268912"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+</span><span id="line-114"></span><span>  </span><span id="local-6989586621682256942"><span class="annot"><span class="annottext">withSbvBitwiseTermConstraint :: forall r. (Bits (SBVType (WordN n)) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvBitwiseTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvBitwiseTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682256943"><span class="annot"><span class="annottext">Bits (SBVType (WordN n)) =&gt; r
+</span><a href="#local-6989586621682256943"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
 SupportedPrim t =&gt;
 ((PrimConstraint t, SMTDefinable (SBVType t),
   Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
  a)
 -&gt; a
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268567"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256598"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
 Bits (SBVType (WordN n)) =&gt; r
 (PrimConstraint (WordN n), SMTDefinable (SBVType (WordN n)),
  Mergeable (SBVType (WordN n)), Typeable (SBVType (WordN n))) =&gt;
 r
-</span><a href="#local-6989586621682268912"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><a href="#local-6989586621682256943"><span class="hs-identifier hs-var">r</span></a></span><span>
 </span><span id="line-115"></span><span>
-</span><span id="line-116"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682268590"><span id="local-6989586621682268943"><span id="local-6989586621682268948"><span id="local-6989586621682268952"><span id="local-6989586621682268956"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682268590"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682268590"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268590"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-117"></span><span>  </span><span id="local-6989586621682268975"><span class="annot"><span class="annottext">pevalAndBitsTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
+</span><span id="line-116"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682256621"><span id="local-6989586621682256974"><span id="local-6989586621682256979"><span id="local-6989586621682256983"><span id="local-6989586621682256987"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682256621"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682256621"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalBitwiseTerm"><span class="hs-identifier hs-type">PEvalBitwiseTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256621"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621682257006"><span class="annot"><span class="annottext">pevalAndBitsTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalAndBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalAndBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
 forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultAndBitsTerm"><span class="hs-identifier hs-var">pevalDefaultAndBitsTerm</span></a></span><span>
-</span><span id="line-118"></span><span>  </span><span id="local-6989586621682268985"><span class="annot"><span class="annottext">pevalOrBitsTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
+</span><span id="line-118"></span><span>  </span><span id="local-6989586621682257016"><span class="annot"><span class="annottext">pevalOrBitsTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalOrBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalOrBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
 forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultOrBitsTerm"><span class="hs-identifier hs-var">pevalDefaultOrBitsTerm</span></a></span><span>
-</span><span id="line-119"></span><span>  </span><span id="local-6989586621682268995"><span class="annot"><span class="annottext">pevalXorBitsTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
+</span><span id="line-119"></span><span>  </span><span id="local-6989586621682257026"><span class="annot"><span class="annottext">pevalXorBitsTerm :: Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalXorBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalXorBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n) -&gt; Term (IntN n)
 forall a.
 (PEvalBitwiseTerm a, SupportedPrim a, Bits a) =&gt;
 Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultXorBitsTerm"><span class="hs-identifier hs-var">pevalDefaultXorBitsTerm</span></a></span><span>
-</span><span id="line-120"></span><span>  </span><span id="local-6989586621682269005"><span class="annot"><span class="annottext">pevalComplementBitsTerm :: Term (IntN n) -&gt; Term (IntN n)
+</span><span id="line-120"></span><span>  </span><span id="local-6989586621682257036"><span class="annot"><span class="annottext">pevalComplementBitsTerm :: Term (IntN n) -&gt; Term (IntN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalComplementBitsTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalComplementBitsTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN n)
 forall a.
 (Bits a, SupportedPrim a, PEvalBitwiseTerm a) =&gt;
 Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm.html#pevalDefaultComplementBitsTerm"><span class="hs-identifier hs-var">pevalDefaultComplementBitsTerm</span></a></span><span>
-</span><span id="line-121"></span><span>  </span><span id="local-6989586621682269009"><span class="annot"><span class="annottext">withSbvBitwiseTermConstraint :: forall r. (Bits (SBVType (IntN n)) =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvBitwiseTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvBitwiseTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682269010"><span class="annot"><span class="annottext">Bits (SBVType (IntN n)) =&gt; r
-</span><a href="#local-6989586621682269010"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+</span><span id="line-121"></span><span>  </span><span id="local-6989586621682257040"><span class="annot"><span class="annottext">withSbvBitwiseTermConstraint :: forall r. (Bits (SBVType (IntN n)) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvBitwiseTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvBitwiseTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682257041"><span class="annot"><span class="annottext">Bits (SBVType (IntN n)) =&gt; r
+</span><a href="#local-6989586621682257041"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
 SupportedPrim t =&gt;
 ((PrimConstraint t, SMTDefinable (SBVType t),
   Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
  a)
 -&gt; a
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682268590"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682256621"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
 Bits (SBVType (IntN n)) =&gt; r
 (PrimConstraint (IntN n), SMTDefinable (SBVType (IntN n)),
  Mergeable (SBVType (IntN n)), Typeable (SBVType (IntN n))) =&gt;
 r
-</span><a href="#local-6989586621682269010"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><a href="#local-6989586621682257041"><span class="hs-identifier hs-var">r</span></a></span><span>
 </span><span id="line-122"></span></pre></body></html>

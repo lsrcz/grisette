@@ -1420,6 +1420,7 @@ instance Grisette.Internal.Unified.Util.DecideEvalMode 'Grisette.Internal.Unifie
 instance Grisette.Internal.Unified.Util.DecideEvalMode 'Grisette.Internal.Unified.EvalModeTag.S
 instance Grisette.Internal.Unified.Util.DecideEvalMode s => Grisette.Internal.Unified.Util.EvalModeConvertible 'Grisette.Internal.Unified.EvalModeTag.C s
 instance Grisette.Internal.Unified.Util.DecideEvalMode c => Grisette.Internal.Unified.Util.EvalModeConvertible c 'Grisette.Internal.Unified.EvalModeTag.S
+instance Grisette.Internal.Unified.Util.DecideEvalMode c => Grisette.Internal.Unified.Util.EvalModeConvertible c c
 
 
 module Grisette.Internal.Core.Data.Class.BitVector
