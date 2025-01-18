@@ -6165,6 +6165,7 @@ class Mergeable a
 
 -- | The root merging strategy for the type.
 rootStrategy :: Mergeable a => MergingStrategy a
+sortIndices :: Mergeable a => a -> [DynamicSortedIdx]
 
 -- | Lifting of the <a>Mergeable</a> class to unary type constructors.
 class forall a. Mergeable a => Mergeable u a => Mergeable1 (u :: Type -> Type)
@@ -16552,6 +16553,7 @@ class Mergeable a
 
 -- | The root merging strategy for the type.
 rootStrategy :: Mergeable a => MergingStrategy a
+sortIndices :: Mergeable a => a -> [DynamicSortedIdx]
 
 -- | Lifting of the <a>Mergeable</a> class to unary type constructors.
 class forall a. Mergeable a => Mergeable u a => Mergeable1 (u :: Type -> Type)
