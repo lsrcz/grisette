@@ -35,6 +35,8 @@ and this project adheres to
 
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.
   ([#268](https://github.com/lsrcz/grisette/pull/268))
+- The `choose*Fresh` functions will not try its best to minimize the size of the
+  guards. ([#283](https://github.com/lsrcz/grisette/pull/283))
 
 ### Fixed
 
