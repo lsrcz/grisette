@@ -323,39 +323,34 @@ constructMergingStrategyExp conInfo [x] = do
       (unsafeCoerce . $(conE $ constructorName conInfo))
       $unwrapFun
     |]
-constructMergingStrategyExp conInfo (x : xs) = do
-  upnames <- replicateM (length xs + 1) $ newName "a"
+constructMergingStrategyExp conInfo l = do
+  let takeHalf l = take (length l `div` 2) l
+  let dropHalf l = drop (length l `div` 2) l
+  let num = length l
+  upnames <- replicateM num $ newName "a"
   let wrapPat1 [] = error "Should not happen"
       wrapPat1 [x] = varP x
-      wrapPat1 (x : xs) = tupP [varP x, wrapPat1 xs]
+      wrapPat1 l = tupP [wrapPat1 (takeHalf l), wrapPat1 (dropHalf l)]
   let wrapped = foldl AppE (ConE $ constructorName conInfo) $ fmap VarE upnames
   let wrapFun =
         lamE
-          [varP $ head upnames, wrapPat1 $ tail upnames]
+          [wrapPat1 (takeHalf upnames), wrapPat1 (dropHalf upnames)]
           [|unsafeCoerce ($(return wrapped))|]
   let unwrapPat = conP (constructorName conInfo) $ fmap varP upnames
   let unwrapExp1 [] = error "Should not happen"
-      unwrapExp1 [_] = error "Should not happen"
-      unwrapExp1 [x, y] =
-        [|(unsafeCoerce $(varE x), unsafeCoerce $(varE y))|]
-      unwrapExp1 (x : xs) = [|(unsafeCoerce $(varE x), $(unwrapExp1 xs))|]
+      unwrapExp1 [x] = [|(unsafeCoerce $(varE x))|]
+      unwrapExp1 l = [|($(unwrapExp1 (takeHalf l)), $(unwrapExp1 (dropHalf l)))|]
   let unwrapFun = lamE [unwrapPat] (unwrapExp1 upnames)
-  let strategy1 [] = error "Should not happen"
-      strategy1 [x] = return x
-      strategy1 (x : xs) =
-        [|
-          product2Strategy
-            ((,))
-            (\(x, y) -> (x, y))
-            $(return x)
-            $(strategy1 xs)
-          |]
+  let strategyx [] = error "Should not happen"
+      strategyx [x] = return x
+      strategyx l =
+        [|product2Strategy (,) id $(strategyx (takeHalf l)) $(strategyx (dropHalf l))|]
   [|
     product2Strategy
       $wrapFun
       $unwrapFun
-      $(return x)
-      $(strategy1 xs)
+      $(strategyx $ takeHalf l)
+      $(strategyx $ dropHalf l)
     |]
 
 genMergeFunClause' :: Name -> ConstructorInfo -> Q Clause
