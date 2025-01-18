@@ -83,6 +83,12 @@ class
     ((c ~ 'S, s ~ 'S) => r) ->
     r
 
+instance {-# INCOHERENT #-} (DecideEvalMode c) => EvalModeConvertible c c where
+  withModeConvertible con sym = withMode @c con sym
+  {-# INLINE withModeConvertible #-}
+  withModeConvertible' con _ sym = withMode @c con sym
+  {-# INLINE withModeConvertible' #-}
+
 instance {-# INCOHERENT #-} (DecideEvalMode s) => EvalModeConvertible 'C s where
   withModeConvertible con _ = con
   {-# INLINE withModeConvertible #-}
