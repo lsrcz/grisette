@@ -87,14 +87,14 @@ import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Control.Monad.Identity
 
-deriveGADT
+derive
   [ ''(,),
     ''(,,),
     ''(,,,),
@@ -112,7 +112,7 @@ deriveGADT
   ]
   [''SimpleMergeable, ''SimpleMergeable1, ''SimpleMergeable2]
 
-deriveGADT
+derive
   [ ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,
@@ -121,7 +121,7 @@ deriveGADT
   ]
   [''SimpleMergeable, ''SimpleMergeable1]
 
-deriveGADT
+derive
   [''(), ''AssertionError]
   [''SimpleMergeable]
 

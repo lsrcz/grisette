@@ -2,17 +2,17 @@
 {-# LANGUAGE TupleSections #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveSimpleMergeable
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveSimpleMergeable
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveSimpleMergeable
-  ( deriveGADTSimpleMergeable,
-    deriveGADTSimpleMergeable1,
-    deriveGADTSimpleMergeable2,
+module Grisette.Internal.TH.Derivation.DeriveSimpleMergeable
+  ( deriveSimpleMergeable,
+    deriveSimpleMergeable1,
+    deriveSimpleMergeable2,
   )
 where
 
@@ -21,7 +21,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
     SimpleMergeable1 (liftMrgIte),
     SimpleMergeable2 (liftMrgIte2),
   )
-import Grisette.Internal.TH.GADT.BinaryOpCommon
+import Grisette.Internal.TH.Derivation.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
         binaryOpAllowSumType,
@@ -43,7 +43,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
     defaultFieldFunExp,
     genBinaryOpClass,
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
 import Language.Haskell.TH (Dec, Exp (AppE, ConE), Name, Q)
 
 simpleMergeableConfig :: BinaryOpClassConfig
@@ -71,17 +71,17 @@ simpleMergeableConfig =
       binaryOpAllowExistential = True
     }
 
--- | Derive 'SimpleMergeable' instance for a GADT.
-deriveGADTSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTSimpleMergeable deriveConfig =
+-- | Derive 'SimpleMergeable' instance for a data type.
+deriveSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
+deriveSimpleMergeable deriveConfig =
   genBinaryOpClass deriveConfig simpleMergeableConfig 0
 
--- | Derive 'SimpleMergeable1' instance for a GADT.
-deriveGADTSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTSimpleMergeable1 deriveConfig =
+-- | Derive 'SimpleMergeable1' instance for a data type.
+deriveSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
+deriveSimpleMergeable1 deriveConfig =
   genBinaryOpClass deriveConfig simpleMergeableConfig 1
 
--- | Derive 'SimpleMergeable2' instance for a GADT.
-deriveGADTSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTSimpleMergeable2 deriveConfig =
+-- | Derive 'SimpleMergeable2' instance for a data type.
+deriveSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
+deriveSimpleMergeable2 deriveConfig =
   genBinaryOpClass deriveConfig simpleMergeableConfig 2

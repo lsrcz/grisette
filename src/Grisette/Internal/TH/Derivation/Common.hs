@@ -7,14 +7,14 @@
 {-# LANGUAGE TypeOperators #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.Common
+-- Module      :   Grisette.Internal.TH.Derivation.Common
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.Common
+module Grisette.Internal.TH.Derivation.Common
   ( CheckArgsResult (..),
     checkArgs,
     ctxForVar,
@@ -65,7 +65,7 @@ import Language.Haskell.TH.Datatype
   )
 import Language.Haskell.TH.Datatype.TyVarBndr (mapTVName, tvKind)
 
--- | Result of 'checkArgs' for a GADT.
+-- | Result of 'checkArgs' for a data type.
 data CheckArgsResult = CheckArgsResult
   { constructors :: [ConstructorInfo],
     keptVars :: [(Type, Kind)],
@@ -135,7 +135,7 @@ freshenCheckArgsResult freshenNats result = do
         argVars = newArgVars
       }
 
--- | Check if the number of type parameters is valid for a GADT, and return
+-- | Check if the number of type parameters is valid for a data type, and return
 -- new names for the type variables, split into kept and arg parts.
 checkArgs ::
   String ->
@@ -273,7 +273,7 @@ data EvalModeConfig
   = EvalModeConstraints [Name]
   | EvalModeSpecified EvalModeTag
 
--- | Configuration for deriving instances for a GADT.
+-- | Configuration for deriving instances for a data type.
 data DeriveConfig = DeriveConfig
   { evalModeConfig :: [(Int, EvalModeConfig)],
     bitSizePositions :: [Int],
@@ -407,7 +407,7 @@ extraExtraMergeableConstraint deriveConfig constructors args = do
       [0 ..]
       args
 
--- | Generate extra constraints for a GADT.
+-- | Generate extra constraints for a data type.
 extraConstraint ::
   DeriveConfig ->
   Name ->

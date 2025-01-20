@@ -118,7 +118,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 import Unsafe.Coerce (unsafeCoerce)
 
 #define CONCRETE_ORD_MERGEABLE(type) \
@@ -276,13 +276,13 @@ instance Mergeable1 [] where
 instance Mergeable () where
   rootStrategy = SimpleStrategy $ \_ t _ -> t
 
-deriveGADT
+derive
   [ ''Either,
     ''(,)
   ]
   [''Mergeable, ''Mergeable1, ''Mergeable2]
 
-deriveGADT
+derive
   [ ''(,,),
     ''(,,,),
     ''(,,,,),
@@ -299,7 +299,7 @@ deriveGADT
   ]
   [''Mergeable, ''Mergeable1, ''Mergeable2, ''Mergeable3]
 
-deriveGADT
+derive
   [ ''Maybe,
     ''Identity,
     ''Monoid.Dual,
@@ -317,7 +317,7 @@ deriveGADT
   ]
   [''Mergeable, ''Mergeable1]
 
-deriveGADT
+derive
   [ ''AssertionError,
     ''VerificationConditions,
     ''NotRepresentableFPError,

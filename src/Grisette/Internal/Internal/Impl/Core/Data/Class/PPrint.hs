@@ -112,7 +112,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 #define FORMAT_SIMPLE(type) \
 instance PPrint type where pformatPrec = viaShowsPrec showsPrec
@@ -208,7 +208,7 @@ FORMAT_SYM_FUN(-~>, SymGeneralFun)
 instance (ValidFP eb sb) => PPrint (SymFP eb sb) where
   pformat (SymFP t) = prettyPrintTerm t
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
@@ -216,7 +216,7 @@ deriveGADT
   ]
   [''PPrint]
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -235,7 +235,7 @@ deriveGADT
   ]
   [''PPrint, ''PPrint1, ''PPrint2]
 
-deriveGADT
+derive
   [ ''Maybe,
     ''Monoid.Dual,
     ''Monoid.First,

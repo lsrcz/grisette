@@ -2,17 +2,17 @@
 {-# LANGUAGE TupleSections #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveSymEq
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveSymEq
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveSymEq
-  ( deriveGADTSymEq,
-    deriveGADTSymEq1,
-    deriveGADTSymEq2,
+module Grisette.Internal.TH.Derivation.DeriveSymEq
+  ( deriveSymEq,
+    deriveSymEq1,
+    deriveSymEq2,
   )
 where
 
@@ -24,7 +24,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
     SymEq1 (liftSymEq),
     SymEq2 (liftSymEq2),
   )
-import Grisette.Internal.TH.GADT.BinaryOpCommon
+import Grisette.Internal.TH.Derivation.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
         binaryOpAllowSumType,
@@ -46,7 +46,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
     defaultFieldFunExp,
     genBinaryOpClass,
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
 import Language.Haskell.TH (Dec, Exp (ListE), Name, Q)
 
 symEqConfig :: BinaryOpClassConfig
@@ -72,14 +72,14 @@ symEqConfig =
       binaryOpAllowExistential = True
     }
 
--- | Derive 'SymEq' instance for a GADT.
-deriveGADTSymEq :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTSymEq deriveConfig = genBinaryOpClass deriveConfig symEqConfig 0
+-- | Derive 'SymEq' instance for a data type.
+deriveSymEq :: DeriveConfig -> Name -> Q [Dec]
+deriveSymEq deriveConfig = genBinaryOpClass deriveConfig symEqConfig 0
 
--- | Derive 'SymEq1' instance for a GADT.
-deriveGADTSymEq1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTSymEq1 deriveConfig = genBinaryOpClass deriveConfig symEqConfig 1
+-- | Derive 'SymEq1' instance for a data type.
+deriveSymEq1 :: DeriveConfig -> Name -> Q [Dec]
+deriveSymEq1 deriveConfig = genBinaryOpClass deriveConfig symEqConfig 1
 
--- | Derive 'SymEq2' instance for a GADT.
-deriveGADTSymEq2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTSymEq2 deriveConfig = genBinaryOpClass deriveConfig symEqConfig 2
+-- | Derive 'SymEq2' instance for a data type.
+deriveSymEq2 :: DeriveConfig -> Name -> Q [Dec]
+deriveSymEq2 deriveConfig = genBinaryOpClass deriveConfig symEqConfig 2

@@ -39,6 +39,8 @@ and this project adheres to
   guards. ([#283](https://github.com/lsrcz/grisette/pull/283))
 - `EvalModeConvertible` is now reflexive.
   ([#284](https://github.com/lsrcz/grisette/pull/284))
+- \[Breaking\] Renamed `deriveGADT` to `derive`.
+  ([#286](https://github.com/lsrcz/grisette/pull/286))
 
 ### Fixed
 

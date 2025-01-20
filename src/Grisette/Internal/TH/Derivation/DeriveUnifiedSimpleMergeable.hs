@@ -4,17 +4,17 @@
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveUnifiedSimpleMergeable
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
-  ( deriveGADTUnifiedSimpleMergeable,
-    deriveGADTUnifiedSimpleMergeable1,
-    deriveGADTUnifiedSimpleMergeable2,
+module Grisette.Internal.TH.Derivation.DeriveUnifiedSimpleMergeable
+  ( deriveUnifiedSimpleMergeable,
+    deriveUnifiedSimpleMergeable1,
+    deriveUnifiedSimpleMergeable2,
   )
 where
 
@@ -23,8 +23,8 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
     UnifiedSimpleMergeable1 (withBaseSimpleMergeable1),
     UnifiedSimpleMergeable2 (withBaseSimpleMergeable2),
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig (evalModeConfig))
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig (evalModeConfig))
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -37,7 +37,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
     UnaryOpConfig (UnaryOpConfig),
     genUnaryOpClass,
   )
-import Grisette.Internal.TH.GADT.UnifiedOpCommon
+import Grisette.Internal.TH.Derivation.UnifiedOpCommon
   ( UnaryOpUnifiedConfig (UnaryOpUnifiedConfig, unifiedFun),
     defaultUnaryOpUnifiedFun,
   )
@@ -98,17 +98,17 @@ unifiedSimpleMergeableConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'UnifiedSimpleMergeable' instance for a GADT.
-deriveGADTUnifiedSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTUnifiedSimpleMergeable deriveConfig =
+-- | Derive 'UnifiedSimpleMergeable' instance for a data type.
+deriveUnifiedSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
+deriveUnifiedSimpleMergeable deriveConfig =
   genUnaryOpClass deriveConfig unifiedSimpleMergeableConfig 0
 
--- | Derive 'UnifiedSimpleMergeable1' instance for a GADT.
-deriveGADTUnifiedSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTUnifiedSimpleMergeable1 deriveConfig =
+-- | Derive 'UnifiedSimpleMergeable1' instance for a data type.
+deriveUnifiedSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
+deriveUnifiedSimpleMergeable1 deriveConfig =
   genUnaryOpClass deriveConfig unifiedSimpleMergeableConfig 1
 
--- | Derive 'UnifiedSimpleMergeable2' instance for a GADT.
-deriveGADTUnifiedSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTUnifiedSimpleMergeable2 deriveConfig =
+-- | Derive 'UnifiedSimpleMergeable2' instance for a data type.
+deriveUnifiedSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
+deriveUnifiedSimpleMergeable2 deriveConfig =
   genUnaryOpClass deriveConfig unifiedSimpleMergeableConfig 2

@@ -36,7 +36,7 @@ import qualified Data.Serialize as Cereal
 import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint (PPrint)
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Solver (SolvingFailure)
 import Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint ()
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 -- $setup
 -- >>> import Grisette
@@ -44,7 +44,7 @@ import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend
 
-deriveGADT
+derive
   [''SolvingFailure]
   [ ''Show,
     ''Eq,

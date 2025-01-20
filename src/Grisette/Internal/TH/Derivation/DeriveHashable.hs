@@ -1,17 +1,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveHashable
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveHashable
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveHashable
-  ( deriveGADTHashable,
-    deriveGADTHashable1,
-    deriveGADTHashable2,
+module Grisette.Internal.TH.Derivation.DeriveHashable
+  ( deriveHashable,
+    deriveHashable1,
+    deriveHashable2,
   )
 where
 
@@ -20,8 +20,8 @@ import Data.Hashable.Lifted
   ( Hashable1 (liftHashWithSalt),
     Hashable2 (liftHashWithSalt2),
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -79,14 +79,14 @@ hashableConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'Hashable' instance for a GADT.
-deriveGADTHashable :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTHashable deriveConfig = genUnaryOpClass deriveConfig hashableConfig 0
+-- | Derive 'Hashable' instance for a data type.
+deriveHashable :: DeriveConfig -> Name -> Q [Dec]
+deriveHashable deriveConfig = genUnaryOpClass deriveConfig hashableConfig 0
 
--- | Derive 'Hashable1' instance for a GADT.
-deriveGADTHashable1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTHashable1 deriveConfig = genUnaryOpClass deriveConfig hashableConfig 1
+-- | Derive 'Hashable1' instance for a data type.
+deriveHashable1 :: DeriveConfig -> Name -> Q [Dec]
+deriveHashable1 deriveConfig = genUnaryOpClass deriveConfig hashableConfig 1
 
--- | Derive 'Hashable2' instance for a GADT.
-deriveGADTHashable2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTHashable2 deriveConfig = genUnaryOpClass deriveConfig hashableConfig 2
+-- | Derive 'Hashable2' instance for a data type.
+deriveHashable2 :: DeriveConfig -> Name -> Q [Dec]
+deriveHashable2 deriveConfig = genUnaryOpClass deriveConfig hashableConfig 2

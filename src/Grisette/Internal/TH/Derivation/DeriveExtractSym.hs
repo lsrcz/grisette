@@ -4,17 +4,17 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveExtractSym
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveExtractSym
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveExtractSym
-  ( deriveGADTExtractSym,
-    deriveGADTExtractSym1,
-    deriveGADTExtractSym2,
+module Grisette.Internal.TH.Derivation.DeriveExtractSym
+  ( deriveExtractSym,
+    deriveExtractSym1,
+    deriveExtractSym2,
   )
 where
 
@@ -23,8 +23,8 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
     ExtractSym1 (liftExtractSymMaybe),
     ExtractSym2 (liftExtractSymMaybe2),
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -88,14 +88,14 @@ extractSymConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'ExtractSym' instance for a GADT.
-deriveGADTExtractSym :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTExtractSym deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 0
+-- | Derive 'ExtractSym' instance for a data type.
+deriveExtractSym :: DeriveConfig -> Name -> Q [Dec]
+deriveExtractSym deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 0
 
--- | Derive 'ExtractSym1' instance for a GADT.
-deriveGADTExtractSym1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTExtractSym1 deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 1
+-- | Derive 'ExtractSym1' instance for a data type.
+deriveExtractSym1 :: DeriveConfig -> Name -> Q [Dec]
+deriveExtractSym1 deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 1
 
--- | Derive 'ExtractSym2' instance for a GADT.
-deriveGADTExtractSym2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTExtractSym2 deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 2
+-- | Derive 'ExtractSym2' instance for a data type.
+deriveExtractSym2 :: DeriveConfig -> Name -> Q [Dec]
+deriveExtractSym2 deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 2

@@ -3,17 +3,17 @@
 {-# LANGUAGE TupleSections #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DerivePPrint
+-- Module      :   Grisette.Internal.TH.Derivation.DerivePPrint
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DerivePPrint
-  ( deriveGADTPPrint,
-    deriveGADTPPrint1,
-    deriveGADTPPrint2,
+module Grisette.Internal.TH.Derivation.DerivePPrint
+  ( derivePPrint,
+    derivePPrint1,
+    derivePPrint2,
   )
 where
 
@@ -35,9 +35,9 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
     vsep,
     (<+>),
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
-import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.ShowPPrintCommon (showPrintFieldFunExp)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -158,7 +158,7 @@ pprintConfig =
                           |]
                       return (r, [True])
                     _ ->
-                      fail "deriveGADTPPrint: unexpected constructor variant",
+                      fail "derivePPrint: unexpected constructor variant",
                 fieldResFun = \variant conName _ pos fieldPat fieldFun -> do
                   let makePPrintField p =
                         [|
@@ -198,14 +198,14 @@ pprintConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'PPrint' instance for a GADT.
-deriveGADTPPrint :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTPPrint deriveConfig = genUnaryOpClass deriveConfig pprintConfig 0
+-- | Derive 'PPrint' instance for a data type.
+derivePPrint :: DeriveConfig -> Name -> Q [Dec]
+derivePPrint deriveConfig = genUnaryOpClass deriveConfig pprintConfig 0
 
--- | Derive 'PPrint1' instance for a GADT.
-deriveGADTPPrint1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTPPrint1 deriveConfig = genUnaryOpClass deriveConfig pprintConfig 1
+-- | Derive 'PPrint1' instance for a data type.
+derivePPrint1 :: DeriveConfig -> Name -> Q [Dec]
+derivePPrint1 deriveConfig = genUnaryOpClass deriveConfig pprintConfig 1
 
--- | Derive 'PPrint2' instance for a GADT.
-deriveGADTPPrint2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTPPrint2 deriveConfig = genUnaryOpClass deriveConfig pprintConfig 2
+-- | Derive 'PPrint2' instance for a data type.
+derivePPrint2 :: DeriveConfig -> Name -> Q [Dec]
+derivePPrint2 deriveConfig = genUnaryOpClass deriveConfig pprintConfig 2

@@ -103,7 +103,7 @@ import Grisette.Internal.SymPrim.SymFP
     SymFPRoundingMode (SymFPRoundingMode),
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 #define CONCRETE_SORD(type) \
 instance SymOrd type where \
@@ -286,7 +286,7 @@ instance SymOrd1 Union where
     y1 <- y
     f x1 y1
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
@@ -294,7 +294,7 @@ deriveGADT
   ]
   [''SymOrd]
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -313,7 +313,7 @@ deriveGADT
   ]
   [''SymOrd, ''SymOrd1, ''SymOrd2]
 
-deriveGADT
+derive
   [ ''Maybe,
     ''Identity,
     ''Monoid.Dual,

@@ -1,23 +1,23 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveNFData
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveNFData
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveNFData
-  ( deriveGADTNFData,
-    deriveGADTNFData1,
-    deriveGADTNFData2,
+module Grisette.Internal.TH.Derivation.DeriveNFData
+  ( deriveNFData,
+    deriveNFData1,
+    deriveNFData2,
   )
 where
 
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), NFData2 (liftRnf2))
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -71,14 +71,14 @@ nfdataConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'NFData' instance for a GADT.
-deriveGADTNFData :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTNFData deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 0
+-- | Derive 'NFData' instance for a data type.
+deriveNFData :: DeriveConfig -> Name -> Q [Dec]
+deriveNFData deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 0
 
--- | Derive 'NFData1' instance for a GADT.
-deriveGADTNFData1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTNFData1 deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 1
+-- | Derive 'NFData1' instance for a data type.
+deriveNFData1 :: DeriveConfig -> Name -> Q [Dec]
+deriveNFData1 deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 1
 
--- | Derive 'NFData2' instance for a GADT.
-deriveGADTNFData2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTNFData2 deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 2
+-- | Derive 'NFData2' instance for a data type.
+deriveNFData2 :: DeriveConfig -> Name -> Q [Dec]
+deriveNFData2 deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 2

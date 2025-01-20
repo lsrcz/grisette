@@ -7,18 +7,18 @@
 {-# LANGUAGE TypeApplications #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveMergeable
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveMergeable
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveMergeable
-  ( deriveGADTMergeable,
-    deriveGADTMergeable1,
-    deriveGADTMergeable2,
-    deriveGADTMergeable3,
+module Grisette.Internal.TH.Derivation.DeriveMergeable
+  ( deriveMergeable,
+    deriveMergeable1,
+    deriveMergeable2,
+    deriveMergeable3,
     genMergeableAndGetMergingInfoResult,
     genMergeable,
     genMergeable',
@@ -42,7 +42,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
     product2Strategy,
     wrapStrategy,
   )
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( CheckArgsResult
       ( CheckArgsResult,
         argVars,
@@ -56,7 +56,7 @@ import Grisette.Internal.TH.GADT.Common
     isVarUsedInFields,
     specializeResult,
   )
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( FieldFunExp,
     UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -303,7 +303,7 @@ genMergingInfo typName = do
           ]
     )
 
--- | Generate 'Mergeable' instance and merging information for a GADT.
+-- | Generate 'Mergeable' instance and merging information for a data type.
 genMergeableAndGetMergingInfoResult ::
   DeriveConfig -> Name -> Int -> Q (MergingInfoResult, [Dec])
 genMergeableAndGetMergingInfoResult deriveConfig typName n = do
@@ -648,7 +648,7 @@ instance UnaryOpFunConfig MergeableNoExistentialConfig where
               []
           ]
 
--- | Generate 'Mergeable' instance for a GADT, using a given merging info
+-- | Generate 'Mergeable' instance for a data type, using a given merging info
 -- result.
 genMergeable' ::
   DeriveConfig -> MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
@@ -777,12 +777,12 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
       ]
     )
 
--- | Generate 'Mergeable' instance for a GADT without existential variables.
+-- | Generate 'Mergeable' instance for a data type without existential variables.
 genMergeableNoExistential :: DeriveConfig -> Name -> Int -> Q [Dec]
 genMergeableNoExistential deriveConfig typName n = do
   genUnaryOpClass deriveConfig mergeableNoExistentialConfig n typName
 
--- | Generate 'Mergeable' instance for a GADT, using 'NoStrategy'.
+-- | Generate 'Mergeable' instance for a data type, using 'NoStrategy'.
 genMergeableNoStrategy :: DeriveConfig -> Name -> Int -> Q [Dec]
 genMergeableNoStrategy deriveConfig typName n = do
   CheckArgsResult {..} <-
@@ -806,7 +806,7 @@ genMergeableNoStrategy deriveConfig typName n = do
         [FunD mergeInstanceFunName [mergeInstanceFunClause]]
     ]
 
--- | Generate 'Mergeable' instance for a GADT.
+-- | Generate 'Mergeable' instance for a data type.
 genMergeable :: DeriveConfig -> Name -> Int -> Q [Dec]
 genMergeable deriveConfig typName n = do
   hasExistential <- dataTypeHasExistential typName
@@ -819,7 +819,7 @@ genMergeable deriveConfig typName n = do
         return $ infoDec ++ decs
     | otherwise -> genMergeableNoExistential deriveConfig typName n
 
--- | Generate multiple 'Mergeable' instances for a GADT.
+-- | Generate multiple 'Mergeable' instances for a data type.
 genMergeableList :: DeriveConfig -> Name -> [Int] -> Q [Dec]
 genMergeableList _ _ [] = return []
 genMergeableList deriveConfig typName [n] = genMergeable deriveConfig typName n
@@ -841,17 +841,17 @@ genMergeableList deriveConfig typName l@(n : ns) = do
         concat <$> traverse (genMergeableNoExistential deriveConfig typName) l
 
 -- | Derive 'Mergeable' instance for GADT.
-deriveGADTMergeable :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTMergeable deriveConfig nm = genMergeable deriveConfig nm 0
+deriveMergeable :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable deriveConfig nm = genMergeable deriveConfig nm 0
 
 -- | Derive 'Mergeable1' instance for GADT.
-deriveGADTMergeable1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTMergeable1 deriveConfig nm = genMergeable deriveConfig nm 1
+deriveMergeable1 :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable1 deriveConfig nm = genMergeable deriveConfig nm 1
 
 -- | Derive 'Mergeable2' instance for GADT.
-deriveGADTMergeable2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTMergeable2 deriveConfig nm = genMergeable deriveConfig nm 2
+deriveMergeable2 :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable2 deriveConfig nm = genMergeable deriveConfig nm 2
 
 -- | Derive 'Mergeable3' instance for GADT.
-deriveGADTMergeable3 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTMergeable3 deriveConfig nm = genMergeable deriveConfig nm 3
+deriveMergeable3 :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable3 deriveConfig nm = genMergeable deriveConfig nm 3

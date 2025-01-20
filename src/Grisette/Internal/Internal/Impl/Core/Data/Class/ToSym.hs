@@ -112,7 +112,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 -- $setup
 -- >>> import Grisette.SymPrim
@@ -258,7 +258,7 @@ instance (ToSym c a) => ToSym1 ((->) a) ((->) c) where
   liftToSym l f = l . f . toSym
   {-# INLINE liftToSym #-}
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -277,7 +277,7 @@ deriveGADT
   ]
   [''ToSym, ''ToSym1, ''ToSym2]
 
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Monoid.Dual,
@@ -293,7 +293,7 @@ deriveGADT
   ]
   [''ToSym, ''ToSym1]
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,

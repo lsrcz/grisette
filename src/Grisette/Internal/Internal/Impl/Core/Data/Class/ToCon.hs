@@ -107,7 +107,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -247,7 +247,7 @@ instance ToCon SymAlgReal Rational where
       _ -> Nothing
   toCon _ = Nothing
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -266,7 +266,7 @@ deriveGADT
   ]
   [''ToCon, ''ToCon1, ''ToCon2]
 
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Monoid.Dual,
@@ -282,7 +282,7 @@ deriveGADT
   ]
   [''ToCon, ''ToCon1]
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,

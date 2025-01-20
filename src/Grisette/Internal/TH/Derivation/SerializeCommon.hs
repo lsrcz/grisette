@@ -4,14 +4,14 @@
 {-# LANGUAGE TypeApplications #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.SerializeCommon
+-- Module      :   Grisette.Internal.TH.Derivation.SerializeCommon
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.SerializeCommon
+module Grisette.Internal.TH.Derivation.SerializeCommon
   ( serializeConfig,
     serializeWithSerialConfig,
   )
@@ -23,7 +23,7 @@ import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import qualified Data.Set as S
 import GHC.Word (Word16, Word32, Word64, Word8)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,

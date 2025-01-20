@@ -42,11 +42,11 @@ import Grisette
     Union,
     allClasses0,
     allClasses01,
-    deriveGADT,
-    deriveGADTWith,
+    derive,
+    deriveWith,
     mrgReturn,
   )
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( DeriveConfig (evalModeConfig, needExtraMergeableUnderEvalMode),
     EvalModeConfig (EvalModeConstraints),
   )
@@ -60,7 +60,7 @@ data T mode a
   | T1
 
 #if MIN_VERSION_base(4,16,0)
-deriveGADTWith
+deriveWith
   ( mempty
       { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])],
         needExtraMergeableUnderEvalMode = True
@@ -86,12 +86,12 @@ f = mkT (toSym True) 10 mkT1
 
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
-deriveGADT [''TNoMode] allClasses01
+derive [''TNoMode] allClasses01
 makeNamedUnifiedCtor [] ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
 
-deriveGADT [''TNoArg] allClasses0
+derive [''TNoArg] allClasses0
 makePrefixedUnifiedCtor [] "mk" ''TNoArg
 
 #if MIN_VERSION_base(4,16,0)

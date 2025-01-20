@@ -5,16 +5,16 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveGADT
+-- Module      :   Grisette.Internal.TH.Derivation.Derive
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveGADT
-  ( deriveGADT,
-    deriveGADTWith,
+module Grisette.Internal.TH.Derivation.Derive
+  ( derive,
+    deriveWith,
     allClasses0,
     allClasses01,
     allClasses012,
@@ -133,7 +133,7 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
     UnifiedSymOrd1,
     UnifiedSymOrd2,
   )
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( DeriveConfig
       ( evalModeConfig,
         needExtraMergeableUnderEvalMode,
@@ -141,103 +141,103 @@ import Grisette.Internal.TH.GADT.Common
       ),
     EvalModeConfig (EvalModeConstraints, EvalModeSpecified),
   )
-import Grisette.Internal.TH.GADT.DeriveAllSyms
-  ( deriveGADTAllSyms,
-    deriveGADTAllSyms1,
-    deriveGADTAllSyms2,
+import Grisette.Internal.TH.Derivation.DeriveAllSyms
+  ( deriveAllSyms,
+    deriveAllSyms1,
+    deriveAllSyms2,
   )
-import Grisette.Internal.TH.GADT.DeriveBinary (deriveGADTBinary)
-import Grisette.Internal.TH.GADT.DeriveCereal (deriveGADTCereal)
-import Grisette.Internal.TH.GADT.DeriveEq
-  ( deriveGADTEq,
-    deriveGADTEq1,
-    deriveGADTEq2,
+import Grisette.Internal.TH.Derivation.DeriveBinary (deriveBinary)
+import Grisette.Internal.TH.Derivation.DeriveCereal (deriveCereal)
+import Grisette.Internal.TH.Derivation.DeriveEq
+  ( deriveEq,
+    deriveEq1,
+    deriveEq2,
   )
-import Grisette.Internal.TH.GADT.DeriveEvalSym
-  ( deriveGADTEvalSym,
-    deriveGADTEvalSym1,
-    deriveGADTEvalSym2,
+import Grisette.Internal.TH.Derivation.DeriveEvalSym
+  ( deriveEvalSym,
+    deriveEvalSym1,
+    deriveEvalSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveExtractSym
-  ( deriveGADTExtractSym,
-    deriveGADTExtractSym1,
-    deriveGADTExtractSym2,
+import Grisette.Internal.TH.Derivation.DeriveExtractSym
+  ( deriveExtractSym,
+    deriveExtractSym1,
+    deriveExtractSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveHashable
-  ( deriveGADTHashable,
-    deriveGADTHashable1,
-    deriveGADTHashable2,
+import Grisette.Internal.TH.Derivation.DeriveHashable
+  ( deriveHashable,
+    deriveHashable1,
+    deriveHashable2,
   )
-import Grisette.Internal.TH.GADT.DeriveMergeable (genMergeableList)
-import Grisette.Internal.TH.GADT.DeriveNFData
-  ( deriveGADTNFData,
-    deriveGADTNFData1,
-    deriveGADTNFData2,
+import Grisette.Internal.TH.Derivation.DeriveMergeable (genMergeableList)
+import Grisette.Internal.TH.Derivation.DeriveNFData
+  ( deriveNFData,
+    deriveNFData1,
+    deriveNFData2,
   )
-import Grisette.Internal.TH.GADT.DeriveOrd
-  ( deriveGADTOrd,
-    deriveGADTOrd1,
-    deriveGADTOrd2,
+import Grisette.Internal.TH.Derivation.DeriveOrd
+  ( deriveOrd,
+    deriveOrd1,
+    deriveOrd2,
   )
-import Grisette.Internal.TH.GADT.DerivePPrint
-  ( deriveGADTPPrint,
-    deriveGADTPPrint1,
-    deriveGADTPPrint2,
+import Grisette.Internal.TH.Derivation.DerivePPrint
+  ( derivePPrint,
+    derivePPrint1,
+    derivePPrint2,
   )
-import Grisette.Internal.TH.GADT.DeriveSerial
-  ( deriveGADTSerial,
-    deriveGADTSerial1,
-    deriveGADTSerial2,
+import Grisette.Internal.TH.Derivation.DeriveSerial
+  ( deriveSerial,
+    deriveSerial1,
+    deriveSerial2,
   )
-import Grisette.Internal.TH.GADT.DeriveShow
-  ( deriveGADTShow,
-    deriveGADTShow1,
-    deriveGADTShow2,
+import Grisette.Internal.TH.Derivation.DeriveShow
+  ( deriveShow,
+    deriveShow1,
+    deriveShow2,
   )
-import Grisette.Internal.TH.GADT.DeriveSimpleMergeable
-  ( deriveGADTSimpleMergeable,
-    deriveGADTSimpleMergeable1,
-    deriveGADTSimpleMergeable2,
+import Grisette.Internal.TH.Derivation.DeriveSimpleMergeable
+  ( deriveSimpleMergeable,
+    deriveSimpleMergeable1,
+    deriveSimpleMergeable2,
   )
-import Grisette.Internal.TH.GADT.DeriveSubstSym
-  ( deriveGADTSubstSym,
-    deriveGADTSubstSym1,
-    deriveGADTSubstSym2,
+import Grisette.Internal.TH.Derivation.DeriveSubstSym
+  ( deriveSubstSym,
+    deriveSubstSym1,
+    deriveSubstSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveSymEq
-  ( deriveGADTSymEq,
-    deriveGADTSymEq1,
-    deriveGADTSymEq2,
+import Grisette.Internal.TH.Derivation.DeriveSymEq
+  ( deriveSymEq,
+    deriveSymEq1,
+    deriveSymEq2,
   )
-import Grisette.Internal.TH.GADT.DeriveSymOrd
-  ( deriveGADTSymOrd,
-    deriveGADTSymOrd1,
-    deriveGADTSymOrd2,
+import Grisette.Internal.TH.Derivation.DeriveSymOrd
+  ( deriveSymOrd,
+    deriveSymOrd1,
+    deriveSymOrd2,
   )
-import Grisette.Internal.TH.GADT.DeriveToCon
-  ( deriveGADTToCon,
-    deriveGADTToCon1,
-    deriveGADTToCon2,
+import Grisette.Internal.TH.Derivation.DeriveToCon
+  ( deriveToCon,
+    deriveToCon1,
+    deriveToCon2,
   )
-import Grisette.Internal.TH.GADT.DeriveToSym
-  ( deriveGADTToSym,
-    deriveGADTToSym1,
-    deriveGADTToSym2,
+import Grisette.Internal.TH.Derivation.DeriveToSym
+  ( deriveToSym,
+    deriveToSym1,
+    deriveToSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
-  ( deriveGADTUnifiedSimpleMergeable,
-    deriveGADTUnifiedSimpleMergeable1,
-    deriveGADTUnifiedSimpleMergeable2,
+import Grisette.Internal.TH.Derivation.DeriveUnifiedSimpleMergeable
+  ( deriveUnifiedSimpleMergeable,
+    deriveUnifiedSimpleMergeable1,
+    deriveUnifiedSimpleMergeable2,
   )
-import Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
-  ( deriveGADTUnifiedSymEq,
-    deriveGADTUnifiedSymEq1,
-    deriveGADTUnifiedSymEq2,
+import Grisette.Internal.TH.Derivation.DeriveUnifiedSymEq
+  ( deriveUnifiedSymEq,
+    deriveUnifiedSymEq1,
+    deriveUnifiedSymEq2,
   )
-import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
-  ( deriveGADTUnifiedSymOrd,
-    deriveGADTUnifiedSymOrd1,
-    deriveGADTUnifiedSymOrd2,
+import Grisette.Internal.TH.Derivation.DeriveUnifiedSymOrd
+  ( deriveUnifiedSymOrd,
+    deriveUnifiedSymOrd1,
+    deriveUnifiedSymOrd2,
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH (Dec, Name, Q)
@@ -245,69 +245,69 @@ import Language.Haskell.TH (Dec, Name, Q)
 deriveProcedureMap :: M.Map Name (DeriveConfig -> Name -> Q [Dec])
 deriveProcedureMap =
   M.fromList
-    [ (''EvalSym, deriveGADTEvalSym),
-      (''EvalSym1, deriveGADTEvalSym1),
-      (''EvalSym2, deriveGADTEvalSym2),
-      (''ExtractSym, deriveGADTExtractSym),
-      (''ExtractSym1, deriveGADTExtractSym1),
-      (''ExtractSym2, deriveGADTExtractSym2),
-      (''SubstSym, deriveGADTSubstSym),
-      (''SubstSym1, deriveGADTSubstSym1),
-      (''SubstSym2, deriveGADTSubstSym2),
-      (''NFData, deriveGADTNFData),
-      (''NFData1, deriveGADTNFData1),
-      (''NFData2, deriveGADTNFData2),
-      (''Hashable, deriveGADTHashable),
-      (''Hashable1, deriveGADTHashable1),
-      (''Hashable2, deriveGADTHashable2),
-      (''Show, deriveGADTShow),
-      (''Show1, deriveGADTShow1),
-      (''Show2, deriveGADTShow2),
-      (''PPrint, deriveGADTPPrint),
-      (''PPrint1, deriveGADTPPrint1),
-      (''PPrint2, deriveGADTPPrint2),
-      (''AllSyms, deriveGADTAllSyms),
-      (''AllSyms1, deriveGADTAllSyms1),
-      (''AllSyms2, deriveGADTAllSyms2),
-      (''Eq, deriveGADTEq),
-      (''Eq1, deriveGADTEq1),
-      (''Eq2, deriveGADTEq2),
-      (''Ord, deriveGADTOrd),
-      (''Ord1, deriveGADTOrd1),
-      (''Ord2, deriveGADTOrd2),
-      (''SymOrd, deriveGADTSymOrd),
-      (''SymOrd1, deriveGADTSymOrd1),
-      (''SymOrd2, deriveGADTSymOrd2),
-      (''SymEq, deriveGADTSymEq),
-      (''SymEq1, deriveGADTSymEq1),
-      (''SymEq2, deriveGADTSymEq2),
-      (''UnifiedSymEq, deriveGADTUnifiedSymEq),
-      (''UnifiedSymEq1, deriveGADTUnifiedSymEq1),
-      (''UnifiedSymEq2, deriveGADTUnifiedSymEq2),
-      (''UnifiedSymOrd, deriveGADTUnifiedSymOrd),
-      (''UnifiedSymOrd1, deriveGADTUnifiedSymOrd1),
-      (''UnifiedSymOrd2, deriveGADTUnifiedSymOrd2),
-      (''ToSym, deriveGADTToSym),
-      (''ToSym1, deriveGADTToSym1),
-      (''ToSym2, deriveGADTToSym2),
-      (''ToCon, deriveGADTToCon),
-      (''ToCon1, deriveGADTToCon1),
-      (''ToCon2, deriveGADTToCon2),
-      (''Serial, deriveGADTSerial),
-      (''Serial1, deriveGADTSerial1),
-      (''Serial2, deriveGADTSerial2),
-      (''SimpleMergeable, deriveGADTSimpleMergeable),
-      (''SimpleMergeable1, deriveGADTSimpleMergeable1),
-      (''SimpleMergeable2, deriveGADTSimpleMergeable2),
-      (''UnifiedSimpleMergeable, deriveGADTUnifiedSimpleMergeable),
-      (''UnifiedSimpleMergeable1, deriveGADTUnifiedSimpleMergeable1),
-      (''UnifiedSimpleMergeable2, deriveGADTUnifiedSimpleMergeable2),
-      (''Binary, deriveGADTBinary),
-      (''Serialize, deriveGADTCereal)
+    [ (''EvalSym, deriveEvalSym),
+      (''EvalSym1, deriveEvalSym1),
+      (''EvalSym2, deriveEvalSym2),
+      (''ExtractSym, deriveExtractSym),
+      (''ExtractSym1, deriveExtractSym1),
+      (''ExtractSym2, deriveExtractSym2),
+      (''SubstSym, deriveSubstSym),
+      (''SubstSym1, deriveSubstSym1),
+      (''SubstSym2, deriveSubstSym2),
+      (''NFData, deriveNFData),
+      (''NFData1, deriveNFData1),
+      (''NFData2, deriveNFData2),
+      (''Hashable, deriveHashable),
+      (''Hashable1, deriveHashable1),
+      (''Hashable2, deriveHashable2),
+      (''Show, deriveShow),
+      (''Show1, deriveShow1),
+      (''Show2, deriveShow2),
+      (''PPrint, derivePPrint),
+      (''PPrint1, derivePPrint1),
+      (''PPrint2, derivePPrint2),
+      (''AllSyms, deriveAllSyms),
+      (''AllSyms1, deriveAllSyms1),
+      (''AllSyms2, deriveAllSyms2),
+      (''Eq, deriveEq),
+      (''Eq1, deriveEq1),
+      (''Eq2, deriveEq2),
+      (''Ord, deriveOrd),
+      (''Ord1, deriveOrd1),
+      (''Ord2, deriveOrd2),
+      (''SymOrd, deriveSymOrd),
+      (''SymOrd1, deriveSymOrd1),
+      (''SymOrd2, deriveSymOrd2),
+      (''SymEq, deriveSymEq),
+      (''SymEq1, deriveSymEq1),
+      (''SymEq2, deriveSymEq2),
+      (''UnifiedSymEq, deriveUnifiedSymEq),
+      (''UnifiedSymEq1, deriveUnifiedSymEq1),
+      (''UnifiedSymEq2, deriveUnifiedSymEq2),
+      (''UnifiedSymOrd, deriveUnifiedSymOrd),
+      (''UnifiedSymOrd1, deriveUnifiedSymOrd1),
+      (''UnifiedSymOrd2, deriveUnifiedSymOrd2),
+      (''ToSym, deriveToSym),
+      (''ToSym1, deriveToSym1),
+      (''ToSym2, deriveToSym2),
+      (''ToCon, deriveToCon),
+      (''ToCon1, deriveToCon1),
+      (''ToCon2, deriveToCon2),
+      (''Serial, deriveSerial),
+      (''Serial1, deriveSerial1),
+      (''Serial2, deriveSerial2),
+      (''SimpleMergeable, deriveSimpleMergeable),
+      (''SimpleMergeable1, deriveSimpleMergeable1),
+      (''SimpleMergeable2, deriveSimpleMergeable2),
+      (''UnifiedSimpleMergeable, deriveUnifiedSimpleMergeable),
+      (''UnifiedSimpleMergeable1, deriveUnifiedSimpleMergeable1),
+      (''UnifiedSimpleMergeable2, deriveUnifiedSimpleMergeable2),
+      (''Binary, deriveBinary),
+      (''Serialize, deriveCereal)
     ]
 
-deriveSingleGADT :: DeriveConfig -> Name -> Name -> Q [Dec]
-deriveSingleGADT deriveConfig typName className = do
+deriveSingle :: DeriveConfig -> Name -> Name -> Q [Dec]
+deriveSingle deriveConfig typName className = do
   let newExtra
         | className
             `elem` [ ''Eq,
@@ -364,11 +364,11 @@ deriveSingleGADT deriveConfig typName className = do
     Nothing ->
       fail $ "No derivation available for class " ++ show className
 
-deriveGADTWith' :: DeriveConfig -> Name -> [Name] -> Q [Dec]
-deriveGADTWith' deriveConfig typName classNameList = do
+deriveWith' :: DeriveConfig -> Name -> [Name] -> Q [Dec]
+deriveWith' deriveConfig typName classNameList = do
   let classNames = S.fromList classNameList
   let (ns, ms) = splitMergeable $ S.toList classNames
-  decs <- mapM (deriveSingleGADT deriveConfig typName) ns
+  decs <- mapM (deriveSingle deriveConfig typName) ns
   decMergeables <- deriveMergeables ms
   return $ concat decs ++ decMergeables
   where
@@ -388,9 +388,9 @@ deriveGADTWith' deriveConfig typName classNameList = do
             | x == ''Mergeable3 -> (ns, 3 : is)
             | otherwise -> (x : ns, is)
 
--- | Derive the specified classes for a GADT with the given name.
+-- | Derive the specified classes for a data type with the given name.
 --
--- Support the following classes.
+-- Support the following classes for both vanilla data types and GADTs.
 --
 -- * 'Mergeable'
 -- * 'Mergeable1'
@@ -467,19 +467,19 @@ deriveGADTWith' deriveConfig typName classNameList = do
 -- * 'Serial2'
 -- * 'Binary'
 -- * 'Serialize'
-deriveGADTWith :: DeriveConfig -> [Name] -> [Name] -> Q [Dec]
-deriveGADTWith deriveConfig typeNameList classNameList = do
+deriveWith :: DeriveConfig -> [Name] -> [Name] -> Q [Dec]
+deriveWith deriveConfig typeNameList classNameList = do
   let typeNames = S.toList $ S.fromList typeNameList
   concat
     <$> traverse
-      (\typeName -> deriveGADTWith' deriveConfig typeName classNameList)
+      (\typeName -> deriveWith' deriveConfig typeName classNameList)
       typeNames
 
--- | Derive the specified classes for a GADT with the given name.
+-- | Derive the specified classes for a data type with the given name.
 --
--- See 'deriveGADTWith' for more details.
-deriveGADT :: [Name] -> [Name] -> Q [Dec]
-deriveGADT = deriveGADTWith mempty
+-- See 'deriveWith' for more details.
+derive :: [Name] -> [Name] -> Q [Dec]
+derive = deriveWith mempty
 
 -- | All the classes that can be derived for GADTs.
 --
@@ -562,7 +562,7 @@ allClasses01 = allClasses0 ++ allClasses1
 allClasses2 :: [Name]
 allClasses2 = basicClasses2 ++ concreteOrdClasses2 ++ noExistentialClasses2
 
--- | All the classes that can be derived for GADTfunctors.
+-- | All the classes that can be derived for GADT functors.
 --
 -- This includes all the classes in 'allClasses0', 'allClasses1',
 -- and 'allClasses2'.

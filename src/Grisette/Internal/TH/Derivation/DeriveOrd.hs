@@ -2,22 +2,22 @@
 {-# LANGUAGE TupleSections #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveOrd
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveOrd
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveOrd
-  ( deriveGADTOrd,
-    deriveGADTOrd1,
-    deriveGADTOrd2,
+module Grisette.Internal.TH.Derivation.DeriveOrd
+  ( deriveOrd,
+    deriveOrd1,
+    deriveOrd2,
   )
 where
 
 import Data.Functor.Classes (Ord1 (liftCompare), Ord2 (liftCompare2))
-import Grisette.Internal.TH.GADT.BinaryOpCommon
+import Grisette.Internal.TH.Derivation.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
         binaryOpAllowSumType,
@@ -39,7 +39,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
     defaultFieldFunExp,
     genBinaryOpClass,
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
 import Language.Haskell.TH (Dec, Exp (ListE), Name, Q)
 
 ordConfig :: BinaryOpClassConfig
@@ -65,14 +65,14 @@ ordConfig =
       binaryOpAllowExistential = True
     }
 
--- | Derive 'Ord' instance for a GADT.
-deriveGADTOrd :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTOrd deriveConfig = genBinaryOpClass deriveConfig ordConfig 0
+-- | Derive 'Ord' instance for a data type.
+deriveOrd :: DeriveConfig -> Name -> Q [Dec]
+deriveOrd deriveConfig = genBinaryOpClass deriveConfig ordConfig 0
 
--- | Derive 'Ord1' instance for a GADT.
-deriveGADTOrd1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTOrd1 deriveConfig = genBinaryOpClass deriveConfig ordConfig 1
+-- | Derive 'Ord1' instance for a data type.
+deriveOrd1 :: DeriveConfig -> Name -> Q [Dec]
+deriveOrd1 deriveConfig = genBinaryOpClass deriveConfig ordConfig 1
 
--- | Derive 'Ord2' instance for a GADT.
-deriveGADTOrd2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTOrd2 deriveConfig = genBinaryOpClass deriveConfig ordConfig 2
+-- | Derive 'Ord2' instance for a data type.
+deriveOrd2 :: DeriveConfig -> Name -> Q [Dec]
+deriveOrd2 deriveConfig = genBinaryOpClass deriveConfig ordConfig 2

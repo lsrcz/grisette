@@ -5,14 +5,14 @@
 {-# LANGUAGE TupleSections #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.BinaryOpCommon
+-- Module      :   Grisette.Internal.TH.Derivation.BinaryOpCommon
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.BinaryOpCommon
+module Grisette.Internal.TH.Derivation.BinaryOpCommon
   ( BinaryOpClassConfig (..),
     BinaryOpFieldConfig (..),
     FieldFunExp,
@@ -29,7 +29,7 @@ import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as S
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( CheckArgsResult
       ( argVars,
         constructors,

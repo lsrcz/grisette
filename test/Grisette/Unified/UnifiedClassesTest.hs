@@ -32,12 +32,12 @@ import Grisette
     SymWordN,
     Union,
     WordN,
-    deriveGADTWith,
+    deriveWith,
     mrgReturn,
     symAnd,
   )
 import qualified Grisette
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( DeriveConfig
       ( bitSizePositions,
         evalModeConfig,
@@ -97,7 +97,7 @@ data X mode n f a
   | XNil
 
 #if MIN_VERSION_base(4,16,0)
-deriveGADTWith
+deriveWith
   ( mempty
       { evalModeConfig =
           [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],

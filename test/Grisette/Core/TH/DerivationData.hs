@@ -93,13 +93,13 @@ import Grisette
     Union,
     allClasses0,
     allClasses012,
-    deriveGADT,
-    deriveGADTWith,
+    derive,
+    deriveWith,
     (.&&),
     (.||),
   )
 import Grisette.Core.TH.PartialEvalMode (PartialEvalMode)
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( DeriveConfig
       ( bitSizePositions,
         evalModeConfig,
@@ -123,25 +123,25 @@ import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 
 newtype Skipped a b c = Skipped b
 
-deriveGADTWith
+deriveWith
   (mempty {unconstrainedPositions = [0, 2]})
   [''Skipped]
   allClasses012
 
 data Empty a b c
 
-deriveGADT [''Empty] allClasses012
+derive [''Empty] allClasses012
 
 data EmptyWithMode (mode :: EvalModeTag) a b c
 
-deriveGADT [''EmptyWithMode] allClasses012
+derive [''EmptyWithMode] allClasses012
 
 data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
   | TNil
 
 #if MIN_VERSION_base(4,16,0)
-deriveGADTWith
+deriveWith
   ( mempty
       { evalModeConfig =
           [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
@@ -168,7 +168,7 @@ symbolicT = undefined
 
 newtype X mode = X [GetBool mode]
 
-deriveGADTWith
+deriveWith
   ( mempty
       { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])]
       }
@@ -183,7 +183,7 @@ data IdenticalFields (mode :: EvalModeTag) a b = IdenticalFields
     d :: Maybe Int
   }
 
-deriveGADTWith
+deriveWith
   ( mempty
       { needExtraMergeableUnderEvalMode = True
       }
@@ -193,7 +193,7 @@ deriveGADTWith
 
 data Basic = Basic0 | Basic1 Int | Basic2 String [Int]
 
-deriveGADT [''Basic] allClasses0
+derive [''Basic] allClasses0
 
 data Extra mode n eb sb a where
   Extra ::
@@ -207,7 +207,7 @@ data Extra mode n eb sb a where
     Extra mode n eb sb a
 
 #if MIN_VERSION_base(4,16,0)
-deriveGADTWith
+deriveWith
   ( mempty
       { evalModeConfig = [(0, EvalModeConstraints [''PartialEvalMode])],
         bitSizePositions = [1],
@@ -260,7 +260,7 @@ data Expr f a where
     f a ->
     Expr g b
 
-deriveGADT
+derive
   [''Expr]
   [ ''Mergeable,
     ''Mergeable1,
@@ -286,11 +286,11 @@ deriveGADT
 instance (Eq1 f) => Eq1 (Expr f) where
   liftEq = undefined
 
-deriveGADT [''Expr] [''Hashable, ''Hashable1]
+derive [''Expr] [''Hashable, ''Hashable1]
 
 data P a b = P a | Q Int
 
-deriveGADT
+derive
   [''P]
   [ ''Mergeable,
     ''Mergeable1,
@@ -343,7 +343,7 @@ data GGG a b where
 
 infixr 5 :|
 
-deriveGADT
+derive
   [''GGG]
   [ ''Show,
     ''Show1,
@@ -418,7 +418,7 @@ data Ambiguous x where
 instance Eq (Ambiguous x) where
   (==) = undefined
 
-deriveGADT
+derive
   [''Ambiguous]
   [ ''AllSyms,
     ''Mergeable,
@@ -437,7 +437,7 @@ data SimpleMergeableType mode n x
       (GetData mode (SimpleMergeableType mode n x))
 
 #if MIN_VERSION_base(4,16,0)
-deriveGADTWith
+deriveWith
   ( mempty
       { evalModeConfig =
           [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
@@ -465,4 +465,4 @@ instance (Arbitrary a) => Arbitrary (Serializable a) where
         r <- bool (n `div` 2)
         oneof [return (l .|| r), return (l .&& r), return l]
 
-deriveGADT [''Serializable] [''Serial, ''Serialize, ''Binary]
+derive [''Serializable] [''Serial, ''Serialize, ''Binary]

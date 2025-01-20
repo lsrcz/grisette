@@ -6,24 +6,24 @@
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveBinary
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveBinary
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveBinary (deriveGADTBinary) where
+module Grisette.Internal.TH.Derivation.DeriveBinary (deriveBinary) where
 
 import Data.Binary (Binary (get, put))
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( DeriveConfig (useSerialForCerealAndBinary),
   )
-import Grisette.Internal.TH.GADT.SerializeCommon
+import Grisette.Internal.TH.Derivation.SerializeCommon
   ( serializeConfig,
     serializeWithSerialConfig,
   )
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig,
     genUnaryOpClass,
   )
@@ -36,9 +36,9 @@ binaryWithSerialConfig :: UnaryOpClassConfig
 binaryWithSerialConfig =
   serializeWithSerialConfig [''Binary] ['put] ['get]
 
--- | Derive 'Binary' instance for a GADT.
-deriveGADTBinary :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTBinary deriveConfig =
+-- | Derive 'Binary' instance for a data type.
+deriveBinary :: DeriveConfig -> Name -> Q [Dec]
+deriveBinary deriveConfig =
   genUnaryOpClass
     deriveConfig
     ( if useSerialForCerealAndBinary deriveConfig

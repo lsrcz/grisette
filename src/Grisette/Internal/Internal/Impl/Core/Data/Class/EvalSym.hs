@@ -100,7 +100,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->) (TabularFun))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 #define CONCRETE_EVALUATESYM(type) \
 instance EvalSym type where \
@@ -184,7 +184,7 @@ instance (ValidFP eb sb) => EvalSym (SymFP eb sb) where
   evalSym fillDefault model (SymFP t) =
     SymFP $ evalTerm fillDefault model HS.empty t
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
@@ -192,7 +192,7 @@ deriveGADT
   ]
   [''EvalSym]
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -211,7 +211,7 @@ deriveGADT
   ]
   [''EvalSym, ''EvalSym1, ''EvalSym2]
 
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Identity,
