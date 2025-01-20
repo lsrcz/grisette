@@ -69,7 +69,7 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
     UnifiedSimpleMergeable1 (withBaseSimpleMergeable1),
     UnifiedSimpleMergeable2 (withBaseSimpleMergeable2),
   )
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.EvalModeTag (IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
@@ -256,7 +256,7 @@ instance
   withBaseSimpleMergeable2 r = r
   {-# INLINE withBaseSimpleMergeable2 #-}
 
-deriveGADT
+derive
   [ ''(,),
     ''(,,),
     ''(,,,),
@@ -277,11 +277,11 @@ deriveGADT
     ''UnifiedSimpleMergeable2
   ]
 
-deriveGADT
+derive
   [''Identity]
   [''UnifiedSimpleMergeable, ''UnifiedSimpleMergeable1]
 
-deriveGADT
+derive
   [''(), ''AssertionError]
   [''UnifiedSimpleMergeable]
 

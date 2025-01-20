@@ -60,7 +60,7 @@ import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -68,7 +68,7 @@ import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
 -- >>> import Grisette.Backend
 -- >>> import Data.Proxy
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -86,7 +86,7 @@ deriveGADT
     ''(,,,,,,,,,,,,,,)
   ]
   [''AllSyms, ''AllSyms1, ''AllSyms2]
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Identity,
@@ -96,7 +96,7 @@ deriveGADT
     ''WriterStrict.WriterT
   ]
   [''AllSyms, ''AllSyms1]
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions

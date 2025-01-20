@@ -12,8 +12,8 @@ module Grisette.TH
   ( -- * Convenient derivation of all instances relating to Grisette
     EvalModeConfig (..),
     DeriveConfig (..),
-    deriveGADT,
-    deriveGADTWith,
+    derive,
+    deriveWith,
     allClasses0,
     allClasses01,
     allClasses012,
@@ -75,8 +75,11 @@ import Grisette.Internal.TH.Ctor.UnifiedConstructor
     makeUnifiedCtor,
     makeUnifiedCtorWith,
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig (..), EvalModeConfig (..))
-import Grisette.Internal.TH.GADT.DeriveGADT
+import Grisette.Internal.TH.Derivation.Common
+  ( DeriveConfig (..),
+    EvalModeConfig (..),
+  )
+import Grisette.Internal.TH.Derivation.Derive
   ( allClasses0,
     allClasses01,
     allClasses012,
@@ -87,8 +90,8 @@ import Grisette.Internal.TH.GADT.DeriveGADT
     concreteOrdClasses0,
     concreteOrdClasses1,
     concreteOrdClasses2,
-    deriveGADT,
-    deriveGADTWith,
+    derive,
+    deriveWith,
     eqClasses,
     evalSymClasses,
     extractSymClasses,

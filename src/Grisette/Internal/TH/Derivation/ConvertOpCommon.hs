@@ -5,14 +5,14 @@
 {-# LANGUAGE TypeApplications #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.ConvertOpCommon
+-- Module      :   Grisette.Internal.TH.Derivation.ConvertOpCommon
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.ConvertOpCommon
+module Grisette.Internal.TH.Derivation.ConvertOpCommon
   ( genConvertOpClass,
     ConvertOpClassConfig (..),
     defaultFieldFunExp,
@@ -26,7 +26,7 @@ import qualified Data.Set as S
 import Grisette.Internal.Core.Data.Class.PlainUnion (unionToCon)
 import Grisette.Internal.Internal.Decl.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge (toUnionSym)
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( CheckArgsResult (argVars, constructors, keptVars),
     DeriveConfig
       ( DeriveConfig,
@@ -279,7 +279,7 @@ convertCtxForVar instanceExps lty rty knd = case knd of
     fail $ "Unsupported kind: " <> show knd
   _ -> return Nothing
 
--- | Generate extra constraints for a GADT.
+-- | Generate extra constraints for a data type.
 extraConstraintConvert ::
   DeriveConfig ->
   EvalModeTag ->

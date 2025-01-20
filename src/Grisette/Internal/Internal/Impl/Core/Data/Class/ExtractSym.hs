@@ -106,7 +106,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->) (TabularFun))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -212,7 +212,7 @@ instance (ValidFP eb fb) => ExtractSym (SymFP eb fb) where
       Left HRefl -> SymbolSet <$> extractTerm HS.empty t
       Right HRefl -> SymbolSet <$> extractTerm HS.empty t
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
@@ -220,7 +220,7 @@ deriveGADT
   ]
   [''ExtractSym]
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -239,7 +239,7 @@ deriveGADT
   ]
   [''ExtractSym, ''ExtractSym1, ''ExtractSym2]
 
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Identity,

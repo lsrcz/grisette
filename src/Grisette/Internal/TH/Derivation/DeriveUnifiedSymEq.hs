@@ -4,17 +4,17 @@
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveUnifiedSymEq
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
-  ( deriveGADTUnifiedSymEq,
-    deriveGADTUnifiedSymEq1,
-    deriveGADTUnifiedSymEq2,
+module Grisette.Internal.TH.Derivation.DeriveUnifiedSymEq
+  ( deriveUnifiedSymEq,
+    deriveUnifiedSymEq1,
+    deriveUnifiedSymEq2,
   )
 where
 
@@ -23,8 +23,8 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
     UnifiedSymEq1 (withBaseSymEq1),
     UnifiedSymEq2 (withBaseSymEq2),
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig (evalModeConfig))
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig (evalModeConfig))
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -37,7 +37,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
     UnaryOpConfig (UnaryOpConfig),
     genUnaryOpClass,
   )
-import Grisette.Internal.TH.GADT.UnifiedOpCommon
+import Grisette.Internal.TH.Derivation.UnifiedOpCommon
   ( UnaryOpUnifiedConfig (UnaryOpUnifiedConfig, unifiedFun),
     defaultUnaryOpUnifiedFun,
   )
@@ -88,17 +88,17 @@ unifiedSymEqConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'UnifiedSymEq' instance for a GADT.
-deriveGADTUnifiedSymEq :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTUnifiedSymEq deriveConfig =
+-- | Derive 'UnifiedSymEq' instance for a data type.
+deriveUnifiedSymEq :: DeriveConfig -> Name -> Q [Dec]
+deriveUnifiedSymEq deriveConfig =
   genUnaryOpClass deriveConfig unifiedSymEqConfig 0
 
--- | Derive 'UnifiedSymEq1' instance for a GADT.
-deriveGADTUnifiedSymEq1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTUnifiedSymEq1 deriveConfig =
+-- | Derive 'UnifiedSymEq1' instance for a data type.
+deriveUnifiedSymEq1 :: DeriveConfig -> Name -> Q [Dec]
+deriveUnifiedSymEq1 deriveConfig =
   genUnaryOpClass deriveConfig unifiedSymEqConfig 1
 
--- | Derive 'UnifiedSymEq2' instance for a GADT.
-deriveGADTUnifiedSymEq2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTUnifiedSymEq2 deriveConfig =
+-- | Derive 'UnifiedSymEq2' instance for a data type.
+deriveUnifiedSymEq2 :: DeriveConfig -> Name -> Q [Dec]
+deriveUnifiedSymEq2 deriveConfig =
   genUnaryOpClass deriveConfig unifiedSymEqConfig 2

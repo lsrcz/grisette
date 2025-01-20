@@ -8,17 +8,17 @@
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveEvalSym
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveEvalSym
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveEvalSym
-  ( deriveGADTEvalSym,
-    deriveGADTEvalSym1,
-    deriveGADTEvalSym2,
+module Grisette.Internal.TH.Derivation.DeriveEvalSym
+  ( deriveEvalSym,
+    deriveEvalSym1,
+    deriveEvalSym2,
   )
 where
 
@@ -27,8 +27,8 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
     EvalSym1 (liftEvalSym),
     EvalSym2 (liftEvalSym2),
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -83,14 +83,14 @@ evalSymConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'EvalSym' instance for a GADT.
-deriveGADTEvalSym :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTEvalSym deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 0
+-- | Derive 'EvalSym' instance for a data type.
+deriveEvalSym :: DeriveConfig -> Name -> Q [Dec]
+deriveEvalSym deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 0
 
--- | Derive 'EvalSym1' instance for a GADT.
-deriveGADTEvalSym1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTEvalSym1 deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 1
+-- | Derive 'EvalSym1' instance for a data type.
+deriveEvalSym1 :: DeriveConfig -> Name -> Q [Dec]
+deriveEvalSym1 deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 1
 
--- | Derive 'EvalSym2' instance for a GADT.
-deriveGADTEvalSym2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTEvalSym2 deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 2
+-- | Derive 'EvalSym2' instance for a data type.
+deriveEvalSym2 :: DeriveConfig -> Name -> Q [Dec]
+deriveEvalSym2 deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 2

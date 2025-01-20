@@ -6,14 +6,14 @@
 {-# LANGUAGE TypeApplications #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.UnaryOpCommon
+-- Module      :   Grisette.Internal.TH.Derivation.UnaryOpCommon
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.UnaryOpCommon
+module Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig (..),
     UnaryOpFieldConfig (..),
     UnaryOpConfig (..),
@@ -31,7 +31,7 @@ import qualified Data.List as List
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import qualified Data.Set as S
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( CheckArgsResult
       ( CheckArgsResult,
         argVars,
@@ -326,7 +326,7 @@ instance UnaryOpFunConfig UnaryOpFieldConfig where
     let instanceFunName = funNames !! n
     return $ FunD instanceFunName clauses
 
--- | Generate a unary operation type class instance for a GADT.
+-- | Generate a unary operation type class instance for a data type.
 genUnaryOpClass ::
   DeriveConfig ->
   UnaryOpClassConfig ->

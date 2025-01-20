@@ -2,17 +2,17 @@
 {-# LANGUAGE TupleSections #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveShow
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveShow
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveShow
-  ( deriveGADTShow,
-    deriveGADTShow1,
-    deriveGADTShow2,
+module Grisette.Internal.TH.Derivation.DeriveShow
+  ( deriveShow,
+    deriveShow1,
+    deriveShow2,
   )
 where
 
@@ -23,9 +23,9 @@ import Data.Functor.Classes
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
 import GHC.Show (appPrec, appPrec1)
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
-import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.ShowPPrintCommon (showPrintFieldFunExp)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -144,7 +144,7 @@ showConfig =
                             |]
                         return (r, [True])
                       _ ->
-                        fail "deriveGADTShow: unexpected constructor variant",
+                        fail "deriveShow: unexpected constructor variant",
                 fieldResFun = \variant conName _ pos fieldPat fieldFun -> do
                   let makeShowField p =
                         [|
@@ -184,14 +184,14 @@ showConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'Show' instance for a GADT.
-deriveGADTShow :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTShow deriveConfig = genUnaryOpClass deriveConfig showConfig 0
+-- | Derive 'Show' instance for a data type.
+deriveShow :: DeriveConfig -> Name -> Q [Dec]
+deriveShow deriveConfig = genUnaryOpClass deriveConfig showConfig 0
 
--- | Derive 'Show1' instance for a GADT.
-deriveGADTShow1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTShow1 deriveConfig = genUnaryOpClass deriveConfig showConfig 1
+-- | Derive 'Show1' instance for a data type.
+deriveShow1 :: DeriveConfig -> Name -> Q [Dec]
+deriveShow1 deriveConfig = genUnaryOpClass deriveConfig showConfig 1
 
--- | Derive 'Show2' instance for a GADT.
-deriveGADTShow2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTShow2 deriveConfig = genUnaryOpClass deriveConfig showConfig 2
+-- | Derive 'Show2' instance for a data type.
+deriveShow2 :: DeriveConfig -> Name -> Q [Dec]
+deriveShow2 deriveConfig = genUnaryOpClass deriveConfig showConfig 2

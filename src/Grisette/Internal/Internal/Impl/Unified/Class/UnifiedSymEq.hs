@@ -66,10 +66,10 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode)
-import Grisette.Internal.TH.GADT.Common
+import Grisette.Internal.TH.Derivation.Common
   ( DeriveConfig (bitSizePositions, fpBitSizePositions),
   )
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT, deriveGADTWith)
+import Grisette.Internal.TH.Derivation.Derive (derive, deriveWith)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
@@ -229,13 +229,13 @@ instance (UnifiedSymEq 'S v) => UnifiedSymEq 'S (Union v) where
   withBaseSymEq r = withBaseSymEq @'S @v r
   {-# INLINE withBaseSymEq #-}
 
-deriveGADT
+derive
   [ ''Either,
     ''(,)
   ]
   [''UnifiedSymEq, ''UnifiedSymEq1, ''UnifiedSymEq2]
 
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Identity,
@@ -246,7 +246,7 @@ deriveGADT
   ]
   [''UnifiedSymEq, ''UnifiedSymEq1]
 
-deriveGADT
+derive
   [ ''Bool,
     ''Integer,
     ''Char,
@@ -284,25 +284,25 @@ deriveGADT
   [''UnifiedSymEq]
 
 #if MIN_VERSION_base(4,16,0)
-deriveGADT
+derive
   [ ''(,,),
     ''(,,,)
   ]
   [''UnifiedSymEq, ''UnifiedSymEq1, ''UnifiedSymEq2]
 #else
-deriveGADT
+derive
   [ ''(,,),
     ''(,,,)
   ]
   [''UnifiedSymEq]
 #endif
 
-deriveGADTWith
+deriveWith
   (mempty {bitSizePositions = [0]})
   [''WordN, ''IntN]
   [''UnifiedSymEq]
 
-deriveGADTWith
+deriveWith
   (mempty {fpBitSizePositions = [(0, 1)]})
   [''FP]
   [''UnifiedSymEq]

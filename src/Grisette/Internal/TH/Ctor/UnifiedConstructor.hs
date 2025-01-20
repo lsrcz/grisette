@@ -24,7 +24,7 @@ import Grisette.Internal.TH.Ctor.Common
     prefixTransformer,
     withNameTransformer,
   )
-import Grisette.Internal.TH.GADT.Common (ctxForVar)
+import Grisette.Internal.TH.Derivation.Common (ctxForVar)
 import Grisette.Internal.TH.Util (constructorInfoToType, putHaddock, tvIsMode)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 import Grisette.Internal.Unified.UnifiedData

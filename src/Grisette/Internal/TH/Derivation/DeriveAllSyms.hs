@@ -4,17 +4,17 @@
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveAllSyms
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveAllSyms
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveAllSyms
-  ( deriveGADTAllSyms,
-    deriveGADTAllSyms1,
-    deriveGADTAllSyms2,
+module Grisette.Internal.TH.Derivation.DeriveAllSyms
+  ( deriveAllSyms,
+    deriveAllSyms1,
+    deriveAllSyms2,
   )
 where
 
@@ -23,8 +23,8 @@ import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
     AllSyms1 (liftAllSymsS),
     AllSyms2 (liftAllSymsS2),
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
-import Grisette.Internal.TH.GADT.UnaryOpCommon
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
@@ -77,14 +77,14 @@ allSymsConfig =
       unaryOpContextNames = Nothing
     }
 
--- | Derive 'AllSyms' instance for a GADT.
-deriveGADTAllSyms :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTAllSyms deriveConfig = genUnaryOpClass deriveConfig allSymsConfig 0
+-- | Derive 'AllSyms' instance for a data type.
+deriveAllSyms :: DeriveConfig -> Name -> Q [Dec]
+deriveAllSyms deriveConfig = genUnaryOpClass deriveConfig allSymsConfig 0
 
--- | Derive 'AllSyms1' instance for a GADT.
-deriveGADTAllSyms1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTAllSyms1 deriveConfig = genUnaryOpClass deriveConfig allSymsConfig 1
+-- | Derive 'AllSyms1' instance for a data type.
+deriveAllSyms1 :: DeriveConfig -> Name -> Q [Dec]
+deriveAllSyms1 deriveConfig = genUnaryOpClass deriveConfig allSymsConfig 1
 
--- | Derive 'AllSyms2' instance for a GADT.
-deriveGADTAllSyms2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTAllSyms2 deriveConfig = genUnaryOpClass deriveConfig allSymsConfig 2
+-- | Derive 'AllSyms2' instance for a data type.
+deriveAllSyms2 :: DeriveConfig -> Name -> Q [Dec]
+deriveAllSyms2 deriveConfig = genUnaryOpClass deriveConfig allSymsConfig 2

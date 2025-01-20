@@ -92,7 +92,7 @@ import Grisette.Internal.SymPrim.SymFP
     SymFPRoundingMode (SymFPRoundingMode),
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 #define CONCRETE_SEQ(type) \
 instance SymEq type where \
@@ -183,7 +183,7 @@ instance (ValidFP eb sb) => SymEq (SymFP eb sb) where
   (SymFP l) .== (SymFP r) = SymBool $ pevalEqTerm l r
   {-# INLINE (.==) #-}
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
@@ -191,7 +191,7 @@ deriveGADT
   ]
   [''SymEq]
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -210,7 +210,7 @@ deriveGADT
   ]
   [''SymEq, ''SymEq1, ''SymEq2]
 
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Identity,

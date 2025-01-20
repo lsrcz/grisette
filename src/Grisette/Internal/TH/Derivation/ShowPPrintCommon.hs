@@ -1,18 +1,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.ShowPPrintCommon
+-- Module      :   Grisette.Internal.TH.Derivation.ShowPPrintCommon
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp) where
+module Grisette.Internal.TH.Derivation.ShowPPrintCommon (showPrintFieldFunExp) where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Grisette.Internal.TH.GADT.UnaryOpCommon (FieldFunExp)
+import Grisette.Internal.TH.Derivation.UnaryOpCommon (FieldFunExp)
 import Language.Haskell.TH (Name, Type (AppT, VarT), varE)
 import Language.Haskell.TH.Datatype (TypeSubstitution (freeVariables))
 

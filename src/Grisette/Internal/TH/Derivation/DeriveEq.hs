@@ -3,22 +3,22 @@
 {-# LANGUAGE TupleSections #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.GADT.DeriveEq
+-- Module      :   Grisette.Internal.TH.Derivation.DeriveEq
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.GADT.DeriveEq
-  ( deriveGADTEq,
-    deriveGADTEq1,
-    deriveGADTEq2,
+module Grisette.Internal.TH.Derivation.DeriveEq
+  ( deriveEq,
+    deriveEq1,
+    deriveEq2,
   )
 where
 
 import Data.Functor.Classes (Eq1 (liftEq), Eq2 (liftEq2))
-import Grisette.Internal.TH.GADT.BinaryOpCommon
+import Grisette.Internal.TH.Derivation.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
         binaryOpAllowSumType,
@@ -40,7 +40,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
     defaultFieldFunExp,
     genBinaryOpClass,
   )
-import Grisette.Internal.TH.GADT.Common (DeriveConfig)
+import Grisette.Internal.TH.Derivation.Common (DeriveConfig)
 import Language.Haskell.TH (Dec, Exp (ListE), Q)
 import Language.Haskell.TH.Syntax (Name)
 
@@ -66,14 +66,14 @@ eqConfig =
       binaryOpAllowExistential = True
     }
 
--- | Derive 'Eq' instance for a GADT.
-deriveGADTEq :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTEq deriveConfig = genBinaryOpClass deriveConfig eqConfig 0
+-- | Derive 'Eq' instance for a data type.
+deriveEq :: DeriveConfig -> Name -> Q [Dec]
+deriveEq deriveConfig = genBinaryOpClass deriveConfig eqConfig 0
 
--- | Derive 'Eq1' instance for a GADT.
-deriveGADTEq1 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTEq1 deriveConfig = genBinaryOpClass deriveConfig eqConfig 1
+-- | Derive 'Eq1' instance for a data type.
+deriveEq1 :: DeriveConfig -> Name -> Q [Dec]
+deriveEq1 deriveConfig = genBinaryOpClass deriveConfig eqConfig 1
 
--- | Derive 'Eq2' instance for a GADT.
-deriveGADTEq2 :: DeriveConfig -> Name -> Q [Dec]
-deriveGADTEq2 deriveConfig = genBinaryOpClass deriveConfig eqConfig 2
+-- | Derive 'Eq2' instance for a data type.
+deriveEq2 :: DeriveConfig -> Name -> Q [Dec]
+deriveEq2 deriveConfig = genBinaryOpClass deriveConfig eqConfig 2

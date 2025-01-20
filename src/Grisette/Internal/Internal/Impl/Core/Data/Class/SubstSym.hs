@@ -99,7 +99,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->) (TabularFun))
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
+import Grisette.Internal.TH.Derivation.Derive (derive)
 
 #define CONCRETE_SUBSTITUTESYM(type) \
 instance SubstSym type where \
@@ -181,7 +181,7 @@ SUBSTITUTE_SYM_SIMPLE(SymFPRoundingMode)
 instance (ValidFP eb sb) => SubstSym (SymFP eb sb) where
   substSym sym v (SymFP t) = SymFP $ substTerm sym (underlyingTerm v) HS.empty t
 
-deriveGADT
+derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
@@ -189,7 +189,7 @@ deriveGADT
   ]
   [''SubstSym]
 
-deriveGADT
+derive
   [ ''Either,
     ''(,),
     ''(,,),
@@ -208,7 +208,7 @@ deriveGADT
   ]
   [''SubstSym, ''SubstSym1, ''SubstSym2]
 
-deriveGADT
+derive
   [ ''[],
     ''Maybe,
     ''Identity,
