@@ -4353,17 +4353,18 @@ instance Grisette.Internal.Core.Data.Class.ITEOp.ITEOp Grisette.Internal.SymPrim
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.ITEOp.ITEOp (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 
 
-module Grisette.Internal.TH.GADT.Common
+module Grisette.Internal.TH.Derivation.Common
 
--- | Result of <a>checkArgs</a> for a GADT.
+-- | Result of <a>checkArgs</a> for a data type.
 data CheckArgsResult
 CheckArgsResult :: [ConstructorInfo] -> [(Type, Kind)] -> [(Type, Kind)] -> CheckArgsResult
 [constructors] :: CheckArgsResult -> [ConstructorInfo]
 [keptVars] :: CheckArgsResult -> [(Type, Kind)]
 [argVars] :: CheckArgsResult -> [(Type, Kind)]
 
--- | Check if the number of type parameters is valid for a GADT, and return
---   new names for the type variables, split into kept and arg parts.
+-- | Check if the number of type parameters is valid for a data type, and
+--   return new names for the type variables, split into kept and arg
+--   parts.
 checkArgs :: String -> Int -> Name -> Bool -> Int -> Q CheckArgsResult
 
 -- | Generate a context for a variable in a GADT.
@@ -4384,7 +4385,7 @@ data EvalModeConfig
 EvalModeConstraints :: [Name] -> EvalModeConfig
 EvalModeSpecified :: EvalModeTag -> EvalModeConfig
 
--- | Configuration for deriving instances for a GADT.
+-- | Configuration for deriving instances for a data type.
 data DeriveConfig
 DeriveConfig :: [(Int, EvalModeConfig)] -> [Int] -> [(Int, Int)] -> [Int] -> Bool -> Bool -> Bool -> Bool -> DeriveConfig
 [evalModeConfig] :: DeriveConfig -> [(Int, EvalModeConfig)]
@@ -4409,7 +4410,7 @@ extraFpBitSizeConstraint :: Name -> Name -> [(Type, Kind)] -> (Int, Int) -> Q [P
 -- | Generate extra constraints for <a>Mergeable</a> instances.
 extraExtraMergeableConstraint :: DeriveConfig -> [ConstructorInfo] -> [(Type, Kind)] -> Q [Pred]
 
--- | Generate extra constraints for a GADT.
+-- | Generate extra constraints for a data type.
 extraConstraint :: DeriveConfig -> Name -> Name -> [(Type, Kind)] -> [(Type, Kind)] -> [ConstructorInfo] -> Q [Pred]
 
 -- | Specialize the evaluation mode tags for the <a>CheckArgsResult</a>.
@@ -4423,11 +4424,11 @@ isVarUsedInFields :: CheckArgsResult -> Name -> Bool
 
 -- | Freshen the type variables in the <a>CheckArgsResult</a>.
 freshenCheckArgsResult :: Bool -> CheckArgsResult -> Q CheckArgsResult
-instance GHC.Internal.Base.Monoid Grisette.Internal.TH.GADT.Common.DeriveConfig
-instance GHC.Internal.Base.Semigroup Grisette.Internal.TH.GADT.Common.DeriveConfig
+instance GHC.Internal.Base.Monoid Grisette.Internal.TH.Derivation.Common.DeriveConfig
+instance GHC.Internal.Base.Semigroup Grisette.Internal.TH.Derivation.Common.DeriveConfig
 
 
-module Grisette.Internal.TH.GADT.UnaryOpCommon
+module Grisette.Internal.TH.Derivation.UnaryOpCommon
 
 -- | Configuration for a unary operation type class generation on a GADT.
 data UnaryOpClassConfig
@@ -4467,15 +4468,15 @@ defaultFieldResFun :: ConstructorVariant -> Name -> [Exp] -> Int -> Exp -> Exp -
 -- | Default field function expression generator.
 defaultFieldFunExp :: [Name] -> FieldFunExp
 
--- | Generate a unary operation type class instance for a GADT.
+-- | Generate a unary operation type class instance for a data type.
 genUnaryOpClass :: DeriveConfig -> UnaryOpClassConfig -> Int -> Name -> Q [Dec]
 
 -- | Default unary operation instance type generator.
 defaultUnaryOpInstanceTypeFromConfig :: DeriveConfig -> [(Type, Kind)] -> [(Type, Kind)] -> Name -> Q Type
-instance Grisette.Internal.TH.GADT.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.GADT.UnaryOpCommon.UnaryOpFieldConfig
+instance Grisette.Internal.TH.Derivation.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.Derivation.UnaryOpCommon.UnaryOpFieldConfig
 
 
-module Grisette.Internal.TH.GADT.UnifiedOpCommon
+module Grisette.Internal.TH.Derivation.UnifiedOpCommon
 
 -- | Configuration for the derivation rules for a unified operation.
 newtype UnaryOpUnifiedConfig
@@ -4485,16 +4486,16 @@ UnaryOpUnifiedConfig :: (Type -> (Type, Kind) -> Q (Maybe Exp)) -> UnaryOpUnifie
 -- | Default implementation for the derivation rules for a unified
 --   operation.
 defaultUnaryOpUnifiedFun :: [Name] -> Type -> (Type, Kind) -> Q (Maybe Exp)
-instance Grisette.Internal.TH.GADT.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.GADT.UnifiedOpCommon.UnaryOpUnifiedConfig
+instance Grisette.Internal.TH.Derivation.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.Derivation.UnifiedOpCommon.UnaryOpUnifiedConfig
 
 
-module Grisette.Internal.TH.GADT.ShowPPrintCommon
+module Grisette.Internal.TH.Derivation.ShowPPrintCommon
 
 -- | Common <a>FieldFunExp</a> for <a>Show</a> and <a>PPrint</a> on a GADT.
 showPrintFieldFunExp :: [Name] -> [Name] -> FieldFunExp
 
 
-module Grisette.Internal.TH.GADT.SerializeCommon
+module Grisette.Internal.TH.Derivation.SerializeCommon
 
 -- | Configuration for serialization function, generate the function from
 --   scratch.
@@ -4503,181 +4504,182 @@ serializeConfig :: [Name] -> [Name] -> [Name] -> UnaryOpClassConfig
 -- | Configuration for serialization function, reuse the <a>Serial</a>
 --   instance.
 serializeWithSerialConfig :: [Name] -> [Name] -> [Name] -> UnaryOpClassConfig
-instance Grisette.Internal.TH.GADT.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.GADT.SerializeCommon.UnaryOpDeserializeConfig
-instance Grisette.Internal.TH.GADT.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.GADT.SerializeCommon.UnaryOpDeserializeWithSerialConfig
-instance Grisette.Internal.TH.GADT.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.GADT.SerializeCommon.UnaryOpSerializeWithSerialConfig
+instance Grisette.Internal.TH.Derivation.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.Derivation.SerializeCommon.UnaryOpDeserializeConfig
+instance Grisette.Internal.TH.Derivation.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.Derivation.SerializeCommon.UnaryOpDeserializeWithSerialConfig
+instance Grisette.Internal.TH.Derivation.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.Derivation.SerializeCommon.UnaryOpSerializeWithSerialConfig
 
 
-module Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
+module Grisette.Internal.TH.Derivation.DeriveUnifiedSymEq
 
--- | Derive <a>UnifiedSymEq</a> instance for a GADT.
-deriveGADTUnifiedSymEq :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>UnifiedSymEq</a> instance for a data type.
+deriveUnifiedSymEq :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>UnifiedSymEq1</a> instance for a GADT.
-deriveGADTUnifiedSymEq1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>UnifiedSymEq1</a> instance for a data type.
+deriveUnifiedSymEq1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>UnifiedSymEq2</a> instance for a GADT.
-deriveGADTUnifiedSymEq2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveSubstSym
-
--- | Derive <a>SubstSym</a> instance for a GADT.
-deriveGADTSubstSym :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>SubstSym1</a> instance for a GADT.
-deriveGADTSubstSym1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>SubstSym2</a> instance for a GADT.
-deriveGADTSubstSym2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>UnifiedSymEq2</a> instance for a data type.
+deriveUnifiedSymEq2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveShow
+module Grisette.Internal.TH.Derivation.DeriveSubstSym
 
--- | Derive <a>Show</a> instance for a GADT.
-deriveGADTShow :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>SubstSym</a> instance for a data type.
+deriveSubstSym :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>Show1</a> instance for a GADT.
-deriveGADTShow1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>SubstSym1</a> instance for a data type.
+deriveSubstSym1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>Show2</a> instance for a GADT.
-deriveGADTShow2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveSerial
-
--- | Derive <a>Serial</a> instance for a GADT.
-deriveGADTSerial :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>Serial1</a> instance for a GADT.
-deriveGADTSerial1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>Serial2</a> instance for a GADT.
-deriveGADTSerial2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>SubstSym2</a> instance for a data type.
+deriveSubstSym2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DerivePPrint
+module Grisette.Internal.TH.Derivation.DeriveShow
 
--- | Derive <a>PPrint</a> instance for a GADT.
-deriveGADTPPrint :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Show</a> instance for a data type.
+deriveShow :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>PPrint1</a> instance for a GADT.
-deriveGADTPPrint1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Show1</a> instance for a data type.
+deriveShow1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>PPrint2</a> instance for a GADT.
-deriveGADTPPrint2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveNFData
-
--- | Derive <a>NFData</a> instance for a GADT.
-deriveGADTNFData :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>NFData1</a> instance for a GADT.
-deriveGADTNFData1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>NFData2</a> instance for a GADT.
-deriveGADTNFData2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Show2</a> instance for a data type.
+deriveShow2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveMergeable
+module Grisette.Internal.TH.Derivation.DeriveSerial
+
+-- | Derive <a>Serial</a> instance for a data type.
+deriveSerial :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>Serial1</a> instance for a data type.
+deriveSerial1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>Serial2</a> instance for a data type.
+deriveSerial2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DerivePPrint
+
+-- | Derive <a>PPrint</a> instance for a data type.
+derivePPrint :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>PPrint1</a> instance for a data type.
+derivePPrint1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>PPrint2</a> instance for a data type.
+derivePPrint2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DeriveNFData
+
+-- | Derive <a>NFData</a> instance for a data type.
+deriveNFData :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>NFData1</a> instance for a data type.
+deriveNFData1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>NFData2</a> instance for a data type.
+deriveNFData2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DeriveMergeable
 
 -- | Derive <a>Mergeable</a> instance for GADT.
-deriveGADTMergeable :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable :: DeriveConfig -> Name -> Q [Dec]
 
 -- | Derive <a>Mergeable1</a> instance for GADT.
-deriveGADTMergeable1 :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable1 :: DeriveConfig -> Name -> Q [Dec]
 
 -- | Derive <a>Mergeable2</a> instance for GADT.
-deriveGADTMergeable2 :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable2 :: DeriveConfig -> Name -> Q [Dec]
 
 -- | Derive <a>Mergeable3</a> instance for GADT.
-deriveGADTMergeable3 :: DeriveConfig -> Name -> Q [Dec]
+deriveMergeable3 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Generate <a>Mergeable</a> instance and merging information for a GADT.
+-- | Generate <a>Mergeable</a> instance and merging information for a data
+--   type.
 genMergeableAndGetMergingInfoResult :: DeriveConfig -> Name -> Int -> Q (MergingInfoResult, [Dec])
 
--- | Generate <a>Mergeable</a> instance for a GADT.
+-- | Generate <a>Mergeable</a> instance for a data type.
 genMergeable :: DeriveConfig -> Name -> Int -> Q [Dec]
 
--- | Generate <a>Mergeable</a> instance for a GADT, using a given merging
---   info result.
+-- | Generate <a>Mergeable</a> instance for a data type, using a given
+--   merging info result.
 genMergeable' :: DeriveConfig -> MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
 
--- | Generate <a>Mergeable</a> instance for a GADT without existential
+-- | Generate <a>Mergeable</a> instance for a data type without existential
 --   variables.
 genMergeableNoExistential :: DeriveConfig -> Name -> Int -> Q [Dec]
 
--- | Generate <a>Mergeable</a> instance for a GADT, using
+-- | Generate <a>Mergeable</a> instance for a data type, using
 --   <a>NoStrategy</a>.
 genMergeableNoStrategy :: DeriveConfig -> Name -> Int -> Q [Dec]
 
--- | Generate multiple <a>Mergeable</a> instances for a GADT.
+-- | Generate multiple <a>Mergeable</a> instances for a data type.
 genMergeableList :: DeriveConfig -> Name -> [Int] -> Q [Dec]
-instance Grisette.Internal.TH.GADT.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.GADT.DeriveMergeable.MergeableNoExistentialConfig
+instance Grisette.Internal.TH.Derivation.UnaryOpCommon.UnaryOpFunConfig Grisette.Internal.TH.Derivation.DeriveMergeable.MergeableNoExistentialConfig
 
 
-module Grisette.Internal.TH.GADT.DeriveHashable
+module Grisette.Internal.TH.Derivation.DeriveHashable
 
--- | Derive <a>Hashable</a> instance for a GADT.
-deriveGADTHashable :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Hashable</a> instance for a data type.
+deriveHashable :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>Hashable1</a> instance for a GADT.
-deriveGADTHashable1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Hashable1</a> instance for a data type.
+deriveHashable1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>Hashable2</a> instance for a GADT.
-deriveGADTHashable2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveExtractSym
-
--- | Derive <a>ExtractSym</a> instance for a GADT.
-deriveGADTExtractSym :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>ExtractSym1</a> instance for a GADT.
-deriveGADTExtractSym1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>ExtractSym2</a> instance for a GADT.
-deriveGADTExtractSym2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Hashable2</a> instance for a data type.
+deriveHashable2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveEvalSym
+module Grisette.Internal.TH.Derivation.DeriveExtractSym
 
--- | Derive <a>EvalSym</a> instance for a GADT.
-deriveGADTEvalSym :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ExtractSym</a> instance for a data type.
+deriveExtractSym :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>EvalSym1</a> instance for a GADT.
-deriveGADTEvalSym1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ExtractSym1</a> instance for a data type.
+deriveExtractSym1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>EvalSym2</a> instance for a GADT.
-deriveGADTEvalSym2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveCereal
-
--- | Derive <a>Serialize</a> instance for a GADT.
-deriveGADTCereal :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ExtractSym2</a> instance for a data type.
+deriveExtractSym2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveBinary
+module Grisette.Internal.TH.Derivation.DeriveEvalSym
 
--- | Derive <a>Binary</a> instance for a GADT.
-deriveGADTBinary :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>EvalSym</a> instance for a data type.
+deriveEvalSym :: DeriveConfig -> Name -> Q [Dec]
 
+-- | Derive <a>EvalSym1</a> instance for a data type.
+deriveEvalSym1 :: DeriveConfig -> Name -> Q [Dec]
 
-module Grisette.Internal.TH.GADT.DeriveAllSyms
-
--- | Derive <a>AllSyms</a> instance for a GADT.
-deriveGADTAllSyms :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>AllSyms1</a> instance for a GADT.
-deriveGADTAllSyms1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>AllSyms2</a> instance for a GADT.
-deriveGADTAllSyms2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>EvalSym2</a> instance for a data type.
+deriveEvalSym2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.BinaryOpCommon
+module Grisette.Internal.TH.Derivation.DeriveCereal
+
+-- | Derive <a>Serialize</a> instance for a data type.
+deriveCereal :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DeriveBinary
+
+-- | Derive <a>Binary</a> instance for a data type.
+deriveBinary :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DeriveAllSyms
+
+-- | Derive <a>AllSyms</a> instance for a data type.
+deriveAllSyms :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>AllSyms1</a> instance for a data type.
+deriveAllSyms1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>AllSyms2</a> instance for a data type.
+deriveAllSyms2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.BinaryOpCommon
 
 -- | Configuration for a binary operation type class generation on a GADT.
 data BinaryOpClassConfig
@@ -4712,64 +4714,64 @@ genBinaryOpClause :: BinaryOpFieldConfig -> [(Type, Kind)] -> [(Type, Kind)] -> 
 genBinaryOpClass :: DeriveConfig -> BinaryOpClassConfig -> Int -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveSymEq
+module Grisette.Internal.TH.Derivation.DeriveSymEq
 
--- | Derive <a>SymEq</a> instance for a GADT.
-deriveGADTSymEq :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>SymEq</a> instance for a data type.
+deriveSymEq :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>SymEq1</a> instance for a GADT.
-deriveGADTSymEq1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>SymEq1</a> instance for a data type.
+deriveSymEq1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>SymEq2</a> instance for a GADT.
-deriveGADTSymEq2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveOrd
-
--- | Derive <a>Ord</a> instance for a GADT.
-deriveGADTOrd :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>Ord1</a> instance for a GADT.
-deriveGADTOrd1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>Ord2</a> instance for a GADT.
-deriveGADTOrd2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>SymEq2</a> instance for a data type.
+deriveSymEq2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveEq
+module Grisette.Internal.TH.Derivation.DeriveOrd
 
--- | Derive <a>Eq</a> instance for a GADT.
-deriveGADTEq :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Ord</a> instance for a data type.
+deriveOrd :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>Eq1</a> instance for a GADT.
-deriveGADTEq1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Ord1</a> instance for a data type.
+deriveOrd1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>Eq2</a> instance for a GADT.
-deriveGADTEq2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveSimpleMergeable
-
--- | Derive <a>SimpleMergeable</a> instance for a GADT.
-deriveGADTSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>SimpleMergeable1</a> instance for a GADT.
-deriveGADTSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>SimpleMergeable2</a> instance for a GADT.
-deriveGADTSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Ord2</a> instance for a data type.
+deriveOrd2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
+module Grisette.Internal.TH.Derivation.DeriveEq
 
--- | Derive <a>UnifiedSimpleMergeable</a> instance for a GADT.
-deriveGADTUnifiedSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Eq</a> instance for a data type.
+deriveEq :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>UnifiedSimpleMergeable1</a> instance for a GADT.
-deriveGADTUnifiedSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Eq1</a> instance for a data type.
+deriveEq1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>UnifiedSimpleMergeable2</a> instance for a GADT.
-deriveGADTUnifiedSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>Eq2</a> instance for a data type.
+deriveEq2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DeriveSimpleMergeable
+
+-- | Derive <a>SimpleMergeable</a> instance for a data type.
+deriveSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>SimpleMergeable1</a> instance for a data type.
+deriveSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>SimpleMergeable2</a> instance for a data type.
+deriveSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DeriveUnifiedSimpleMergeable
+
+-- | Derive <a>UnifiedSimpleMergeable</a> instance for a data type.
+deriveUnifiedSimpleMergeable :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>UnifiedSimpleMergeable1</a> instance for a data type.
+deriveUnifiedSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>UnifiedSimpleMergeable2</a> instance for a data type.
+deriveUnifiedSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
 
 
 module Grisette.Internal.Core.Data.Class.PlainUnion
@@ -4911,7 +4913,7 @@ onUnion4 :: forall u a b c d r. (SimpleMergeable r, SymBranching u, PlainUnion u
 unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
 
 
-module Grisette.Internal.TH.GADT.ConvertOpCommon
+module Grisette.Internal.TH.Derivation.ConvertOpCommon
 
 -- | Generate a convert operation class instance.
 genConvertOpClass :: DeriveConfig -> ConvertOpClassConfig -> Int -> Name -> Q [Dec]
@@ -4930,64 +4932,64 @@ ConvertOpClassConfig :: EvalModeTag -> [Name] -> [Name] -> (Exp -> Exp -> Q Exp)
 defaultFieldFunExp :: [Name] -> FieldFunExp
 
 
-module Grisette.Internal.TH.GADT.DeriveToSym
+module Grisette.Internal.TH.Derivation.DeriveToSym
 
--- | Derive <a>ToSym</a> instance for a GADT.
-deriveGADTToSym :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ToSym</a> instance for a data type.
+deriveToSym :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>ToSym1</a> instance for a GADT.
-deriveGADTToSym1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ToSym1</a> instance for a data type.
+deriveToSym1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>ToSym2</a> instance for a GADT.
-deriveGADTToSym2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveToCon
-
--- | Derive <a>ToCon</a> instance for a GADT.
-deriveGADTToCon :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>ToCon1</a> instance for a GADT.
-deriveGADTToCon1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>ToCon2</a> instance for a GADT.
-deriveGADTToCon2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ToSym2</a> instance for a data type.
+deriveToSym2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveSymOrd
+module Grisette.Internal.TH.Derivation.DeriveToCon
 
--- | Derive <a>SymOrd</a> instance for a GADT.
-deriveGADTSymOrd :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ToCon</a> instance for a data type.
+deriveToCon :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>SymOrd1</a> instance for a GADT.
-deriveGADTSymOrd1 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ToCon1</a> instance for a data type.
+deriveToCon1 :: DeriveConfig -> Name -> Q [Dec]
 
--- | Derive <a>SymOrd2</a> instance for a GADT.
-deriveGADTSymOrd2 :: DeriveConfig -> Name -> Q [Dec]
-
-
-module Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
-
--- | Derive <a>UnifiedSymOrd</a> instance for a GADT.
-deriveGADTUnifiedSymOrd :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>UnifiedSymOrd1</a> instance for a GADT.
-deriveGADTUnifiedSymOrd1 :: DeriveConfig -> Name -> Q [Dec]
-
--- | Derive <a>UnifiedSymOrd2</a> instance for a GADT.
-deriveGADTUnifiedSymOrd2 :: DeriveConfig -> Name -> Q [Dec]
+-- | Derive <a>ToCon2</a> instance for a data type.
+deriveToCon2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.TH.GADT.DeriveGADT
+module Grisette.Internal.TH.Derivation.DeriveSymOrd
 
--- | Derive the specified classes for a GADT with the given name.
+-- | Derive <a>SymOrd</a> instance for a data type.
+deriveSymOrd :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>SymOrd1</a> instance for a data type.
+deriveSymOrd1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>SymOrd2</a> instance for a data type.
+deriveSymOrd2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.DeriveUnifiedSymOrd
+
+-- | Derive <a>UnifiedSymOrd</a> instance for a data type.
+deriveUnifiedSymOrd :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>UnifiedSymOrd1</a> instance for a data type.
+deriveUnifiedSymOrd1 :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Derive <a>UnifiedSymOrd2</a> instance for a data type.
+deriveUnifiedSymOrd2 :: DeriveConfig -> Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.Derivation.Derive
+
+-- | Derive the specified classes for a data type with the given name.
 --   
---   See <a>deriveGADTWith</a> for more details.
-deriveGADT :: [Name] -> [Name] -> Q [Dec]
+--   See <a>deriveWith</a> for more details.
+derive :: [Name] -> [Name] -> Q [Dec]
 
--- | Derive the specified classes for a GADT with the given name.
+-- | Derive the specified classes for a data type with the given name.
 --   
---   Support the following classes.
+--   Support the following classes for both vanilla data types and GADTs.
 --   
 --   <ul>
 --   <li><a>Mergeable</a></li>
@@ -5068,7 +5070,7 @@ deriveGADT :: [Name] -> [Name] -> Q [Dec]
 --   <li><a>Binary</a></li>
 --   <li><a>Serialize</a></li>
 --   </ul>
-deriveGADTWith :: DeriveConfig -> [Name] -> [Name] -> Q [Dec]
+deriveWith :: DeriveConfig -> [Name] -> [Name] -> Q [Dec]
 
 -- | All the classes that can be derived for GADTs.
 --   
@@ -5102,7 +5104,7 @@ allClasses0 :: [Name]
 --   <a>allClasses1</a>.
 allClasses01 :: [Name]
 
--- | All the classes that can be derived for GADTfunctors.
+-- | All the classes that can be derived for GADT functors.
 --   
 --   This includes all the classes in <a>allClasses0</a>,
 --   <a>allClasses1</a>, and <a>allClasses2</a>.
@@ -10091,7 +10093,7 @@ data EvalModeConfig
 EvalModeConstraints :: [Name] -> EvalModeConfig
 EvalModeSpecified :: EvalModeTag -> EvalModeConfig
 
--- | Configuration for deriving instances for a GADT.
+-- | Configuration for deriving instances for a data type.
 data DeriveConfig
 DeriveConfig :: [(Int, EvalModeConfig)] -> [Int] -> [(Int, Int)] -> [Int] -> Bool -> Bool -> Bool -> Bool -> DeriveConfig
 [evalModeConfig] :: DeriveConfig -> [(Int, EvalModeConfig)]
@@ -10103,14 +10105,14 @@ DeriveConfig :: [(Int, EvalModeConfig)] -> [Int] -> [(Int, Int)] -> [Int] -> Boo
 [useNoStrategy] :: DeriveConfig -> Bool
 [useSerialForCerealAndBinary] :: DeriveConfig -> Bool
 
--- | Derive the specified classes for a GADT with the given name.
+-- | Derive the specified classes for a data type with the given name.
 --   
---   See <a>deriveGADTWith</a> for more details.
-deriveGADT :: [Name] -> [Name] -> Q [Dec]
+--   See <a>deriveWith</a> for more details.
+derive :: [Name] -> [Name] -> Q [Dec]
 
--- | Derive the specified classes for a GADT with the given name.
+-- | Derive the specified classes for a data type with the given name.
 --   
---   Support the following classes.
+--   Support the following classes for both vanilla data types and GADTs.
 --   
 --   <ul>
 --   <li><a>Mergeable</a></li>
@@ -10191,7 +10193,7 @@ deriveGADT :: [Name] -> [Name] -> Q [Dec]
 --   <li><a>Binary</a></li>
 --   <li><a>Serialize</a></li>
 --   </ul>
-deriveGADTWith :: DeriveConfig -> [Name] -> [Name] -> Q [Dec]
+deriveWith :: DeriveConfig -> [Name] -> [Name] -> Q [Dec]
 
 -- | All the classes that can be derived for GADTs.
 --   
@@ -10225,7 +10227,7 @@ allClasses0 :: [Name]
 --   <a>allClasses1</a>.
 allClasses01 :: [Name]
 
--- | All the classes that can be derived for GADTfunctors.
+-- | All the classes that can be derived for GADT functors.
 --   
 --   This includes all the classes in <a>allClasses0</a>,
 --   <a>allClasses1</a>, and <a>allClasses2</a>.

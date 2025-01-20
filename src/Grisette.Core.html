@@ -558,13 +558,13 @@
 </span><span id="line-558"></span><span>    </span><span class="hs-comment">--     deriving (Mergeable) via (Default X)</span><span>
 </span><span id="line-559"></span><span>    </span><span class="hs-comment">-- :}</span><span>
 </span><span id="line-560"></span><span>    </span><span class="hs-comment">--</span><span>
-</span><span id="line-561"></span><span>    </span><span class="hs-comment">-- Grisette also provide 'Grisette.deriveGADT' template haskell procedure to</span><span>
+</span><span id="line-561"></span><span>    </span><span class="hs-comment">-- Grisette also provide 'Grisette.derive' template haskell procedure to</span><span>
 </span><span id="line-562"></span><span>    </span><span class="hs-comment">-- derive all the instances for the classes that are relevant. This include</span><span>
 </span><span id="line-563"></span><span>    </span><span class="hs-comment">-- 'Show', 'Mergeable', 'Mergeable1', etc.</span><span>
 </span><span id="line-564"></span><span>    </span><span class="hs-comment">--</span><span>
 </span><span id="line-565"></span><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; :{</span><span>
 </span><span id="line-566"></span><span>    </span><span class="hs-comment">-- data X = X SymInteger Integer</span><span>
-</span><span id="line-567"></span><span>    </span><span class="hs-comment">-- deriveGADT [''X] [''Show, ''Mergeable]</span><span>
+</span><span id="line-567"></span><span>    </span><span class="hs-comment">-- derive [''X] [''Show, ''Mergeable]</span><span>
 </span><span id="line-568"></span><span>    </span><span class="hs-comment">-- :}</span><span>
 </span><span id="line-569"></span><span>    </span><span class="hs-comment">--</span><span>
 </span><span id="line-570"></span><span>    </span><span class="hs-comment">-- Having the 'Mergeable' instance allows you to use the 'Union' type to</span><span>
@@ -595,7 +595,7 @@
 </span><span id="line-595"></span><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; import Control.Monad.Except</span><span>
 </span><span id="line-596"></span><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; :{</span><span>
 </span><span id="line-597"></span><span>    </span><span class="hs-comment">--   data Error = Fail</span><span>
-</span><span id="line-598"></span><span>    </span><span class="hs-comment">--   deriveGADT [''Error] allClasses0</span><span>
+</span><span id="line-598"></span><span>    </span><span class="hs-comment">--   derive [''Error] allClasses0</span><span>
 </span><span id="line-599"></span><span>    </span><span class="hs-comment">-- :}</span><span>
 </span><span id="line-600"></span><span>    </span><span class="hs-comment">--</span><span>
 </span><span id="line-601"></span><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; mrgIf &quot;a&quot; (throwError Fail) (return &quot;x&quot;) :: ExceptT Error Union SymInteger</span><span>
