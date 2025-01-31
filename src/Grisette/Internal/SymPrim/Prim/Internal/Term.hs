@@ -5678,7 +5678,7 @@ pevalNotTerm (AndTerm (DistinctTerm (n1 :| [n2])) n3) =
 pevalNotTerm (AndTerm n1 (NotTerm n2)) = pevalOrTerm (pevalNotTerm n1) n2
 pevalNotTerm (AndTerm n1 (DistinctTerm (n2 :| [n3]))) =
   pevalOrTerm (pevalNotTerm n1) (pevalEqTerm n2 n3)
-pevalNotTerm (EqTerm a b) = distinctTerm $ a :| [b]
+-- pevalNotTerm (EqTerm a b) = distinctTerm $ a :| [b]
 pevalNotTerm (DistinctTerm (a :| [b])) = eqTerm a b
 pevalNotTerm tm = notTerm tm
 {-# INLINEABLE pevalNotTerm #-}
@@ -5689,10 +5689,10 @@ orEqFirst
   (DistinctTerm ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
   (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
--- orEqFirst
---   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _) :: Term b)))
---   (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _ _) :: Term b)))
---     | e1 == e2 && ec1 /= ec2 = True
+orEqFirst
+  (NotTerm (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b)))
+  (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
+    | e1 == e2 && ec1 /= ec2 = True
 orEqFirst x y
   | x == y = True
   | otherwise = False
@@ -5706,10 +5706,10 @@ orEqTrue
   (DistinctTerm ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
   (DistinctTerm ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
     | e1 == e2 && ec1 /= ec2 = True
--- orEqTrue
---   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _ _) :: Term b)))
---   (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _ _ _) :: Term b))))
---     | e1 == e2 && ec1 /= ec2 = True
+orEqTrue
+  (NotTerm (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b)))
+  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b))))
+    | e1 == e2 && ec1 /= ec2 = True
 orEqTrue (NotTerm l) r | l == r = True
 orEqTrue l (NotTerm r) | l == r = True
 orEqTrue _ _ = False
@@ -5721,6 +5721,10 @@ andEqFirst _ (ConTerm True) = True
 andEqFirst
   (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
   (DistinctTerm ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
+    | e1 == e2 && ec1 /= ec2 = True
+andEqFirst
+  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b))))
     | e1 == e2 && ec1 /= ec2 = True
 -- andEqFirst
 --   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _ _) :: Term b))
@@ -5764,6 +5768,11 @@ pevalOrTerm l@(OrTerm l1 l2) r
   | orEqFirst l2 r = l
   | orEqFirst r l1 = pevalOrTerm l2 r
   | orEqFirst r l2 = pevalOrTerm l1 r
+pevalOrTerm (AndTerm l1 l2) (AndTerm r1 r2)
+  | l1 == r1 = pevalAndTerm l1 (pevalOrTerm l2 r2)
+  | l1 == r2 = pevalAndTerm l1 (pevalOrTerm l2 r1)
+  | l2 == r1 = pevalAndTerm l2 (pevalOrTerm l1 r2)
+  | l2 == r2 = pevalAndTerm l2 (pevalOrTerm l1 r1)
 pevalOrTerm l (AndTerm r1 r2)
   | orEqFirst l r1 = l
   | orEqFirst l r2 = l
@@ -5803,6 +5812,11 @@ pevalAndTerm l@(AndTerm l1 l2) r
   | andEqFirst l2 r = l
   | andEqFirst r l1 = pevalAndTerm l2 r
   | andEqFirst r l2 = pevalAndTerm l1 r
+pevalAndTerm (OrTerm l1 l2) (OrTerm r1 r2)
+  | l1 == r1 = pevalOrTerm l1 (pevalAndTerm l2 r2)
+  | l1 == r2 = pevalOrTerm l1 (pevalAndTerm l2 r1)
+  | l2 == r1 = pevalOrTerm l2 (pevalAndTerm l1 r2)
+  | l2 == r2 = pevalOrTerm l2 (pevalAndTerm l1 r1)
 pevalAndTerm l (OrTerm r1 r2)
   | andEqFirst l r1 = l
   | andEqFirst l r2 = l
@@ -5836,10 +5850,10 @@ pevalImpliesTerm
   (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
   (DistinctTerm ((DynTerm (e2 :: Term a)) :| [(DynTerm (ec2@ConTerm {} :: Term b))]))
     | e1 == e2 && ec1 /= ec2 = True
--- pevalImpliesTerm
---   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _ _) :: Term b))
---   (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _ _ _) :: Term b))))
---     | e1 == e2 && ec1 /= ec2 = True
+pevalImpliesTerm
+  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) ((DynTerm (ec2@ConTerm {} :: Term b)))))
+    | e1 == e2 && ec1 /= ec2 = True
 pevalImpliesTerm a b
   | a == b = True
   | otherwise = False
@@ -5884,6 +5898,12 @@ pevalITEBoolRightNot cond ifTrue nIfFalse
   | otherwise = Nothing -- need work
 
 pevalInferImplies :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalInferImplies
+  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b))))
+  trueRes
+  _
+    | e1 == e2 && ec1 /= ec2 = Just trueRes
 pevalInferImplies cond (NotTerm nt1) _ falseRes
   | cond == nt1 = Just falseRes
   | otherwise = Nothing
