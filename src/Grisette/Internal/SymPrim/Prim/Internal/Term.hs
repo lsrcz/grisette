@@ -177,6 +177,8 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     pattern NotTerm,
     pattern OrTerm,
     pattern AndTerm,
+    pattern OrTermAll,
+    pattern AndTermAll,
     pattern EqTerm,
     pattern DistinctTerm,
     pattern ITETerm,
@@ -293,6 +295,7 @@ import qualified Data.Binary as Binary
 import Data.Bits (Bits)
 import Data.Bytes.Serial (Serial (deserialize, serialize))
 import qualified Data.HashMap.Strict as HM
+import qualified Data.HashSet as HS
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.IORef (IORef, newIORef, readIORef)
 import Data.Kind (Constraint, Type)
@@ -1362,11 +1365,13 @@ data Term t where
     {-# UNPACK #-} !CachedInfo ->
     !(Term Bool) ->
     !(Term Bool) ->
+    !(HS.HashSet (Term Bool)) -> -- All or'ed terms
     Term Bool
   AndTerm' ::
     {-# UNPACK #-} !CachedInfo ->
     !(Term Bool) ->
     !(Term Bool) ->
+    !(HS.HashSet (Term Bool)) -> -- All and'ed terms
     Term Bool
   EqTerm' ::
     {-# UNPACK #-} !CachedInfo ->
@@ -1776,16 +1781,34 @@ pattern NotTerm body <- (NotTerm' _ body)
 -- | Pattern synonym for 'OrTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
 pattern OrTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
-pattern OrTerm l r <- (OrTerm' _ l r)
+pattern OrTerm l r <- (OrTerm' _ l r _)
   where
     OrTerm = pevalOrTerm
+
+-- | Pattern synonym for 'OrTerm''. Note that using this pattern to construct a
+-- 'Term' will do term simplification.
+pattern OrTermAll ::
+  forall r.
+  () =>
+  (r ~ Bool) =>
+  Term Bool -> Term Bool -> HS.HashSet (Term Bool) -> Term r
+pattern OrTermAll l r s <- (OrTerm' _ l r s)
 
 -- | Pattern synonym for 'AndTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
 pattern AndTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
-pattern AndTerm l r <- (AndTerm' _ l r)
+pattern AndTerm l r <- (AndTerm' _ l r _)
   where
     AndTerm = pevalAndTerm
+
+-- | Pattern synonym for 'AndTerm''. Note that using this pattern to construct a
+-- 'Term' will do term simplification.
+pattern AndTermAll ::
+  forall r.
+  () =>
+  (r ~ Bool) =>
+  Term Bool -> Term Bool -> HS.HashSet (Term Bool) -> Term r
+pattern AndTermAll l r s <- (AndTerm' _ l r s)
 
 -- | Pattern synonym for 'EqTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
@@ -2441,8 +2464,8 @@ termInfo (SymTerm' i _) = i
 termInfo (ForallTerm' i _ _) = i
 termInfo (ExistsTerm' i _ _) = i
 termInfo (NotTerm' i _) = i
-termInfo (OrTerm' i _ _) = i
-termInfo (AndTerm' i _ _) = i
+termInfo (OrTerm' i _ _ _) = i
+termInfo (AndTerm' i _ _ _) = i
 termInfo (EqTerm' i _ _) = i
 termInfo (DistinctTerm' i _) = i
 termInfo (ITETerm' i _ _ _) = i
@@ -3254,8 +3277,8 @@ data UTerm t where
     !(Term Bool) ->
     UTerm Bool
   UNotTerm :: !(Term Bool) -> UTerm Bool
-  UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
-  UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
+  UOrTerm :: !(Term Bool) -> !(Term Bool) -> !(HS.HashSet (Term Bool)) -> UTerm Bool
+  UAndTerm :: !(Term Bool) -> !(Term Bool) -> !(HS.HashSet (Term Bool)) -> UTerm Bool
   UEqTerm :: !(Term t) -> !(Term t) -> UTerm Bool
   UDistinctTerm :: !(NonEmpty (Term t)) -> UTerm Bool
   UITETerm ::
@@ -3722,11 +3745,13 @@ instance Interned (Term t) where
       {-# UNPACK #-} !Digest ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
+      !(HS.HashSet (Term Bool)) ->
       Description (Term Bool)
     DAndTerm ::
       {-# UNPACK #-} !Digest ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
+      !(HS.HashSet (Term Bool)) ->
       Description (Term Bool)
     DEqTerm ::
       {-# UNPACK #-} !Digest ->
@@ -3954,20 +3979,22 @@ instance Interned (Term t) where
   describe (UNotTerm arg) =
     let argHashId = termHashId arg
      in DNotTerm (preHashNotDescription argHashId) argHashId
-  describe (UOrTerm arg1 arg2) =
+  describe (UOrTerm arg1 arg2 s) =
     let arg1HashId = termHashId arg1
         arg2HashId = termHashId arg2
      in DOrTerm
           (preHashOrDescription arg1HashId arg2HashId)
           arg1HashId
           arg2HashId
-  describe (UAndTerm arg1 arg2) =
+          s
+  describe (UAndTerm arg1 arg2 s) =
     let arg1HashId = termHashId arg1
         arg2HashId = termHashId arg2
      in DAndTerm
           (preHashAndDescription arg1HashId arg2HashId)
           arg1HashId
           arg2HashId
+          s
   describe (UEqTerm (arg1@SupportedTerm :: Term arg) arg2) = do
     let fingerprint = typeFingerprint @arg
         arg1HashId = termHashId arg1
@@ -4260,8 +4287,8 @@ instance Interned (Term t) where
       go (UForallTerm sym arg) = ForallTerm' info sym arg
       go (UExistsTerm sym arg) = ExistsTerm' info sym arg
       go (UNotTerm arg) = NotTerm' info arg
-      go (UOrTerm arg1 arg2) = OrTerm' info arg1 arg2
-      go (UAndTerm arg1 arg2) = AndTerm' info arg1 arg2
+      go (UOrTerm arg1 arg2 s) = OrTerm' info arg1 arg2 s
+      go (UAndTerm arg1 arg2 s) = AndTerm' info arg1 arg2 s
       go (UEqTerm arg1 arg2) = EqTerm' info arg1 arg2
       go (UDistinctTerm args) = DistinctTerm' info args
       -- ITE is propagated
@@ -4325,8 +4352,8 @@ instance Interned (Term t) where
   descriptionDigest (DForallTerm h _ _) = h
   descriptionDigest (DExistsTerm h _ _) = h
   descriptionDigest (DNotTerm h _) = h
-  descriptionDigest (DOrTerm h _ _) = h
-  descriptionDigest (DAndTerm h _ _) = h
+  descriptionDigest (DOrTerm h _ _ _) = h
+  descriptionDigest (DAndTerm h _ _ _) = h
   descriptionDigest (DEqTerm h _ _ _) = h
   descriptionDigest (DDistinctTerm h _ _) = h
   descriptionDigest (DITETerm h _ _ _) = h
@@ -4552,8 +4579,8 @@ instance Eq (Description (Term t)) where
   DExistsTerm _ ls li == DExistsTerm _ rs ri =
     eqHeteroSymbol ls rs && eqHashId li ri
   DNotTerm _ li == DNotTerm _ ri = eqHashId li ri
-  DOrTerm _ li1 li2 == DOrTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DAndTerm _ li1 li2 == DAndTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DOrTerm _ li1 li2 _ == DOrTerm _ ri1 ri2 _ = eqHashId li1 ri1 && eqHashId li2 ri2
+  DAndTerm _ li1 li2 _ == DAndTerm _ ri1 ri2 _ = eqHashId li1 ri1 && eqHashId li2 ri2
   DEqTerm _ lfp li1 li2 == DEqTerm _ rfp ri1 ri2 = lfp == rfp && eqHashId li1 ri1 && eqHashId li2 ri2
   DDistinctTerm _ lfp li == DDistinctTerm _ rfp ri =
     lfp == rfp
@@ -4646,6 +4673,20 @@ fullReconstructTerm3 f x y z = do
   f rx ry rz
 {-# INLINE fullReconstructTerm3 #-}
 
+fullReconstructTerm2Set ::
+  forall a c.
+  (Term a -> Term a -> HS.HashSet (Term a) -> IO (Term c)) ->
+  Term a ->
+  Term a ->
+  HS.HashSet (Term a) ->
+  IO (Term c)
+fullReconstructTerm2Set f x y s = do
+  rx@SupportedTerm <- fullReconstructTerm x
+  ry <- fullReconstructTerm y
+  rs <- traverse fullReconstructTerm (HS.toList s)
+  f rx ry (HS.fromList rs)
+{-# INLINE fullReconstructTerm2Set #-}
+
 fullReconstructTerm :: forall t. Term t -> IO (Term t)
 fullReconstructTerm (ConTerm i) = curThreadConTerm i
 fullReconstructTerm (SymTerm sym) = curThreadSymTerm sym
@@ -4655,10 +4696,12 @@ fullReconstructTerm (ExistsTerm sym arg) =
   fullReconstructTerm1 (curThreadExistsTerm sym) arg
 fullReconstructTerm (NotTerm arg) =
   fullReconstructTerm1 curThreadNotTerm arg
-fullReconstructTerm (OrTerm arg1 arg2) =
-  fullReconstructTerm2 curThreadOrTerm arg1 arg2
-fullReconstructTerm (AndTerm arg1 arg2) =
-  fullReconstructTerm2 curThreadAndTerm arg1 arg2
+fullReconstructTerm (OrTermAll arg1 arg2 s) =
+  fullReconstructTerm2Set curThreadOrTerm arg1 arg2 s
+fullReconstructTerm (OrTerm _ _) = error "Make compiler happy"
+fullReconstructTerm (AndTermAll arg1 arg2 s) =
+  fullReconstructTerm2Set curThreadAndTerm arg1 arg2 s
+fullReconstructTerm (AndTerm _ _) = error "Make compiler happy"
 fullReconstructTerm (EqTerm arg1 arg2) =
   fullReconstructTerm2 curThreadEqTerm arg1 arg2
 fullReconstructTerm (DistinctTerm args) =
@@ -4804,13 +4847,13 @@ curThreadNotTerm = intern . UNotTerm
 {-# INLINE curThreadNotTerm #-}
 
 -- | Construct and internalizing a 'OrTerm'.
-curThreadOrTerm :: Term Bool -> Term Bool -> IO (Term Bool)
-curThreadOrTerm l r = intern $ UOrTerm l r
+curThreadOrTerm :: Term Bool -> Term Bool -> HS.HashSet (Term Bool) -> IO (Term Bool)
+curThreadOrTerm l r s = intern $ UOrTerm l r s
 {-# INLINE curThreadOrTerm #-}
 
 -- | Construct and internalizing a 'AndTerm'.
-curThreadAndTerm :: Term Bool -> Term Bool -> IO (Term Bool)
-curThreadAndTerm l r = intern $ UAndTerm l r
+curThreadAndTerm :: Term Bool -> Term Bool -> HS.HashSet (Term Bool) -> IO (Term Bool)
+curThreadAndTerm l r s = intern $ UAndTerm l r s
 {-# INLINE curThreadAndTerm #-}
 
 -- | Construct and internalizing a 'EqTerm'.
@@ -5271,14 +5314,51 @@ notTerm :: Term Bool -> Term Bool
 notTerm = unsafeInCurThread1 curThreadNotTerm
 {-# NOINLINE notTerm #-}
 
+inCurThread2Set ::
+  forall a c.
+  (Term a -> Term a -> HS.HashSet (Term a) -> IO (Term c)) ->
+  Term a ->
+  Term a ->
+  HS.HashSet (Term a) ->
+  IO (Term c)
+inCurThread2Set f a b s = do
+  tid <- myWeakThreadId
+  ra@SupportedTerm <- toCurThreadImpl tid a
+  rb <- toCurThreadImpl tid b
+  rs <- traverse (toCurThreadImpl tid) (HS.toList s)
+  f ra rb (HS.fromList rs)
+{-# INLINE inCurThread2Set #-}
+
+unsafeInCurThread2Set ::
+  forall a c.
+  (Term a -> Term a -> HS.HashSet (Term a) -> IO (Term c)) ->
+  Term a ->
+  Term a ->
+  HS.HashSet (Term a) ->
+  Term c
+unsafeInCurThread2Set f a b s = unsafePerformIO $ inCurThread2Set f a b s
+{-# NOINLINE unsafeInCurThread2Set #-}
+
 -- | Construct and internalizing a 'OrTerm'.
 orTerm :: Term Bool -> Term Bool -> Term Bool
-orTerm = unsafeInCurThread2 curThreadOrTerm
+orTerm l@(OrTermAll _ _ s1) r@(OrTermAll _ _ s2) =
+  unsafeInCurThread2Set curThreadOrTerm l r (HS.insert l $ HS.insert r $ HS.union s1 s2)
+orTerm l@(OrTermAll _ _ s1) r =
+  unsafeInCurThread2Set curThreadOrTerm l r (HS.insert r $ HS.insert l s1)
+orTerm l r@(OrTermAll _ _ s2) =
+  unsafeInCurThread2Set curThreadOrTerm l r (HS.insert l $ HS.insert r s2)
+orTerm l r = unsafeInCurThread2Set curThreadOrTerm l r (HS.fromList [l, r])
 {-# NOINLINE orTerm #-}
 
 -- | Construct and internalizing a 'AndTerm'.
 andTerm :: Term Bool -> Term Bool -> Term Bool
-andTerm = unsafeInCurThread2 curThreadAndTerm
+andTerm l@(AndTermAll _ _ s1) r@(AndTermAll _ _ s2) =
+  unsafeInCurThread2Set curThreadAndTerm l r (HS.insert l $ HS.insert r $ HS.union s1 s2)
+andTerm l@(AndTermAll _ _ s1) r =
+  unsafeInCurThread2Set curThreadAndTerm l r (HS.insert r $ HS.insert l s1)
+andTerm l r@(AndTermAll _ _ s2) =
+  unsafeInCurThread2Set curThreadAndTerm l r (HS.insert l $ HS.insert r s2)
+andTerm l r = unsafeInCurThread2Set curThreadAndTerm l r (HS.fromList [l, r])
 {-# NOINLINE andTerm #-}
 
 -- | Construct and internalizing a 'EqTerm'.
@@ -5683,102 +5763,89 @@ pevalNotTerm (DistinctTerm (a :| [b])) = eqTerm a b
 pevalNotTerm tm = notTerm tm
 {-# INLINEABLE pevalNotTerm #-}
 
-orEqFirst :: Term Bool -> Term Bool -> Bool
-orEqFirst _ (ConTerm False) = True
-orEqFirst
+orEqFirst' :: Term Bool -> Term Bool -> Bool
+orEqFirst'
   (DistinctTerm ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
   (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
-orEqFirst
+orEqFirst'
   (NotTerm (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b)))
   (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
+orEqFirst' _ _ = False
+{-# INLINE orEqFirst' #-}
+
+orEqFirst :: Term Bool -> Term Bool -> Bool
+orEqFirst _ (ConTerm False) = True
 orEqFirst x y
   | x == y = True
-  | otherwise = False
+  | otherwise = orEqFirst' x y
 {-# INLINE orEqFirst #-}
+
+orEqTrue' :: Term Bool -> Term Bool -> Bool
+orEqTrue'
+  (DistinctTerm ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
+  (DistinctTerm ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
+    | e1 == e2 && ec1 /= ec2 = True
+orEqTrue'
+  (NotTerm (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b)))
+  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b))))
+    | e1 == e2 && ec1 /= ec2 = True
+orEqTrue' _ _ = False
+{-# INLINE orEqTrue' #-}
 
 orEqTrue :: Term Bool -> Term Bool -> Bool
 orEqTrue (ConTerm True) ~_ = True
 orEqTrue _ (ConTerm True) = True
--- orEqTrue (NotTerm _ e1) (NotTerm _ e2) = andEqFalse e1 e2
-orEqTrue
-  (DistinctTerm ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
-  (DistinctTerm ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
-    | e1 == e2 && ec1 /= ec2 = True
-orEqTrue
-  (NotTerm (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b)))
-  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b))))
-    | e1 == e2 && ec1 /= ec2 = True
 orEqTrue (NotTerm l) r | l == r = True
 orEqTrue l (NotTerm r) | l == r = True
-orEqTrue _ _ = False
+orEqTrue l r = orEqTrue' l r
 {-# INLINE orEqTrue #-}
-
-andEqFirst :: Term Bool -> Term Bool -> Bool
-andEqFirst _ (ConTerm True) = True
--- andEqFirst x (NotTerm _ y) = andEqFalse x y
-andEqFirst
-  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (DistinctTerm ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
-    | e1 == e2 && ec1 /= ec2 = True
-andEqFirst
-  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b))))
-    | e1 == e2 && ec1 /= ec2 = True
--- andEqFirst
---   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _ _) :: Term b))
---   (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _ _ _) :: Term b))))
---     | e1 == e2 && ec1 /= ec2 = True
-andEqFirst x y
-  | x == y = True
-  | otherwise = False
-{-# INLINE andEqFirst #-}
-
-andEqFalse :: Term Bool -> Term Bool -> Bool
-andEqFalse (ConTerm False) ~_ = True
-andEqFalse _ (ConTerm False) = True
--- andEqFalse (NotTerm _ e1) (NotTerm _ e2) = orEqTrue e1 e2
-andEqFalse
-  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
-    | e1 == e2 && ec1 /= ec2 = True
-andEqFalse (NotTerm x) y | x == y = True
-andEqFalse x (NotTerm y) | x == y = True
-andEqFalse _ _ = False
-{-# INLINE andEqFalse #-}
 
 -- | Partial evaluation for or terms.
 pevalOrTerm :: Term Bool -> Term Bool -> Term Bool
+pevalOrTerm (ConTerm True) ~_ = trueTerm
+pevalOrTerm _ (ConTerm True) = trueTerm
+pevalOrTerm (ConTerm False) y = y
+pevalOrTerm x (ConTerm False) = x
+pevalOrTerm (NotTerm x) y | x == y = trueTerm
+pevalOrTerm x (NotTerm y) | x == y = trueTerm
+pevalOrTerm x y | x == y = x
 pevalOrTerm l ~r
-  | orEqTrue l r = trueTerm
-  | orEqFirst l r = l
-  | orEqFirst r l = r
-pevalOrTerm l r@(OrTerm r1 r2)
-  | orEqTrue l r1 = trueTerm
-  | orEqTrue l r2 = trueTerm
-  | orEqFirst r1 l = r
-  | orEqFirst r2 l = r
-  | orEqFirst l r1 = pevalOrTerm l r2
-  | orEqFirst l r2 = pevalOrTerm l r1
-pevalOrTerm l@(OrTerm l1 l2) r
-  | orEqTrue l1 r = trueTerm
-  | orEqTrue l2 r = trueTerm
-  | orEqFirst l1 r = l
-  | orEqFirst l2 r = l
-  | orEqFirst r l1 = pevalOrTerm l2 r
-  | orEqFirst r l2 = pevalOrTerm l1 r
+  | orEqTrue' l r = trueTerm
+  | orEqFirst' l r = l
+  | orEqFirst' r l = r
+pevalOrTerm l r@(OrTermAll r1 r2 s)
+  | HS.member l s = r
+  | HS.member (simpleNot l) s = trueTerm
+  | orEqTrue' l r1 = trueTerm
+  | orEqTrue' l r2 = trueTerm
+  | orEqFirst' r1 l = r
+  | orEqFirst' r2 l = r
+  | orEqFirst' l r1 = pevalOrTerm l r2
+  | orEqFirst' l r2 = pevalOrTerm l r1
+pevalOrTerm l@(OrTermAll l1 l2 s) r
+  | HS.member r s = l
+  | HS.member (simpleNot r) s = trueTerm
+  | orEqTrue' l1 r = trueTerm
+  | orEqTrue' l2 r = trueTerm
+  | orEqFirst' l1 r = l
+  | orEqFirst' l2 r = l
+  | orEqFirst' r l1 = pevalOrTerm l2 r
+  | orEqFirst' r l2 = pevalOrTerm l1 r
 pevalOrTerm (AndTerm l1 l2) (AndTerm r1 r2)
   | l1 == r1 = pevalAndTerm l1 (pevalOrTerm l2 r2)
   | l1 == r2 = pevalAndTerm l1 (pevalOrTerm l2 r1)
   | l2 == r1 = pevalAndTerm l2 (pevalOrTerm l1 r2)
   | l2 == r2 = pevalAndTerm l2 (pevalOrTerm l1 r1)
-pevalOrTerm l (AndTerm r1 r2)
+pevalOrTerm l (AndTermAll r1 r2 s)
+  | HS.member l s = l
   | orEqFirst l r1 = l
   | orEqFirst l r2 = l
   | orEqTrue l r1 = pevalOrTerm l r2
   | orEqTrue l r2 = pevalOrTerm l r1
-pevalOrTerm (AndTerm l1 l2) r
+pevalOrTerm (AndTermAll l1 l2 s) r
+  | HS.member r s = r
   | orEqFirst r l1 = r
   | orEqFirst r l2 = r
   | orEqTrue l1 r = pevalOrTerm l2 r
@@ -5792,37 +5859,88 @@ pevalOrTerm (NotTerm nl) (NotTerm nr) =
 pevalOrTerm l r = orTerm l r
 {-# INLINEABLE pevalOrTerm #-}
 
+andEqFalse' :: Term Bool -> Term Bool -> Bool
+andEqFalse'
+  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
+    | e1 == e2 && ec1 /= ec2 = True
+andEqFalse' _ _ = False
+{-# INLINE andEqFalse' #-}
+
+andEqFalse :: Term Bool -> Term Bool -> Bool
+andEqFalse (NotTerm x) y | x == y = True
+andEqFalse x (NotTerm y) | x == y = True
+andEqFalse l r = andEqFalse' l r
+{-# INLINE andEqFalse #-}
+
+andEqFirst' :: Term Bool -> Term Bool -> Bool
+andEqFirst'
+  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (DistinctTerm ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
+    | e1 == e2 && ec1 /= ec2 = True
+andEqFirst'
+  (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (NotTerm (EqTerm (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b))))
+    | e1 == e2 && ec1 /= ec2 = True
+andEqFirst' _ _ = False
+{-# INLINE andEqFirst' #-}
+
+andEqFirst :: Term Bool -> Term Bool -> Bool
+andEqFirst _ (ConTerm True) = True
+andEqFirst x y
+  | x == y = True
+  | otherwise = andEqFirst' x y
+{-# INLINE andEqFirst #-}
+
+simpleNot :: Term Bool -> Term Bool
+simpleNot (NotTerm n) = n
+simpleNot n = notTerm n
+{-# INLINEABLE simpleNot #-}
+
 -- | Partial evaluation for and terms.
 pevalAndTerm :: Term Bool -> Term Bool -> Term Bool
+pevalAndTerm (ConTerm False) ~_ = falseTerm
+pevalAndTerm _ (ConTerm False) = falseTerm
+pevalAndTerm (ConTerm True) y = y
+pevalAndTerm x (ConTerm True) = x
+pevalAndTerm (NotTerm x) y | x == y = falseTerm
+pevalAndTerm x (NotTerm y) | x == y = falseTerm
+pevalAndTerm x y | x == y = x
 pevalAndTerm l ~r
-  | andEqFalse l r = falseTerm
-  | andEqFirst l r = l
-  | andEqFirst r l = r
-pevalAndTerm l r@(AndTerm r1 r2)
-  | andEqFalse l r1 = falseTerm
-  | andEqFalse l r2 = falseTerm
-  | andEqFirst r1 l = r
-  | andEqFirst r2 l = r
-  | andEqFirst l r1 = pevalAndTerm l r2
-  | andEqFirst l r2 = pevalAndTerm l r1
-pevalAndTerm l@(AndTerm l1 l2) r
-  | andEqFalse l1 r = falseTerm
-  | andEqFalse l2 r = falseTerm
-  | andEqFirst l1 r = l
-  | andEqFirst l2 r = l
-  | andEqFirst r l1 = pevalAndTerm l2 r
-  | andEqFirst r l2 = pevalAndTerm l1 r
+  | andEqFalse' l r = falseTerm
+  | andEqFirst' l r = l
+  | andEqFirst' r l = r
+pevalAndTerm l r@(AndTermAll r1 r2 s)
+  | HS.member l s = r
+  | HS.member (simpleNot l) s = falseTerm
+  | andEqFalse' l r1 = falseTerm
+  | andEqFalse' l r2 = falseTerm
+  | andEqFirst' r1 l = r
+  | andEqFirst' r2 l = r
+  | andEqFirst' l r1 = pevalAndTerm l r2
+  | andEqFirst' l r2 = pevalAndTerm l r1
+pevalAndTerm l@(AndTermAll l1 l2 s) r
+  | HS.member r s = l
+  | HS.member (simpleNot r) s = falseTerm
+  | andEqFalse' l1 r = falseTerm
+  | andEqFalse' l2 r = falseTerm
+  | andEqFirst' l1 r = l
+  | andEqFirst' l2 r = l
+  | andEqFirst' r l1 = pevalAndTerm l2 r
+  | andEqFirst' r l2 = pevalAndTerm l1 r
 pevalAndTerm (OrTerm l1 l2) (OrTerm r1 r2)
   | l1 == r1 = pevalOrTerm l1 (pevalAndTerm l2 r2)
   | l1 == r2 = pevalOrTerm l1 (pevalAndTerm l2 r1)
   | l2 == r1 = pevalOrTerm l2 (pevalAndTerm l1 r2)
   | l2 == r2 = pevalOrTerm l2 (pevalAndTerm l1 r1)
-pevalAndTerm l (OrTerm r1 r2)
+pevalAndTerm l (OrTermAll r1 r2 s)
+  | HS.member l s = l
   | andEqFirst l r1 = l
   | andEqFirst l r2 = l
   | andEqFalse l r1 = pevalAndTerm l r2
   | andEqFalse l r2 = pevalAndTerm l r1
-pevalAndTerm (OrTerm l1 l2) r
+pevalAndTerm (OrTermAll l1 l2 s) r
+  | HS.member r s = r
   | andEqFirst r l1 = r
   | andEqFirst r l2 = r
   | andEqFalse l1 r = pevalAndTerm l2 r
@@ -5837,27 +5955,33 @@ pevalAndTerm l r = andTerm l r
 
 -- | Partial evaluation for imply terms.
 pevalImplyTerm :: Term Bool -> Term Bool -> Term Bool
-pevalImplyTerm l = pevalOrTerm (pevalNotTerm l)
+pevalImplyTerm l r | termImplies l r = trueTerm
+pevalImplyTerm l r = pevalOrTerm (pevalNotTerm l) r
 
 -- | Partial evaluation for xor terms.
 pevalXorTerm :: Term Bool -> Term Bool -> Term Bool
 pevalXorTerm l r = pevalOrTerm (pevalAndTerm (pevalNotTerm l) r) (pevalAndTerm l (pevalNotTerm r))
 
-pevalImpliesTerm :: Term Bool -> Term Bool -> Bool
-pevalImpliesTerm (ConTerm False) _ = True
-pevalImpliesTerm _ (ConTerm True) = True
-pevalImpliesTerm
+termImplies :: Term Bool -> Term Bool -> Bool
+termImplies (ConTerm False) _ = True
+termImplies _ (ConTerm True) = True
+termImplies
   (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
   (DistinctTerm ((DynTerm (e2 :: Term a)) :| [(DynTerm (ec2@ConTerm {} :: Term b))]))
     | e1 == e2 && ec1 /= ec2 = True
-pevalImpliesTerm
+termImplies
   (EqTerm (e1 :: Term a) (ec1@ConTerm {} :: Term b))
   (NotTerm (EqTerm (DynTerm (e2 :: Term a)) ((DynTerm (ec2@ConTerm {} :: Term b)))))
     | e1 == e2 && ec1 /= ec2 = True
-pevalImpliesTerm a b
+termImplies a (OrTermAll _ _ s) | HS.member a s = True
+termImplies (AndTermAll _ _ s) b | HS.member b s = True
+termImplies (AndTermAll _ _ s) (OrTermAll _ _ s2) | HS.intersection s s2 /= HS.empty = True
+termImplies (AndTermAll _ _ s) (AndTermAll _ _ s2) | s2 `HS.isSubsetOf` s = True
+termImplies (OrTermAll _ _ s) (OrTermAll _ _ s2) | s `HS.isSubsetOf` s2 = True
+termImplies a b
   | a == b = True
   | otherwise = False
-{-# INLINE pevalImpliesTerm #-}
+{-# INLINE termImplies #-}
 
 pevalITEBoolLeftNot :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
 pevalITEBoolLeftNot cond nIfTrue ifFalse
@@ -5867,22 +5991,22 @@ pevalITEBoolLeftNot cond nIfTrue ifFalse
       AndTerm nt1 nt2 -> ra
         where
           ra
-            | pevalImpliesTerm cond nt1 =
+            | termImplies cond nt1 =
                 Just $ pevalITETerm cond (pevalNotTerm nt2) ifFalse
-            | pevalImpliesTerm cond nt2 =
+            | termImplies cond nt2 =
                 Just $ pevalITETerm cond (pevalNotTerm nt1) ifFalse
-            | pevalImpliesTerm cond (pevalNotTerm nt1)
-                || pevalImpliesTerm cond (pevalNotTerm nt2) =
+            | termImplies cond (pevalNotTerm nt1)
+                || termImplies cond (pevalNotTerm nt2) =
                 Just $ pevalOrTerm cond ifFalse
             | otherwise = Nothing
       OrTerm nt1 nt2 -> ra
         where
           ra
-            | pevalImpliesTerm cond nt1 || pevalImpliesTerm cond nt2 =
+            | termImplies cond nt1 || termImplies cond nt2 =
                 Just $ pevalAndTerm (pevalNotTerm cond) ifFalse
-            | pevalImpliesTerm cond (pevalNotTerm nt1) =
+            | termImplies cond (pevalNotTerm nt1) =
                 Just $ pevalITETerm cond (pevalNotTerm nt2) ifFalse
-            | pevalImpliesTerm cond (pevalNotTerm nt2) =
+            | termImplies cond (pevalNotTerm nt2) =
                 Just $ pevalITETerm cond (pevalNotTerm nt1) ifFalse
             | otherwise = Nothing
       _ -> Nothing
@@ -6019,13 +6143,13 @@ pevalITEBasic _ ifTrue ifFalse | ifTrue == ifFalse = Just ifTrue
 pevalITEBasic (ITETerm cc ct cf) (ITETerm tc tt tf) (ITETerm fc ft ff) -- later
   | cc == tc && cc == fc = Just $ pevalITETerm cc (pevalITETerm ct tt ft) (pevalITETerm cf tf ff)
 pevalITEBasic cond (ITETerm tc tt tf) ifFalse -- later
-  | cond == tc = Just $ pevalITETerm cond tt ifFalse
   | tt == ifFalse = Just $ pevalITETerm (pevalOrTerm (pevalNotTerm cond) tc) tt tf
   | tf == ifFalse = Just $ pevalITETerm (pevalAndTerm cond tc) tt tf
+  | termImplies cond tc = Just $ pevalITETerm cond tt ifFalse
 pevalITEBasic cond ifTrue (ITETerm fc ft ff) -- later
   | ifTrue == ft = Just $ pevalITETerm (pevalOrTerm cond fc) ifTrue ff
   | ifTrue == ff = Just $ pevalITETerm (pevalOrTerm cond (pevalNotTerm fc)) ifTrue ft
-  | pevalImpliesTerm fc cond = Just $ pevalITETerm cond ifTrue ff
+  | termImplies fc cond = Just $ pevalITETerm cond ifTrue ff
 pevalITEBasic _ _ _ = Nothing
 
 pevalITEBoolBasic :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
