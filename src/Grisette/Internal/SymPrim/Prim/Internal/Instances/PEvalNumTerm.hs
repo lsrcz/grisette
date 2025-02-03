@@ -30,6 +30,7 @@ import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalNumTerm

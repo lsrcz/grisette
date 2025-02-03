@@ -39,7 +39,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.BitVector
-  ( BV (bv, bvSelect),
+  ( BV (bv, bvConcat, bvSelect),
+    SizedBV (sizedBVConcat),
   )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
@@ -52,6 +53,7 @@ import Grisette.Internal.SymPrim.SomeBV
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Set a bit in a concrete value to a specific value.
 setBitTo :: (Bits a) => a -> Int -> Bool -> a
@@ -152,10 +154,12 @@ instance (KnownNat n, 1 <= n) => SymFiniteBits (SymIntN n) where
   symFromBits bits
     | length bits /= finiteBitSize (undefined :: SymWordN n) =
         error "symFromBits: length mismatch"
-    | otherwise = foldl1 (.|.) lst
+    | otherwise = case foldl1 bvConcat $ SomeBV <$> reverse lst of
+        SomeBV r -> unsafeCoerce r
+        _ -> error "symFromBits: length mismatch"
     where
-      lst :: [SymIntN n]
-      lst = (\(pos, b) -> symIte b (setBit 0 pos) 0) <$> zip [0 ..] bits
+      lst :: [SymIntN 1]
+      lst = (\b -> symIte b 1 0) <$> bits
 
 instance (KnownNat n, 1 <= n) => SymFiniteBits (SymWordN n) where
   symTestBit v = symTestBit (SomeBV v)
@@ -163,10 +167,12 @@ instance (KnownNat n, 1 <= n) => SymFiniteBits (SymWordN n) where
   symFromBits bits
     | length bits /= finiteBitSize (undefined :: SymWordN n) =
         error "symFromBits: length mismatch"
-    | otherwise = foldl1 (.|.) lst
+    | otherwise = case foldl1 bvConcat $ SomeBV <$> reverse lst of
+        SomeBV r -> unsafeCoerce r
+        _ -> error "symFromBits: length mismatch"
     where
-      lst :: [SymWordN n]
-      lst = (\(pos, b) -> symIte b (setBit 0 pos) 0) <$> zip [0 ..] bits
+      lst :: [SymWordN 1]
+      lst = (\b -> symIte b 1 0) <$> bits
 
 -- | Bit-blast a symbolic value into a list of symbolic bits. The first element
 -- in the resulting list corresponds to the least significant bit.

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
@@ -25,14 +26,16 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   )
 where
 
+import Control.Monad (msum)
 import Data.Coerce (coerce)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.List.NonEmpty (NonEmpty ((:|)), toList)
+import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (Proxy))
 import Data.SBV (BVIsNonZero)
 import qualified Data.SBV as SBV
 import Data.Type.Equality ((:~:) (Refl), type (:~~:) (HRefl))
-import GHC.TypeNats (KnownNat, type (<=))
+import GHC.TypeNats (KnownNat, natVal, type (<=))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( fpIsNegativeZero,
     fpIsPositiveZero,
@@ -47,6 +50,7 @@ import Grisette.Internal.SymPrim.FP
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (decideSymbolKind),
     NonFuncSBVRep (NonFuncSBVBaseType),
+    PEvalBitwiseTerm (pevalComplementBitsTerm),
     SBVRep
       ( SBVType
       ),
@@ -82,14 +86,19 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     conTerm,
     distinctTerm,
     eqTerm,
+    iteTerm,
     parseScalarSMTModelResult,
     pevalDefaultEqTerm,
+    pevalITEBasic,
     pevalITEBasicTerm,
     pevalNotTerm,
     sbvFresh,
     typedAnySymbol,
     typedConstantSymbol,
+    pattern BVSelectTerm,
     pattern ConTerm,
+    pattern DynTerm,
+    pattern EqTerm,
   )
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 
@@ -163,6 +172,29 @@ instance SupportedNonFuncPrim Integer where
   symNonFuncSBVTerm = symSBVTerm @Integer
   withNonFuncPrim r = r
 
+pevalITESelectTerm ::
+  forall bv n.
+  ( KnownNat n,
+    1 <= n,
+    SupportedPrim (bv n),
+    Eq (bv n),
+    Num (bv n),
+    PEvalBitwiseTerm (bv n)
+  ) =>
+  Term Bool -> Term (bv n) -> Term (bv n) -> Maybe (Term (bv n))
+pevalITESelectTerm
+  ( EqTerm
+      (DynTerm l@(BVSelectTerm _ w _ :: Term (bv n)))
+      (DynTerm (ConTerm (r :: bv n)))
+    )
+  (ConTerm t)
+  (ConTerm f)
+    | natVal w == 1 && r == 1 && t == 1 && f == 0 = Just l
+    | natVal w == 1 && r == 0 && t == 0 && f == 1 = Just l
+    | natVal w == 1 && r == 1 && t == 0 && f == 0 = Just $ pevalComplementBitsTerm l
+    | natVal w == 1 && r == 0 && t == 1 && f == 1 = Just $ pevalComplementBitsTerm l
+pevalITESelectTerm _ _ _ = Nothing
+
 -- Signed BV
 instance (KnownNat w, 1 <= w) => SupportedPrimConstraint (IntN w) where
   type PrimConstraint (IntN w) = (KnownNat w, 1 <= w, BVIsNonZero w)
@@ -170,12 +202,17 @@ instance (KnownNat w, 1 <= w) => SupportedPrimConstraint (IntN w) where
 instance (KnownNat w, 1 <= w) => SBVRep (IntN w) where
   type SBVType (IntN w) = SBV.SBV (SBV.IntN w)
 
-instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
+instance (KnownNat w, 1 <= w, PEvalBitwiseTerm (IntN w)) => SupportedPrim (IntN w) where
   sbvDistinct = withPrim @(IntN w) $ SBV.distinct . toList
   sbvEq = withPrim @(IntN w) (SBV..==)
   pformatCon = show
   defaultValue = 0
-  pevalITETerm = pevalITEBasicTerm
+  pevalITETerm cond ifTrue ifFalse =
+    fromMaybe (iteTerm cond ifTrue ifFalse) $
+      msum
+        [ pevalITEBasic cond ifTrue ifFalse,
+          pevalITESelectTerm cond ifTrue ifFalse
+        ]
   pevalEqTerm = pevalDefaultEqTerm
   pevalDistinctTerm = pevalGeneralDistinct
   conSBVTerm n = bvIsNonZeroFromGEq1 (Proxy @w) $ fromIntegral n
@@ -209,10 +246,10 @@ bvIsNonZeroFromGEq1 _ r1 = case unsafeAxiom :: w :~: 1 of
   Refl -> r1
 {-# INLINE bvIsNonZeroFromGEq1 #-}
 
-instance (KnownNat w, 1 <= w) => NonFuncSBVRep (IntN w) where
+instance (KnownNat w, 1 <= w, PEvalBitwiseTerm (IntN w)) => NonFuncSBVRep (IntN w) where
   type NonFuncSBVBaseType (IntN w) = SBV.IntN w
 
-instance (KnownNat w, 1 <= w) => SupportedNonFuncPrim (IntN w) where
+instance (KnownNat w, 1 <= w, PEvalBitwiseTerm (IntN w)) => SupportedNonFuncPrim (IntN w) where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @(IntN w)
   withNonFuncPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
@@ -224,12 +261,17 @@ instance (KnownNat w, 1 <= w) => SupportedPrimConstraint (WordN w) where
 instance (KnownNat w, 1 <= w) => SBVRep (WordN w) where
   type SBVType (WordN w) = SBV.SBV (SBV.WordN w)
 
-instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
+instance (KnownNat w, 1 <= w, PEvalBitwiseTerm (WordN w)) => SupportedPrim (WordN w) where
   sbvDistinct = withPrim @(WordN w) $ SBV.distinct . toList
   sbvEq = withPrim @(WordN w) (SBV..==)
   pformatCon = show
   defaultValue = 0
-  pevalITETerm = pevalITEBasicTerm
+  pevalITETerm cond ifTrue ifFalse =
+    fromMaybe (iteTerm cond ifTrue ifFalse) $
+      msum
+        [ pevalITEBasic cond ifTrue ifFalse,
+          pevalITESelectTerm cond ifTrue ifFalse
+        ]
   pevalEqTerm = pevalDefaultEqTerm
   pevalDistinctTerm = pevalGeneralDistinct
   conSBVTerm n = bvIsNonZeroFromGEq1 (Proxy @w) $ fromIntegral n
@@ -238,7 +280,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   withPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
   {-# INLINE withPrim #-}
   parseSMTModelResult _ cv =
-    withPrim @(IntN w) $
+    withPrim @(WordN w) $
       parseScalarSMTModelResult (\(x :: SBV.WordN w) -> fromIntegral x) cv
   castTypedSymbol ::
     forall knd knd'.
@@ -251,10 +293,10 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
       Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol s
   funcDummyConstraint _ = SBV.sTrue
 
-instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
+instance (KnownNat w, 1 <= w, PEvalBitwiseTerm (WordN w)) => NonFuncSBVRep (WordN w) where
   type NonFuncSBVBaseType (WordN w) = SBV.WordN w
 
-instance (KnownNat w, 1 <= w) => SupportedNonFuncPrim (WordN w) where
+instance (KnownNat w, 1 <= w, PEvalBitwiseTerm (WordN w)) => SupportedNonFuncPrim (WordN w) where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @(WordN w)
   withNonFuncPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r

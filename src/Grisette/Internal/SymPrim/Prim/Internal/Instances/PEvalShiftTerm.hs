@@ -26,6 +26,7 @@ import Data.Proxy (Proxy (Proxy))
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift (symShift))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )
