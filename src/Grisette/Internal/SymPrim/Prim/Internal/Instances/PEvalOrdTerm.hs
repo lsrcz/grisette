@@ -34,6 +34,7 @@ import Grisette.Internal.SymPrim.FP
     ValidFP,
     allFPRoundingMode,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalNumTerm (pevalNegNumTerm),

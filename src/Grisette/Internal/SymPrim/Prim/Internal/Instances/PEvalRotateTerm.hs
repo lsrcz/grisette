@@ -27,6 +27,7 @@ import qualified Data.SBV as SBV
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (symRotate))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim (bvIsNonZeroFromGEq1)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalRotateTerm

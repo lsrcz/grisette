@@ -40,6 +40,7 @@ import Grisette.Internal.Core.Data.Class.BitVector
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm (doPevalBitCast)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )
@@ -474,6 +475,19 @@ doPevalDefaultBVConcatTerm
       lRlRepr = addNat lRepr rlRepr
       lhs :: Term (bv (l + rl))
       lhs = unsafeBVConcatTerm lRepr rlRepr lRlRepr l rl
+doPevalDefaultBVConcatTerm
+  (BVSelectTerm ix0 (_ :: p w0) (bv0 :: Term (bv n)))
+  (BVSelectTerm (ix1 :: p ix1) (w1 :: p w1) (DynTerm (bv1 :: Term (bv n))))
+    | ix1v + w1v == ix0v && bv0 == bv1 =
+        Just $ unsafePevalBVSelectTerm nRepr ix1Repr (addNat w0Repr w1Repr) bv0
+    where
+      nRepr = natRepr @n
+      w1v = natVal w1
+      ix0v = natVal ix0
+      ix1v = natVal ix1
+      ix1Repr = natRepr @ix1
+      w0Repr = natRepr @w0
+      w1Repr = natRepr @w1
 doPevalDefaultBVConcatTerm _ _ = Nothing
 
 instance PEvalBVTerm WordN where

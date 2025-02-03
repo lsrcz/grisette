@@ -51,6 +51,7 @@ import Grisette.Internal.SymPrim.FP
     FPRoundingMode (RNA, RNE, RTN, RTP, RTZ),
     ValidFP,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )
