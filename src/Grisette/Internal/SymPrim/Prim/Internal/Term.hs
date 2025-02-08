@@ -5342,22 +5342,64 @@ unsafeInCurThread2Set f a b s = unsafePerformIO $ inCurThread2Set f a b s
 -- | Construct and internalizing a 'OrTerm'.
 orTerm :: Term Bool -> Term Bool -> Term Bool
 orTerm l@(OrTermAll _ _ s1) r@(OrTermAll _ _ s2) =
-  unsafeInCurThread2Set curThreadOrTerm l r (HS.insert l $ HS.insert r $ HS.union s1 s2)
+  unsafeInCurThread2Set
+    curThreadOrTerm
+    l
+    r
+    ( if HS.size s1 + HS.size s2 > 30
+        then HS.fromList [l, r]
+        else HS.insert l $ HS.insert r $ HS.union s1 s2
+    )
 orTerm l@(OrTermAll _ _ s1) r =
-  unsafeInCurThread2Set curThreadOrTerm l r (HS.insert r $ HS.insert l s1)
+  unsafeInCurThread2Set
+    curThreadOrTerm
+    l
+    r
+    ( if HS.size s1 > 30
+        then HS.fromList [l, r]
+        else HS.insert r $ HS.insert l s1
+    )
 orTerm l r@(OrTermAll _ _ s2) =
-  unsafeInCurThread2Set curThreadOrTerm l r (HS.insert l $ HS.insert r s2)
+  unsafeInCurThread2Set
+    curThreadOrTerm
+    l
+    r
+    ( if HS.size s2 > 30
+        then HS.fromList [l, r]
+        else HS.insert l $ HS.insert r s2
+    )
 orTerm l r = unsafeInCurThread2Set curThreadOrTerm l r (HS.fromList [l, r])
 {-# NOINLINE orTerm #-}
 
 -- | Construct and internalizing a 'AndTerm'.
 andTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm l@(AndTermAll _ _ s1) r@(AndTermAll _ _ s2) =
-  unsafeInCurThread2Set curThreadAndTerm l r (HS.insert l $ HS.insert r $ HS.union s1 s2)
+  unsafeInCurThread2Set
+    curThreadAndTerm
+    l
+    r
+    ( if HS.size s1 + HS.size s2 > 30
+        then HS.fromList [l, r]
+        else HS.insert l $ HS.insert r $ HS.union s1 s2
+    )
 andTerm l@(AndTermAll _ _ s1) r =
-  unsafeInCurThread2Set curThreadAndTerm l r (HS.insert r $ HS.insert l s1)
+  unsafeInCurThread2Set
+    curThreadAndTerm
+    l
+    r
+    ( if HS.size s1 > 30
+        then HS.fromList [l, r]
+        else HS.insert r $ HS.insert l s1
+    )
 andTerm l r@(AndTermAll _ _ s2) =
-  unsafeInCurThread2Set curThreadAndTerm l r (HS.insert l $ HS.insert r s2)
+  unsafeInCurThread2Set
+    curThreadAndTerm
+    l
+    r
+    ( if HS.size s2 > 30
+        then HS.fromList [l, r]
+        else HS.insert l $ HS.insert r s2
+    )
 andTerm l r = unsafeInCurThread2Set curThreadAndTerm l r (HS.fromList [l, r])
 {-# NOINLINE andTerm #-}
 
