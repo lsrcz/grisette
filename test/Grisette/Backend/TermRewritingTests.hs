@@ -127,9 +127,10 @@ import Grisette.Internal.SymPrim.Prim.Term
     PEvalBVTerm,
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
-    PEvalBitwiseTerm,
+    PEvalBitwiseTerm (pevalAndBitsTerm, pevalOrBitsTerm),
     PEvalIEEEFPConvertibleTerm,
     SupportedNonFuncPrim,
+    SupportedPrim (pevalITETerm),
     Term,
     andBitsTerm,
     bvConcatTerm,
@@ -268,6 +269,7 @@ bvConcatTest ::
   forall bv.
   ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
     forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    forall n. (KnownNat n, 1 <= n) => Arbitrary (bv n),
     Typeable bv,
     PEvalBVTerm bv
   ) =>
@@ -491,6 +493,38 @@ bvConcatTest =
              return $
                testCase ("ite(cond," <> lhsName <> "," <> rhsName <> ")") $
                  validateSpec @(FixedSizedBVWithBoolSpec bv 4) unboundedConfig spec
+         )
+      ++ ( do
+             trueBranch <- [True, False]
+             (opName, op, spec) <-
+               [("and", pevalAndBitsTerm, andBitsSpec), ("or", pevalOrBitsTerm, orBitsSpec)]
+             let iteName = "ite(cond,const,const)"
+             let name =
+                   opName
+                     <> "("
+                     <> (if trueBranch then iteName else "a")
+                     <> ","
+                     <> (if trueBranch then "b" else iteName)
+                     <> ")"
+             return $ testProperty name $ \a b -> ioProperty $ do
+               let ite =
+                     iteSpec
+                       (symSpec "cond" :: BoolWithFixedSizedBVSpec bv 4)
+                       (conSpec a :: FixedSizedBVWithBoolSpec bv 4)
+                       (conSpec b :: FixedSizedBVWithBoolSpec bv 4)
+               let s = symSpec "a" :: FixedSizedBVWithBoolSpec bv 4
+               let lhs = if trueBranch then ite else s
+               let rhs = if trueBranch then s else ite
+               let sterm = ssymTerm "a" :: Term (bv 4)
+               let transform = if trueBranch then (`op` sterm) else op sterm
+               let iteExpected =
+                     pevalITETerm
+                       (ssymTerm "cond" :: Term Bool)
+                       (transform $ conTerm a)
+                       (transform $ conTerm b)
+               let resSpec@(FixedSizedBVWithBoolSpec _ r) = spec lhs rhs
+               r @?= iteExpected
+               validateSpec unboundedConfig resSpec
          )
 
 bv1Test ::

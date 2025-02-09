@@ -6890,10 +6890,13 @@ expandCond ::
   ) =>
   Term Bool -> Term (bv n)
 expandCond cond =
-  bvExtendTerm
-    True
-    (natRepr @n)
-    (iteTerm cond (conTerm 1 :: Term (bv 1)) (conTerm 0) :: Term (bv 1))
+  let bv =
+        case cond of
+          NotTerm c -> iteTerm c (conTerm 0) (conTerm 1)
+          _ -> iteTerm cond (conTerm 1 :: Term (bv 1)) (conTerm 0) :: Term (bv 1)
+   in if natVal (Proxy @n) == 1
+        then unsafeCoerce bv
+        else bvExtendTerm True (natRepr @n) bv
 
 -- Signed BV
 instance (KnownNat w, 1 <= w) => SupportedPrimConstraint (IntN w) where
@@ -7261,6 +7264,10 @@ pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
         acok = ac .&. (ac + 1) == 0
     doPevalAndBitsTerm a b@(ConTerm _) = doPevalAndBitsTerm b a
     doPevalAndBitsTerm a b | a == b = Just a
+    doPevalAndBitsTerm (ITETerm cond a@(ConTerm _) b@(ConTerm _)) c =
+      Just $ pevalITETerm cond (pevalAndBitsTerm a c) (pevalAndBitsTerm b c)
+    doPevalAndBitsTerm a (ITETerm cond b@(ConTerm _) c@(ConTerm _)) =
+      Just $ pevalITETerm cond (pevalAndBitsTerm a b) (pevalAndBitsTerm a c)
     doPevalAndBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultAndBitsTerm a b
 
 pevalDefaultOrBitsTerm ::
@@ -7311,6 +7318,10 @@ pevalDefaultOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
         acok = ac .&. (ac + 1) == 0
     doPevalOrBitsTerm a b@(ConTerm _) = doPevalOrBitsTerm b a
     doPevalOrBitsTerm a b | a == b = Just a
+    doPevalOrBitsTerm (ITETerm cond a@(ConTerm _) b@(ConTerm _)) c =
+      Just $ pevalITETerm cond (pevalOrBitsTerm a c) (pevalOrBitsTerm b c)
+    doPevalOrBitsTerm a (ITETerm cond b@(ConTerm _) c@(ConTerm _)) =
+      Just $ pevalITETerm cond (pevalOrBitsTerm a b) (pevalOrBitsTerm a c)
     doPevalOrBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultOrBitsTerm a b
 
 pevalDefaultXorBitsTerm ::
