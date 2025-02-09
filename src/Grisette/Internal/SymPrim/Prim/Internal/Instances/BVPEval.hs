@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -41,6 +42,7 @@ import Grisette.Internal.Core.Data.Class.BitVector
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm (doPevalBitCast)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )
@@ -54,6 +56,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         sbvBVSelectTerm
       ),
     PEvalBitCastTerm (pevalBitCastTerm, sbvBitCast),
+    PEvalBitwiseTerm,
+    PEvalNumTerm,
     SupportedPrim,
     Term,
     bitCastTerm,
@@ -61,12 +65,17 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     bvExtendTerm,
     bvSelectTerm,
     conTerm,
+    pattern AddNumTerm,
+    pattern AndBitsTerm,
     pattern BVConcatTerm,
     pattern BVExtendTerm,
     pattern BVSelectTerm,
     pattern BitCastTerm,
     pattern ConTerm,
     pattern DynTerm,
+    pattern MulNumTerm,
+    pattern OrBitsTerm,
+    pattern XorBitsTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
   ( binaryUnfoldOnce,
@@ -102,7 +111,9 @@ pevalDefaultBVSelectTerm ::
     PEvalBVTerm bv2,
     Typeable bv,
     SupportedPrim (bv w),
-    SupportedPrim (bv2 n)
+    SupportedPrim (bv2 n),
+    forall m. (KnownNat m, 1 <= m) => PEvalNumTerm (bv m),
+    forall m. (KnownNat m, 1 <= m) => PEvalBitwiseTerm (bv m)
   ) =>
   p ix ->
   q w ->
@@ -142,7 +153,9 @@ doPevalDefaultBVSelectTerm ::
     PEvalBVTerm bv2,
     Typeable bv,
     SupportedPrim (bv w),
-    SupportedPrim (bv2 n)
+    SupportedPrim (bv2 n),
+    forall m. (KnownNat m, 1 <= m) => PEvalNumTerm (bv m),
+    forall m. (KnownNat m, 1 <= m) => PEvalBitwiseTerm (bv m)
   ) =>
   p ix ->
   q w ->
@@ -156,6 +169,33 @@ doPevalDefaultBVSelectTerm ix w (ConTerm b) =
   Just $ conTerm $ sizedBVSelect ix w b
 doPevalDefaultBVSelectTerm ix w (BitCastTerm (DynTerm (b :: Term (bv2 n)))) =
   Just $ pevalBitCastTerm $ pevalBVSelectTerm ix w b
+doPevalDefaultBVSelectTerm ix w (AddNumTerm t1 t2)
+  | natVal @ix ix == 0 =
+      Just $
+        AddNumTerm
+          (pevalDefaultBVSelectTerm @bv2 @bv ix w t1)
+          (pevalDefaultBVSelectTerm @bv2 @bv ix w t2)
+doPevalDefaultBVSelectTerm ix w (MulNumTerm t1 t2)
+  | natVal @ix ix == 0 =
+      Just $
+        MulNumTerm
+          (pevalDefaultBVSelectTerm @bv2 @bv ix w t1)
+          (pevalDefaultBVSelectTerm @bv2 @bv ix w t2)
+doPevalDefaultBVSelectTerm ix w (AndBitsTerm t1 t2) =
+  Just $
+    AndBitsTerm
+      (pevalDefaultBVSelectTerm @bv2 @bv ix w t1)
+      (pevalDefaultBVSelectTerm @bv2 @bv ix w t2)
+doPevalDefaultBVSelectTerm ix w (OrBitsTerm t1 t2) =
+  Just $
+    OrBitsTerm
+      (pevalDefaultBVSelectTerm @bv2 @bv ix w t1)
+      (pevalDefaultBVSelectTerm @bv2 @bv ix w t2)
+doPevalDefaultBVSelectTerm ix w (XorBitsTerm t1 t2) =
+  Just $
+    XorBitsTerm
+      (pevalDefaultBVSelectTerm @bv2 @bv ix w t1)
+      (pevalDefaultBVSelectTerm @bv2 @bv ix w t2)
 doPevalDefaultBVSelectTerm
   pix
   pw
