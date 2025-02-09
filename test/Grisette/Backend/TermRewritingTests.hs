@@ -464,6 +464,34 @@ bvConcatTest =
                r @?= expected
                validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
          )
+      ++ ( do
+             let a = symSpec "a" :: FixedSizedBVWithBoolSpec bv 4
+             let b = symSpec "b" :: FixedSizedBVWithBoolSpec bv 4
+             let c = symSpec "c" :: FixedSizedBVWithBoolSpec bv 4
+             let cond = symSpec "cond" :: BoolWithFixedSizedBVSpec bv 1
+             (lhs, rhs, lhsName, rhsName) <-
+               [ (andBitsSpec a b, a, "(& a b)", "a"),
+                 (andBitsSpec a b, b, "(& a b)", "b"),
+                 (a, andBitsSpec a b, "a", "(& a b)"),
+                 (b, andBitsSpec a b, "b", "(& a b)"),
+                 (orBitsSpec a b, a, "(| a b)", "a"),
+                 (orBitsSpec a b, b, "(| a b)", "b"),
+                 (a, orBitsSpec a b, "a", "(| a b)"),
+                 (b, orBitsSpec a b, "b", "(| a b)"),
+                 (andBitsSpec a b, andBitsSpec a c, "(& a b)", "(& a c)"),
+                 (andBitsSpec a b, andBitsSpec c a, "(& a b)", "(& c a)"),
+                 (andBitsSpec a b, andBitsSpec b c, "(& a b)", "(& b c)"),
+                 (andBitsSpec a b, andBitsSpec c b, "(& a b)", "(& c b)"),
+                 (orBitsSpec a b, orBitsSpec a c, "(| a b)", "(| a c)"),
+                 (orBitsSpec a b, orBitsSpec c a, "(| a b)", "(| c a)"),
+                 (orBitsSpec a b, orBitsSpec b c, "(| a b)", "(| b c)"),
+                 (orBitsSpec a b, orBitsSpec c b, "(| a b)", "(| c b)")
+               ]
+             let spec = iteSpec cond lhs rhs
+             return $
+               testCase ("ite(cond," <> lhsName <> "," <> rhsName <> ")") $
+                 validateSpec @(FixedSizedBVWithBoolSpec bv 4) unboundedConfig spec
+         )
 
 bv1Test ::
   forall bv.
