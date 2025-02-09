@@ -6762,21 +6762,22 @@ pevalITESelectTerm ::
   ( KnownNat n,
     1 <= n,
     SupportedPrim (bv n),
+    PEvalBitwiseTerm (bv n),
     Eq (bv n),
     Num (bv n)
   ) =>
   Term Bool -> Term (bv n) -> Term (bv n) -> Maybe (Term (bv n))
 pevalITESelectTerm
   ( EqTerm
-      (DynTerm l@(BVSelectTerm _ w _ :: Term (bv n)))
+      (DynTerm (l :: Term (bv n)))
       (DynTerm (ConTerm (r :: bv n)))
     )
   (ConTerm t)
   (ConTerm f)
-    | natVal w == 1 && r == 1 && t == 1 && f == 0 = Just l
-    | natVal w == 1 && r == 0 && t == 0 && f == 1 = Just l
-    | natVal w == 1 && r == 1 && t == 0 && f == 0 = Just $ pevalComplementBitsTerm l
-    | natVal w == 1 && r == 0 && t == 1 && f == 1 = Just $ pevalComplementBitsTerm l
+    | natVal (Proxy @n) == 1 && r == 1 && t == 0 && f == 1 = Just $ pevalComplementBitsTerm l
+    | natVal (Proxy @n) == 1 && r == 1 && t == 1 && f == 0 = Just l
+    | natVal (Proxy @n) == 1 && r == 0 && t == 0 && f == 1 = Just l
+    | natVal (Proxy @n) == 1 && r == 0 && t == 1 && f == 0 = Just $ pevalComplementBitsTerm l
 pevalITESelectTerm _ _ _ = Nothing
 
 -- Signed BV

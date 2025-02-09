@@ -50,12 +50,12 @@ import Grisette
   )
 import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
-    BoolWithFixedSizedBVSpec,
+    BoolWithFixedSizedBVSpec (BoolWithFixedSizedBVSpec),
     BoolWithLIASpec,
     DifferentSizeBVSpec,
     FPRoundingModeBoolOpSpec,
     FPRoundingModeSpec,
-    FixedSizedBVWithBoolSpec,
+    FixedSizedBVWithBoolSpec (FixedSizedBVWithBoolSpec),
     GeneralSpec,
     IEEEFPBoolOpSpec (IEEEFPBoolOpSpec),
     IEEEFPSpec,
@@ -117,13 +117,18 @@ import Grisette.Internal.SymPrim.Prim.Term
     FPTrait (FPIsPositive),
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
+    PEvalBitwiseTerm,
     PEvalIEEEFPConvertibleTerm,
     SupportedNonFuncPrim,
     Term,
+    andBitsTerm,
+    complementBitsTerm,
     conTerm,
+    eqTerm,
     fpTraitTerm,
     iteTerm,
     notTerm,
+    orBitsTerm,
     pformatTerm,
     ssymTerm,
   )
@@ -131,7 +136,7 @@ import Grisette.Internal.SymPrim.SymFP (SymFP32)
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit (Assertion, assertFailure)
+import Test.HUnit (Assertion, assertFailure, (@?=))
 import Test.QuickCheck
   ( Arbitrary,
     elements,
@@ -247,20 +252,62 @@ divisionTest name f =
     ]
 
 bv1Test ::
-  forall bv. (SupportedNonFuncPrim (bv 1), Num (bv 1), Typeable bv) => Test
+  forall bv.
+  ( SupportedNonFuncPrim (bv 1),
+    Num (bv 1),
+    Typeable bv,
+    PEvalBitwiseTerm (bv 1)
+  ) =>
+  Test
 bv1Test =
-  testGroup (show (typeRep @bv) <> " 1") $ do
-    (opName, op) <- [("||", orSpec), ("&&", andSpec)]
-    v <- [0, (-1)]
-    let isV = "==" <> show v
-    let name = "(a" <> isV <> ")" <> opName <> "(b" <> isV <> ")"
-    return $ testCase name $ do
-      validateSpec @(BoolWithFixedSizedBVSpec bv 1)
-        unboundedConfig
-        ( op
-            (eqvSpec (symSpec "a" :: FixedSizedBVWithBoolSpec bv 1) (conSpec 0))
-            (eqvSpec (symSpec "b" :: FixedSizedBVWithBoolSpec bv 1) (conSpec 0))
-        )
+  testGroup (show (typeRep @bv) <> " 1") $
+    ( do
+        (opName, op, v, bvop) <-
+          [ ("||", orSpec, 0, andBitsTerm),
+            ("||", orSpec, 1, orBitsTerm),
+            ("&&", andSpec, 0, orBitsTerm),
+            ("&&", andSpec, 1, andBitsTerm)
+          ]
+        let isV = "==" <> show v
+        let name = "(a" <> isV <> ")" <> opName <> "(b" <> isV <> ")"
+        let spec@(BoolWithFixedSizedBVSpec _ r) =
+              op
+                (eqvSpec (symSpec "a" :: FixedSizedBVWithBoolSpec bv 1) (conSpec v))
+                (eqvSpec (symSpec "b" :: FixedSizedBVWithBoolSpec bv 1) (conSpec v))
+        let expected =
+              eqTerm
+                ( bvop
+                    (ssymTerm "a" :: Term (bv 1))
+                    (ssymTerm "b")
+                )
+                (conTerm v)
+        return $ testCase name $ do
+          r @?= expected
+          validateSpec @(BoolWithFixedSizedBVSpec bv 1) unboundedConfig spec
+    )
+      ++ ( do
+             cond <- [0 :: bv 1, 1]
+             t <- [0 :: bv 1, 1]
+             let f = 1 - t
+             let name = "ite(a==" <> show cond <> "," <> show t <> "," <> show f <> ")"
+             let spec@(FixedSizedBVWithBoolSpec _ r) =
+                   iteSpec
+                     ( eqvSpec
+                         (symSpec "a" :: FixedSizedBVWithBoolSpec bv 1)
+                         (conSpec cond) ::
+                         BoolWithFixedSizedBVSpec bv 1
+                     )
+                     (conSpec t)
+                     (conSpec f)
+             let aTerm = ssymTerm "a" :: Term (bv 1)
+             let expected =
+                   if t == cond
+                     then aTerm
+                     else complementBitsTerm aTerm
+             return $ testCase name $ do
+               r @?= expected
+               validateSpec @(FixedSizedBVWithBoolSpec bv 1) unboundedConfig spec
+         )
 
 termRewritingTests :: Test
 termRewritingTests =
