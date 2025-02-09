@@ -40,7 +40,6 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (bv, bvConcat, bvSelect),
-    SizedBV (sizedBVConcat),
   )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
