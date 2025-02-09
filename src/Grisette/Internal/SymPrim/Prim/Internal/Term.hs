@@ -6857,7 +6857,43 @@ pevalITEBVTerm
         True
         pl
         (pevalITETerm cond a b)
+pevalITEBVTerm cond (AndBitsTerm a b) (AndBitsTerm c d)
+  | a == c = Just $ andBitsTerm a $ pevalITETerm cond b d
+  | a == d = Just $ andBitsTerm a $ pevalITETerm cond b c
+  | b == c = Just $ andBitsTerm b $ pevalITETerm cond a d
+  | b == d = Just $ andBitsTerm b $ pevalITETerm cond a c
+pevalITEBVTerm cond (AndBitsTerm a b) c
+  | a == c = Just $ andBitsTerm c $ orBitsTerm (expandCond $ pevalNotTerm cond) b
+  | b == c = Just $ andBitsTerm c $ orBitsTerm (expandCond $ pevalNotTerm cond) a
+pevalITEBVTerm cond a (AndBitsTerm b c)
+  | a == b = Just $ andBitsTerm a $ orBitsTerm (expandCond cond) c
+  | a == c = Just $ andBitsTerm a $ orBitsTerm (expandCond cond) b
+pevalITEBVTerm cond (OrBitsTerm a b) (OrBitsTerm c d)
+  | a == c = Just $ orBitsTerm a $ pevalITETerm cond b d
+  | a == d = Just $ orBitsTerm a $ pevalITETerm cond b c
+  | b == c = Just $ orBitsTerm b $ pevalITETerm cond a d
+  | b == d = Just $ orBitsTerm b $ pevalITETerm cond a c
+pevalITEBVTerm cond (OrBitsTerm a b) c
+  | a == c = Just $ orBitsTerm c $ andBitsTerm (expandCond cond) b
+  | b == c = Just $ orBitsTerm c $ andBitsTerm (expandCond cond) a
+pevalITEBVTerm cond a (OrBitsTerm b c)
+  | a == b = Just $ orBitsTerm a $ andBitsTerm (expandCond $ pevalNotTerm cond) c
+  | a == c = Just $ orBitsTerm a $ andBitsTerm (expandCond $ pevalNotTerm cond) b
 pevalITEBVTerm _ _ _ = Nothing
+
+expandCond ::
+  forall bv n.
+  ( PEvalBVTerm bv,
+    KnownNat n,
+    1 <= n,
+    forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m)
+  ) =>
+  Term Bool -> Term (bv n)
+expandCond cond =
+  bvExtendTerm
+    True
+    (natRepr @n)
+    (iteTerm cond (conTerm 1 :: Term (bv 1)) (conTerm 0) :: Term (bv 1))
 
 -- Signed BV
 instance (KnownNat w, 1 <= w) => SupportedPrimConstraint (IntN w) where
