@@ -17,6 +17,7 @@ module Grisette.Backend.TermRewritingTests
 where
 
 import Data.Foldable (traverse_)
+import Data.Proxy (Proxy (Proxy))
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette
   ( AlgReal,
@@ -78,6 +79,8 @@ import Grisette.Backend.TermRewritingGen
     bitCastOrSpec,
     bitCastSpec,
     bvconcatSpec,
+    bvextendSpec,
+    complementBitsSpec,
     divIntegralSpec,
     eqvSpec,
     fpBinaryOpSpec,
@@ -129,6 +132,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     Term,
     andBitsTerm,
     bvConcatTerm,
+    bvExtendTerm,
     complementBitsTerm,
     conTerm,
     eqTerm,
@@ -268,44 +272,106 @@ bvConcatTest ::
   ) =>
   Test
 bvConcatTest =
-  testGroup (show (typeRep @bv) <> " concat") $ do
-    (opName, opSpec, termOp) <-
-      [ ("and", andBitsSpec, andBitsTerm),
-        ("or", orBitsSpec, orBitsTerm),
-        ("xor", xorBitsSpec, xorBitsTerm)
-      ]
-    [ testCase (opName <> "(const,concat)") $ do
-        let lhs = conSpec 0x39 :: FixedSizedBVWithBoolSpec bv 8
-        let rhs =
-              bvconcatSpec
-                (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
-                (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
-        let spec@(FixedSizedBVWithBoolSpec _ r) = opSpec lhs rhs
-        let expected =
-              ( bvConcatTerm
-                  (termOp (conTerm 3 :: Term (bv 4)) (ssymTerm "a"))
-                  (termOp (conTerm 9 :: Term (bv 4)) (ssymTerm "b"))
-              )
-        r @?= expected
-        validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec,
-      testCase (opName <> "(concat,concat)") $ do
-        let lhs =
-              bvconcatSpec
-                (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
-                (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
-        let rhs =
-              bvconcatSpec
-                (symSpec "c" :: FixedSizedBVWithBoolSpec bv 4)
-                (symSpec "d" :: FixedSizedBVWithBoolSpec bv 4)
-        let spec@(FixedSizedBVWithBoolSpec _ r) = opSpec lhs rhs
-        let expected =
-              ( bvConcatTerm
-                  (termOp (ssymTerm "a" :: Term (bv 4)) (ssymTerm "c"))
-                  (termOp (ssymTerm "b" :: Term (bv 4)) (ssymTerm "d"))
-              )
-        r @?= expected
-        validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
-      ]
+  testGroup (show (typeRep @bv) <> " concat") $
+    ( do
+        (opName, opSpec, termOp) <-
+          [ ("and", andBitsSpec, andBitsTerm),
+            ("or", orBitsSpec, orBitsTerm),
+            ("xor", xorBitsSpec, xorBitsTerm)
+          ]
+        [ testCase (opName <> "(const,concat)") $ do
+            let lhs = conSpec 0x39 :: FixedSizedBVWithBoolSpec bv 8
+            let rhs =
+                  bvconcatSpec
+                    (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
+                    (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+            let spec@(FixedSizedBVWithBoolSpec _ r) = opSpec lhs rhs
+            let expected =
+                  ( bvConcatTerm
+                      (termOp (conTerm 3 :: Term (bv 4)) (ssymTerm "a"))
+                      (termOp (conTerm 9 :: Term (bv 4)) (ssymTerm "b"))
+                  )
+            r @?= expected
+            validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec,
+          testCase (opName <> "(concat,concat)") $ do
+            let lhs =
+                  bvconcatSpec
+                    (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
+                    (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+            let rhs =
+                  bvconcatSpec
+                    (symSpec "c" :: FixedSizedBVWithBoolSpec bv 4)
+                    (symSpec "d" :: FixedSizedBVWithBoolSpec bv 4)
+            let spec@(FixedSizedBVWithBoolSpec _ r) = opSpec lhs rhs
+            let expected =
+                  ( bvConcatTerm
+                      (termOp (ssymTerm "a" :: Term (bv 4)) (ssymTerm "c"))
+                      (termOp (ssymTerm "b" :: Term (bv 4)) (ssymTerm "d"))
+                  )
+            r @?= expected
+            validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
+          ]
+    )
+      ++ [ testCase "complement(concat)" $ do
+             let lhs =
+                   bvconcatSpec
+                     (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
+                     (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+             let spec@(FixedSizedBVWithBoolSpec _ r) = complementBitsSpec lhs
+             let expected =
+                   bvConcatTerm
+                     (complementBitsTerm (ssymTerm "a" :: Term (bv 4)))
+                     (complementBitsTerm (ssymTerm "b" :: Term (bv 4)))
+             r @?= expected
+             validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec,
+           testCase "complement(sext)" $ do
+             let spec@(FixedSizedBVWithBoolSpec _ r) =
+                   complementBitsSpec
+                     ( bvextendSpec
+                         True
+                         (Proxy :: Proxy 8)
+                         (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
+                     ) ::
+                     FixedSizedBVWithBoolSpec bv 8
+             let expected =
+                   bvExtendTerm
+                     True
+                     (Proxy :: Proxy 8)
+                     (complementBitsTerm (ssymTerm "a" :: Term (bv 4)))
+             r @?= expected
+             validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
+         ]
+      ++ ( do
+             pos <- [True, False]
+             cvalue <- [0 :: Int, -1]
+             value <- [0 :: Int, -1]
+             let con = conSpec (fromIntegral value) :: FixedSizedBVWithBoolSpec bv 4
+             let sym = symSpec "b"
+             let t = if pos then con else sym
+             let f = if pos then sym else con
+             let spec =
+                   iteSpec
+                     ( eqvSpec
+                         (symSpec "c" :: FixedSizedBVWithBoolSpec bv 1)
+                         (conSpec $ fromIntegral cvalue) ::
+                         BoolWithFixedSizedBVSpec bv 1
+                     )
+                     t
+                     f
+             let ts = if pos then show value else "sym"
+             let fs = if pos then "sym" else show value
+             return
+               $ testCase
+                 ( "ite(bv1="
+                     <> show cvalue
+                     <> ","
+                     <> ts
+                     <> ","
+                     <> fs
+                     <> ")"
+                 )
+               $ validateSpec unboundedConfig spec
+         )
 
 bv1Test ::
   forall bv.

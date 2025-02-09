@@ -57,7 +57,6 @@ import Grisette.Internal.SymPrim.FP
   )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Caches (Id)
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFloatingTerm ()
