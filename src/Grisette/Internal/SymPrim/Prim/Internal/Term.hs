@@ -6840,6 +6840,23 @@ pevalITEBVTerm
   (EqTerm (DynTerm (l :: Term (bv 1))) (DynTerm (ConTerm (r :: bv 1))))
   t
   f@(ConTerm _) = pevalITEBVTerm (eqTerm l (conTerm $ complement r)) f t
+pevalITEBVTerm
+  cond
+  (BVConcatTerm (a :: Term (bv a)) (b :: Term (bv b)))
+  (BVConcatTerm (DynTerm (c :: Term (bv a))) d) =
+    Just $
+      pevalBVConcatTerm
+        (pevalITETerm cond a c)
+        (pevalITETerm cond b (unsafeCoerce d))
+pevalITEBVTerm
+  cond
+  (BVExtendTerm True pl (a :: Term (bv a)))
+  (BVExtendTerm True _ (DynTerm (b :: Term (bv a)))) =
+    Just $
+      pevalBVExtendTerm
+        True
+        pl
+        (pevalITETerm cond a b)
 pevalITEBVTerm _ _ _ = Nothing
 
 -- Signed BV
@@ -7150,6 +7167,11 @@ bitOpOnConcat
         r' = peval ar r
         l' = peval al l
      in Just $ pevalBVConcatTerm l' r'
+bitOpOnConcat
+  peval
+  (BVExtendTerm True pl (l :: Term (bv n)))
+  (BVExtendTerm True _ (DynTerm (r :: Term (bv n)))) =
+    Just $ pevalBVExtendTerm True pl (peval l r)
 bitOpOnConcat _ _ _ = Nothing
 
 pevalDefaultAndBitsTerm ::
