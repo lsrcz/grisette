@@ -382,7 +382,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( WeakThreadId,
     myWeakThreadId,
   )
-import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
+import Grisette.Internal.Utils.Parameterized (LeqProof (LeqProof), NatRepr, natRepr, unsafeAxiom, unsafeLeqProof, withKnownNat)
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Type.Reflection
   ( SomeTypeRep (SomeTypeRep),
@@ -7043,8 +7043,82 @@ instance SupportedNonFuncPrim AlgReal where
 
 -- Bitwise
 
+unsafePevalBVSelectTerm ::
+  forall bv n ix w.
+  (PEvalBVTerm bv) =>
+  NatRepr n ->
+  NatRepr ix ->
+  NatRepr w ->
+  Term (bv n) ->
+  Term (bv w)
+unsafePevalBVSelectTerm n ix w term =
+  withKnownNat n $
+    withKnownNat ix $
+      withKnownNat w $
+        case ( unsafeLeqProof @1 @n,
+               unsafeLeqProof @1 @w,
+               unsafeLeqProof @(ix + w) @n
+             ) of
+          (LeqProof, LeqProof, LeqProof) -> pevalBVSelectTerm ix w term
+
+bitOpOnConcat ::
+  forall bv m.
+  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+    KnownNat m,
+    1 <= m
+  ) =>
+  ( forall n.
+    (KnownNat n, 1 <= n) =>
+    Term (bv n) -> Term (bv n) -> Term (bv n)
+  ) ->
+  Term (bv m) ->
+  Term (bv m) ->
+  Maybe (Term (bv m))
+bitOpOnConcat
+  peval
+  (BVConcatTerm (l0 :: Term (bv l)) (r0 :: Term (bv r)))
+  (BVConcatTerm (DynTerm (l :: Term (bv l))) (DynTerm (r :: Term (bv r)))) =
+    let r' = peval r0 r
+        l' = peval l0 l
+     in Just $ pevalBVConcatTerm l' r'
+bitOpOnConcat
+  peval
+  at@(ConTerm _)
+  (BVConcatTerm (l :: Term (bv l)) (r :: Term (bv r))) =
+    let nzero = natRepr @0
+        nr = natRepr @r
+        nl = natRepr @l
+        nlpr = natRepr @(l + r)
+        ar =
+          unsafePevalBVSelectTerm
+            nlpr
+            nzero
+            nr
+            (unsafeCoerce at :: Term (bv (l + r)))
+        al =
+          unsafePevalBVSelectTerm
+            nlpr
+            nr
+            nl
+            (unsafeCoerce at :: Term (bv (l + r)))
+        r' = peval ar r
+        l' = peval al l
+     in Just $ pevalBVConcatTerm l' r'
+bitOpOnConcat _ _ _ = Nothing
+
 pevalDefaultAndBitsTerm ::
-  (Bits a, SupportedPrim a, PEvalBitwiseTerm a) => Term a -> Term a -> Term a
+  forall bv m.
+  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+    KnownNat m,
+    1 <= m
+  ) =>
+  Term (bv m) ->
+  Term (bv m) ->
+  Term (bv m)
 pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
   where
     doPevalAndBitsTerm (ConTerm a) (ConTerm b) =
@@ -7052,28 +7126,38 @@ pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
     doPevalAndBitsTerm (ConTerm a) b
       | a == zeroBits = Just $ conTerm zeroBits
       | a == complement zeroBits = Just b
-    doPevalAndBitsTerm a (ConTerm b)
-      | b == zeroBits = Just $ conTerm zeroBits
-      | b == complement zeroBits = Just a
+    doPevalAndBitsTerm a b@(ConTerm _) = doPevalAndBitsTerm b a
     doPevalAndBitsTerm a b | a == b = Just a
-    doPevalAndBitsTerm _ _ = Nothing
+    doPevalAndBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultAndBitsTerm a b
 
 pevalDefaultOrBitsTerm ::
-  (Bits a, SupportedPrim a, PEvalBitwiseTerm a) => Term a -> Term a -> Term a
+  forall bv m.
+  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+    KnownNat m,
+    1 <= m
+  ) =>
+  Term (bv m) -> Term (bv m) -> Term (bv m)
 pevalDefaultOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
   where
     doPevalOrBitsTerm (ConTerm a) (ConTerm b) = Just $ conTerm (a .|. b)
     doPevalOrBitsTerm (ConTerm a) b
       | a == zeroBits = Just b
       | a == complement zeroBits = Just $ conTerm $ complement zeroBits
-    doPevalOrBitsTerm a (ConTerm b)
-      | b == zeroBits = Just a
-      | b == complement zeroBits = Just $ conTerm $ complement zeroBits
+    doPevalOrBitsTerm a b@(ConTerm _) = doPevalOrBitsTerm b a
     doPevalOrBitsTerm a b | a == b = Just a
-    doPevalOrBitsTerm _ _ = Nothing
+    doPevalOrBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultOrBitsTerm a b
 
 pevalDefaultXorBitsTerm ::
-  (PEvalBitwiseTerm a, SupportedPrim a, Bits a) => Term a -> Term a -> Term a
+  forall bv m.
+  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+    KnownNat m,
+    1 <= m
+  ) =>
+  Term (bv m) -> Term (bv m) -> Term (bv m)
 pevalDefaultXorBitsTerm = binaryUnfoldOnce doPevalXorBitsTerm xorBitsTerm
   where
     doPevalXorBitsTerm (ConTerm a) (ConTerm b) =
@@ -7081,9 +7165,7 @@ pevalDefaultXorBitsTerm = binaryUnfoldOnce doPevalXorBitsTerm xorBitsTerm
     doPevalXorBitsTerm (ConTerm a) b
       | a == zeroBits = Just b
       | a == complement zeroBits = Just $ pevalComplementBitsTerm b
-    doPevalXorBitsTerm a (ConTerm b)
-      | b == zeroBits = Just a
-      | b == complement zeroBits = Just $ pevalComplementBitsTerm a
+    doPevalXorBitsTerm a b@(ConTerm _) = doPevalXorBitsTerm b a
     doPevalXorBitsTerm a b | a == b = Just $ conTerm zeroBits
     doPevalXorBitsTerm (ComplementBitsTerm i) (ComplementBitsTerm j) =
       Just $ pevalXorBitsTerm i j
@@ -7091,7 +7173,7 @@ pevalDefaultXorBitsTerm = binaryUnfoldOnce doPevalXorBitsTerm xorBitsTerm
       Just $ pevalComplementBitsTerm $ pevalXorBitsTerm i j
     doPevalXorBitsTerm i (ComplementBitsTerm j) =
       Just $ pevalComplementBitsTerm $ pevalXorBitsTerm i j
-    doPevalXorBitsTerm _ _ = Nothing
+    doPevalXorBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultXorBitsTerm a b
 
 pevalDefaultComplementBitsTerm ::
   (Bits a, SupportedPrim a, PEvalBitwiseTerm a) => Term a -> Term a

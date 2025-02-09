@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -72,9 +73,11 @@ import Grisette.Backend.TermRewritingGen
       ),
     absNumSpec,
     addNumSpec,
+    andBitsSpec,
     andSpec,
     bitCastOrSpec,
     bitCastSpec,
+    bvconcatSpec,
     divIntegralSpec,
     eqvSpec,
     fpBinaryOpSpec,
@@ -89,12 +92,14 @@ import Grisette.Backend.TermRewritingGen
     mulNumSpec,
     negNumSpec,
     notSpec,
+    orBitsSpec,
     orSpec,
     quotIntegralSpec,
     remIntegralSpec,
     shiftRightSpec,
     signumNumSpec,
     toFPSpec,
+    xorBitsSpec,
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
@@ -115,6 +120,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
     FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPTrait (FPIsPositive),
+    PEvalBVTerm,
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
     PEvalBitwiseTerm,
@@ -122,6 +128,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedNonFuncPrim,
     Term,
     andBitsTerm,
+    bvConcatTerm,
     complementBitsTerm,
     conTerm,
     eqTerm,
@@ -131,6 +138,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     orBitsTerm,
     pformatTerm,
     ssymTerm,
+    xorBitsTerm,
   )
 import Grisette.Internal.SymPrim.SymFP (SymFP32)
 import Test.Framework (Test, TestName, testGroup)
@@ -251,6 +259,54 @@ divisionTest name f =
           [-3 .. 3]
     ]
 
+bvConcatTest ::
+  forall bv.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    Typeable bv,
+    PEvalBVTerm bv
+  ) =>
+  Test
+bvConcatTest =
+  testGroup (show (typeRep @bv) <> " concat") $ do
+    (opName, opSpec, termOp) <-
+      [ ("and", andBitsSpec, andBitsTerm),
+        ("or", orBitsSpec, orBitsTerm),
+        ("xor", xorBitsSpec, xorBitsTerm)
+      ]
+    [ testCase (opName <> "(const,concat)") $ do
+        let lhs = conSpec 0x39 :: FixedSizedBVWithBoolSpec bv 8
+        let rhs =
+              bvconcatSpec
+                (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
+                (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+        let spec@(FixedSizedBVWithBoolSpec _ r) = opSpec lhs rhs
+        let expected =
+              ( bvConcatTerm
+                  (termOp (conTerm 3 :: Term (bv 4)) (ssymTerm "a"))
+                  (termOp (conTerm 9 :: Term (bv 4)) (ssymTerm "b"))
+              )
+        r @?= expected
+        validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec,
+      testCase (opName <> "(concat,concat)") $ do
+        let lhs =
+              bvconcatSpec
+                (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
+                (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+        let rhs =
+              bvconcatSpec
+                (symSpec "c" :: FixedSizedBVWithBoolSpec bv 4)
+                (symSpec "d" :: FixedSizedBVWithBoolSpec bv 4)
+        let spec@(FixedSizedBVWithBoolSpec _ r) = opSpec lhs rhs
+        let expected =
+              ( bvConcatTerm
+                  (termOp (ssymTerm "a" :: Term (bv 4)) (ssymTerm "c"))
+                  (termOp (ssymTerm "b" :: Term (bv 4)) (ssymTerm "d"))
+              )
+        r @?= expected
+        validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
+      ]
+
 bv1Test ::
   forall bv.
   ( SupportedNonFuncPrim (bv 1),
@@ -315,6 +371,8 @@ termRewritingTests =
     "TermRewriting"
     [ bv1Test @WordN,
       bv1Test @IntN,
+      bvConcatTest @WordN,
+      bvConcatTest @IntN,
       testGroup
         "Bool only"
         [ testProperty "Bool only random test" $
