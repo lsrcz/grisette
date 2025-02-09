@@ -1666,6 +1666,7 @@ pattern SupportedTerm <-
 
 #if MIN_VERSION_base(4, 16, 4)
 {-# COMPLETE SupportedTerm #-}
+{-# INLINE SupportedTerm #-}
 #endif
 
 data SupportedTypedSymbolEvidence (k :: SymbolKind) t where
@@ -1689,6 +1690,7 @@ pattern SupportedTypedSymbol <-
 
 #if MIN_VERSION_base(4, 16, 4)
 {-# COMPLETE SupportedTypedSymbol #-}
+{-# INLINE SupportedTypedSymbol #-}
 #endif
 
 data SupportedConstantTypedSymbolEvidence k t where
@@ -1726,12 +1728,20 @@ pattern SupportedConstantTypedSymbol <-
       Just SupportedConstantTypedSymbolEvidence
     )
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE SupportedConstantTypedSymbol #-}
+#endif
+
 -- | Pattern synonym for 'ConTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern ConTerm :: forall t. () => (SupportedPrim t) => t -> Term t
 pattern ConTerm t <- (ConTerm' _ t)
   where
     ConTerm = conTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ConTerm #-}
+#endif
 
 -- | Pattern synonym for 'SymTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
@@ -1740,6 +1750,10 @@ pattern SymTerm ::
 pattern SymTerm t <- (SymTerm' _ t@SupportedTypedSymbol)
   where
     SymTerm = symTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE SymTerm #-}
+#endif
 
 -- | Pattern synonym for 'ForallTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -1756,6 +1770,10 @@ pattern ForallTerm sym body <-
   where
     ForallTerm = forallTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ForallTerm #-}
+#endif
+
 -- | Pattern synonym for 'ExistsTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern ExistsTerm ::
@@ -1771,6 +1789,10 @@ pattern ExistsTerm sym body <-
   where
     ExistsTerm = existsTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ExistsTerm #-}
+#endif
+
 -- | Pattern synonym for 'NotTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern NotTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term r
@@ -1778,12 +1800,20 @@ pattern NotTerm body <- (NotTerm' _ body)
   where
     NotTerm = pevalNotTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE NotTerm #-}
+#endif
+
 -- | Pattern synonym for 'OrTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
 pattern OrTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
 pattern OrTerm l r <- (OrTerm' _ l r _)
   where
     OrTerm = pevalOrTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE OrTerm #-}
+#endif
 
 -- | Pattern synonym for 'OrTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
@@ -1794,12 +1824,20 @@ pattern OrTermAll ::
   Term Bool -> Term Bool -> HS.HashSet (Term Bool) -> Term r
 pattern OrTermAll l r s <- (OrTerm' _ l r s)
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE OrTermAll #-}
+#endif
+
 -- | Pattern synonym for 'AndTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
 pattern AndTerm :: forall r. () => (r ~ Bool) => Term Bool -> Term Bool -> Term r
 pattern AndTerm l r <- (AndTerm' _ l r _)
   where
     AndTerm = pevalAndTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE AndTerm #-}
+#endif
 
 -- | Pattern synonym for 'AndTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
@@ -1809,6 +1847,10 @@ pattern AndTermAll ::
   (r ~ Bool) =>
   Term Bool -> Term Bool -> HS.HashSet (Term Bool) -> Term r
 pattern AndTermAll l r s <- (AndTerm' _ l r s)
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE AndTermAll #-}
+#endif
 
 -- | Pattern synonym for 'EqTerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
@@ -1824,6 +1866,10 @@ pattern EqTerm l r <- (EqTerm' _ l r@SupportedTerm)
   where
     EqTerm = pevalEqTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE EqTerm #-}
+#endif
+
 -- | Pattern synonym for 'DistinctTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern DistinctTerm ::
@@ -1836,6 +1882,10 @@ pattern DistinctTerm ::
 pattern DistinctTerm ts <- (DistinctTerm' _ ts@(SupportedTerm :| _))
   where
     DistinctTerm = pevalDistinctTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE DistinctTerm #-}
+#endif
 
 -- | Pattern synonym for 'ITETerm''. Note that using this pattern to construct a
 -- 'Term' will do term simplification.
@@ -1851,6 +1901,10 @@ pattern ITETerm cond t1 t2 <- (ITETerm' _ cond t1 t2)
   where
     ITETerm = pevalITETerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ITETerm #-}
+#endif
+
 -- | Pattern synonym for 'AddNumTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern AddNumTerm ::
@@ -1864,6 +1918,10 @@ pattern AddNumTerm l r <- (AddNumTerm' _ l r)
   where
     AddNumTerm = pevalAddNumTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE AddNumTerm #-}
+#endif
+
 -- | Pattern synonym for 'NegNumTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern NegNumTerm ::
@@ -1875,6 +1933,10 @@ pattern NegNumTerm ::
 pattern NegNumTerm t <- (NegNumTerm' _ t)
   where
     NegNumTerm = pevalNegNumTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE NegNumTerm #-}
+#endif
 
 -- | Pattern synonym for 'MulNumTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -1889,6 +1951,10 @@ pattern MulNumTerm l r <- (MulNumTerm' _ l r)
   where
     MulNumTerm = pevalMulNumTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE MulNumTerm #-}
+#endif
+
 -- | Pattern synonym for 'AbsNumTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern AbsNumTerm ::
@@ -1901,6 +1967,10 @@ pattern AbsNumTerm t <- (AbsNumTerm' _ t)
   where
     AbsNumTerm = pevalAbsNumTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE AbsNumTerm #-}
+#endif
+
 -- | Pattern synonym for 'SignumNumTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern SignumNumTerm ::
@@ -1912,6 +1982,10 @@ pattern SignumNumTerm ::
 pattern SignumNumTerm t <- (SignumNumTerm' _ t)
   where
     SignumNumTerm = pevalSignumNumTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE SignumNumTerm #-}
+#endif
 
 -- | Pattern synonym for 'LtOrdTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
@@ -1927,6 +2001,10 @@ pattern LtOrdTerm l r <- (LtOrdTerm' _ l r@SupportedTerm)
   where
     LtOrdTerm = pevalLtOrdTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE LtOrdTerm #-}
+#endif
+
 -- | Pattern synonym for 'LeOrdTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern LeOrdTerm ::
@@ -1941,6 +2019,10 @@ pattern LeOrdTerm l r <- (LeOrdTerm' _ l r@SupportedTerm)
   where
     LeOrdTerm = pevalLeOrdTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE LeOrdTerm #-}
+#endif
+
 -- | Pattern synonym for 'AndBitsTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern AndBitsTerm ::
@@ -1953,6 +2035,10 @@ pattern AndBitsTerm ::
 pattern AndBitsTerm l r <- (AndBitsTerm' _ l r)
   where
     AndBitsTerm = pevalAndBitsTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE AndBitsTerm #-}
+#endif
 
 -- | Pattern synonym for 'OrBitsTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -1967,6 +2053,10 @@ pattern OrBitsTerm l r <- (OrBitsTerm' _ l r)
   where
     OrBitsTerm = pevalOrBitsTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE OrBitsTerm #-}
+#endif
+
 -- | Pattern synonym for 'XorBitsTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern XorBitsTerm ::
@@ -1980,6 +2070,10 @@ pattern XorBitsTerm l r <- (XorBitsTerm' _ l r)
   where
     XorBitsTerm = pevalXorBitsTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE XorBitsTerm #-}
+#endif
+
 -- | Pattern synonym for 'ComplementBitsTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern ComplementBitsTerm ::
@@ -1991,6 +2085,10 @@ pattern ComplementBitsTerm ::
 pattern ComplementBitsTerm t <- (ComplementBitsTerm' _ t)
   where
     ComplementBitsTerm = pevalComplementBitsTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ComplementBitsTerm #-}
+#endif
 
 -- | Pattern synonym for 'ShiftLeftTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2005,6 +2103,10 @@ pattern ShiftLeftTerm l r <- (ShiftLeftTerm' _ l r)
   where
     ShiftLeftTerm = pevalShiftLeftTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ShiftLeftTerm #-}
+#endif
+
 -- | Pattern synonym for 'ShiftRightTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern ShiftRightTerm ::
@@ -2017,6 +2119,10 @@ pattern ShiftRightTerm ::
 pattern ShiftRightTerm l r <- (ShiftRightTerm' _ l r)
   where
     ShiftRightTerm = pevalShiftRightTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ShiftRightTerm #-}
+#endif
 
 -- | Pattern synonym for 'RotateLeftTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2031,6 +2137,10 @@ pattern RotateLeftTerm l r <- (RotateLeftTerm' _ l r)
   where
     RotateLeftTerm = pevalRotateLeftTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE RotateLeftTerm #-}
+#endif
+
 -- | Pattern synonym for 'RotateRightTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern RotateRightTerm ::
@@ -2043,6 +2153,10 @@ pattern RotateRightTerm ::
 pattern RotateRightTerm l r <- (RotateRightTerm' _ l r)
   where
     RotateRightTerm = pevalRotateRightTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE RotateRightTerm #-}
+#endif
 
 -- | Pattern synonym for 'BitCastTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2057,6 +2171,10 @@ pattern BitCastTerm t <- (BitCastTerm' _ t@SupportedTerm)
   where
     BitCastTerm = pevalBitCastTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE BitCastTerm #-}
+#endif
+
 -- | Pattern synonym for 'BitCastOrTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern BitCastOrTerm ::
@@ -2070,6 +2188,10 @@ pattern BitCastOrTerm ::
 pattern BitCastOrTerm t1 t2 <- (BitCastOrTerm' _ t1 t2@SupportedTerm)
   where
     BitCastOrTerm = pevalBitCastOrTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE BitCastOrTerm #-}
+#endif
 
 -- | Pattern synonym for 'BVConcatTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2096,6 +2218,10 @@ pattern BVConcatTerm l r <- (BVConcatTerm' _ l@SupportedTerm r@SupportedTerm)
   where
     BVConcatTerm = pevalBVConcatTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE BVConcatTerm #-}
+#endif
+
 -- | Pattern synonym for 'BVSelectTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern BVSelectTerm ::
@@ -2121,6 +2247,10 @@ pattern BVSelectTerm ix w t <- (BVSelectTerm' _ ix w t@SupportedTerm)
   where
     BVSelectTerm = pevalBVSelectTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE BVSelectTerm #-}
+#endif
+
 -- | Pattern synonym for 'BVExtendTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern BVExtendTerm ::
@@ -2145,6 +2275,10 @@ pattern BVExtendTerm signed p t <- (BVExtendTerm' _ signed p t@SupportedTerm)
   where
     BVExtendTerm = pevalBVExtendTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE BVExtendTerm #-}
+#endif
+
 -- | Pattern synonym for 'ApplyTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern ApplyTerm ::
@@ -2159,6 +2293,10 @@ pattern ApplyTerm f x <- (ApplyTerm' _ f@SupportedTerm x@SupportedTerm)
   where
     ApplyTerm = pevalApplyTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ApplyTerm #-}
+#endif
+
 -- | Pattern synonym for 'DivIntegralTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern DivIntegralTerm ::
@@ -2171,6 +2309,10 @@ pattern DivIntegralTerm ::
 pattern DivIntegralTerm l r <- (DivIntegralTerm' _ l r)
   where
     DivIntegralTerm = pevalDivIntegralTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE DivIntegralTerm #-}
+#endif
 
 -- | Pattern synonym for 'ModIntegralTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2185,6 +2327,10 @@ pattern ModIntegralTerm l r <- (ModIntegralTerm' _ l r)
   where
     ModIntegralTerm = pevalModIntegralTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ModIntegralTerm #-}
+#endif
+
 -- | Pattern synonym for 'QuotIntegralTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern QuotIntegralTerm ::
@@ -2198,6 +2344,10 @@ pattern QuotIntegralTerm l r <- (QuotIntegralTerm' _ l r)
   where
     QuotIntegralTerm = pevalQuotIntegralTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE QuotIntegralTerm #-}
+#endif
+
 -- | Pattern synonym for 'RemIntegralTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern RemIntegralTerm ::
@@ -2210,6 +2360,10 @@ pattern RemIntegralTerm ::
 pattern RemIntegralTerm l r <- (RemIntegralTerm' _ l r)
   where
     RemIntegralTerm = pevalRemIntegralTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE RemIntegralTerm #-}
+#endif
 
 -- | Pattern synonym for 'FPTraitTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2225,6 +2379,10 @@ pattern FPTraitTerm trait t <- (FPTraitTerm' _ trait t)
   where
     FPTraitTerm = pevalFPTraitTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FPTraitTerm #-}
+#endif
+
 -- | Pattern synonym for 'FdivTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern FdivTerm ::
@@ -2238,6 +2396,10 @@ pattern FdivTerm l r <- (FdivTerm' _ l r)
   where
     FdivTerm = pevalFdivTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FdivTerm #-}
+#endif
+
 -- | Pattern synonym for 'RecipTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern RecipTerm ::
@@ -2249,6 +2411,10 @@ pattern RecipTerm ::
 pattern RecipTerm t <- (RecipTerm' _ t)
   where
     RecipTerm = pevalRecipTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE RecipTerm #-}
+#endif
 
 -- | Pattern synonym for 'FloatingUnaryTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2263,6 +2429,10 @@ pattern FloatingUnaryTerm op t <- (FloatingUnaryTerm' _ op t)
   where
     FloatingUnaryTerm = pevalFloatingUnaryTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FloatingUnaryTerm #-}
+#endif
+
 -- | Pattern synonym for 'PowerTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern PowerTerm ::
@@ -2275,6 +2445,10 @@ pattern PowerTerm ::
 pattern PowerTerm l r <- (PowerTerm' _ l r)
   where
     PowerTerm = pevalPowerTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE PowerTerm #-}
+#endif
 
 -- | Pattern synonym for 'FPUnaryTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
@@ -2289,6 +2463,10 @@ pattern FPUnaryTerm ::
 pattern FPUnaryTerm op t <- (FPUnaryTerm' _ op t)
   where
     FPUnaryTerm = pevalFPUnaryTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FPUnaryTerm #-}
+#endif
 
 -- | Pattern synonym for 'FPBinaryTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
@@ -2305,6 +2483,10 @@ pattern FPBinaryTerm op l r <- (FPBinaryTerm' _ op l r)
   where
     FPBinaryTerm = pevalFPBinaryTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FPBinaryTerm #-}
+#endif
+
 -- | Pattern synonym for 'FPRoundingUnaryTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern FPRoundingUnaryTerm ::
@@ -2319,6 +2501,10 @@ pattern FPRoundingUnaryTerm ::
 pattern FPRoundingUnaryTerm op rm t <- (FPRoundingUnaryTerm' _ op rm t)
   where
     FPRoundingUnaryTerm = pevalFPRoundingUnaryTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FPRoundingUnaryTerm #-}
+#endif
 
 -- | Pattern synonym for 'FPRoundingBinaryTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
@@ -2336,6 +2522,10 @@ pattern FPRoundingBinaryTerm op rm l r <- (FPRoundingBinaryTerm' _ op rm l r)
   where
     FPRoundingBinaryTerm = pevalFPRoundingBinaryTerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FPRoundingBinaryTerm #-}
+#endif
+
 -- | Pattern synonym for 'FPFMATerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
 pattern FPFMATerm ::
@@ -2352,6 +2542,10 @@ pattern FPFMATerm rm t1 t2 t3 <- (FPFMATerm' _ rm t1 t2 t3)
   where
     FPFMATerm = pevalFPFMATerm
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FPFMATerm #-}
+#endif
+
 -- | Pattern synonym for 'FromIntegralTerm''. Note that using this pattern to
 -- construct a 'Term' will do term simplification.
 pattern FromIntegralTerm ::
@@ -2364,6 +2558,10 @@ pattern FromIntegralTerm ::
 pattern FromIntegralTerm t <- (FromIntegralTerm' _ t@SupportedTerm)
   where
     FromIntegralTerm = pevalFromIntegralTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FromIntegralTerm #-}
+#endif
 
 -- | Pattern synonym for 'FromFPOrTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
@@ -2382,6 +2580,10 @@ pattern FromFPOrTerm ::
 pattern FromFPOrTerm t1 rm t2 <- (FromFPOrTerm' _ t1 rm t2)
   where
     FromFPOrTerm = pevalFromFPOrTerm
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FromFPOrTerm #-}
+#endif
 
 -- | Pattern synonym for 'ToFPTerm''. Note that using this pattern to construct
 -- a 'Term' will do term simplification.
@@ -2403,6 +2605,10 @@ pattern ToFPTerm ::
 pattern ToFPTerm rm t eb sb <- (ToFPTerm' _ rm t@SupportedTerm eb sb)
   where
     ToFPTerm rm t _ _ = pevalToFPTerm rm t
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ToFPTerm #-}
+#endif
 
 #if MIN_VERSION_base(4, 16, 4)
 {-# COMPLETE
@@ -2531,6 +2737,10 @@ termStableIdent = cachedStableIdent . termInfo
 -- | Pattern for term with dynamic typing.
 pattern DynTerm :: forall a b. (SupportedPrim a) => Term a -> Term b
 pattern DynTerm x <- ((\v@SupportedTerm -> cast v) -> Just x)
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE DynTerm #-}
+#endif
 
 -- baseHash :: Term t -> Digest
 -- baseHash t = case hashId t of
@@ -5768,13 +5978,25 @@ boolConTermView _ = Nothing
 pattern BoolConTerm :: Bool -> Term a
 pattern BoolConTerm b <- (boolConTermView -> Just b)
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE BoolConTerm #-}
+#endif
+
 -- | Pattern matcher for 'True' term.
 pattern TrueTerm :: Term a
 pattern TrueTerm <- BoolConTerm True
 
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE TrueTerm #-}
+#endif
+
 -- | Pattern matcher for 'False' term.
 pattern FalseTerm :: Term a
 pattern FalseTerm <- BoolConTerm False
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE FalseTerm #-}
+#endif
 
 boolTermView :: forall a. Term a -> Maybe (Term Bool)
 boolTermView t@SupportedTerm = cast t
@@ -5783,6 +6005,10 @@ boolTermView t@SupportedTerm = cast t
 -- | Pattern matcher for 'Bool' terms.
 pattern BoolTerm :: Term Bool -> Term a
 pattern BoolTerm b <- (boolTermView -> Just b)
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE BoolTerm #-}
+#endif
 
 -- | Partial evaluation for not terms.
 pevalNotTerm :: Term Bool -> Term Bool

@@ -129,4 +129,5 @@ pattern SubTerms ts <- (subTermsViewPattern -> Just ts)
 
 #if MIN_VERSION_base(4, 16, 4)
 {-# COMPLETE SubTerms #-}
+{-# INLINE SubTerms #-}
 #endif
