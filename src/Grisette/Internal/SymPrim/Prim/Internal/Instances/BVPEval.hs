@@ -41,11 +41,7 @@ import Grisette.Internal.Core.Data.Class.BitVector
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm (doPevalBitCast)
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
-  ( bvIsNonZeroFromGEq1,
-  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalBVTerm
       ( pevalBVConcatTerm,
@@ -56,13 +52,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         sbvBVSelectTerm
       ),
     PEvalBitCastTerm (pevalBitCastTerm, sbvBitCast),
-    PEvalBitwiseTerm,
-    PEvalNumTerm,
     SupportedPrim,
     Term,
     bitCastTerm,
     bvConcatTerm,
     bvExtendTerm,
+    bvIsNonZeroFromGEq1,
     bvSelectTerm,
     conTerm,
     pattern AddNumTerm,
@@ -111,9 +106,7 @@ pevalDefaultBVSelectTerm ::
     PEvalBVTerm bv2,
     Typeable bv,
     SupportedPrim (bv w),
-    SupportedPrim (bv2 n),
-    forall m. (KnownNat m, 1 <= m) => PEvalNumTerm (bv m),
-    forall m. (KnownNat m, 1 <= m) => PEvalBitwiseTerm (bv m)
+    SupportedPrim (bv2 n)
   ) =>
   p ix ->
   q w ->
@@ -153,9 +146,7 @@ doPevalDefaultBVSelectTerm ::
     PEvalBVTerm bv2,
     Typeable bv,
     SupportedPrim (bv w),
-    SupportedPrim (bv2 n),
-    forall m. (KnownNat m, 1 <= m) => PEvalNumTerm (bv m),
-    forall m. (KnownNat m, 1 <= m) => PEvalBitwiseTerm (bv m)
+    SupportedPrim (bv2 n)
   ) =>
   p ix ->
   q w ->

@@ -20,6 +20,7 @@ module Grisette.Backend.TermRewritingGen
     GeneralSpec (..),
     DifferentSizeBVSpec (..),
     FixedSizedBVWithBoolSpec (..),
+    BoolWithFixedSizedBVSpec (..),
     BoolWithLIASpec (..),
     LIAWithBoolSpec (..),
     BoolWithNRASpec (..),
