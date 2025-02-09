@@ -66,6 +66,7 @@ module Grisette.Backend.TermRewritingGen
     toFPSpec,
     bvconcatSpec,
     bvselectSpec,
+    bvextendSpec,
     andBitsSpec,
     orBitsSpec,
     xorBitsSpec,
