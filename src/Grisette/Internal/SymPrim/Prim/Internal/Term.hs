@@ -328,7 +328,7 @@ import qualified Control.Monad.Writer.Lazy as Lazy
 import qualified Control.Monad.Writer.Strict as Strict
 import Data.Atomics (atomicModifyIORefCAS_)
 import qualified Data.Binary as Binary
-import Data.Bits (Bits (complement, isSigned, xor, zeroBits, (.&.), (.|.)))
+import Data.Bits (Bits (complement, isSigned, xor, zeroBits, (.&.), (.|.)), FiniteBits (countLeadingZeros))
 import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Coerce (coerce)
 import qualified Data.HashMap.Strict as HM
@@ -7155,8 +7155,11 @@ bitOpOnConcat _ _ _ = Nothing
 pevalDefaultAndBitsTerm ::
   forall bv m.
   ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    forall n. (KnownNat n, 1 <= n) => FiniteBits (bv n),
     forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+    PEvalBVTerm bv,
     KnownNat m,
     1 <= m
   ) =>
@@ -7170,6 +7173,34 @@ pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
     doPevalAndBitsTerm (ConTerm a) b
       | a == zeroBits = Just $ conTerm zeroBits
       | a == complement zeroBits = Just b
+      | aok || acok =
+          case ( mkPositiveNatRepr $ fromIntegral leadingBits,
+                 mkPositiveNatRepr $ fromIntegral trailingBits
+               ) of
+            ( SomePositiveNatRepr (pleadingBits :: NatRepr leadingBits),
+              SomePositiveNatRepr (ptrailingBitsRepr :: NatRepr trailingBits)
+              ) ->
+                case ( unsafeAxiom @(leadingBits + trailingBits) @m,
+                       unsafeAxiom @(trailingBits + leadingBits) @m,
+                       unsafeLeqProof @trailingBits @m
+                     ) of
+                  (Refl, Refl, LeqProof) ->
+                    if aok
+                      then
+                        Just $
+                          pevalBVConcatTerm (conTerm 0 :: Term (bv leadingBits)) $
+                            pevalBVSelectTerm (natRepr @0) ptrailingBitsRepr b
+                      else
+                        Just $
+                          pevalBVConcatTerm
+                            (pevalBVSelectTerm ptrailingBitsRepr pleadingBits b)
+                            (conTerm 0 :: Term (bv trailingBits))
+      where
+        leadingBits = if aok then countLeadingZeros a else countLeadingZeros ac
+        trailingBits = fromIntegral (natVal @m a) - leadingBits
+        ac = complement a
+        aok = a .&. (a + 1) == 0
+        acok = ac .&. (ac + 1) == 0
     doPevalAndBitsTerm a b@(ConTerm _) = doPevalAndBitsTerm b a
     doPevalAndBitsTerm a b | a == b = Just a
     doPevalAndBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultAndBitsTerm a b
@@ -7177,8 +7208,11 @@ pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
 pevalDefaultOrBitsTerm ::
   forall bv m.
   ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    forall n. (KnownNat n, 1 <= n) => FiniteBits (bv n),
     forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+    PEvalBVTerm bv,
     KnownNat m,
     1 <= m
   ) =>
@@ -7189,6 +7223,34 @@ pevalDefaultOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
     doPevalOrBitsTerm (ConTerm a) b
       | a == zeroBits = Just b
       | a == complement zeroBits = Just $ conTerm $ complement zeroBits
+      | aok || acok =
+          case ( mkPositiveNatRepr $ fromIntegral leadingBits,
+                 mkPositiveNatRepr $ fromIntegral trailingBits
+               ) of
+            ( SomePositiveNatRepr (pleadingBits :: NatRepr leadingBits),
+              SomePositiveNatRepr (ptrailingBitsRepr :: NatRepr trailingBits)
+              ) ->
+                case ( unsafeAxiom @(leadingBits + trailingBits) @m,
+                       unsafeAxiom @(trailingBits + leadingBits) @m,
+                       unsafeLeqProof @trailingBits @m
+                     ) of
+                  (Refl, Refl, LeqProof) ->
+                    if acok
+                      then
+                        Just $
+                          pevalBVConcatTerm (conTerm $ -1 :: Term (bv leadingBits)) $
+                            pevalBVSelectTerm (natRepr @0) ptrailingBitsRepr b
+                      else
+                        Just $
+                          pevalBVConcatTerm
+                            (pevalBVSelectTerm ptrailingBitsRepr pleadingBits b)
+                            (conTerm $ -1 :: Term (bv trailingBits))
+      where
+        leadingBits = if aok then countLeadingZeros a else countLeadingZeros ac
+        trailingBits = fromIntegral (natVal @m a) - leadingBits
+        ac = complement a
+        aok = a .&. (a + 1) == 0
+        acok = ac .&. (ac + 1) == 0
     doPevalOrBitsTerm a b@(ConTerm _) = doPevalOrBitsTerm b a
     doPevalOrBitsTerm a b | a == b = Just a
     doPevalOrBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultOrBitsTerm a b

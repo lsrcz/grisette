@@ -80,6 +80,7 @@ import Grisette.Backend.TermRewritingGen
     bitCastSpec,
     bvconcatSpec,
     bvextendSpec,
+    bvselectSpec,
     complementBitsSpec,
     divIntegralSpec,
     eqvSpec,
@@ -285,13 +286,7 @@ bvConcatTest =
                   bvconcatSpec
                     (symSpec "a" :: FixedSizedBVWithBoolSpec bv 4)
                     (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
-            let spec@(FixedSizedBVWithBoolSpec _ r) = opSpec lhs rhs
-            let expected =
-                  ( bvConcatTerm
-                      (termOp (conTerm 3 :: Term (bv 4)) (ssymTerm "a"))
-                      (termOp (conTerm 9 :: Term (bv 4)) (ssymTerm "b"))
-                  )
-            r @?= expected
+            let spec = opSpec lhs rhs
             validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec,
           testCase (opName <> "(concat,concat)") $ do
             let lhs =
@@ -339,7 +334,44 @@ bvConcatTest =
                      (Proxy :: Proxy 8)
                      (complementBitsTerm (ssymTerm "a" :: Term (bv 4)))
              r @?= expected
-             validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
+             validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec,
+           testCase "and(leading_zero_then_all_one, b)" $ do
+             let spec =
+                   andBitsSpec
+                     (conSpec 0x1f)
+                     (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+             validateSpec @(FixedSizedBVWithBoolSpec bv 4) unboundedConfig spec,
+           testCase "and(leading_one_then_all_zero, b)" $ do
+             let spec =
+                   andBitsSpec
+                     (conSpec 0xf8)
+                     (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+             validateSpec @(FixedSizedBVWithBoolSpec bv 4) unboundedConfig spec,
+           testCase "or(leading_zero_then_all_one, b)" $ do
+             let spec =
+                   orBitsSpec
+                     (conSpec 0x1f)
+                     (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+             validateSpec @(FixedSizedBVWithBoolSpec bv 4) unboundedConfig spec,
+           testCase "or(leading_one_then_all_zero, b)" $ do
+             let spec =
+                   orBitsSpec
+                     (conSpec 0xf8)
+                     (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4)
+             validateSpec @(FixedSizedBVWithBoolSpec bv 4) unboundedConfig spec,
+           testCase "select(sext)with_part_base" $ do
+             let spec =
+                   bvselectSpec
+                     (Proxy @2)
+                     (Proxy @4)
+                     ( bvextendSpec
+                         True
+                         (Proxy @8)
+                         (symSpec "b" :: FixedSizedBVWithBoolSpec bv 4) ::
+                         FixedSizedBVWithBoolSpec bv 8
+                     ) ::
+                     FixedSizedBVWithBoolSpec bv 4
+             validateSpec @(FixedSizedBVWithBoolSpec bv 4) unboundedConfig spec
          ]
       ++ ( do
              pos <- [True, False]
