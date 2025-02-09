@@ -50,6 +50,7 @@ import Grisette
   )
 import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
+    BoolWithFixedSizedBVSpec,
     BoolWithLIASpec,
     DifferentSizeBVSpec,
     FPRoundingModeBoolOpSpec,
@@ -245,11 +246,29 @@ divisionTest name f =
           [-3 .. 3]
     ]
 
+bv1Test ::
+  forall bv. (SupportedNonFuncPrim (bv 1), Num (bv 1), Typeable bv) => Test
+bv1Test =
+  testGroup (show (typeRep @bv) <> " 1") $ do
+    (opName, op) <- [("||", orSpec), ("&&", andSpec)]
+    v <- [0, (-1)]
+    let isV = "==" <> show v
+    let name = "(a" <> isV <> ")" <> opName <> "(b" <> isV <> ")"
+    return $ testCase name $ do
+      validateSpec @(BoolWithFixedSizedBVSpec bv 1)
+        unboundedConfig
+        ( op
+            (eqvSpec (symSpec "a" :: FixedSizedBVWithBoolSpec bv 1) (conSpec 0))
+            (eqvSpec (symSpec "b" :: FixedSizedBVWithBoolSpec bv 1) (conSpec 0))
+        )
+
 termRewritingTests :: Test
 termRewritingTests =
   testGroup
     "TermRewriting"
-    [ testGroup
+    [ bv1Test @WordN,
+      bv1Test @IntN,
+      testGroup
         "Bool only"
         [ testProperty "Bool only random test" $
             mapSize (`min` 10) $

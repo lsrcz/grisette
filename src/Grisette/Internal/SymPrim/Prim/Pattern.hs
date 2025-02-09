@@ -17,7 +17,6 @@ module Grisette.Internal.SymPrim.Prim.Pattern
 where
 
 import Data.Foldable (Foldable (toList))
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( Term,
     pattern AbsNumTerm,
