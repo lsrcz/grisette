@@ -22,7 +22,7 @@ import GHC.TypeLits (KnownNat, type (<=))
 import Grisette
   ( AlgReal,
     BitCast (bitCast),
-    GrisetteSMTConfig,
+    GrisetteSMTConfig (sbvConfig),
     IEEEFPConstants
       ( fpMaxNormalized,
         fpMaxSubnormal,
@@ -39,6 +39,7 @@ import Grisette
     IntN,
     LinkedRep,
     LogicalOp (symNot, true),
+    SMTConfig (transcript),
     Solvable (con),
     SymBool (SymBool),
     SymFP,
@@ -270,7 +271,6 @@ bvConcatTest ::
   forall bv.
   ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
     forall n. (KnownNat n, 1 <= n) => PEvalShiftTerm (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n),
     forall n. (KnownNat n, 1 <= n) => Arbitrary (bv n),
     Typeable bv,
     PEvalBVTerm bv
@@ -1044,7 +1044,7 @@ termRewritingTests =
                     forAll rdgen $ \rd ->
                       forAll vgen $ \v ->
                         ioProperty $
-                          validateSpec z3 $
+                          validateSpec z3 {sbvConfig = (sbvConfig z3) {transcript = Just "a.smt2"}} $
                             fpRoundingUnaryOpSpec op rd v,
               testGroup "fpRoundingBinaryOp" $ do
                 op <- [FPAdd, FPSub, FPMul, FPDiv]
