@@ -100,6 +100,7 @@ import Grisette.Backend.TermRewritingGen
     orSpec,
     quotIntegralSpec,
     remIntegralSpec,
+    shiftLeftSpec,
     shiftRightSpec,
     signumNumSpec,
     toFPSpec,
@@ -129,8 +130,8 @@ import Grisette.Internal.SymPrim.Prim.Term
     PEvalBitCastTerm,
     PEvalBitwiseTerm (pevalAndBitsTerm, pevalOrBitsTerm),
     PEvalIEEEFPConvertibleTerm,
+    PEvalShiftTerm,
     SupportedNonFuncPrim,
-    SupportedPrim (pevalITETerm),
     Term,
     andBitsTerm,
     bvConcatTerm,
@@ -268,6 +269,7 @@ divisionTest name f =
 bvConcatTest ::
   forall bv.
   ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
+    forall n. (KnownNat n, 1 <= n) => PEvalShiftTerm (bv n),
     forall n. (KnownNat n, 1 <= n) => Num (bv n),
     forall n. (KnownNat n, 1 <= n) => Arbitrary (bv n),
     Typeable bv,
@@ -275,7 +277,7 @@ bvConcatTest ::
   ) =>
   Test
 bvConcatTest =
-  testGroup (show (typeRep @bv) <> " concat") $
+  testGroup (show (typeRep @bv) <> "_concat") $
     ( do
         (opName, opSpec, termOp) <-
           [ ("and", andBitsSpec, andBitsTerm),
@@ -496,8 +498,8 @@ bvConcatTest =
          )
       ++ ( do
              trueBranch <- [True, False]
-             (opName, op, spec) <-
-               [("and", pevalAndBitsTerm, andBitsSpec), ("or", pevalOrBitsTerm, orBitsSpec)]
+             (opName, spec) <-
+               [("and", andBitsSpec), ("or", orBitsSpec)]
              let iteName = "ite(cond,const,const)"
              let name =
                    opName
@@ -515,16 +517,103 @@ bvConcatTest =
                let s = symSpec "a" :: FixedSizedBVWithBoolSpec bv 4
                let lhs = if trueBranch then ite else s
                let rhs = if trueBranch then s else ite
-               let sterm = ssymTerm "a" :: Term (bv 4)
-               let transform = if trueBranch then (`op` sterm) else op sterm
-               let iteExpected =
-                     pevalITETerm
-                       (ssymTerm "cond" :: Term Bool)
-                       (transform $ conTerm a)
-                       (transform $ conTerm b)
-               let resSpec@(FixedSizedBVWithBoolSpec _ r) = spec lhs rhs
-               r @?= iteExpected
+               let resSpec = spec lhs rhs
                validateSpec unboundedConfig resSpec
+         )
+      ++ ( do
+             a <- [0, 1, 4, 7, 8, 9, 16]
+             (opName, opSpec) <-
+               [ ("shr", shiftRightSpec),
+                 ("shl", shiftLeftSpec)
+               ]
+             return $ testCase (opName <> "(bv8," <> show a <> ")") $ do
+               let spec =
+                     opSpec
+                       (symSpec "a" :: FixedSizedBVWithBoolSpec bv 8)
+                       (conSpec a)
+               validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
+         )
+      ++ ( do
+             trueBranch <- [True, False]
+             innerTrueBranch <- [True, False]
+             let l = symSpec "l" :: FixedSizedBVWithBoolSpec bv 8
+             let r = symSpec "r" :: FixedSizedBVWithBoolSpec bv 8
+             let cond = symSpec "cond" :: BoolWithFixedSizedBVSpec bv 8
+             (absorbing, absorbingTerm, absorbingValueName, opName, opSpec, opTerm) <-
+               [ ( conSpec 0 :: FixedSizedBVWithBoolSpec bv 8,
+                   conTerm 0 :: Term (bv 8),
+                   "0",
+                   "and",
+                   andBitsSpec,
+                   andBitsTerm
+                 ),
+                 ( conSpec $ -1 :: FixedSizedBVWithBoolSpec bv 8,
+                   conTerm $ -1 :: Term (bv 8),
+                   "-1",
+                   "or",
+                   orBitsSpec,
+                   orBitsTerm
+                 )
+               ]
+             let condTerm = ssymTerm "cond" :: Term Bool
+             let lTerm = ssymTerm "l" :: Term (bv 8)
+             let rTerm = ssymTerm "r" :: Term (bv 8)
+
+             let (lhsName, lhs, lhsResultTerm)
+                   | trueBranch && innerTrueBranch = ("ite(cond," <> absorbingValueName <> ",l)", iteSpec cond absorbing l, absorbingTerm)
+                   | trueBranch && not innerTrueBranch = ("ite(cond,l," <> absorbingValueName <> ")", iteSpec cond l absorbing, opTerm lTerm rTerm)
+                   | otherwise = ("l", l, if innerTrueBranch then absorbingTerm else opTerm lTerm rTerm)
+             let (rhsName, rhs, rhsResultTerm)
+                   | trueBranch = ("r", r, if innerTrueBranch then opTerm lTerm rTerm else absorbingTerm)
+                   | innerTrueBranch = ("ite(cond," <> absorbingValueName <> ",r)", iteSpec cond absorbing r, opTerm lTerm rTerm)
+                   | otherwise = ("ite(cond,r," <> absorbingValueName <> ")", iteSpec cond r absorbing, absorbingTerm)
+             let spec@(FixedSizedBVWithBoolSpec _ rspec) = opSpec lhs rhs
+             return $ testCase (opName <> "(" <> lhsName <> "," <> rhsName <> ")") $ do
+               rspec @?= iteTerm condTerm lhsResultTerm rhsResultTerm
+               validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
+         )
+      ++ ( do
+             innerTrueBranch <- [0 :: Int, -1]
+             let innerFalseBranch = -1 - innerTrueBranch
+             lhsIsExtend <- [True, False]
+             let extendName =
+                   "sext(ite(cond,"
+                     <> show innerTrueBranch
+                     <> ","
+                     <> show innerFalseBranch
+                     <> "))"
+             (opName, opSpec, opTerm) <-
+               [ ("and", andBitsSpec, pevalAndBitsTerm),
+                 ("or", orBitsSpec, pevalOrBitsTerm)
+               ]
+             let name =
+                   opName
+                     <> if lhsIsExtend then "(" <> extendName <> ",c)" else "(c," <> extendName <> ")"
+             return $
+               testCase name $
+                 do
+                   let extend =
+                         bvextendSpec
+                           True
+                           (Proxy :: Proxy 8)
+                           ( iteSpec
+                               (symSpec "cond" :: BoolWithFixedSizedBVSpec bv 1)
+                               (conSpec $ fromIntegral innerTrueBranch :: FixedSizedBVWithBoolSpec bv 4)
+                               (conSpec $ fromIntegral innerFalseBranch :: FixedSizedBVWithBoolSpec bv 4)
+                           ) ::
+                           FixedSizedBVWithBoolSpec bv 8
+                   let single = symSpec "c" :: FixedSizedBVWithBoolSpec bv 8
+                   let spec@(FixedSizedBVWithBoolSpec _ r) =
+                         if lhsIsExtend
+                           then opSpec extend single
+                           else opSpec single extend
+                   let expected =
+                         iteTerm
+                           (ssymTerm "cond" :: Term Bool)
+                           (opTerm (conTerm $ fromIntegral innerTrueBranch) (ssymTerm "c"))
+                           (opTerm (conTerm $ fromIntegral innerFalseBranch) (ssymTerm "c"))
+                   r @?= expected
+                   validateSpec @(FixedSizedBVWithBoolSpec bv 8) unboundedConfig spec
          )
 
 bv1Test ::
