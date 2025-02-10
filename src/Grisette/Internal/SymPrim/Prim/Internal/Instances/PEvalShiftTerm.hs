@@ -63,7 +63,6 @@ pevalFiniteBitsSymShiftShiftLeftTerm ::
   forall bv n.
   ( forall m. (KnownNat m, 1 <= m) => Integral (bv m),
     forall m. (KnownNat m, 1 <= m) => SymShift (bv m),
-    forall m. (KnownNat m, 1 <= m) => FiniteBits (bv m),
     forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m),
     forall m. (KnownNat m, 1 <= m) => PEvalShiftTerm (bv m),
     PEvalBVTerm bv,
@@ -83,7 +82,6 @@ doPevalFiniteBitsSymShiftShiftLeftTerm ::
   forall bv n.
   ( forall m. (KnownNat m, 1 <= m) => Integral (bv m),
     forall m. (KnownNat m, 1 <= m) => SymShift (bv m),
-    forall m. (KnownNat m, 1 <= m) => FiniteBits (bv m),
     forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m),
     forall m. (KnownNat m, 1 <= m) => PEvalShiftTerm (bv m),
     PEvalBVTerm bv,
@@ -132,7 +130,6 @@ pevalFiniteBitsSymShiftShiftRightTerm ::
   forall bv n.
   ( forall m. (KnownNat m, 1 <= m) => Integral (bv m),
     forall m. (KnownNat m, 1 <= m) => SymShift (bv m),
-    forall m. (KnownNat m, 1 <= m) => FiniteBits (bv m),
     forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m),
     forall m. (KnownNat m, 1 <= m) => PEvalShiftTerm (bv m),
     PEvalBVTerm bv,
@@ -152,7 +149,6 @@ doPevalFiniteBitsSymShiftShiftRightTerm ::
   forall bv n.
   ( forall m. (KnownNat m, 1 <= m) => Integral (bv m),
     forall m. (KnownNat m, 1 <= m) => SymShift (bv m),
-    forall m. (KnownNat m, 1 <= m) => FiniteBits (bv m),
     forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m),
     forall m. (KnownNat m, 1 <= m) => PEvalShiftTerm (bv m),
     PEvalBVTerm bv,

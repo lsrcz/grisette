@@ -883,7 +883,9 @@ class
 class
   ( SizedBV bv,
     forall n. (KnownNat n, 1 <= n) => PEvalNumTerm (bv n),
-    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n)
+    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+    forall n. (KnownNat n, 1 <= n) => FiniteBits (bv n),
+    forall n. (KnownNat n, 1 <= n) => Num (bv n)
   ) =>
   PEvalBVTerm bv
   where
@@ -6807,10 +6809,6 @@ pevalITEBVTerm ::
   ( KnownNat n,
     1 <= n,
     forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m),
-    forall m. (KnownNat m, 1 <= m) => PEvalBitwiseTerm (bv m),
-    forall m. (KnownNat m, 1 <= m) => Eq (bv m),
-    forall m. (KnownNat m, 1 <= m) => Num (bv m),
-    forall m. (KnownNat m, 1 <= m) => Bits (bv m),
     PEvalBVTerm bv
   ) =>
   Term Bool -> Term (bv n) -> Term (bv n) -> Maybe (Term (bv n))
@@ -7168,9 +7166,8 @@ instance SupportedNonFuncPrim AlgReal where
 
 bitOpOnConcat ::
   forall bv m.
-  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    PEvalBVTerm bv,
     KnownNat m,
     1 <= m
   ) =>
@@ -7218,13 +7215,84 @@ bitOpOnConcat
     Just $ pevalBVExtendTerm True pl (peval l r)
 bitOpOnConcat _ _ _ = Nothing
 
+doPevalAndBitsTerm ::
+  forall bv m.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    PEvalBVTerm bv,
+    KnownNat m,
+    1 <= m
+  ) =>
+  Term (bv m) ->
+  Term (bv m) ->
+  Maybe (Term (bv m))
+doPevalAndBitsTerm (ConTerm a) (ConTerm b) =
+  Just $ conTerm (a .&. b)
+doPevalAndBitsTerm (ConTerm a) b
+  | a == zeroBits = Just $ conTerm zeroBits
+  | a == complement zeroBits = Just b
+  | aok || acok =
+      case ( mkPositiveNatRepr $ fromIntegral leadingBits,
+             mkPositiveNatRepr $ fromIntegral trailingBits
+           ) of
+        ( SomePositiveNatRepr (pleadingBits :: NatRepr leadingBits),
+          SomePositiveNatRepr (ptrailingBitsRepr :: NatRepr trailingBits)
+          ) ->
+            case ( unsafeAxiom @(leadingBits + trailingBits) @m,
+                   unsafeAxiom @(trailingBits + leadingBits) @m,
+                   unsafeLeqProof @trailingBits @m
+                 ) of
+              (Refl, Refl, LeqProof) ->
+                if aok
+                  then
+                    Just $
+                      pevalBVConcatTerm (conTerm 0 :: Term (bv leadingBits)) $
+                        pevalBVSelectTerm (natRepr @0) ptrailingBitsRepr b
+                  else
+                    Just $
+                      pevalBVConcatTerm
+                        (pevalBVSelectTerm ptrailingBitsRepr pleadingBits b)
+                        (conTerm 0 :: Term (bv trailingBits))
+  where
+    leadingBits = if aok then countLeadingZeros a else countLeadingZeros ac
+    trailingBits = fromIntegral (natVal @m a) - leadingBits
+    ac = complement a
+    aok = a .&. (a + 1) == 0
+    acok = ac .&. (ac + 1) == 0
+doPevalAndBitsTerm a b@(ConTerm _) = doPevalAndBitsTerm b a
+doPevalAndBitsTerm a b | a == b = Just a
+doPevalAndBitsTerm (ITETerm cond a@(ConTerm av) b@(ConTerm bv)) c
+  | av `elem` [0, -1] || bv `elem` [0, -1] =
+      Just $ pevalITETerm cond (pevalAndBitsTerm a c) (pevalAndBitsTerm b c)
+doPevalAndBitsTerm a (ITETerm cond b@(ConTerm bv) c@(ConTerm cv))
+  | bv `elem` [0, -1] || cv `elem` [0, -1] =
+      Just $ pevalITETerm cond (pevalAndBitsTerm a b) (pevalAndBitsTerm a c)
+doPevalAndBitsTerm (ITETerm cond a@(ConTerm v) b) c
+  | v == 0 = Just $ pevalITETerm cond a (pevalAndBitsTerm b c)
+doPevalAndBitsTerm (ITETerm cond a b@(ConTerm v)) c
+  | v == 0 = Just $ pevalITETerm cond (pevalAndBitsTerm a c) b
+doPevalAndBitsTerm a (ITETerm cond b@(ConTerm v) c)
+  | v == 0 = Just $ pevalITETerm cond b (pevalAndBitsTerm a c)
+doPevalAndBitsTerm a (ITETerm cond b c@(ConTerm v))
+  | v == 0 = Just $ pevalITETerm cond (pevalAndBitsTerm a b) c
+doPevalAndBitsTerm (BVExtendTerm True pl (ITETerm cond at@(ConTerm a) bt@(ConTerm b))) c
+  | a `elem` [0, -1] && b `elem` [0, -1] =
+      Just $
+        pevalITETerm
+          cond
+          (pevalAndBitsTerm (pevalBVExtendTerm True pl at) c)
+          (pevalAndBitsTerm (pevalBVExtendTerm True pl bt) c)
+doPevalAndBitsTerm a (BVExtendTerm True pl (ITETerm cond bt@(ConTerm b) ct@(ConTerm c)))
+  | b `elem` [0, -1] && c `elem` [0, -1] =
+      Just $
+        pevalITETerm
+          cond
+          (pevalAndBitsTerm a (pevalBVExtendTerm True pl bt))
+          (pevalAndBitsTerm a (pevalBVExtendTerm True pl ct))
+doPevalAndBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultAndBitsTerm a b
+
 pevalDefaultAndBitsTerm ::
   forall bv m.
-  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n),
-    forall n. (KnownNat n, 1 <= n) => FiniteBits (bv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     PEvalBVTerm bv,
     KnownNat m,
     1 <= m
@@ -7233,153 +7301,93 @@ pevalDefaultAndBitsTerm ::
   Term (bv m) ->
   Term (bv m)
 pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
-  where
-    doPevalAndBitsTerm (ConTerm a) (ConTerm b) =
-      Just $ conTerm (a .&. b)
-    doPevalAndBitsTerm (ConTerm a) b
-      | a == zeroBits = Just $ conTerm zeroBits
-      | a == complement zeroBits = Just b
-      | aok || acok =
-          case ( mkPositiveNatRepr $ fromIntegral leadingBits,
-                 mkPositiveNatRepr $ fromIntegral trailingBits
-               ) of
-            ( SomePositiveNatRepr (pleadingBits :: NatRepr leadingBits),
-              SomePositiveNatRepr (ptrailingBitsRepr :: NatRepr trailingBits)
-              ) ->
-                case ( unsafeAxiom @(leadingBits + trailingBits) @m,
-                       unsafeAxiom @(trailingBits + leadingBits) @m,
-                       unsafeLeqProof @trailingBits @m
-                     ) of
-                  (Refl, Refl, LeqProof) ->
-                    if aok
-                      then
-                        Just $
-                          pevalBVConcatTerm (conTerm 0 :: Term (bv leadingBits)) $
-                            pevalBVSelectTerm (natRepr @0) ptrailingBitsRepr b
-                      else
-                        Just $
-                          pevalBVConcatTerm
-                            (pevalBVSelectTerm ptrailingBitsRepr pleadingBits b)
-                            (conTerm 0 :: Term (bv trailingBits))
-      where
-        leadingBits = if aok then countLeadingZeros a else countLeadingZeros ac
-        trailingBits = fromIntegral (natVal @m a) - leadingBits
-        ac = complement a
-        aok = a .&. (a + 1) == 0
-        acok = ac .&. (ac + 1) == 0
-    doPevalAndBitsTerm a b@(ConTerm _) = doPevalAndBitsTerm b a
-    doPevalAndBitsTerm a b | a == b = Just a
-    doPevalAndBitsTerm (ITETerm cond a@(ConTerm av) b@(ConTerm bv)) c
-      | av `elem` [0, -1] || bv `elem` [0, -1] =
-          Just $ pevalITETerm cond (pevalAndBitsTerm a c) (pevalAndBitsTerm b c)
-    doPevalAndBitsTerm a (ITETerm cond b@(ConTerm bv) c@(ConTerm cv))
-      | bv `elem` [0, -1] || cv `elem` [0, -1] =
-          Just $ pevalITETerm cond (pevalAndBitsTerm a b) (pevalAndBitsTerm a c)
-    doPevalAndBitsTerm (ITETerm cond a@(ConTerm v) b) c
-      | v == 0 = Just $ pevalITETerm cond a (pevalAndBitsTerm b c)
-    doPevalAndBitsTerm (ITETerm cond a b@(ConTerm v)) c
-      | v == 0 = Just $ pevalITETerm cond (pevalAndBitsTerm a c) b
-    doPevalAndBitsTerm a (ITETerm cond b@(ConTerm v) c)
-      | v == 0 = Just $ pevalITETerm cond b (pevalAndBitsTerm a c)
-    doPevalAndBitsTerm a (ITETerm cond b c@(ConTerm v))
-      | v == 0 = Just $ pevalITETerm cond (pevalAndBitsTerm a b) c
-    doPevalAndBitsTerm (BVExtendTerm True pl (ITETerm cond at@(ConTerm a) bt@(ConTerm b))) c
-      | a `elem` [0, -1] && b `elem` [0, -1] =
-          Just $
-            pevalITETerm
-              cond
-              (pevalAndBitsTerm (pevalBVExtendTerm True pl at) c)
-              (pevalAndBitsTerm (pevalBVExtendTerm True pl bt) c)
-    doPevalAndBitsTerm a (BVExtendTerm True pl (ITETerm cond bt@(ConTerm b) ct@(ConTerm c)))
-      | b `elem` [0, -1] && c `elem` [0, -1] =
-          Just $
-            pevalITETerm
-              cond
-              (pevalAndBitsTerm a (pevalBVExtendTerm True pl bt))
-              (pevalAndBitsTerm a (pevalBVExtendTerm True pl ct))
-    doPevalAndBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultAndBitsTerm a b
 
-pevalDefaultOrBitsTerm ::
+doPevalOrBitsTerm ::
   forall bv m.
-  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n),
-    forall n. (KnownNat n, 1 <= n) => FiniteBits (bv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     PEvalBVTerm bv,
     KnownNat m,
     1 <= m
   ) =>
+  Term (bv m) ->
+  Term (bv m) ->
+  Maybe (Term (bv m))
+doPevalOrBitsTerm (ConTerm a) (ConTerm b) = Just $ conTerm (a .|. b)
+doPevalOrBitsTerm (ConTerm a) b
+  | a == zeroBits = Just b
+  | a == complement zeroBits = Just $ conTerm $ complement zeroBits
+  | aok || acok =
+      case ( mkPositiveNatRepr $ fromIntegral leadingBits,
+             mkPositiveNatRepr $ fromIntegral trailingBits
+           ) of
+        ( SomePositiveNatRepr (pleadingBits :: NatRepr leadingBits),
+          SomePositiveNatRepr (ptrailingBitsRepr :: NatRepr trailingBits)
+          ) ->
+            case ( unsafeAxiom @(leadingBits + trailingBits) @m,
+                   unsafeAxiom @(trailingBits + leadingBits) @m,
+                   unsafeLeqProof @trailingBits @m
+                 ) of
+              (Refl, Refl, LeqProof) ->
+                if acok
+                  then
+                    Just $
+                      pevalBVConcatTerm (conTerm $ -1 :: Term (bv leadingBits)) $
+                        pevalBVSelectTerm (natRepr @0) ptrailingBitsRepr b
+                  else
+                    Just $
+                      pevalBVConcatTerm
+                        (pevalBVSelectTerm ptrailingBitsRepr pleadingBits b)
+                        (conTerm $ -1 :: Term (bv trailingBits))
+  where
+    leadingBits = if aok then countLeadingZeros a else countLeadingZeros ac
+    trailingBits = fromIntegral (natVal @m a) - leadingBits
+    ac = complement a
+    aok = a .&. (a + 1) == 0
+    acok = ac .&. (ac + 1) == 0
+doPevalOrBitsTerm a b@(ConTerm _) = doPevalOrBitsTerm b a
+doPevalOrBitsTerm a b | a == b = Just a
+doPevalOrBitsTerm (ITETerm cond a@(ConTerm _) b@(ConTerm _)) c =
+  Just $ pevalITETerm cond (pevalOrBitsTerm a c) (pevalOrBitsTerm b c)
+doPevalOrBitsTerm a (ITETerm cond b@(ConTerm _) c@(ConTerm _)) =
+  Just $ pevalITETerm cond (pevalOrBitsTerm a b) (pevalOrBitsTerm a c)
+doPevalOrBitsTerm (ITETerm cond a@(ConTerm v) b) c
+  | v == -1 = Just $ pevalITETerm cond a (pevalOrBitsTerm b c)
+doPevalOrBitsTerm (ITETerm cond a b@(ConTerm v)) c
+  | v == -1 = Just $ pevalITETerm cond (pevalOrBitsTerm a c) b
+doPevalOrBitsTerm a (ITETerm cond b@(ConTerm v) c)
+  | v == -1 = Just $ pevalITETerm cond b (pevalOrBitsTerm a c)
+doPevalOrBitsTerm a (ITETerm cond b c@(ConTerm v))
+  | v == -1 = Just $ pevalITETerm cond (pevalOrBitsTerm a b) c
+doPevalOrBitsTerm (BVExtendTerm True pl (ITETerm cond at@(ConTerm a) bt@(ConTerm b))) c
+  | a `elem` [0, -1] && b `elem` [0, -1] =
+      Just $
+        pevalITETerm
+          cond
+          (pevalOrBitsTerm (pevalBVExtendTerm True pl at) c)
+          (pevalOrBitsTerm (pevalBVExtendTerm True pl bt) c)
+doPevalOrBitsTerm a (BVExtendTerm True pl (ITETerm cond bt@(ConTerm b) ct@(ConTerm c)))
+  | b `elem` [0, -1] && c `elem` [0, -1] =
+      Just $
+        pevalITETerm
+          cond
+          (pevalOrBitsTerm a (pevalBVExtendTerm True pl bt))
+          (pevalOrBitsTerm a (pevalBVExtendTerm True pl ct))
+doPevalOrBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultOrBitsTerm a b
+
+pevalDefaultOrBitsTerm ::
+  forall bv m.
+  ( KnownNat m,
+    1 <= m,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    PEvalBVTerm bv
+  ) =>
   Term (bv m) -> Term (bv m) -> Term (bv m)
 pevalDefaultOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
-  where
-    doPevalOrBitsTerm (ConTerm a) (ConTerm b) = Just $ conTerm (a .|. b)
-    doPevalOrBitsTerm (ConTerm a) b
-      | a == zeroBits = Just b
-      | a == complement zeroBits = Just $ conTerm $ complement zeroBits
-      | aok || acok =
-          case ( mkPositiveNatRepr $ fromIntegral leadingBits,
-                 mkPositiveNatRepr $ fromIntegral trailingBits
-               ) of
-            ( SomePositiveNatRepr (pleadingBits :: NatRepr leadingBits),
-              SomePositiveNatRepr (ptrailingBitsRepr :: NatRepr trailingBits)
-              ) ->
-                case ( unsafeAxiom @(leadingBits + trailingBits) @m,
-                       unsafeAxiom @(trailingBits + leadingBits) @m,
-                       unsafeLeqProof @trailingBits @m
-                     ) of
-                  (Refl, Refl, LeqProof) ->
-                    if acok
-                      then
-                        Just $
-                          pevalBVConcatTerm (conTerm $ -1 :: Term (bv leadingBits)) $
-                            pevalBVSelectTerm (natRepr @0) ptrailingBitsRepr b
-                      else
-                        Just $
-                          pevalBVConcatTerm
-                            (pevalBVSelectTerm ptrailingBitsRepr pleadingBits b)
-                            (conTerm $ -1 :: Term (bv trailingBits))
-      where
-        leadingBits = if aok then countLeadingZeros a else countLeadingZeros ac
-        trailingBits = fromIntegral (natVal @m a) - leadingBits
-        ac = complement a
-        aok = a .&. (a + 1) == 0
-        acok = ac .&. (ac + 1) == 0
-    doPevalOrBitsTerm a b@(ConTerm _) = doPevalOrBitsTerm b a
-    doPevalOrBitsTerm a b | a == b = Just a
-    doPevalOrBitsTerm (ITETerm cond a@(ConTerm _) b@(ConTerm _)) c =
-      Just $ pevalITETerm cond (pevalOrBitsTerm a c) (pevalOrBitsTerm b c)
-    doPevalOrBitsTerm a (ITETerm cond b@(ConTerm _) c@(ConTerm _)) =
-      Just $ pevalITETerm cond (pevalOrBitsTerm a b) (pevalOrBitsTerm a c)
-    doPevalOrBitsTerm (ITETerm cond a@(ConTerm v) b) c
-      | v == -1 = Just $ pevalITETerm cond a (pevalOrBitsTerm b c)
-    doPevalOrBitsTerm (ITETerm cond a b@(ConTerm v)) c
-      | v == -1 = Just $ pevalITETerm cond (pevalOrBitsTerm a c) b
-    doPevalOrBitsTerm a (ITETerm cond b@(ConTerm v) c)
-      | v == -1 = Just $ pevalITETerm cond b (pevalOrBitsTerm a c)
-    doPevalOrBitsTerm a (ITETerm cond b c@(ConTerm v))
-      | v == -1 = Just $ pevalITETerm cond (pevalOrBitsTerm a b) c
-    doPevalOrBitsTerm (BVExtendTerm True pl (ITETerm cond at@(ConTerm a) bt@(ConTerm b))) c
-      | a `elem` [0, -1] && b `elem` [0, -1] =
-          Just $
-            pevalITETerm
-              cond
-              (pevalOrBitsTerm (pevalBVExtendTerm True pl at) c)
-              (pevalOrBitsTerm (pevalBVExtendTerm True pl bt) c)
-    doPevalOrBitsTerm a (BVExtendTerm True pl (ITETerm cond bt@(ConTerm b) ct@(ConTerm c)))
-      | b `elem` [0, -1] && c `elem` [0, -1] =
-          Just $
-            pevalITETerm
-              cond
-              (pevalOrBitsTerm a (pevalBVExtendTerm True pl bt))
-              (pevalOrBitsTerm a (pevalBVExtendTerm True pl ct))
-    doPevalOrBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultOrBitsTerm a b
 
 pevalDefaultXorBitsTerm ::
   forall bv m.
-  ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    forall n. (KnownNat n, 1 <= n) => PEvalBitwiseTerm (bv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    PEvalBVTerm bv,
     KnownNat m,
     1 <= m
   ) =>
