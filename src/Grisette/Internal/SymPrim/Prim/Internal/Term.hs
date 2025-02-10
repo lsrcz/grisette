@@ -3316,15 +3316,15 @@ instance Show (Term ty) where
       ++ ", arg2="
       ++ show arg2
       ++ "}"
-  show t@(BVSelectTerm arg ix w) =
+  show t@(BVSelectTerm ix w arg) =
     "BVSelect{tid="
       ++ show (termThreadId t)
       ++ ", id="
       ++ show (termId t)
       ++ ", ix="
-      ++ show ix
+      ++ show (natVal ix)
       ++ ", w="
-      ++ show w
+      ++ show (natVal w)
       ++ ", arg="
       ++ show arg
       ++ "}"
@@ -3336,7 +3336,7 @@ instance Show (Term ty) where
       ++ ", signed="
       ++ show signed
       ++ ", n="
-      ++ show n
+      ++ show (natVal n)
       ++ ", arg="
       ++ show arg
       ++ "}"
