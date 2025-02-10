@@ -271,6 +271,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     unsafePevalBVConcatTerm,
     unsafePevalBVExtendTerm,
     unsafePevalBVSelectTerm,
+    boolToBVTerm,
 
     -- * num
     pevalDefaultAddNumTerm,
@@ -328,7 +329,10 @@ import qualified Control.Monad.Writer.Lazy as Lazy
 import qualified Control.Monad.Writer.Strict as Strict
 import Data.Atomics (atomicModifyIORefCAS_)
 import qualified Data.Binary as Binary
-import Data.Bits (Bits (complement, isSigned, xor, zeroBits, (.&.), (.|.)), FiniteBits (countLeadingZeros))
+import Data.Bits
+  ( Bits (complement, isSigned, xor, zeroBits, (.&.), (.|.)),
+    FiniteBits (countLeadingZeros),
+  )
 import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Coerce (coerce)
 import qualified Data.HashMap.Strict as HM
@@ -5751,7 +5755,8 @@ leOrdTerm = unsafeInCurThread2 curThreadLeOrdTerm
 
 -- | Construct and internalizing a 'AndBitsTerm'.
 andBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
-andBitsTerm = unsafeInCurThread2 curThreadAndBitsTerm
+andBitsTerm a b =
+  unsafeInCurThread2 curThreadAndBitsTerm a b
 {-# NOINLINE andBitsTerm #-}
 
 -- | Construct and internalizing a 'OrBitsTerm'.
@@ -6863,25 +6868,25 @@ pevalITEBVTerm cond (AndBitsTerm a b) (AndBitsTerm c d)
   | b == c = Just $ andBitsTerm b $ pevalITETerm cond a d
   | b == d = Just $ andBitsTerm b $ pevalITETerm cond a c
 pevalITEBVTerm cond (AndBitsTerm a b) c
-  | a == c = Just $ andBitsTerm c $ orBitsTerm (expandCond $ pevalNotTerm cond) b
-  | b == c = Just $ andBitsTerm c $ orBitsTerm (expandCond $ pevalNotTerm cond) a
+  | a == c = Just $ andBitsTerm c $ pevalOrBitsTerm (boolToBVTerm $ pevalNotTerm cond) b
+  | b == c = Just $ andBitsTerm c $ pevalOrBitsTerm (boolToBVTerm $ pevalNotTerm cond) a
 pevalITEBVTerm cond a (AndBitsTerm b c)
-  | a == b = Just $ andBitsTerm a $ orBitsTerm (expandCond cond) c
-  | a == c = Just $ andBitsTerm a $ orBitsTerm (expandCond cond) b
+  | a == b = Just $ andBitsTerm a $ pevalOrBitsTerm (boolToBVTerm cond) c
+  | a == c = Just $ andBitsTerm a $ pevalOrBitsTerm (boolToBVTerm cond) b
 pevalITEBVTerm cond (OrBitsTerm a b) (OrBitsTerm c d)
   | a == c = Just $ orBitsTerm a $ pevalITETerm cond b d
   | a == d = Just $ orBitsTerm a $ pevalITETerm cond b c
   | b == c = Just $ orBitsTerm b $ pevalITETerm cond a d
   | b == d = Just $ orBitsTerm b $ pevalITETerm cond a c
 pevalITEBVTerm cond (OrBitsTerm a b) c
-  | a == c = Just $ orBitsTerm c $ andBitsTerm (expandCond cond) b
-  | b == c = Just $ orBitsTerm c $ andBitsTerm (expandCond cond) a
+  | a == c = Just $ orBitsTerm c $ pevalAndBitsTerm (boolToBVTerm cond) b
+  | b == c = Just $ orBitsTerm c $ pevalAndBitsTerm (boolToBVTerm cond) a
 pevalITEBVTerm cond a (OrBitsTerm b c)
-  | a == b = Just $ orBitsTerm a $ andBitsTerm (expandCond $ pevalNotTerm cond) c
-  | a == c = Just $ orBitsTerm a $ andBitsTerm (expandCond $ pevalNotTerm cond) b
+  | a == b = Just $ orBitsTerm a $ pevalAndBitsTerm (boolToBVTerm $ pevalNotTerm cond) c
+  | a == c = Just $ orBitsTerm a $ pevalAndBitsTerm (boolToBVTerm $ pevalNotTerm cond) b
 pevalITEBVTerm _ _ _ = Nothing
 
-expandCond ::
+boolToBVTerm ::
   forall bv n.
   ( PEvalBVTerm bv,
     KnownNat n,
@@ -6889,7 +6894,7 @@ expandCond ::
     forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m)
   ) =>
   Term Bool -> Term (bv n)
-expandCond cond =
+boolToBVTerm cond =
   let bv =
         case cond of
           NotTerm c -> iteTerm c (conTerm 0) (conTerm 1)
@@ -7264,10 +7269,34 @@ pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
         acok = ac .&. (ac + 1) == 0
     doPevalAndBitsTerm a b@(ConTerm _) = doPevalAndBitsTerm b a
     doPevalAndBitsTerm a b | a == b = Just a
-    doPevalAndBitsTerm (ITETerm cond a@(ConTerm _) b@(ConTerm _)) c =
-      Just $ pevalITETerm cond (pevalAndBitsTerm a c) (pevalAndBitsTerm b c)
-    doPevalAndBitsTerm a (ITETerm cond b@(ConTerm _) c@(ConTerm _)) =
-      Just $ pevalITETerm cond (pevalAndBitsTerm a b) (pevalAndBitsTerm a c)
+    doPevalAndBitsTerm (ITETerm cond a@(ConTerm av) b@(ConTerm bv)) c
+      | av `elem` [0, -1] || bv `elem` [0, -1] =
+          Just $ pevalITETerm cond (pevalAndBitsTerm a c) (pevalAndBitsTerm b c)
+    doPevalAndBitsTerm a (ITETerm cond b@(ConTerm bv) c@(ConTerm cv))
+      | bv `elem` [0, -1] || cv `elem` [0, -1] =
+          Just $ pevalITETerm cond (pevalAndBitsTerm a b) (pevalAndBitsTerm a c)
+    doPevalAndBitsTerm (ITETerm cond a@(ConTerm v) b) c
+      | v == 0 = Just $ pevalITETerm cond a (pevalAndBitsTerm b c)
+    doPevalAndBitsTerm (ITETerm cond a b@(ConTerm v)) c
+      | v == 0 = Just $ pevalITETerm cond (pevalAndBitsTerm a c) b
+    doPevalAndBitsTerm a (ITETerm cond b@(ConTerm v) c)
+      | v == 0 = Just $ pevalITETerm cond b (pevalAndBitsTerm a c)
+    doPevalAndBitsTerm a (ITETerm cond b c@(ConTerm v))
+      | v == 0 = Just $ pevalITETerm cond (pevalAndBitsTerm a b) c
+    doPevalAndBitsTerm (BVExtendTerm True pl (ITETerm cond at@(ConTerm a) bt@(ConTerm b))) c
+      | a `elem` [0, -1] && b `elem` [0, -1] =
+          Just $
+            pevalITETerm
+              cond
+              (pevalAndBitsTerm (pevalBVExtendTerm True pl at) c)
+              (pevalAndBitsTerm (pevalBVExtendTerm True pl bt) c)
+    doPevalAndBitsTerm a (BVExtendTerm True pl (ITETerm cond bt@(ConTerm b) ct@(ConTerm c)))
+      | b `elem` [0, -1] && c `elem` [0, -1] =
+          Just $
+            pevalITETerm
+              cond
+              (pevalAndBitsTerm a (pevalBVExtendTerm True pl bt))
+              (pevalAndBitsTerm a (pevalBVExtendTerm True pl ct))
     doPevalAndBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultAndBitsTerm a b
 
 pevalDefaultOrBitsTerm ::
@@ -7322,6 +7351,28 @@ pevalDefaultOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
       Just $ pevalITETerm cond (pevalOrBitsTerm a c) (pevalOrBitsTerm b c)
     doPevalOrBitsTerm a (ITETerm cond b@(ConTerm _) c@(ConTerm _)) =
       Just $ pevalITETerm cond (pevalOrBitsTerm a b) (pevalOrBitsTerm a c)
+    doPevalOrBitsTerm (ITETerm cond a@(ConTerm v) b) c
+      | v == -1 = Just $ pevalITETerm cond a (pevalOrBitsTerm b c)
+    doPevalOrBitsTerm (ITETerm cond a b@(ConTerm v)) c
+      | v == -1 = Just $ pevalITETerm cond (pevalOrBitsTerm a c) b
+    doPevalOrBitsTerm a (ITETerm cond b@(ConTerm v) c)
+      | v == -1 = Just $ pevalITETerm cond b (pevalOrBitsTerm a c)
+    doPevalOrBitsTerm a (ITETerm cond b c@(ConTerm v))
+      | v == -1 = Just $ pevalITETerm cond (pevalOrBitsTerm a b) c
+    doPevalOrBitsTerm (BVExtendTerm True pl (ITETerm cond at@(ConTerm a) bt@(ConTerm b))) c
+      | a `elem` [0, -1] && b `elem` [0, -1] =
+          Just $
+            pevalITETerm
+              cond
+              (pevalOrBitsTerm (pevalBVExtendTerm True pl at) c)
+              (pevalOrBitsTerm (pevalBVExtendTerm True pl bt) c)
+    doPevalOrBitsTerm a (BVExtendTerm True pl (ITETerm cond bt@(ConTerm b) ct@(ConTerm c)))
+      | b `elem` [0, -1] && c `elem` [0, -1] =
+          Just $
+            pevalITETerm
+              cond
+              (pevalOrBitsTerm a (pevalBVExtendTerm True pl bt))
+              (pevalOrBitsTerm a (pevalBVExtendTerm True pl ct))
     doPevalOrBitsTerm a b = bitOpOnConcat @bv @m pevalDefaultOrBitsTerm a b
 
 pevalDefaultXorBitsTerm ::
