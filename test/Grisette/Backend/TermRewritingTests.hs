@@ -22,7 +22,7 @@ import GHC.TypeLits (KnownNat, type (<=))
 import Grisette
   ( AlgReal,
     BitCast (bitCast),
-    GrisetteSMTConfig (sbvConfig),
+    GrisetteSMTConfig,
     IEEEFPConstants
       ( fpMaxNormalized,
         fpMaxSubnormal,
@@ -39,7 +39,6 @@ import Grisette
     IntN,
     LinkedRep,
     LogicalOp (symNot, true),
-    SMTConfig (transcript),
     Solvable (con),
     SymBool (SymBool),
     SymFP,
@@ -1044,7 +1043,7 @@ termRewritingTests =
                     forAll rdgen $ \rd ->
                       forAll vgen $ \v ->
                         ioProperty $
-                          validateSpec z3 {sbvConfig = (sbvConfig z3) {transcript = Just "a.smt2"}} $
+                          validateSpec z3 $
                             fpRoundingUnaryOpSpec op rd v,
               testGroup "fpRoundingBinaryOp" $ do
                 op <- [FPAdd, FPSub, FPMul, FPDiv]
