@@ -6669,7 +6669,22 @@ instance SupportedPrim Bool where
   pevalITETerm cond ~ifTrue ~ifFalse =
     fromMaybe (iteTerm cond ifTrue ifFalse) $
       pevalITEBool cond ifTrue ifFalse
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm (EqTerm (DynTerm (l1 :: Term Bool)) l2) (EqTerm r1 r2)
+    | l1 == unsafeCoerce r1 = pevalEqTerm l2 (unsafeCoerce r2)
+    | l1 == unsafeCoerce r2 = pevalEqTerm l2 (unsafeCoerce r1)
+    | l2 == unsafeCoerce r1 = pevalEqTerm (unsafeCoerce l1) r2
+    | l2 == unsafeCoerce r2 = pevalEqTerm (unsafeCoerce l1) r1
+  pevalEqTerm (EqTerm (DynTerm (l1 :: Term (WordN 1))) l2) (EqTerm r1 r2)
+    | l1 == unsafeCoerce r1 = pevalEqTerm l2 (unsafeCoerce r2)
+    | l1 == unsafeCoerce r2 = pevalEqTerm l2 (unsafeCoerce r1)
+    | l2 == unsafeCoerce r1 = pevalEqTerm (unsafeCoerce l1) r2
+    | l2 == unsafeCoerce r2 = pevalEqTerm (unsafeCoerce l1) r1
+  pevalEqTerm (EqTerm (DynTerm (l1 :: Term (IntN 1))) l2) (EqTerm r1 r2)
+    | l1 == unsafeCoerce r1 = pevalEqTerm l2 (unsafeCoerce r2)
+    | l1 == unsafeCoerce r2 = pevalEqTerm l2 (unsafeCoerce r1)
+    | l2 == unsafeCoerce r1 = pevalEqTerm (unsafeCoerce l1) r2
+    | l2 == unsafeCoerce r2 = pevalEqTerm (unsafeCoerce l1) r1
+  pevalEqTerm l r = pevalDefaultEqTerm l r
   pevalDistinctTerm (_ :| []) = conTerm True
   pevalDistinctTerm (a :| [b]) = pevalNotTerm $ pevalEqTerm a b
   pevalDistinctTerm _ = conTerm False

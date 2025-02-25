@@ -674,6 +674,16 @@ bv1Test =
                r @?= expected
                validateSpec @(FixedSizedBVWithBoolSpec bv 1) unboundedConfig spec
          )
+      ++ [ testCase "(a==b)==(a==c)" $ do
+             let spec@(BoolWithFixedSizedBVSpec _ r) =
+                   eqvSpec
+                     (eqvSpec (symSpec "a" :: FixedSizedBVWithBoolSpec bv 1) (symSpec "b") :: BoolWithFixedSizedBVSpec bv 1)
+                     (eqvSpec (symSpec "a" :: FixedSizedBVWithBoolSpec bv 1) (symSpec "c"))
+             validateSpec @(BoolWithFixedSizedBVSpec bv 1)
+               unboundedConfig
+               spec
+             r @?= eqTerm (ssymTerm "b" :: Term (bv 1)) (ssymTerm "c")
+         ]
 
 termRewritingTests :: Test
 termRewritingTests =
@@ -731,7 +741,16 @@ termRewritingTests =
             validateSpec @BoolOnlySpec
               unboundedConfig
               spec
-            r @?= orTerm (ssymTerm "a") (orTerm (ssymTerm "d") (ssymTerm "e"))
+            r @?= orTerm (ssymTerm "a") (orTerm (ssymTerm "d") (ssymTerm "e")),
+          testCase "(a==b)==(a==c)" $ do
+            let spec@(BoolOnlySpec _ r) =
+                  eqvSpec
+                    (eqvSpec (symSpec "a" :: BoolOnlySpec) (symSpec "b") :: BoolOnlySpec)
+                    (eqvSpec (symSpec "a" :: BoolOnlySpec) (symSpec "c"))
+            validateSpec @BoolOnlySpec
+              unboundedConfig
+              spec
+            r @?= eqTerm (ssymTerm "b" :: Term Bool) (ssymTerm "c")
         ],
       testGroup
         "LIA"
