@@ -6222,6 +6222,10 @@ pevalOrTerm
     | l1 == e1 && l2 == e2 = pevalOrTerm nl1 l2
 pevalOrTerm (NotTerm nl) (NotTerm nr) =
   pevalNotTerm $ pevalAndTerm nl nr
+pevalOrTerm (AndTermAll _ _ sa) r@(OrTermAll _ _ so)
+  | sa `HS.intersection` so /= HS.empty = r
+pevalOrTerm l@(OrTermAll _ _ so) (AndTermAll _ _ sa)
+  | sa `HS.intersection` so /= HS.empty = l
 pevalOrTerm
   (EqTerm a (BVTerm bt@(ConTerm (b :: bv n))))
   (EqTerm c (DynTerm (BVTerm (ConTerm d) :: Term (bv n))))
@@ -6336,6 +6340,10 @@ pevalAndTerm
   (NotTerm (EqTerm (DynTerm (e1 :: Term Bool)) (DynTerm (e2 :: Term Bool))))
     | l1 == e1 && l2 == e2 = pevalAndTerm l1 nl2
 pevalAndTerm (NotTerm nl) (NotTerm nr) = pevalNotTerm $ pevalOrTerm nl nr
+pevalAndTerm (OrTermAll _ _ so) r@(AndTermAll _ _ sa)
+  | sa `HS.intersection` so /= HS.empty = r
+pevalAndTerm l@(AndTermAll _ _ sa) (OrTermAll _ _ so)
+  | sa `HS.intersection` so /= HS.empty = l
 pevalAndTerm
   (EqTerm a (BVTerm bt@(ConTerm (b :: bv n))))
   (EqTerm c (DynTerm (BVTerm (ConTerm d) :: Term (bv n))))

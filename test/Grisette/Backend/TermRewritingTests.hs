@@ -51,7 +51,7 @@ import Grisette
     z3,
   )
 import Grisette.Backend.TermRewritingGen
-  ( BoolOnlySpec,
+  ( BoolOnlySpec (BoolOnlySpec),
     BoolWithFixedSizedBVSpec (BoolWithFixedSizedBVSpec),
     BoolWithLIASpec,
     DifferentSizeBVSpec,
@@ -134,6 +134,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedNonFuncPrim,
     Term,
     andBitsTerm,
+    andTerm,
     bvConcatTerm,
     bvExtendTerm,
     complementBitsTerm,
@@ -143,6 +144,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     iteTerm,
     notTerm,
     orBitsTerm,
+    orTerm,
     pformatTerm,
     ssymTerm,
     xorBitsTerm,
@@ -711,7 +713,25 @@ termRewritingTests =
                       )
                   )
                   (symSpec "xxx" :: BoolOnlySpec)
-              )
+              ),
+          testCase "And absortion" $ do
+            let spec@(BoolOnlySpec _ r) =
+                  andSpec
+                    (orSpec (symSpec "c") (orSpec (symSpec "b") (symSpec "a")))
+                    (andSpec (symSpec "a") (andSpec (symSpec "d") (symSpec "e")))
+            validateSpec @BoolOnlySpec
+              unboundedConfig
+              spec
+            r @?= andTerm (ssymTerm "a") (andTerm (ssymTerm "d") (ssymTerm "e")),
+          testCase "Or absorption" $ do
+            let spec@(BoolOnlySpec _ r) =
+                  orSpec
+                    (andSpec (symSpec "c") (andSpec (symSpec "b") (symSpec "a")))
+                    (orSpec (symSpec "a") (orSpec (symSpec "d") (symSpec "e")))
+            validateSpec @BoolOnlySpec
+              unboundedConfig
+              spec
+            r @?= orTerm (ssymTerm "a") (orTerm (ssymTerm "d") (ssymTerm "e"))
         ],
       testGroup
         "LIA"
