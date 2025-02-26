@@ -188,13 +188,28 @@ symMsb x = symTestBit x (finiteBitSize x - 1)
 
 -- | Count the number of set bits in a symbolic value.
 symPopCount :: (Num a, ITEOp a, SymFiniteBits a) => a -> a
--- Node: v - v + is a trick to assign the correct bit-width to the result.
-symPopCount v = v - v + sum ((\b -> symIte b 1 0) <$> symBitBlast v)
+symPopCount v = 0 * v + adderTree (map fromBool (symBitBlast v))
+  where
+    -- Convert a symbolic boolean to a numeric value (0 or 1)
+    -- Node: 0 * v + is a trick to assign the correct bit-width to the result.
+    fromBool b = 0 * v + symIte b 1 0
+
+    -- Implement binary adder tree to efficiently sum values
+    adderTree :: (Num a) => [a] -> a
+    adderTree [] = 0
+    adderTree [x] = x
+    adderTree xs = adderTree (pairwiseAdd xs)
+
+    -- Add adjacent pairs of values
+    pairwiseAdd :: (Num a) => [a] -> [a]
+    pairwiseAdd [] = []
+    pairwiseAdd [x] = [x]
+    pairwiseAdd (x : y : rest) = (x + y) : pairwiseAdd rest
 
 -- | Count the number of leading zeros in a symbolic value.
 symCountLeadingZeros :: (Num a, ITEOp a, SymFiniteBits a) => a -> a
--- Node: v - v + is a trick to assign the correct bit-width to the result.
-symCountLeadingZeros v = v - v + go bits rs
+-- Node: 0 * v + is a trick to assign the correct bit-width to the result.
+symCountLeadingZeros v = 0 * v + go bits rs
   where
     bits = reverse $ symBitBlast v
     rs = fromIntegral <$> [0 ..]
@@ -204,8 +219,8 @@ symCountLeadingZeros v = v - v + go bits rs
 
 -- | Count the number of trailing zeros in a symbolic value.
 symCountTrailingZeros :: (Num a, ITEOp a, SymFiniteBits a) => a -> a
--- Node: v - v + is a trick to assign the correct bit-width to the result.
-symCountTrailingZeros v = v - v + go bits rs
+-- Node: 0 * v + is a trick to assign the correct bit-width to the result.
+symCountTrailingZeros v = 0 * v + go bits rs
   where
     bits = symBitBlast v
     rs = fromIntegral <$> [0 ..]
