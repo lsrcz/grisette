@@ -6832,6 +6832,7 @@ pevalITEBVTerm ::
   ( KnownNat n,
     1 <= n,
     forall m. (KnownNat m, 1 <= m) => SupportedPrim (bv m),
+    forall m. (KnownNat m, 1 <= m) => Show (bv m),
     PEvalBVTerm bv
   ) =>
   Term Bool -> Term (bv n) -> Term (bv n) -> Maybe (Term (bv n))
@@ -6862,6 +6863,10 @@ pevalITEBVTerm
             f
     where
       n = natVal (Proxy @n)
+pevalITEBVTerm
+  (EqTerm (DynTerm (_ :: Term (bv 1))) (DynTerm (ConTerm (_ :: bv 1))))
+  (ConTerm _)
+  (ConTerm _) = Nothing
 pevalITEBVTerm
   (EqTerm (DynTerm (l :: Term (bv 1))) (DynTerm (ConTerm (r :: bv 1))))
   t
