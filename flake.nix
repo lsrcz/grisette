@@ -40,13 +40,24 @@
           pkgs:
           {
             bitwuzla ? false,
+            isDevelopmentEnvironment ? false,
             ...
           }:
           [
             pkgs.boolector
             pkgs.cvc5
           ]
-          ++ (if bitwuzla then [ pkgs.bitwuzla ] else [ ]);
+          ++ (if bitwuzla then [ pkgs.bitwuzla ] else [ ])
+          ++ (
+            if isDevelopmentEnvironment then
+              [
+                (pkgs.ihaskell.override {
+                  ghcWithPackages = pkgs.haskellPackages.ghcWithPackages;
+                })
+              ]
+            else
+              [ ]
+          );
         treefmtExcludes = [
           "tutorials/*.ipynb"
           "tutorials/*.svg"
