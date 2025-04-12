@@ -560,11 +560,11 @@ partitionCVArg cv =
 -- | Parse the scalar model result.
 parseScalarSMTModelResult ::
   forall v r.
-  (SBV.SatModel r, Typeable v) =>
+  (SBVT.SatModel r, Typeable v) =>
   (r -> v) ->
   ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
   v
-parseScalarSMTModelResult convert cvs@([], v) = case SBV.parseCVs [v] of
+parseScalarSMTModelResult convert cvs@([], v) = case SBVT.parseCVs [v] of
   Just (x, _) -> convert x
   Nothing -> parseSMTModelResultError (typeRep @v) cvs
 parseScalarSMTModelResult _ cv = parseSMTModelResultError (typeRep @v) cv
