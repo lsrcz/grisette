@@ -61,6 +61,7 @@
         treefmtExcludes = [
           "tutorials/*.ipynb"
           "tutorials/*.svg"
+          ".gdbinit"
         ];
         pname = "grisette";
         extraOutputs = pkgs: haskellPackages: devShellWithVersion: {
