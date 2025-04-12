@@ -10,14 +10,14 @@
       nixpkgs,
       flake-utils,
       grisette-nix-build-env,
-    }@inputs:
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       grisette-nix-build-env.lib.${system}.output {
         inherit nixpkgs system;
         srcRoot = ./.;
         extraHaskellPackages =
-          pkgs: hfinal: helpers: setCIOptions: with helpers; {
+          pkgs: ghcVersion: hfinal: helpers: setCIOptions: with helpers; {
             grisette = setCIOptions {
               extraTestToolDepends = byGhcVersion {
                 "8107" = [ pkgs.z3 ];
