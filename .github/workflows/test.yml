@@ -17,7 +17,7 @@ jobs:
         os: [ubuntu-latest]
         plan:
           - {build: nix, arg: "", ismain: false, experimental: false, ghc: "8107", cachekey: "nix-8107"}
-          - {build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml", ismain: false, experimental: false, ghc: "8107", cachekey: "stack-8107-lowerbound"}
+          - {build: stack, arg: "--stack-yaml stack-8.10-lowerbound.yaml", ismain: false, experimental: false, ghc: "8107", cachekey: "stack-8107-lowerbound"}
           - {build: nix, arg: "", ismain: false, experimental: false, ghc: "902", cachekey: "nix-902"}
           - {build: nix, arg: "", ismain: false, experimental: false, ghc: "928", cachekey: "nix-928"}
           - {build: nix, arg: "", ismain: false, experimental: false, ghc: "948", cachekey: "nix-948"}
