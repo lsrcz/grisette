@@ -15,7 +15,7 @@ and this project adheres to
 - Added derivation of `Mergeable` instances using `NoStrategy`.
   ([#269](https://github.com/lsrcz/grisette/pull/269))
 - Added `filterExactNumArgs` and `filterLeqNumArgs` for filtering classes that
-  accepts type constructors with exactly or at most @n@ arguments. Added more
+  accepts type constructors with exactly or at most $n$ arguments. Added more
   list of classes. ([#269](https://github.com/lsrcz/grisette/pull/269))
 - Added derivation for `Mergeable` using `NoStrategy`.
   ([#270](https://github.com/lsrcz/grisette/pull/270))
