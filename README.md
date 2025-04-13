@@ -48,7 +48,7 @@ can add it to your project's `.cabal` file:
 ```cabal
 library
   ...
-  build-depends: grisette >= 0.11 < 0.12
+  build-depends: grisette >= 0.12 < 0.13
 ```
 
 #### Using stack
@@ -59,14 +59,14 @@ Note: Grisette on Stackage is currently outdated. Please make sure to use
 
 ```yaml
 extra-deps:
-  - grisette-0.11.0.0
+  - grisette-0.12.0.0
 ```
 
 and in your `package.yaml` file:
 
 ```yaml
 dependencies:
-  - grisette >= 0.11 < 0.12
+  - grisette >= 0.12 < 0.13
 ```
 
 #### Quick start template with `stack new`
