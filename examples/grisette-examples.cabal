@@ -1,17 +1,15 @@
-cabal-version:      1.12
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:               grisette-examples
-version:            0.11.0.0
+version:            0.12.0.0
 synopsis:           Examples for Grisette
-description:
-  More examples are available in the
-  [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials) of
-  Grisette.
-
+description:        More examples are available in the
+                    [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials) of
+                    Grisette.
 category:           Formal Methods, Theorem Provers, Symbolic Computation, SMT
 homepage:           https://github.com/lsrcz/grisette#readme
 bug-reports:        https://github.com/lsrcz/grisette/issues
@@ -19,18 +17,20 @@ author:             Sirui Lu, Rastislav Bodík
 maintainer:         Sirui Lu (siruilu@cs.washington.edu)
 copyright:          2021-2024 Sirui Lu
 build-type:         Simple
-extra-source-files: README.md
+extra-source-files:
+    README.md
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/lsrcz/grisette
 
 executable basic
-  main-is:          Main.hs
-  other-modules:    Paths_grisette_examples
-  hs-source-dirs:   basic
+  main-is: Main.hs
+  other-modules:
+      Paths_grisette_examples
+  hs-source-dirs:
+      basic
   build-depends:
-      base      >=4.14 && <5
-    , grisette  >=0.11 && <0.12
-
+      base >=4.14 && <5
+    , grisette ==0.12.*
   default-language: Haskell2010

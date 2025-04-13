@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.12.0.0] -- 2025-04-12
+
 ### Added
 
 - Added derivation of `Mergeable` instances using `NoStrategy`.
@@ -49,7 +51,7 @@ and this project adheres to
 - Fixed the derivation for empty data types.
   ([#272](https://github.com/lsrcz/grisette/pull/272))
 
-## [0.11.0.0] - 2024-12-29
+## [0.11.0.0] -- 2024-12-29
 
 ### Added
 
@@ -82,7 +84,7 @@ and this project adheres to
 - Removed old template-haskell-based derivation mechanism.
   ([#267](https://github.com/lsrcz/grisette/pull/267))
 
-## [0.10.0.0] - 2024-12-11
+## [0.10.0.0] -- 2024-12-11
 
 ### Added
 
@@ -106,7 +108,7 @@ and this project adheres to
 - \[Breaking\] Renamed the evaluation mode tags `Con` and `Sym` to `C` and `S`.
   ([#264](https://github.com/lsrcz/grisette/pull/264))
 
-## [0.9.0.0] - 2024-11-07
+## [0.9.0.0] -- 2024-11-07
 
 ### Added
 
@@ -156,7 +158,7 @@ and this project adheres to
   intermediate states are not properly memoized.
   ([#259](https://github.com/lsrcz/grisette/pull/259))
 
-## [0.8.0.0] - 2024-08-13
+## [0.8.0.0] -- 2024-08-13
 
 ### Added
 
@@ -226,7 +228,7 @@ and this project adheres to
 - Dropped support for post-evaluation approximation.
   ([#241](https://github.com/lsrcz/grisette/pull/241))
 
-## [0.7.0.0] - 2024-07-02
+## [0.7.0.0] -- 2024-07-02
 
 ### Added
 
@@ -549,7 +551,7 @@ No user-facing changes.
 - Fixed the merging for `SomeSymIntN` and `SomeSymWordN`.
   ([#72](https://github.com/lsrcz/grisette/pull/72))
 
-## [0.2.0.0] - 2023-04-13
+## [0.2.0.0] -- 2023-04-13
 
 ### Added
 
@@ -594,7 +596,7 @@ No user-facing changes.
 - Fix CEGIS crash when subsequent solver calls introduces new symbolic constant.
   ([#60](https://github.com/lsrcz/grisette/pull/60))
 
-## [0.1.0.0] - 2023-01-20
+## [0.1.0.0] -- 2023-01-20
 
 ### Added
 
@@ -603,6 +605,7 @@ No user-facing changes.
 [0.1.0.0]: https://github.com/lsrcz/grisette/tree/v0.1.0.0
 [0.10.0.0]: https://github.com/lsrcz/grisette/compare/v0.9.0.0...v0.10.0.0
 [0.11.0.0]: https://github.com/lsrcz/grisette/compare/v0.10.0.0...v0.11.0.0
+[0.12.0.0]: https://github.com/lsrcz/grisette/compare/v0.11.0.0...v0.12.0.0
 [0.2.0.0]: https://github.com/lsrcz/grisette/compare/v0.1.0.0...v0.2.0.0
 [0.3.0.0]: https://github.com/lsrcz/grisette/compare/v0.2.0.0...v0.3.0.0
 [0.3.1.0]: https://github.com/lsrcz/grisette/compare/v0.3.0.0...v0.3.1.0
@@ -615,4 +618,4 @@ No user-facing changes.
 [0.7.0.0]: https://github.com/lsrcz/grisette/compare/v0.6.0.0...v0.7.0.0
 [0.8.0.0]: https://github.com/lsrcz/grisette/compare/v0.7.0.0...v0.8.0.0
 [0.9.0.0]: https://github.com/lsrcz/grisette/compare/v0.8.0.0...v0.9.0.0
-[unreleased]: https://github.com/lsrcz/grisette/compare/v0.11.0.0...HEAD
+[unreleased]: https://github.com/lsrcz/grisette/compare/v0.12.0.0...HEAD
