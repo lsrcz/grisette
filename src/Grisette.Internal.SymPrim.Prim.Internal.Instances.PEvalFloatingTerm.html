@@ -16,29 +16,28 @@
 </span><span id="line-16"></span><span>
 </span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
-</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
-</span><span id="line-21"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingUnaryOp"><span class="hs-identifier">FloatingUnaryOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAcosh"><span class="hs-identifier">FloatingAcosh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAsinh"><span class="hs-identifier">FloatingAsinh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAtanh"><span class="hs-identifier">FloatingAtanh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSqrt"><span class="hs-identifier">FloatingSqrt</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-22"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFloatingTerm"><span class="hs-identifier">PEvalFloatingTerm</span></a></span><span>
-</span><span id="line-23"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier">pevalFloatingUnaryTerm</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-24"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalPowerTerm"><span class="hs-identifier">pevalPowerTerm</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-25"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFloatingTermConstraint"><span class="hs-identifier">withSbvFloatingTermConstraint</span></a></span><span>
-</span><span id="line-26"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier">withPrim</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#floatingUnaryTerm"><span class="hs-identifier">floatingUnaryTerm</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-29"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#powerTerm"><span class="hs-identifier">powerTerm</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-30"></span><span>  </span><span class="hs-special">)</span><span>
-</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span>
-</span><span id="line-32"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalUnaryUnfolded"><span class="hs-identifier">generalUnaryUnfolded</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-33"></span><span>  </span><span class="hs-special">)</span><span>
-</span><span id="line-34"></span><span>
-</span><span id="line-35"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682260627"><span id="local-6989586621682260628"><span id="local-6989586621682260680"><span id="local-6989586621682260685"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682260627"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682260628"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFloatingTerm"><span class="hs-identifier hs-type">PEvalFloatingTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682260627"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682260628"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-36"></span><span>  </span><span id="local-6989586621682260712"><span class="annot"><span class="annottext">pevalFloatingUnaryTerm :: FloatingUnaryOp -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFloatingUnaryTerm</span></a></span></span><span> </span><span id="local-6989586621682260713"><span class="annot"><span class="annottext">FloatingUnaryOp
-</span><a href="#local-6989586621682260713"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-37"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
-</span><a href="#local-6989586621682260713"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-38"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingUnaryOp"><span class="hs-identifier">FloatingUnaryOp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAcosh"><span class="hs-identifier">FloatingAcosh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAsinh"><span class="hs-identifier">FloatingAsinh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAtanh"><span class="hs-identifier">FloatingAtanh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSqrt"><span class="hs-identifier">FloatingSqrt</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFloatingTerm"><span class="hs-identifier">PEvalFloatingTerm</span></a></span><span>
+</span><span id="line-22"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier">pevalFloatingUnaryTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalPowerTerm"><span class="hs-identifier">pevalPowerTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>        </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFloatingTermConstraint"><span class="hs-identifier">withSbvFloatingTermConstraint</span></a></span><span>
+</span><span id="line-25"></span><span>      </span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier">withPrim</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#floatingUnaryTerm"><span class="hs-identifier">floatingUnaryTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#powerTerm"><span class="hs-identifier">powerTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#generalUnaryUnfolded"><span class="hs-identifier">generalUnaryUnfolded</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682447173"><span id="local-6989586621682447174"><span id="local-6989586621682447226"><span id="local-6989586621682447231"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682447173"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682447174"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFloatingTerm"><span class="hs-identifier hs-type">PEvalFloatingTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682447173"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682447174"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-35"></span><span>  </span><span id="local-6989586621682447258"><span class="annot"><span class="annottext">pevalFloatingUnaryTerm :: FloatingUnaryOp -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFloatingUnaryTerm</span></a></span></span><span> </span><span id="local-6989586621682447259"><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="#local-6989586621682447259"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="#local-6989586621682447259"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-37"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingSqrt"><span class="hs-identifier hs-var">FloatingSqrt</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(FP eb sb -&gt; FP eb sb)
 -&gt; (Term (FP eb sb) -&gt; Term (FP eb sb))
 -&gt; Term (FP eb sb)
@@ -59,8 +58,8 @@ forall a.
 PEvalFloatingTerm a =&gt;
 FloatingUnaryOp -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#floatingUnaryTerm"><span class="hs-identifier hs-var">floatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
-</span><a href="#local-6989586621682260713"><span class="hs-identifier hs-var">op</span></a></span><span>
-</span><span id="line-39"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="#local-6989586621682447259"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-38"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
 forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Term (FP eb sb) -&gt; Term (FP eb sb))
@@ -72,68 +71,68 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; [Char]
 forall a. Show a =&gt; a -&gt; [Char]
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
-</span><a href="#local-6989586621682260713"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+</span><a href="#local-6989586621682447259"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot; not supported for FP&quot;</span></span><span>
-</span><span id="line-40"></span><span>  </span><span id="local-6989586621682260719"><span class="annot"><span class="annottext">pevalPowerTerm :: Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
+</span><span id="line-39"></span><span>  </span><span id="local-6989586621682447265"><span class="annot"><span class="annottext">pevalPowerTerm :: Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalPowerTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalPowerTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Term (FP eb sb) -&gt; Term (FP eb sb) -&gt; Term (FP eb sb)
 forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;power operation not supported for FP&quot;</span></span><span>
-</span><span id="line-41"></span><span>  </span><span id="local-6989586621682260722"><span class="annot"><span class="annottext">withSbvFloatingTermConstraint :: forall r. (Floating (SBVType (FP eb sb)) =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFloatingTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvFloatingTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682260723"><span class="annot"><span class="annottext">Floating (SBVType (FP eb sb)) =&gt; r
-</span><a href="#local-6989586621682260723"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+</span><span id="line-40"></span><span>  </span><span id="local-6989586621682447268"><span class="annot"><span class="annottext">withSbvFloatingTermConstraint :: forall r. (Floating (SBVType (FP eb sb)) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFloatingTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvFloatingTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682447269"><span class="annot"><span class="annottext">Floating (SBVType (FP eb sb)) =&gt; r
+</span><a href="#local-6989586621682447269"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
 SupportedPrim t =&gt;
 ((PrimConstraint t, SMTDefinable (SBVType t),
   Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
  a)
 -&gt; a
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682260627"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682260628"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withPrim"><span class="hs-identifier hs-var">withPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682447173"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682447174"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">r
 Floating (SBVType (FP eb sb)) =&gt; r
 (PrimConstraint (FP eb sb), SMTDefinable (SBVType (FP eb sb)),
  Mergeable (SBVType (FP eb sb)), Typeable (SBVType (FP eb sb))) =&gt;
 r
-</span><a href="#local-6989586621682260723"><span class="hs-identifier hs-var">r</span></a></span><span>
-</span><span id="line-42"></span><span>
-</span><span id="line-43"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682260736"><span id="local-6989586621682260740"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFloatingTerm"><span class="hs-identifier hs-type">PEvalFloatingTerm</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-44"></span><span>  </span><span id="local-6989586621682260749"><span class="annot"><span class="annottext">pevalFloatingUnaryTerm :: FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFloatingUnaryTerm</span></a></span></span><span> </span><span id="local-6989586621682260750"><span class="annot"><span class="annottext">FloatingUnaryOp
-</span><a href="#local-6989586621682260750"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-45"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
-</span><a href="#local-6989586621682260750"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-46"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="#local-6989586621682447269"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682447282"><span id="local-6989586621682447286"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFloatingTerm"><span class="hs-identifier hs-type">PEvalFloatingTerm</span></a></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-43"></span><span>  </span><span id="local-6989586621682447295"><span class="annot"><span class="annottext">pevalFloatingUnaryTerm :: FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFloatingUnaryTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFloatingUnaryTerm</span></a></span></span><span> </span><span id="local-6989586621682447296"><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="#local-6989586621682447296"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><a href="#local-6989586621682447296"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-45"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAsinh"><span class="hs-identifier hs-var">FloatingAsinh</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-47"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; Term AlgReal -&gt; Term AlgReal
+</span><span id="line-46"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; Term AlgReal -&gt; Term AlgReal
 forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;operation asinh not supported by sbv for AlgReal&quot;</span></span><span>
-</span><span id="line-48"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><span id="line-47"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAcosh"><span class="hs-identifier hs-var">FloatingAcosh</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-49"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; Term AlgReal -&gt; Term AlgReal
+</span><span id="line-48"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; Term AlgReal -&gt; Term AlgReal
 forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;operation acosh not supported by sbv for AlgReal&quot;</span></span><span>
-</span><span id="line-50"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><span id="line-49"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#FloatingAtanh"><span class="hs-identifier hs-var">FloatingAtanh</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-51"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; Term AlgReal -&gt; Term AlgReal
+</span><span id="line-50"></span><span>        </span><span class="annot"><span class="annottext">[Char] -&gt; Term AlgReal -&gt; Term AlgReal
 forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;operation atanh not supported by sbv for AlgReal&quot;</span></span><span>
-</span><span id="line-52"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
+</span><span id="line-51"></span><span>      </span><span class="annot"><span class="annottext">FloatingUnaryOp
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp -&gt; Term AlgReal -&gt; Term AlgReal
 forall a.
 PEvalFloatingTerm a =&gt;
 FloatingUnaryOp -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#floatingUnaryTerm"><span class="hs-identifier hs-var">floatingUnaryTerm</span></a></span><span> </span><span class="annot"><span class="annottext">FloatingUnaryOp
-</span><a href="#local-6989586621682260750"><span class="hs-identifier hs-var">op</span></a></span><span>
-</span><span id="line-53"></span><span>  </span><span id="local-6989586621682260752"><span class="annot"><span class="annottext">pevalPowerTerm :: Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
+</span><a href="#local-6989586621682447296"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-52"></span><span>  </span><span id="local-6989586621682447298"><span class="annot"><span class="annottext">pevalPowerTerm :: Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalPowerTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalPowerTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term AlgReal -&gt; Term AlgReal -&gt; Term AlgReal
 forall a. PEvalFloatingTerm a =&gt; Term a -&gt; Term a -&gt; Term a
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#powerTerm"><span class="hs-identifier hs-var">powerTerm</span></a></span><span>
-</span><span id="line-54"></span><span>  </span><span id="local-6989586621682260755"><span class="annot"><span class="annottext">withSbvFloatingTermConstraint :: forall r. (Floating (SBVType AlgReal) =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFloatingTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvFloatingTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682260756"><span class="annot"><span class="annottext">Floating (SBVType AlgReal) =&gt; r
-</span><a href="#local-6989586621682260756"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
+</span><span id="line-53"></span><span>  </span><span id="local-6989586621682447301"><span class="annot"><span class="annottext">withSbvFloatingTermConstraint :: forall r. (Floating (SBVType AlgReal) =&gt; r) -&gt; r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withSbvFloatingTermConstraint"><span class="hs-identifier hs-var hs-var hs-var">withSbvFloatingTermConstraint</span></a></span></span><span> </span><span id="local-6989586621682447302"><span class="annot"><span class="annottext">Floating (SBVType AlgReal) =&gt; r
+</span><a href="#local-6989586621682447302"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall t a.
 SupportedPrim t =&gt;
 ((PrimConstraint t, SMTDefinable (SBVType t),
   Mergeable (SBVType t), Typeable (SBVType t)) =&gt;
@@ -144,5 +143,5 @@ Floating (SBVType AlgReal) =&gt; r
 (PrimConstraint AlgReal, SMTDefinable (SBVType AlgReal),
  Mergeable (SBVType AlgReal), Typeable (SBVType AlgReal)) =&gt;
 r
-</span><a href="#local-6989586621682260756"><span class="hs-identifier hs-var">r</span></a></span><span>
-</span><span id="line-55"></span></pre></body></html>
+</span><a href="#local-6989586621682447302"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-54"></span></pre></body></html>

@@ -25,27 +25,25 @@
 </span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html"><span class="hs-identifier">Grisette.Internal.SymPrim.AlgReal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier">AlgReal</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html"><span class="hs-identifier">Grisette.Internal.SymPrim.BV</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier">IntN</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier">WordN</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html"><span class="hs-identifier">Grisette.Internal.SymPrim.FP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier">FP</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier">ValidFP</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim</span></a></span><span>
-</span><span id="line-29"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier">bvIsNonZeroFromGEq1</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-30"></span><span>  </span><span class="hs-special">)</span><span>
-</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
-</span><span id="line-32"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier">pevalFromIntegralTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier">sbvFromIntegralTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier">SupportedNonFuncPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier">withNonFuncPrim</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fromIntegralTerm"><span class="hs-identifier">fromIntegralTerm</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-38"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-39"></span><span>  </span><span class="hs-special">)</span><span>
-</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier">unaryUnfoldOnce</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-41"></span><span>
-</span><span id="line-42"></span><span id="local-6989586621682259507"><span id="local-6989586621682259508"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-type">pevalFromIntegralTermGeneric</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-43"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259507"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259508"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259508"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259507"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259508"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
-</span><span id="line-44"></span><span id="pevalFromIntegralTermGeneric"><span class="annot"><span class="annottext">pevalFromIntegralTermGeneric :: forall a b.
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Term</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier">pevalFromIntegralTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier">sbvFromIntegralTerm</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedNonFuncPrim"><span class="hs-identifier">SupportedNonFuncPrim</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier">withNonFuncPrim</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier">SupportedPrim</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier">Term</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier">bvIsNonZeroFromGEq1</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#conTerm"><span class="hs-identifier">conTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fromIntegralTerm"><span class="hs-identifier">fromIntegralTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier">ConTerm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html"><span class="hs-identifier">Grisette.Internal.SymPrim.Prim.Internal.Unfold</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Unfold.html#unaryUnfoldOnce"><span class="hs-identifier">unaryUnfoldOnce</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span id="local-6989586621682446053"><span id="local-6989586621682446054"><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-type">pevalFromIntegralTermGeneric</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446053"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446054"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#SupportedPrim"><span class="hs-identifier hs-type">SupportedPrim</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446054"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446053"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446054"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-42"></span><span id="pevalFromIntegralTermGeneric"><span class="annot"><span class="annottext">pevalFromIntegralTermGeneric :: forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var hs-var">pevalFromIntegralTermGeneric</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-45"></span><span>  </span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
+</span><span id="line-43"></span><span>  </span><span class="annot"><span class="annottext">PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
 forall a b.
 SupportedPrim b =&gt;
 PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
@@ -53,15 +51,15 @@ PartialRuleUnary a b -&gt; TotalRuleUnary a b -&gt; TotalRuleUnary a b
 forall {t} {t}.
 (SupportedPrim t, Integral t, Num t) =&gt;
 Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682259691"><span class="hs-identifier hs-var">doPEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
+</span><a href="#local-6989586621682446237"><span class="hs-identifier hs-var">doPEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="annottext">TotalRuleUnary a b
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#fromIntegralTerm"><span class="hs-identifier hs-var">fromIntegralTerm</span></a></span><span>
-</span><span id="line-46"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-47"></span><span>    </span><span id="local-6989586621682259691"><span class="annot"><span class="annottext">doPEvalFromIntegralTerm :: Term t -&gt; Maybe (Term t)
-</span><a href="#local-6989586621682259691"><span class="hs-identifier hs-var hs-var">doPEvalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682259729"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682259729"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
+</span><span id="line-44"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-45"></span><span>    </span><span id="local-6989586621682446237"><span class="annot"><span class="annottext">doPEvalFromIntegralTerm :: Term t -&gt; Maybe (Term t)
+</span><a href="#local-6989586621682446237"><span class="hs-identifier hs-var hs-var">doPEvalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#ConTerm"><span class="hs-identifier hs-type">ConTerm</span></a></span><span> </span><span id="local-6989586621682446275"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621682446275"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term t -&gt; Maybe (Term t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Term t -&gt; Maybe (Term t)) -&gt; Term t -&gt; Maybe (Term t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -72,33 +70,33 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t
 forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621682259729"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-48"></span><span>    </span><span class="annot"><a href="#local-6989586621682259691"><span class="hs-identifier hs-var">doPEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
+</span><a href="#local-6989586621682446275"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="#local-6989586621682446237"><span class="hs-identifier hs-var">doPEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Term t)
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-49"></span><span>
-</span><span id="line-50"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-51"></span><span>  </span><span id="local-6989586621682259740"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term Integer
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-49"></span><span>  </span><span id="local-6989586621682446286"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term Integer
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Integer -&gt; Term Integer
 forall a. a -&gt; a
 </span><span class="hs-identifier hs-var">id</span></span><span>
-</span><span id="line-52"></span><span>  </span><span id="local-6989586621682259742"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType Integer
+</span><span id="line-50"></span><span>  </span><span id="local-6989586621682446288"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType Integer
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV Integer
 SBVType Integer -&gt; SBVType Integer
 forall a. a -&gt; a
 </span><span class="hs-identifier hs-var">id</span></span><span>
-</span><span id="line-53"></span><span>
-</span><span id="line-54"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-55"></span><span>  </span><span id="local-6989586621682259754"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term AlgReal
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-53"></span><span>  </span><span id="local-6989586621682446300"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term AlgReal
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Integer -&gt; Term AlgReal
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-56"></span><span>  </span><span id="local-6989586621682259757"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType AlgReal
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682259758"><span class="annot"><span class="annottext">SBVType Integer
-</span><a href="#local-6989586621682259758"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-54"></span><span>  </span><span id="local-6989586621682446303"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446304"><span class="annot"><span class="annottext">SBVType Integer
+</span><a href="#local-6989586621682446304"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType AlgReal)
@@ -113,30 +111,30 @@ forall a b.
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV Integer
 SBVType Integer
-</span><a href="#local-6989586621682259758"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682259566"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259566"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259566"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259566"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-59"></span><span>  </span><span id="local-6989586621682259798"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term (WordN n)
+</span><a href="#local-6989586621682446304"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682446112"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446112"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446112"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446112"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-57"></span><span>  </span><span id="local-6989586621682446344"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term (WordN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Integer -&gt; Term (WordN n)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-60"></span><span>  </span><span id="local-6989586621682259801"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType (WordN n)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682259802"><span class="annot"><span class="annottext">SBVType Integer
-</span><a href="#local-6989586621682259802"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
+</span><span id="line-58"></span><span>  </span><span id="local-6989586621682446347"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType (WordN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446348"><span class="annot"><span class="annottext">SBVType Integer
+</span><a href="#local-6989586621682446348"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
 -&gt; (BVIsNonZero n =&gt; SBVType (WordN n)) -&gt; SBVType (WordN n)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259566"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (WordN n)) -&gt; SBVType (WordN n))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446112"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (WordN n)) -&gt; SBVType (WordN n))
 -&gt; (BVIsNonZero n =&gt; SBVType (WordN n)) -&gt; SBVType (WordN n)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-62"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-60"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType (WordN n))
@@ -145,36 +143,36 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType (WordN n)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-63"></span><span>        </span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV (WordN n)
+</span><span id="line-61"></span><span>        </span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV (WordN n)
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV Integer
 SBVType Integer
-</span><a href="#local-6989586621682259802"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-64"></span><span>
-</span><span id="line-65"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682259581"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259581"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259581"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259581"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-66"></span><span>  </span><span id="local-6989586621682259845"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term (IntN n)
+</span><a href="#local-6989586621682446348"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682446127"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446127"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446127"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446127"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-64"></span><span>  </span><span id="local-6989586621682446391"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term (IntN n)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Integer -&gt; Term (IntN n)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-67"></span><span>  </span><span id="local-6989586621682259848"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType (IntN n)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682259849"><span class="annot"><span class="annottext">SBVType Integer
-</span><a href="#local-6989586621682259849"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-68"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType (IntN n)) -&gt; SBVType (IntN n)
+</span><span id="line-65"></span><span>  </span><span id="local-6989586621682446394"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType (IntN n)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446395"><span class="annot"><span class="annottext">SBVType Integer
+</span><a href="#local-6989586621682446395"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType (IntN n)) -&gt; SBVType (IntN n)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259581"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (IntN n)) -&gt; SBVType (IntN n))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446127"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (IntN n)) -&gt; SBVType (IntN n))
 -&gt; (BVIsNonZero n =&gt; SBVType (IntN n)) -&gt; SBVType (IntN n)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-69"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-67"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType (IntN n))
@@ -183,73 +181,73 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType (IntN n)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-70"></span><span>        </span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV (IntN n)
+</span><span id="line-68"></span><span>        </span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV (IntN n)
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV Integer
 SBVType Integer
-</span><a href="#local-6989586621682259849"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-71"></span><span>
-</span><span id="line-72"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#genericFPCast"><span class="hs-identifier hs-type">genericFPCast</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-73"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682259587"><span class="annot"><a href="#local-6989586621682259587"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682259588"><span class="annot"><a href="#local-6989586621682259588"><span class="hs-identifier hs-type">r</span></a></span></span><span class="hs-operator">.</span><span>
-</span><span id="line-74"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBV.HasKind</span></span><span> </span><span class="annot"><a href="#local-6989586621682259587"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.HasKind</span></span><span> </span><span class="annot"><a href="#local-6989586621682259588"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
-</span><span id="line-75"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-76"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682259587"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-77"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682259588"><span class="hs-identifier hs-type">r</span></a></span><span>
-</span><span id="line-78"></span><span id="genericFPCast"><span class="annot"><span class="annottext">genericFPCast :: forall a r.
+</span><a href="#local-6989586621682446395"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#genericFPCast"><span class="hs-identifier hs-type">genericFPCast</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621682446133"><span class="annot"><a href="#local-6989586621682446133"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621682446134"><span class="annot"><a href="#local-6989586621682446134"><span class="hs-identifier hs-type">r</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBV.HasKind</span></span><span> </span><span class="annot"><a href="#local-6989586621682446133"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.HasKind</span></span><span> </span><span class="annot"><a href="#local-6989586621682446134"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SRoundingMode</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682446133"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-75"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SBV.SBV</span></span><span> </span><span class="annot"><a href="#local-6989586621682446134"><span class="hs-identifier hs-type">r</span></a></span><span>
+</span><span id="line-76"></span><span id="genericFPCast"><span class="annot"><span class="annottext">genericFPCast :: forall a r.
 (HasKind a, HasKind r) =&gt;
 SRoundingMode -&gt; SBV a -&gt; SBV r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#genericFPCast"><span class="hs-identifier hs-var hs-var">genericFPCast</span></a></span></span><span> </span><span id="local-6989586621682259882"><span class="annot"><span class="annottext">SRoundingMode
-</span><a href="#local-6989586621682259882"><span class="hs-identifier hs-var">rm</span></a></span></span><span> </span><span id="local-6989586621682259883"><span class="annot"><span class="annottext">SBV a
-</span><a href="#local-6989586621682259883"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SVal -&gt; SBV r
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#genericFPCast"><span class="hs-identifier hs-var hs-var">genericFPCast</span></a></span></span><span> </span><span id="local-6989586621682446428"><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682446428"><span class="hs-identifier hs-var">rm</span></a></span></span><span> </span><span id="local-6989586621682446429"><span class="annot"><span class="annottext">SBV a
+</span><a href="#local-6989586621682446429"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SVal -&gt; SBV r
 forall a. SVal -&gt; SBV a
 </span><span class="hs-identifier hs-var">SBVI.SBV</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Kind -&gt; Either CV (Cached SV) -&gt; SVal
 </span><span class="hs-identifier hs-var">SBVI.SVal</span></span><span> </span><span class="annot"><span class="annottext">Kind
-</span><a href="#local-6989586621682259886"><span class="hs-identifier hs-var">kTo</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Cached SV -&gt; Either CV (Cached SV)
+</span><a href="#local-6989586621682446432"><span class="hs-identifier hs-var">kTo</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Cached SV -&gt; Either CV (Cached SV)
 forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(State -&gt; IO SV) -&gt; Cached SV
 forall a. (State -&gt; IO a) -&gt; Cached a
 </span><span class="hs-identifier hs-var">SBVI.cache</span></span><span> </span><span class="annot"><span class="annottext">State -&gt; IO SV
-</span><a href="#local-6989586621682259888"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-79"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-80"></span><span>    </span><span id="local-6989586621682259889"><span class="annot"><span class="annottext">kFrom :: Kind
-</span><a href="#local-6989586621682259889"><span class="hs-identifier hs-var hs-var">kFrom</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBV a -&gt; Kind
+</span><a href="#local-6989586621682446434"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-78"></span><span>    </span><span id="local-6989586621682446435"><span class="annot"><span class="annottext">kFrom :: Kind
+</span><a href="#local-6989586621682446435"><span class="hs-identifier hs-var hs-var">kFrom</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SBV a -&gt; Kind
 forall a. HasKind a =&gt; a -&gt; Kind
 </span><span class="hs-identifier hs-var">SBVI.kindOf</span></span><span> </span><span class="annot"><span class="annottext">SBV a
-</span><a href="#local-6989586621682259883"><span class="hs-identifier hs-var">f</span></a></span><span>
-</span><span id="line-81"></span><span>    </span><span id="local-6989586621682259886"><span class="annot"><span class="annottext">kTo :: Kind
-</span><a href="#local-6989586621682259886"><span class="hs-identifier hs-var hs-var">kTo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy r -&gt; Kind
+</span><a href="#local-6989586621682446429"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-79"></span><span>    </span><span id="local-6989586621682446432"><span class="annot"><span class="annottext">kTo :: Kind
+</span><a href="#local-6989586621682446432"><span class="hs-identifier hs-var hs-var">kTo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy r -&gt; Kind
 forall a. HasKind a =&gt; a -&gt; Kind
 </span><span class="hs-identifier hs-var">SBVI.kindOf</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall t. Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259588"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-82"></span><span>    </span><span id="local-6989586621682259888"><span class="annot"><span class="annottext">r :: State -&gt; IO SV
-</span><a href="#local-6989586621682259888"><span class="hs-identifier hs-var hs-var">r</span></a></span></span><span> </span><span id="local-6989586621682259891"><span class="annot"><span class="annottext">State
-</span><a href="#local-6989586621682259891"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-83"></span><span>      </span><span id="local-6989586621682259892"><span class="annot"><a href="#local-6989586621682259892"><span class="hs-identifier hs-var">msv</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">State -&gt; SRoundingMode -&gt; IO SV
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446134"><span class="hs-identifier hs-type">r</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>    </span><span id="local-6989586621682446434"><span class="annot"><span class="annottext">r :: State -&gt; IO SV
+</span><a href="#local-6989586621682446434"><span class="hs-identifier hs-var hs-var">r</span></a></span></span><span> </span><span id="local-6989586621682446437"><span class="annot"><span class="annottext">State
+</span><a href="#local-6989586621682446437"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-81"></span><span>      </span><span id="local-6989586621682446438"><span class="annot"><a href="#local-6989586621682446438"><span class="hs-identifier hs-var">msv</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">State -&gt; SRoundingMode -&gt; IO SV
 forall a. State -&gt; SBV a -&gt; IO SV
 </span><span class="hs-identifier hs-var">SBVI.sbvToSV</span></span><span> </span><span class="annot"><span class="annottext">State
-</span><a href="#local-6989586621682259891"><span class="hs-identifier hs-var">st</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
-</span><a href="#local-6989586621682259882"><span class="hs-identifier hs-var">rm</span></a></span><span>
-</span><span id="line-84"></span><span>      </span><span id="local-6989586621682259894"><span class="annot"><a href="#local-6989586621682259894"><span class="hs-identifier hs-var">xsv</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBVI.sbvToSV</span></span><span> </span><span class="annot"><a href="#local-6989586621682259891"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259883"><span class="hs-identifier hs-type">f</span></a></span><span>
-</span><span id="line-85"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">SBVI.newExpr</span></span><span> </span><span class="annot"><a href="#local-6989586621682259891"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259886"><span class="hs-identifier hs-type">kTo</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
-</span><span id="line-86"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">SBVI.SBVApp</span></span><span>
-</span><span id="line-87"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBVI.IEEEFP</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBVI.FP_Cast</span></span><span> </span><span class="annot"><a href="#local-6989586621682259889"><span class="hs-identifier hs-type">kFrom</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259886"><span class="hs-identifier hs-type">kTo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259892"><span class="hs-identifier hs-type">msv</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-88"></span><span>          </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621682259894"><span class="hs-identifier hs-type">xsv</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-89"></span><span>
-</span><span id="line-90"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682259618"><span id="local-6989586621682259619"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259618"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259619"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259618"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259619"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-91"></span><span>  </span><span id="local-6989586621682259915"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term (FP eb sb)
+</span><a href="#local-6989586621682446437"><span class="hs-identifier hs-var">st</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
+</span><a href="#local-6989586621682446428"><span class="hs-identifier hs-var">rm</span></a></span><span>
+</span><span id="line-82"></span><span>      </span><span id="local-6989586621682446440"><span class="annot"><a href="#local-6989586621682446440"><span class="hs-identifier hs-var">xsv</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBVI.sbvToSV</span></span><span> </span><span class="annot"><a href="#local-6989586621682446437"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446429"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-83"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">SBVI.newExpr</span></span><span> </span><span class="annot"><a href="#local-6989586621682446437"><span class="hs-identifier hs-type">st</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446432"><span class="hs-identifier hs-type">kTo</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span>
+</span><span id="line-84"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">SBVI.SBVApp</span></span><span>
+</span><span id="line-85"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBVI.IEEEFP</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SBVI.FP_Cast</span></span><span> </span><span class="annot"><a href="#local-6989586621682446435"><span class="hs-identifier hs-type">kFrom</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446432"><span class="hs-identifier hs-type">kTo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446438"><span class="hs-identifier hs-type">msv</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>          </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621682446440"><span class="hs-identifier hs-type">xsv</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682446164"><span id="local-6989586621682446165"><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446164"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446165"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446164"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446165"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-89"></span><span>  </span><span id="local-6989586621682446461"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term Integer -&gt; Term (FP eb sb)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term Integer -&gt; Term (FP eb sb)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-92"></span><span>  </span><span id="local-6989586621682259917"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType (FP eb sb)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682259918"><span class="annot"><span class="annottext">SBVType Integer
-</span><a href="#local-6989586621682259918"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-93"></span><span>    </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-90"></span><span>  </span><span id="local-6989586621682446463"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType Integer -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446464"><span class="annot"><span class="annottext">SBVType Integer
+</span><a href="#local-6989586621682446464"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType (FP eb sb))
@@ -258,7 +256,7 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType (FP eb sb)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-94"></span><span>      </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV Integer -&gt; SFloatingPoint eb sb
+</span><span id="line-92"></span><span>      </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV Integer -&gt; SFloatingPoint eb sb
 forall (eb :: Nat) (sb :: Nat).
 ValidFloat eb sb =&gt;
 SRoundingMode -&gt; SBV Integer -&gt; SFloatingPoint eb sb
@@ -268,29 +266,29 @@ SRoundingMode -&gt; SBV a -&gt; SFloatingPoint eb sb
 </span><span class="hs-identifier hs-var">SBV.toSFloatingPoint</span></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
 </span><span class="hs-identifier hs-var">SBV.sRoundNearestTiesToEven</span></span><span> </span><span class="annot"><span class="annottext">SBV Integer
 SBVType Integer
-</span><a href="#local-6989586621682259918"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-95"></span><span>
-</span><span id="line-96"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682259629"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259629"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259629"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259629"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-97"></span><span>  </span><span id="local-6989586621682259943"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term Integer
+</span><a href="#local-6989586621682446464"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682446175"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446175"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446175"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446175"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-95"></span><span>  </span><span id="local-6989586621682446489"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term Integer
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term Integer
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-98"></span><span>  </span><span id="local-6989586621682259946"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType Integer
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682259947"><span class="annot"><span class="annottext">SBVType (WordN n)
-</span><a href="#local-6989586621682259947"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-99"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer
+</span><span id="line-96"></span><span>  </span><span id="local-6989586621682446492"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType Integer
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446493"><span class="annot"><span class="annottext">SBVType (WordN n)
+</span><a href="#local-6989586621682446493"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-97"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259629"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer)
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446175"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer)
 -&gt; (BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-100"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-98"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType Integer)
@@ -299,51 +297,51 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType Integer
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-101"></span><span>        </span><span class="annot"><span class="annottext">SBV (WordN n) -&gt; SBV Integer
+</span><span id="line-99"></span><span>        </span><span class="annot"><span class="annottext">SBV (WordN n) -&gt; SBV Integer
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (WordN n)
 SBVType (WordN n)
-</span><a href="#local-6989586621682259947"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-102"></span><span>
-</span><span id="line-103"></span><span class="hs-keyword">instance</span><span>
-</span><span id="line-104"></span><span>  </span><span id="local-6989586621682259633"><span id="local-6989586621682259634"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259633"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259633"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259634"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259634"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
-</span><span id="line-105"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259633"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259634"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
-</span><span id="line-106"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-107"></span><span>  </span><span id="local-6989586621682259994"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term (WordN m)
+</span><a href="#local-6989586621682446493"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-102"></span><span>  </span><span id="local-6989586621682446179"><span id="local-6989586621682446180"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446179"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446179"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446180"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446180"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-103"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446179"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446180"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-104"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-105"></span><span>  </span><span id="local-6989586621682446540"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term (WordN m)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (WordN m)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-108"></span><span>  </span><span id="local-6989586621682259997"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType (WordN m)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682259998"><span class="annot"><span class="annottext">SBVType (WordN n)
-</span><a href="#local-6989586621682259998"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-109"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
+</span><span id="line-106"></span><span>  </span><span id="local-6989586621682446543"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType (WordN m)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446544"><span class="annot"><span class="annottext">SBVType (WordN n)
+</span><a href="#local-6989586621682446544"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-107"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
 -&gt; (BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259633"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446179"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
 -&gt; (BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-110"></span><span>      </span><span class="annot"><span class="annottext">Proxy m
+</span><span id="line-108"></span><span>      </span><span class="annot"><span class="annottext">Proxy m
 -&gt; (BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259634"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446180"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
 -&gt; (BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-111"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-109"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType (WordN m))
@@ -352,49 +350,49 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType (WordN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-112"></span><span>          </span><span class="annot"><span class="annottext">SBV (WordN n) -&gt; SBV (WordN m)
+</span><span id="line-110"></span><span>          </span><span class="annot"><span class="annottext">SBV (WordN n) -&gt; SBV (WordN m)
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (WordN n)
 SBVType (WordN n)
-</span><a href="#local-6989586621682259998"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-113"></span><span>
-</span><span id="line-114"></span><span class="hs-keyword">instance</span><span>
-</span><span id="line-115"></span><span>  </span><span id="local-6989586621682259637"><span id="local-6989586621682259638"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259637"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259637"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259638"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259638"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
-</span><span id="line-116"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259637"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259638"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
-</span><span id="line-117"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-118"></span><span>  </span><span id="local-6989586621682260044"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term (IntN m)
+</span><a href="#local-6989586621682446544"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-113"></span><span>  </span><span id="local-6989586621682446183"><span id="local-6989586621682446184"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446183"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446183"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446184"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446184"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-114"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446183"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446184"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-115"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621682446590"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term (IntN m)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (IntN m)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-119"></span><span>  </span><span id="local-6989586621682260047"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType (IntN m)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260048"><span class="annot"><span class="annottext">SBVType (WordN n)
-</span><a href="#local-6989586621682260048"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-120"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621682446593"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType (IntN m)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446594"><span class="annot"><span class="annottext">SBVType (WordN n)
+</span><a href="#local-6989586621682446594"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-118"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259637"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446183"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
 -&gt; (BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-121"></span><span>      </span><span class="annot"><span class="annottext">Proxy m -&gt; (BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
+</span><span id="line-119"></span><span>      </span><span class="annot"><span class="annottext">Proxy m -&gt; (BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259638"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446184"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
 -&gt; (BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-122"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-120"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType (IntN m))
@@ -403,34 +401,34 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType (IntN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-123"></span><span>          </span><span class="annot"><span class="annottext">SBV (WordN n) -&gt; SBV (IntN m)
+</span><span id="line-121"></span><span>          </span><span class="annot"><span class="annottext">SBV (WordN n) -&gt; SBV (IntN m)
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (WordN n)
 SBVType (WordN n)
-</span><a href="#local-6989586621682260048"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-124"></span><span>
-</span><span id="line-125"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682259640"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259640"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259640"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259640"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-126"></span><span>  </span><span id="local-6989586621682260085"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term AlgReal
+</span><a href="#local-6989586621682446594"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682446186"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446186"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446186"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446186"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-124"></span><span>  </span><span id="local-6989586621682446631"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term AlgReal
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term AlgReal
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-127"></span><span>  </span><span id="local-6989586621682260088"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType AlgReal
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260089"><span class="annot"><span class="annottext">SBVType (WordN n)
-</span><a href="#local-6989586621682260089"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-128"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBV AlgReal) -&gt; SBV AlgReal
+</span><span id="line-125"></span><span>  </span><span id="local-6989586621682446634"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446635"><span class="annot"><span class="annottext">SBVType (WordN n)
+</span><a href="#local-6989586621682446635"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-126"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBV AlgReal) -&gt; SBV AlgReal
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span>
-</span><span id="line-129"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span>
+</span><span id="line-127"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259640"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-130"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV AlgReal
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446186"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV AlgReal
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
@@ -442,62 +440,62 @@ forall a b.
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (WordN n)
 SBVType (WordN n)
-</span><a href="#local-6989586621682260089"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SInteger</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-131"></span><span>
-</span><span id="line-132"></span><span class="hs-keyword">instance</span><span>
-</span><span id="line-133"></span><span>  </span><span id="local-6989586621682259644"><span id="local-6989586621682259645"><span id="local-6989586621682259646"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259644"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259644"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259645"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259646"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
-</span><span id="line-134"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259644"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259645"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259646"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span>
-</span><span id="line-135"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-136"></span><span>  </span><span id="local-6989586621682260133"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term (FP eb sb)
+</span><a href="#local-6989586621682446635"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SInteger</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-131"></span><span>  </span><span id="local-6989586621682446190"><span id="local-6989586621682446191"><span id="local-6989586621682446192"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446190"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446190"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446191"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446192"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-132"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446190"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446191"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446192"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-133"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-134"></span><span>  </span><span id="local-6989586621682446679"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (WordN n) -&gt; Term (FP eb sb)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (WordN n) -&gt; Term (FP eb sb)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-137"></span><span>  </span><span id="local-6989586621682260136"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType (FP eb sb)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260137"><span class="annot"><span class="annottext">SBVType (WordN n)
-</span><a href="#local-6989586621682260137"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-138"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
+</span><span id="line-135"></span><span>  </span><span id="local-6989586621682446682"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (WordN n) -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446683"><span class="annot"><span class="annottext">SBVType (WordN n)
+</span><a href="#local-6989586621682446683"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-136"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
 -&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259644"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446190"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb))
 -&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-139"></span><span>      </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (WordN n) -&gt; SBV (FloatingPoint eb sb)
+</span><span id="line-137"></span><span>      </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (WordN n) -&gt; SBV (FloatingPoint eb sb)
 forall a r.
 (HasKind a, HasKind r) =&gt;
 SRoundingMode -&gt; SBV a -&gt; SBV r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#genericFPCast"><span class="hs-identifier hs-var">genericFPCast</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
 </span><span class="hs-identifier hs-var">SBV.sRoundNearestTiesToEven</span></span><span> </span><span class="annot"><span class="annottext">SBV (WordN n)
 SBVType (WordN n)
-</span><a href="#local-6989586621682260137"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-140"></span><span>
-</span><span id="line-141"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682259651"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259651"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259651"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259651"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-142"></span><span>  </span><span id="local-6989586621682260161"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term Integer
+</span><a href="#local-6989586621682446683"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682446197"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446197"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446197"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446197"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-140"></span><span>  </span><span id="local-6989586621682446707"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term Integer
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term Integer
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-143"></span><span>  </span><span id="local-6989586621682260164"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType Integer
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260165"><span class="annot"><span class="annottext">SBVType (IntN n)
-</span><a href="#local-6989586621682260165"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-144"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer
+</span><span id="line-141"></span><span>  </span><span id="local-6989586621682446710"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType Integer
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446711"><span class="annot"><span class="annottext">SBVType (IntN n)
+</span><a href="#local-6989586621682446711"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-142"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259651"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer)
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446197"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer)
 -&gt; (BVIsNonZero n =&gt; SBVType Integer) -&gt; SBVType Integer
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-145"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-143"></span><span>      </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType Integer)
@@ -506,51 +504,51 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType Integer
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-146"></span><span>        </span><span class="annot"><span class="annottext">SBV (IntN n) -&gt; SBV Integer
+</span><span id="line-144"></span><span>        </span><span class="annot"><span class="annottext">SBV (IntN n) -&gt; SBV Integer
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (IntN n)
 SBVType (IntN n)
-</span><a href="#local-6989586621682260165"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-147"></span><span>
-</span><span id="line-148"></span><span class="hs-keyword">instance</span><span>
-</span><span id="line-149"></span><span>  </span><span id="local-6989586621682259655"><span id="local-6989586621682259656"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259655"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259655"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259656"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259656"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
-</span><span id="line-150"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259655"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259656"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
-</span><span id="line-151"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-152"></span><span>  </span><span id="local-6989586621682260212"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term (WordN m)
+</span><a href="#local-6989586621682446711"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-145"></span><span>
+</span><span id="line-146"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-147"></span><span>  </span><span id="local-6989586621682446201"><span id="local-6989586621682446202"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446201"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446201"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446202"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446202"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-148"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446201"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#WordN"><span class="hs-identifier hs-type">WordN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446202"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-149"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-150"></span><span>  </span><span id="local-6989586621682446758"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term (WordN m)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (WordN m)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-153"></span><span>  </span><span id="local-6989586621682260215"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType (WordN m)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260216"><span class="annot"><span class="annottext">SBVType (IntN n)
-</span><a href="#local-6989586621682260216"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-154"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
+</span><span id="line-151"></span><span>  </span><span id="local-6989586621682446761"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType (WordN m)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446762"><span class="annot"><span class="annottext">SBVType (IntN n)
+</span><a href="#local-6989586621682446762"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-152"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
 -&gt; (BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259655"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446201"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
 -&gt; (BVIsNonZero n =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-155"></span><span>      </span><span class="annot"><span class="annottext">Proxy m
+</span><span id="line-153"></span><span>      </span><span class="annot"><span class="annottext">Proxy m
 -&gt; (BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259656"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446202"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m))
 -&gt; (BVIsNonZero m =&gt; SBVType (WordN m)) -&gt; SBVType (WordN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-156"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-154"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType (WordN m))
@@ -559,49 +557,49 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType (WordN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-157"></span><span>          </span><span class="annot"><span class="annottext">SBV (IntN n) -&gt; SBV (WordN m)
+</span><span id="line-155"></span><span>          </span><span class="annot"><span class="annottext">SBV (IntN n) -&gt; SBV (WordN m)
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (IntN n)
 SBVType (IntN n)
-</span><a href="#local-6989586621682260216"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-158"></span><span>
-</span><span id="line-159"></span><span class="hs-keyword">instance</span><span>
-</span><span id="line-160"></span><span>  </span><span id="local-6989586621682259659"><span id="local-6989586621682259660"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259659"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259659"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259660"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259660"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
-</span><span id="line-161"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259659"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259660"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
-</span><span id="line-162"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-163"></span><span>  </span><span id="local-6989586621682260262"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term (IntN m)
+</span><a href="#local-6989586621682446762"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-156"></span><span>
+</span><span id="line-157"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-158"></span><span>  </span><span id="local-6989586621682446205"><span id="local-6989586621682446206"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446205"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446205"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446206"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446206"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-159"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446205"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446206"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-160"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-161"></span><span>  </span><span id="local-6989586621682446808"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term (IntN m)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (IntN m)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-164"></span><span>  </span><span id="local-6989586621682260265"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType (IntN m)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260266"><span class="annot"><span class="annottext">SBVType (IntN n)
-</span><a href="#local-6989586621682260266"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-165"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
+</span><span id="line-162"></span><span>  </span><span id="local-6989586621682446811"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType (IntN m)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446812"><span class="annot"><span class="annottext">SBVType (IntN n)
+</span><a href="#local-6989586621682446812"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-163"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259659"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446205"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
 -&gt; (BVIsNonZero n =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-166"></span><span>      </span><span class="annot"><span class="annottext">Proxy m -&gt; (BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
+</span><span id="line-164"></span><span>      </span><span class="annot"><span class="annottext">Proxy m -&gt; (BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259660"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446206"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m))
 -&gt; (BVIsNonZero m =&gt; SBVType (IntN m)) -&gt; SBVType (IntN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-167"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
+</span><span id="line-165"></span><span>        </span><span class="annot"><span class="annottext">forall a r.
 SupportedNonFuncPrim a =&gt;
 (NonFuncPrimConstraint a =&gt; r) -&gt; r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#withNonFuncPrim"><span class="hs-identifier hs-var">withNonFuncPrim</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="annot"><span class="annottext">((NonFuncPrimConstraint Integer =&gt; SBVType (IntN m))
@@ -610,34 +608,34 @@ SupportedNonFuncPrim a =&gt;
 -&gt; SBVType (IntN m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-168"></span><span>          </span><span class="annot"><span class="annottext">SBV (IntN n) -&gt; SBV (IntN m)
+</span><span id="line-166"></span><span>          </span><span class="annot"><span class="annottext">SBV (IntN n) -&gt; SBV (IntN m)
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (IntN n)
 SBVType (IntN n)
-</span><a href="#local-6989586621682260266"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-169"></span><span>
-</span><span id="line-170"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682259662"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259662"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259662"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259662"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-171"></span><span>  </span><span id="local-6989586621682260303"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term AlgReal
+</span><a href="#local-6989586621682446812"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-167"></span><span>
+</span><span id="line-168"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682446208"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446208"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446208"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446208"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.AlgReal.html#AlgReal"><span class="hs-identifier hs-type">AlgReal</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-169"></span><span>  </span><span id="local-6989586621682446849"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term AlgReal
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term AlgReal
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-172"></span><span>  </span><span id="local-6989586621682260306"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType AlgReal
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260307"><span class="annot"><span class="annottext">SBVType (IntN n)
-</span><a href="#local-6989586621682260307"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-173"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBV AlgReal) -&gt; SBV AlgReal
+</span><span id="line-170"></span><span>  </span><span id="local-6989586621682446852"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType AlgReal
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446853"><span class="annot"><span class="annottext">SBVType (IntN n)
+</span><a href="#local-6989586621682446853"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-171"></span><span>    </span><span class="annot"><span class="annottext">Proxy n -&gt; (BVIsNonZero n =&gt; SBV AlgReal) -&gt; SBV AlgReal
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span>
-</span><span id="line-174"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span>
+</span><span id="line-172"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259662"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-175"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV AlgReal
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446208"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-173"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SBV Integer -&gt; SBV AlgReal
 forall a b.
 (Integral a, HasKind a, Num a, SymVal a, HasKind b, Num b,
  SymVal b) =&gt;
@@ -649,38 +647,38 @@ forall a b.
 SBV a -&gt; SBV b
 </span><span class="hs-identifier hs-var">SBV.sFromIntegral</span></span><span> </span><span class="annot"><span class="annottext">SBV (IntN n)
 SBVType (IntN n)
-</span><a href="#local-6989586621682260307"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SInteger</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-176"></span><span>
-</span><span id="line-177"></span><span class="hs-keyword">instance</span><span>
-</span><span id="line-178"></span><span>  </span><span id="local-6989586621682259666"><span id="local-6989586621682259667"><span id="local-6989586621682259668"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682259666"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682259666"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259667"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259668"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
-</span><span id="line-179"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259666"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259667"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682259668"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span>
-</span><span id="line-180"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-181"></span><span>  </span><span id="local-6989586621682260348"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term (FP eb sb)
+</span><a href="#local-6989586621682446853"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SBV.SInteger</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-174"></span><span>
+</span><span id="line-175"></span><span class="hs-keyword">instance</span><span>
+</span><span id="line-176"></span><span>  </span><span id="local-6989586621682446212"><span id="local-6989586621682446213"><span id="local-6989586621682446214"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KnownNat</span></span><span> </span><span class="annot"><a href="#local-6989586621682446212"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;=</span></span><span> </span><span class="annot"><a href="#local-6989586621682446212"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#ValidFP"><span class="hs-identifier hs-type">ValidFP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446213"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446214"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-177"></span><span>  </span><span class="annot"><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#PEvalFromIntegralTerm"><span class="hs-identifier hs-type">PEvalFromIntegralTerm</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.BV.html#IntN"><span class="hs-identifier hs-type">IntN</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446212"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Grisette.Internal.SymPrim.FP.html#FP"><span class="hs-identifier hs-type">FP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446213"><span class="hs-identifier hs-type">eb</span></a></span><span> </span><span class="annot"><a href="#local-6989586621682446214"><span class="hs-identifier hs-type">sb</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-178"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-179"></span><span>  </span><span id="local-6989586621682446894"><span class="annot"><span class="annottext">pevalFromIntegralTerm :: Term (IntN n) -&gt; Term (FP eb sb)
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#pevalFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">pevalFromIntegralTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term (IntN n) -&gt; Term (FP eb sb)
 forall a b.
 (PEvalFromIntegralTerm a b, SupportedPrim b) =&gt;
 Term a -&gt; Term b
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#pevalFromIntegralTermGeneric"><span class="hs-identifier hs-var">pevalFromIntegralTermGeneric</span></a></span><span>
-</span><span id="line-182"></span><span>  </span><span id="local-6989586621682260351"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType (FP eb sb)
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682260352"><span class="annot"><span class="annottext">SBVType (IntN n)
-</span><a href="#local-6989586621682260352"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-183"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
+</span><span id="line-180"></span><span>  </span><span id="local-6989586621682446897"><span class="annot"><span class="annottext">sbvFromIntegralTerm :: SBVType (IntN n) -&gt; SBVType (FP eb sb)
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#sbvFromIntegralTerm"><span class="hs-identifier hs-var hs-var hs-var">sbvFromIntegralTerm</span></a></span></span><span> </span><span id="local-6989586621682446898"><span class="annot"><span class="annottext">SBVType (IntN n)
+</span><a href="#local-6989586621682446898"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-181"></span><span>    </span><span class="annot"><span class="annottext">Proxy n
 -&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
 forall (w :: Nat) r (proxy :: Nat -&gt; *).
 (1 &lt;= w) =&gt;
 proxy w -&gt; (BVIsNonZero w =&gt; r) -&gt; r
-</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
+</span><a href="Grisette.Internal.SymPrim.Prim.Internal.Term.html#bvIsNonZeroFromGEq1"><span class="hs-identifier hs-var">bvIsNonZeroFromGEq1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: Nat). Proxy t
 forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682259666"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621682446212"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb))
 -&gt; (BVIsNonZero n =&gt; SBVType (FP eb sb)) -&gt; SBVType (FP eb sb)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-184"></span><span>      </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (IntN n) -&gt; SBV (FloatingPoint eb sb)
+</span><span id="line-182"></span><span>      </span><span class="annot"><span class="annottext">SRoundingMode -&gt; SBV (IntN n) -&gt; SBV (FloatingPoint eb sb)
 forall a r.
 (HasKind a, HasKind r) =&gt;
 SRoundingMode -&gt; SBV a -&gt; SBV r
 </span><a href="Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm.html#genericFPCast"><span class="hs-identifier hs-var">genericFPCast</span></a></span><span> </span><span class="annot"><span class="annottext">SRoundingMode
 </span><span class="hs-identifier hs-var">SBV.sRoundNearestTiesToEven</span></span><span> </span><span class="annot"><span class="annottext">SBV (IntN n)
 SBVType (IntN n)
-</span><a href="#local-6989586621682260352"><span class="hs-identifier hs-var">l</span></a></span><span>
-</span><span id="line-185"></span></pre></body></html>
+</span><a href="#local-6989586621682446898"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-183"></span></pre></body></html>

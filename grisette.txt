@@ -2073,7 +2073,7 @@ pevalBitCastOrTerm :: PEvalBitCastOrTerm a b => Term b -> Term a -> Term b
 sbvBitCastOr :: PEvalBitCastOrTerm a b => SBVType b -> SBVType a -> SBVType b
 
 -- | Partial evaluation and lowering for bit-vector terms.
-class SizedBV bv => PEvalBVTerm (bv :: Natural -> Type)
+class (SizedBV bv, forall (n :: Nat). (KnownNat n, 1 <= n) => PEvalNumTerm bv n, forall (n :: Nat). (KnownNat n, 1 <= n) => PEvalBitwiseTerm bv n, forall (n :: Nat). (KnownNat n, 1 <= n) => FiniteBits bv n, forall (n :: Nat). (KnownNat n, 1 <= n) => Num bv n) => PEvalBVTerm (bv :: Natural -> Type)
 pevalBVConcatTerm :: forall (l :: Nat) (r :: Nat). (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r) => Term (bv l) -> Term (bv r) -> Term (bv (l + r))
 pevalBVExtendTerm :: forall (l :: Nat) (r :: Nat) proxy. (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) => Bool -> proxy r -> Term (bv l) -> Term (bv r)
 pevalBVSelectTerm :: forall (n :: Nat) (ix :: Nat) (w :: Nat) p q. (PEvalBVTerm bv, KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, (ix + w) <= n) => p ix -> q w -> Term (bv n) -> Term (bv w)
@@ -2254,8 +2254,8 @@ data Term t
 [ForallTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !TypedSymbol 'ConstantKind t1 -> !Term Bool -> Term Bool
 [ExistsTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !TypedSymbol 'ConstantKind t1 -> !Term Bool -> Term Bool
 [NotTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> Term Bool
-[OrTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term Bool -> Term Bool
-[AndTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term Bool -> Term Bool
+[OrTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term Bool -> !HashSet (Term Bool) -> Term Bool
+[AndTerm'] :: {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term Bool -> !HashSet (Term Bool) -> Term Bool
 [EqTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !Term t1 -> !Term t1 -> Term Bool
 [DistinctTerm'] :: forall t1. {-# UNPACK #-} !CachedInfo -> !NonEmpty (Term t1) -> Term Bool
 [ITETerm'] :: forall t. SupportedPrim t => {-# UNPACK #-} !CachedInfo -> !Term Bool -> !Term t -> !Term t -> Term t
@@ -2350,8 +2350,8 @@ data UTerm t
 [UForallTerm] :: forall t1. !TypedSymbol 'ConstantKind t1 -> !Term Bool -> UTerm Bool
 [UExistsTerm] :: forall t1. !TypedSymbol 'ConstantKind t1 -> !Term Bool -> UTerm Bool
 [UNotTerm] :: !Term Bool -> UTerm Bool
-[UOrTerm] :: !Term Bool -> !Term Bool -> UTerm Bool
-[UAndTerm] :: !Term Bool -> !Term Bool -> UTerm Bool
+[UOrTerm] :: !Term Bool -> !Term Bool -> !HashSet (Term Bool) -> UTerm Bool
+[UAndTerm] :: !Term Bool -> !Term Bool -> !HashSet (Term Bool) -> UTerm Bool
 [UEqTerm] :: forall t1. !Term t1 -> !Term t1 -> UTerm Bool
 [UDistinctTerm] :: forall t1. !NonEmpty (Term t1) -> UTerm Bool
 [UITETerm] :: forall t. SupportedPrim t => !Term Bool -> !Term t -> !Term t -> UTerm t
@@ -2592,6 +2592,14 @@ pattern OrTerm :: () => r ~ Bool => Term Bool -> Term Bool -> Term r
 -- | Pattern synonym for <a>AndTerm'</a>. Note that using this pattern to
 --   construct a <a>Term</a> will do term simplification.
 pattern AndTerm :: () => r ~ Bool => Term Bool -> Term Bool -> Term r
+
+-- | Pattern synonym for <a>OrTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern OrTermAll :: () => r ~ Bool => Term Bool -> Term Bool -> HashSet (Term Bool) -> Term r
+
+-- | Pattern synonym for <a>AndTerm'</a>. Note that using this pattern to
+--   construct a <a>Term</a> will do term simplification.
+pattern AndTermAll :: () => r ~ Bool => Term Bool -> Term Bool -> HashSet (Term Bool) -> Term r
 
 -- | Pattern synonym for <a>EqTerm'</a>. Note that using this pattern to
 --   construct a <a>Term</a> will do term simplification.
@@ -2836,6 +2844,85 @@ partitionCVArg :: SupportedNonFuncPrim a => [([CV], CV)] -> [(a, [([CV], CV)])]
 
 -- | Parse the scalar model result.
 parseScalarSMTModelResult :: forall v r. (SatModel r, Typeable v) => (r -> v) -> ([([CV], CV)], CV) -> v
+
+-- | Construct the <a>BVIsNonZero</a> constraint from the proof that the
+--   width is at least 1.
+bvIsNonZeroFromGEq1 :: forall (w :: Natural) r proxy. 1 <= w => proxy w -> (BVIsNonZero w => r) -> r
+
+-- | A partial function from a to b.
+type PartialFun a b = a -> Maybe b
+
+-- | A partial rule for unary operations.
+type PartialRuleUnary a b = PartialFun Term a Term b
+
+-- | A total rule for unary operations.
+type TotalRuleUnary a b = Term a -> Term b
+
+-- | A partial rule for binary operations.
+type PartialRuleBinary a b c = Term a -> PartialFun Term b Term c
+
+-- | A total rule for binary operations.
+type TotalRuleBinary a b c = Term a -> Term b -> Term c
+
+-- | Totalize a partial function with a fallback function.
+totalize :: PartialFun a b -> (a -> b) -> a -> b
+
+-- | Totalize a binary partial function with a fallback function.
+totalize2 :: (a -> PartialFun b c) -> (a -> b -> c) -> a -> b -> c
+
+-- | A strategy for partially evaluating unary operations.
+class UnaryPartialStrategy tag a b | tag a -> b
+extractor :: UnaryPartialStrategy tag a b => tag -> Term a -> Maybe a
+constantHandler :: UnaryPartialStrategy tag a b => tag -> a -> Maybe (Term b)
+nonConstantHandler :: UnaryPartialStrategy tag a b => tag -> Term a -> Maybe (Term b)
+
+-- | Partially evaluate a unary operation.
+unaryPartial :: UnaryPartialStrategy tag a b => tag -> PartialRuleUnary a b
+
+-- | A strategy for partially evaluating commutative binary operations.
+class BinaryCommPartialStrategy tag a c | tag a -> c
+singleConstantHandler :: BinaryCommPartialStrategy tag a c => tag -> a -> Term a -> Maybe (Term c)
+
+-- | A strategy for partially evaluating operations.
+class BinaryPartialStrategy tag a b c | tag a b -> c
+extractora :: BinaryPartialStrategy tag a b c => tag -> Term a -> Maybe a
+extractorb :: BinaryPartialStrategy tag a b c => tag -> Term b -> Maybe b
+allConstantHandler :: BinaryPartialStrategy tag a b c => tag -> a -> b -> Maybe (Term c)
+leftConstantHandler :: BinaryPartialStrategy tag a b c => tag -> a -> Term b -> Maybe (Term c)
+($dmleftConstantHandler) :: (BinaryPartialStrategy tag a b c, a ~ b, BinaryCommPartialStrategy tag a c) => tag -> a -> Term b -> Maybe (Term c)
+rightConstantHandler :: BinaryPartialStrategy tag a b c => tag -> Term a -> b -> Maybe (Term c)
+($dmrightConstantHandler) :: (BinaryPartialStrategy tag a b c, a ~ b, BinaryCommPartialStrategy tag a c) => tag -> Term a -> b -> Maybe (Term c)
+nonBinaryConstantHandler :: BinaryPartialStrategy tag a b c => tag -> Term a -> Term b -> Maybe (Term c)
+
+-- | Partially evaluate a binary operation.
+binaryPartial :: BinaryPartialStrategy tag a b c => tag -> PartialRuleBinary a b c
+
+-- | Unfold a unary operation once.
+unaryUnfoldOnce :: forall a b. SupportedPrim b => PartialRuleUnary a b -> TotalRuleUnary a b -> TotalRuleUnary a b
+
+-- | Unfold a binary operation once.
+binaryUnfoldOnce :: forall a b c. SupportedPrim c => PartialRuleBinary a b c -> TotalRuleBinary a b c -> TotalRuleBinary a b c
+
+-- | Unfold a unary operation once.
+generalUnaryUnfolded :: (Typeable a, SupportedPrim b) => (a -> b) -> (Term a -> Term b) -> Term a -> Term b
+
+-- | Unfold a binary operation once.
+generalBinaryUnfolded :: (Typeable a, Typeable b, SupportedPrim c) => (a -> b -> c) -> (Term a -> Term b -> Term c) -> Term a -> Term b -> Term c
+unsafePevalBVConcatTerm :: forall bv (n1 :: Nat) (n2 :: Nat) (r :: Nat). PEvalBVTerm bv => NatRepr n1 -> NatRepr n2 -> NatRepr r -> Term (bv n1) -> Term (bv n2) -> Term (bv r)
+unsafePevalBVExtendTerm :: forall bv (l :: Nat) (r :: Nat). PEvalBVTerm bv => NatRepr l -> NatRepr r -> Bool -> Term (bv l) -> Term (bv r)
+unsafePevalBVSelectTerm :: forall bv (n :: Nat) (ix :: Nat) (w :: Nat). PEvalBVTerm bv => NatRepr n -> NatRepr ix -> NatRepr w -> Term (bv n) -> Term (bv w)
+boolToBVTerm :: forall bv (n :: Nat). (PEvalBVTerm bv, KnownNat n, 1 <= n, forall (m :: Nat). (KnownNat m, 1 <= m) => SupportedPrim (bv m)) => Term Bool -> Term (bv n)
+
+-- | Default partial evaluation of addition of numerical terms.
+pevalDefaultAddNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
+
+-- | Default partial evaluation of negation of numerical terms.
+pevalDefaultNegNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a
+pevalDefaultMulNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
+pevalBitsAbsNumTerm :: (PEvalNumTerm a, Bits a) => Term a -> Term a
+doPevalNoOverflowAbsNumTerm :: PEvalNumTerm a => Term a -> Maybe (Term a)
+pevalGeneralSignumNumTerm :: PEvalNumTerm a => Term a -> Term a
+doPevalNoOverflowSignumNumTerm :: PEvalNumTerm a => Term a -> Maybe (Term a)
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.Prim.Internal.Term.FPBinaryOp
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingBinaryOp
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingUnaryOp
@@ -2899,7 +2986,13 @@ instance Control.DeepSeq.NFData Grisette.Internal.SymPrim.Prim.Internal.Term.Mod
 instance Control.DeepSeq.NFData (Grisette.Internal.SymPrim.Prim.Internal.Term.SomeTypedSymbol knd)
 instance Control.DeepSeq.NFData (Grisette.Internal.SymPrim.Prim.Internal.Term.Term a)
 instance Control.DeepSeq.NFData (Grisette.Internal.SymPrim.Prim.Internal.Term.TypedSymbol knd t)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep Grisette.Internal.SymPrim.AlgReal.AlgReal
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep GHC.Types.Bool
+instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep (Grisette.Internal.SymPrim.FP.FP eb sb)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep Grisette.Internal.SymPrim.FP.FPRoundingMode
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep (Grisette.Internal.SymPrim.BV.IntN w)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep GHC.Num.Integer.Integer
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep (Grisette.Internal.SymPrim.BV.WordN w)
 instance GHC.Classes.Ord Grisette.Internal.SymPrim.Prim.Internal.Term.FPBinaryOp
 instance GHC.Classes.Ord Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingBinaryOp
 instance GHC.Classes.Ord Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingUnaryOp
@@ -2908,6 +3001,14 @@ instance GHC.Classes.Ord Grisette.Internal.SymPrim.Prim.Internal.Term.FPUnaryOp
 instance GHC.Classes.Ord Grisette.Internal.SymPrim.Prim.Internal.Term.FloatingUnaryOp
 instance GHC.Classes.Ord (Grisette.Internal.SymPrim.Prim.Internal.Term.SomeTypedSymbol knd)
 instance GHC.Classes.Ord (Grisette.Internal.SymPrim.Prim.Internal.Term.TypedSymbol knd t)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBVTerm Grisette.Internal.SymPrim.BV.IntN
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBVTerm Grisette.Internal.SymPrim.BV.WordN
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette.Internal.SymPrim.BV.IntN n) (Grisette.Internal.SymPrim.BV.WordN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette.Internal.SymPrim.BV.WordN n) (Grisette.Internal.SymPrim.BV.IntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitwiseTerm (Grisette.Internal.SymPrim.BV.IntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitwiseTerm (Grisette.Internal.SymPrim.BV.WordN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalNumTerm (Grisette.Internal.SymPrim.BV.IntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalNumTerm (Grisette.Internal.SymPrim.BV.WordN n)
 instance Control.Monad.IO.Class.MonadIO m => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad (Data.SBV.Core.Symbolic.QueryT m)
 instance (Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad m, GHC.Internal.Base.Monoid w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad (Control.Monad.Trans.RWS.Strict.RWST r w s m)
 instance (Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad m, GHC.Internal.Base.Monoid w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad (Control.Monad.Trans.RWS.Lazy.RWST r w s m)
@@ -2917,7 +3018,13 @@ instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad m => Grisett
 instance Control.Monad.IO.Class.MonadIO m => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad (Data.SBV.Core.Symbolic.SymbolicT m)
 instance (Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad m, GHC.Internal.Base.Monoid w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad (Control.Monad.Trans.Writer.Strict.WriterT w m)
 instance (Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad m, GHC.Internal.Base.Monoid w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVFreshMonad (Control.Monad.Trans.Writer.Lazy.WriterT w m)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep Grisette.Internal.SymPrim.AlgReal.AlgReal
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep GHC.Types.Bool
+instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep (Grisette.Internal.SymPrim.FP.FP eb sb)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep Grisette.Internal.SymPrim.FP.FPRoundingMode
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep (Grisette.Internal.SymPrim.BV.IntN w)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep GHC.Num.Integer.Integer
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep (Grisette.Internal.SymPrim.BV.WordN w)
 instance Data.Bytes.Serial.Serial Grisette.Internal.SymPrim.Prim.Internal.Term.FPBinaryOp
 instance Data.Bytes.Serial.Serial Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingBinaryOp
 instance Data.Bytes.Serial.Serial Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingUnaryOp
@@ -2942,9 +3049,27 @@ instance GHC.Internal.Show.Show (Grisette.Internal.SymPrim.Prim.Internal.Term.So
 instance GHC.Internal.Show.Show (Grisette.Internal.SymPrim.Prim.Internal.Term.Term ty)
 instance GHC.Internal.Show.Show Grisette.Internal.SymPrim.Prim.Internal.Term.TypeHashId
 instance GHC.Internal.Show.Show (Grisette.Internal.SymPrim.Prim.Internal.Term.TypedSymbol knd t)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim Grisette.Internal.SymPrim.AlgReal.AlgReal
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim GHC.Types.Bool
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim GHC.Types.Bool
+instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim (Grisette.Internal.SymPrim.FP.FP eb sb)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim Grisette.Internal.SymPrim.FP.FPRoundingMode
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim (Grisette.Internal.SymPrim.BV.IntN w)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim GHC.Num.Integer.Integer
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim (Grisette.Internal.SymPrim.BV.WordN w)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint Grisette.Internal.SymPrim.AlgReal.AlgReal
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint GHC.Types.Bool
+instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint (Grisette.Internal.SymPrim.FP.FP eb sb)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint Grisette.Internal.SymPrim.FP.FPRoundingMode
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint (Grisette.Internal.SymPrim.BV.IntN w)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint GHC.Num.Integer.Integer
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint (Grisette.Internal.SymPrim.BV.WordN w)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim Grisette.Internal.SymPrim.AlgReal.AlgReal
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim GHC.Types.Bool
+instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim (Grisette.Internal.SymPrim.FP.FP eb sb)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim Grisette.Internal.SymPrim.FP.FPRoundingMode
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim (Grisette.Internal.SymPrim.BV.IntN w)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim GHC.Num.Integer.Integer
+instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim (Grisette.Internal.SymPrim.BV.WordN w)
 
 
 module Grisette.Internal.SymPrim.Prim.SomeTerm
@@ -2961,6 +3086,12 @@ someTermId :: SomeTerm -> Id
 instance GHC.Classes.Eq Grisette.Internal.SymPrim.Prim.SomeTerm.SomeTerm
 instance Data.Hashable.Class.Hashable Grisette.Internal.SymPrim.Prim.SomeTerm.SomeTerm
 instance GHC.Internal.Show.Show Grisette.Internal.SymPrim.Prim.SomeTerm.SomeTerm
+
+
+module Grisette.Internal.SymPrim.Prim.Pattern
+
+-- | Extract all the subterms of a term.
+pattern SubTerms :: [SomeTerm] -> Term a
 
 
 module Grisette.Internal.SymPrim.Prim.Internal.PartialEval
@@ -3027,6 +3158,55 @@ generalUnaryUnfolded :: (Typeable a, SupportedPrim b) => (a -> b) -> (Term a -> 
 
 -- | Unfold a binary operation once.
 generalBinaryUnfolded :: (Typeable a, Typeable b, SupportedPrim c) => (a -> b -> c) -> (Term a -> Term b -> Term c) -> Term a -> Term b -> Term c
+
+
+module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
+
+-- | Partial evaluation of symbolic shift left term for finite bits types.
+pevalFiniteBitsSymShiftShiftLeftTerm :: forall bv (n :: Nat). (forall (m :: Nat). (KnownNat m, 1 <= m) => Integral (bv m), forall (m :: Nat). (KnownNat m, 1 <= m) => SymShift (bv m), forall (m :: Nat). (KnownNat m, 1 <= m) => SupportedPrim (bv m), forall (m :: Nat). (KnownNat m, 1 <= m) => PEvalShiftTerm (bv m), PEvalBVTerm bv, KnownNat n, 1 <= n) => Term (bv n) -> Term (bv n) -> Term (bv n)
+
+-- | Partial evaluation of symbolic shift right term for finite bits types.
+pevalFiniteBitsSymShiftShiftRightTerm :: forall bv (n :: Nat). (forall (m :: Nat). (KnownNat m, 1 <= m) => Integral (bv m), forall (m :: Nat). (KnownNat m, 1 <= m) => SymShift (bv m), forall (m :: Nat). (KnownNat m, 1 <= m) => SupportedPrim (bv m), forall (m :: Nat). (KnownNat m, 1 <= m) => PEvalShiftTerm (bv m), PEvalBVTerm bv, KnownNat n, 1 <= n) => Term (bv n) -> Term (bv n) -> Term (bv n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalShiftTerm (Grisette.Internal.SymPrim.BV.IntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalShiftTerm (Grisette.Internal.SymPrim.BV.WordN n)
+
+
+module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm
+
+-- | Partial evaluation of symbolic rotate left term for finite bits types.
+pevalFiniteBitsSymRotateRotateLeftTerm :: (Integral a, SymRotate a, FiniteBits a, PEvalRotateTerm a) => Term a -> Term a -> Term a
+
+-- | Partial evaluation of symbolic rotate right term for finite bits
+--   types.
+pevalFiniteBitsSymRotateRotateRightTerm :: (Integral a, SymRotate a, FiniteBits a, PEvalRotateTerm a) => Term a -> Term a -> Term a
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalRotateTerm (Grisette.Internal.SymPrim.BV.IntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalRotateTerm (Grisette.Internal.SymPrim.BV.WordN n)
+
+
+module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm
+
+-- | Default partial evaluation of division operation for integral types.
+pevalDefaultDivIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
+
+-- | Default partial evaluation of division operation for bounded integral
+--   types.
+pevalDefaultDivBoundedIntegralTerm :: (PEvalDivModIntegralTerm a, Bounded a, Integral a) => Term a -> Term a -> Term a
+
+-- | Default partial evaluation of modulo operation for integral types.
+pevalDefaultModIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
+
+-- | Default partial evaluation of quotient operation for integral types.
+pevalDefaultQuotIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
+
+-- | Default partial evaluation of quotient operation for bounded integral
+--   types.
+pevalDefaultQuotBoundedIntegralTerm :: (PEvalDivModIntegralTerm a, Bounded a, Integral a) => Term a -> Term a -> Term a
+
+-- | Default partial evaluation of remainder operation for integral types.
+pevalDefaultRemIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalDivModIntegralTerm (Grisette.Internal.SymPrim.BV.IntN n)
+instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalDivModIntegralTerm GHC.Num.Integer.Integer
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalDivModIntegralTerm (Grisette.Internal.SymPrim.BV.WordN n)
 
 
 module Grisette.Internal.SymPrim.FunInstanceGen
@@ -3118,115 +3298,10 @@ instance Data.Hashable.Class.Hashable Grisette.Internal.Backend.QuantifiedStack.
 instance GHC.Internal.Show.Show Grisette.Internal.Backend.QuantifiedStack.QuantifiedSymbols
 
 
-module Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
-
--- | Construct the <a>BVIsNonZero</a> constraint from the proof that the
---   width is at least 1.
-bvIsNonZeroFromGEq1 :: forall (w :: Natural) r proxy. 1 <= w => proxy w -> (BVIsNonZero w => r) -> r
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep Grisette.Internal.SymPrim.AlgReal.AlgReal
-instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep (Grisette.Internal.SymPrim.FP.FP eb sb)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep Grisette.Internal.SymPrim.FP.FPRoundingMode
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep (Grisette.Internal.SymPrim.BV.IntN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep GHC.Num.Integer.Integer
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.NonFuncSBVRep (Grisette.Internal.SymPrim.BV.WordN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep Grisette.Internal.SymPrim.AlgReal.AlgReal
-instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep (Grisette.Internal.SymPrim.FP.FP eb sb)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep Grisette.Internal.SymPrim.FP.FPRoundingMode
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep (Grisette.Internal.SymPrim.BV.IntN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep GHC.Num.Integer.Integer
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SBVRep (Grisette.Internal.SymPrim.BV.WordN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim Grisette.Internal.SymPrim.AlgReal.AlgReal
-instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim (Grisette.Internal.SymPrim.FP.FP eb sb)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim Grisette.Internal.SymPrim.FP.FPRoundingMode
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim (Grisette.Internal.SymPrim.BV.IntN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim GHC.Num.Integer.Integer
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedNonFuncPrim (Grisette.Internal.SymPrim.BV.WordN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint Grisette.Internal.SymPrim.AlgReal.AlgReal
-instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint (Grisette.Internal.SymPrim.FP.FP eb sb)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint Grisette.Internal.SymPrim.FP.FPRoundingMode
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint (Grisette.Internal.SymPrim.BV.IntN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint GHC.Num.Integer.Integer
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrimConstraint (Grisette.Internal.SymPrim.BV.WordN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim Grisette.Internal.SymPrim.AlgReal.AlgReal
-instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim (Grisette.Internal.SymPrim.FP.FP eb sb)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim Grisette.Internal.SymPrim.FP.FPRoundingMode
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim (Grisette.Internal.SymPrim.BV.IntN w)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim GHC.Num.Integer.Integer
-instance (GHC.Internal.TypeNats.KnownNat w, 1 GHC.Internal.Data.Type.Ord.<= w) => Grisette.Internal.SymPrim.Prim.Internal.Term.SupportedPrim (Grisette.Internal.SymPrim.BV.WordN w)
-
-
-module Grisette.Internal.SymPrim.Prim.Pattern
-
--- | Extract all the subterms of a term.
-pattern SubTerms :: [SomeTerm] -> Term a
-
-
-module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
-
--- | Partial evaluation of symbolic shift left term for finite bits types.
-pevalFiniteBitsSymShiftShiftLeftTerm :: (Integral a, SymShift a, FiniteBits a, PEvalShiftTerm a) => Term a -> Term a -> Term a
-
--- | Partial evaluation of symbolic shift right term for finite bits types.
-pevalFiniteBitsSymShiftShiftRightTerm :: (Integral a, SymShift a, FiniteBits a, PEvalShiftTerm a) => Term a -> Term a -> Term a
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalShiftTerm (Grisette.Internal.SymPrim.BV.IntN n)
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalShiftTerm (Grisette.Internal.SymPrim.BV.WordN n)
-
-
-module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm
-
--- | Partial evaluation of symbolic rotate left term for finite bits types.
-pevalFiniteBitsSymRotateRotateLeftTerm :: (Integral a, SymRotate a, FiniteBits a, PEvalRotateTerm a) => Term a -> Term a -> Term a
-
--- | Partial evaluation of symbolic rotate right term for finite bits
---   types.
-pevalFiniteBitsSymRotateRotateRightTerm :: (Integral a, SymRotate a, FiniteBits a, PEvalRotateTerm a) => Term a -> Term a -> Term a
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalRotateTerm (Grisette.Internal.SymPrim.BV.IntN n)
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalRotateTerm (Grisette.Internal.SymPrim.BV.WordN n)
-
-
-module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm
-
--- | Default partial evaluation of division operation for integral types.
-pevalDefaultDivIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-
--- | Default partial evaluation of division operation for bounded integral
---   types.
-pevalDefaultDivBoundedIntegralTerm :: (PEvalDivModIntegralTerm a, Bounded a, Integral a) => Term a -> Term a -> Term a
-
--- | Default partial evaluation of modulo operation for integral types.
-pevalDefaultModIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-
--- | Default partial evaluation of quotient operation for integral types.
-pevalDefaultQuotIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-
--- | Default partial evaluation of quotient operation for bounded integral
---   types.
-pevalDefaultQuotBoundedIntegralTerm :: (PEvalDivModIntegralTerm a, Bounded a, Integral a) => Term a -> Term a -> Term a
-
--- | Default partial evaluation of remainder operation for integral types.
-pevalDefaultRemIntegralTerm :: (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalDivModIntegralTerm (Grisette.Internal.SymPrim.BV.IntN n)
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalDivModIntegralTerm GHC.Num.Integer.Integer
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalDivModIntegralTerm (Grisette.Internal.SymPrim.BV.WordN n)
-
-
-module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitwiseTerm (Grisette.Internal.SymPrim.BV.IntN n)
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitwiseTerm (Grisette.Internal.SymPrim.BV.WordN n)
-
-
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm
-
--- | Default partial evaluation of addition of numerical terms.
-pevalDefaultAddNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
-
--- | Default partial evaluation of negation of numerical terms.
-pevalDefaultNegNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalNumTerm Grisette.Internal.SymPrim.AlgReal.AlgReal
 instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalNumTerm (Grisette.Internal.SymPrim.FP.FP eb sb)
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalNumTerm (Grisette.Internal.SymPrim.BV.IntN n)
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalNumTerm GHC.Num.Integer.Integer
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalNumTerm (Grisette.Internal.SymPrim.BV.WordN n)
 
 
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
@@ -3376,13 +3451,6 @@ instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette
 instance (n GHC.Types.~ (eb GHC.Internal.TypeNats.+ sb), Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette.Internal.SymPrim.BV.IntN n) (Grisette.Internal.SymPrim.FP.FP eb sb)
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette.Internal.SymPrim.BV.WordN 1) GHC.Types.Bool
 instance (n GHC.Types.~ (eb GHC.Internal.TypeNats.+ sb), Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette.Internal.SymPrim.BV.WordN n) (Grisette.Internal.SymPrim.FP.FP eb sb)
-
-
-module Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBVTerm Grisette.Internal.SymPrim.BV.IntN
-instance Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBVTerm Grisette.Internal.SymPrim.BV.WordN
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette.Internal.SymPrim.BV.IntN n) (Grisette.Internal.SymPrim.BV.WordN n)
-instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.PEvalBitCastTerm (Grisette.Internal.SymPrim.BV.WordN n) (Grisette.Internal.SymPrim.BV.IntN n)
 
 
 module Grisette.Internal.SymPrim.Prim.Internal.Serialize
@@ -5688,7 +5756,7 @@ module Grisette.Internal.Core.Data.Class.SymEq
 --   (= a b)
 --   
 --   &gt;&gt;&gt; a ./= b
---   (distinct a b)
+--   (! (= a b))
 --   </pre>
 --   
 --   <b>Note:</b> This type class can be derived for algebraic data types.
@@ -15332,7 +15400,7 @@ symIte :: ITEOp v => SymBool -> v -> v -> v
 --   (= a b)
 --   
 --   &gt;&gt;&gt; a ./= b
---   (distinct a b)
+--   (! (= a b))
 --   </pre>
 --   
 --   <b>Note:</b> This type class can be derived for algebraic data types.
