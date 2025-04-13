@@ -42,6 +42,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Functor.Compose (Compose (Compose))
 import Data.Functor.Const (Const)
 import Data.Functor.Product (Product)
+import qualified Data.HashSet as HS
 import Data.Monoid (Alt, Ap, Endo (Endo))
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
@@ -59,7 +60,6 @@ import GHC.Generics
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default), Default1 (Default1))
 import Grisette.Internal.Core.Control.Exception (AssertionError)
-import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -77,16 +77,20 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge ()
 import Grisette.Internal.SymPrim.FP (ValidFP)
-import Grisette.Internal.SymPrim.GeneralFun (type (-->))
-import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
+import Grisette.Internal.SymPrim.GeneralFun (freshArgSymbol, substTerm, type (-->) (GeneralFun))
+import Grisette.Internal.SymPrim.Prim.Internal.Term (SupportedPrim (pevalITETerm), symTerm)
+import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
+import Grisette.Internal.SymPrim.Prim.Term (TypedConstantSymbol)
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
-  ( SymIntN,
-    SymWordN,
+  ( SymIntN (SymIntN),
+    SymWordN (SymWordN),
   )
-import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
-import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
-import Grisette.Internal.SymPrim.SymInteger (SymInteger)
-import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
+import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP), SymFPRoundingMode (SymFPRoundingMode))
+import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
+import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
+import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.TH.Derivation.Derive (derive)
 
 -- $setup
@@ -532,17 +536,17 @@ deriving via
 
 #define SIMPLE_MERGEABLE_SIMPLE(symtype) \
 instance SimpleMergeable symtype where \
-  mrgIte = symIte; \
+  mrgIte (SymBool c) (symtype t) (symtype f) = symtype $ pevalITETerm c t f; \
   {-# INLINE mrgIte #-}
 
 #define SIMPLE_MERGEABLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SimpleMergeable (symtype n) where \
-  mrgIte = symIte; \
+  mrgIte (SymBool c) (symtype t) (symtype f) = symtype $ pevalITETerm c t f; \
   {-# INLINE mrgIte #-}
 
-#define SIMPLE_MERGEABLE_FUN(cop, op) \
+#define SIMPLE_MERGEABLE_FUN(cop, op, cons) \
 instance SimpleMergeable (op sa sb) where \
-  mrgIte = symIte; \
+  mrgIte (SymBool c) (cons t) (cons f) = cons $ pevalITETerm c t f; \
   {-# INLINE mrgIte #-}
 
 #if 1
@@ -551,14 +555,25 @@ SIMPLE_MERGEABLE_SIMPLE(SymFPRoundingMode)
 SIMPLE_MERGEABLE_SIMPLE(SymAlgReal)
 SIMPLE_MERGEABLE_BV(SymIntN)
 SIMPLE_MERGEABLE_BV(SymWordN)
-SIMPLE_MERGEABLE_FUN((=->), (=~>))
-SIMPLE_MERGEABLE_FUN((-->), (-~>))
+SIMPLE_MERGEABLE_FUN((=->), (=~>), SymTabularFun)
+SIMPLE_MERGEABLE_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 instance SimpleMergeable (a --> b) where
-  mrgIte = symIte
+  mrgIte
+    (SymBool c)
+    (GeneralFun (ta :: TypedConstantSymbol a) a)
+    (GeneralFun tb b) =
+      GeneralFun argSymbol $
+        pevalITETerm
+          c
+          (substTerm ta (symTerm argSymbol) HS.empty a)
+          (substTerm tb (symTerm argSymbol) HS.empty b)
+      where
+        argSymbol :: TypedConstantSymbol a
+        argSymbol = freshArgSymbol [SomeTerm a, SomeTerm b]
   {-# INLINE mrgIte #-}
 
 instance (ValidFP eb sb) => SimpleMergeable (SymFP eb sb) where
-  mrgIte = symIte
+  mrgIte (SymBool c) (SymFP t) (SymFP f) = SymFP $ pevalITETerm c t f
   {-# INLINE mrgIte #-}

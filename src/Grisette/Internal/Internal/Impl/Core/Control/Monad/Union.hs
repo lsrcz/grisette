@@ -414,7 +414,7 @@ instance (Num a, Mergeable a) => Num (Union a) where
   abs = tryMerge . unionUnaryOp abs
   signum = tryMerge . unionUnaryOp signum
 
-instance (ITEOp a, Mergeable a) => ITEOp (Union a) where
+instance (Mergeable a) => ITEOp (Union a) where
   symIte = mrgIf
 
 instance (LogicalOp a, Mergeable a) => LogicalOp (Union a) where
