@@ -68,7 +68,8 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
 import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
   )
-import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.Prim.Internal.Term (SupportedPrim (pevalITETerm))
+import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
@@ -301,5 +302,9 @@ mrgIf = mrgIfWithStrategy rootStrategy
 {-# INLINE mrgIf #-}
 
 instance SimpleMergeable SymBool where
-  mrgIte = symIte
+  mrgIte (SymBool c) (SymBool t) (SymBool f) = SymBool $ pevalITETerm c t f
   {-# INLINE mrgIte #-}
+
+instance {-# OVERLAPPABLE #-} (SimpleMergeable a) => ITEOp a where
+  symIte = mrgIte
+  {-# INLINE symIte #-}

@@ -30,6 +30,8 @@ and this project adheres to
   ([#280](https://github.com/lsrcz/grisette/pull/280))
 - Added `PPrint` instances for `SomeTerm` and `Term`.
   ([#281](https://github.com/lsrcz/grisette/pull/281))
+- Types with `SimpleMergeable` instances now have default `ITEOp` instances.
+  ([#290](https://github.com/lsrcz/grisette/pull/290))
 
 ### Changed
 
