@@ -6912,6 +6912,7 @@ pevalITEBVTerm cond a (OrBitsTerm b c)
   | a == c = Just $ orBitsTerm a $ pevalAndBitsTerm (boolToBVTerm $ pevalNotTerm cond) b
 pevalITEBVTerm _ _ _ = Nothing
 
+-- | Convert boolean term to a 1-bit bitvector term.
 boolToBVTerm ::
   forall bv n.
   ( PEvalBVTerm bv,
@@ -7491,6 +7492,8 @@ pevalDefaultBVSelectTerm ::
 pevalDefaultBVSelectTerm ix w =
   unaryUnfoldOnce (doPevalDefaultBVSelectTerm @bv2 ix w) (bvSelectTerm ix w)
 
+-- | Unsafe version of `pevalBVSelectTerm`. Use `NatRepr` for the bit-width
+-- representations.
 unsafePevalBVSelectTerm ::
   forall bv n ix w.
   (PEvalBVTerm bv) =>
@@ -7641,6 +7644,8 @@ pevalDefaultBVExtendTerm ::
 pevalDefaultBVExtendTerm signed p =
   unaryUnfoldOnce (doPevalDefaultBVExtendTerm signed p) (bvExtendTerm signed p)
 
+-- | Unsafe version of `pevalBVExtendTerm`. Use `NatRepr` for the bit-width
+-- representations.
 unsafePevalBVExtendTerm ::
   forall bv l r.
   (PEvalBVTerm bv) =>
@@ -7735,6 +7740,8 @@ unsafeBVConcatTerm n1Repr n2Repr rRepr lhs rhs =
           withKnownNat rRepr $
             bvConcatTerm lhs rhs
 
+-- | Unsafe version of `pevalBVConcatTerm`. Use `NatRepr` for the bit-width
+-- representations.
 unsafePevalBVConcatTerm ::
   forall bv n1 n2 r.
   (PEvalBVTerm bv) =>
@@ -8096,6 +8103,8 @@ doPevalDefaultNegNumTerm (AddNumTerm _ ConTerm {}) = error "Should not happen"
 doPevalDefaultNegNumTerm _ = Nothing
 
 -- Mul
+
+-- | Default partial evaluation of multiplication of numerical terms.
 pevalDefaultMulNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
 pevalDefaultMulNumTerm l@SupportedTerm r =
   binaryUnfoldOnce
@@ -8145,6 +8154,8 @@ doPevalDefaultMulNumTermNoCon _ (MulNumTerm _ ConTerm {}) =
 doPevalDefaultMulNumTermNoCon _ _ = Nothing
 
 -- Abs
+
+-- | Default partial evaluation of absolute value of finite-bit numerical terms.
 pevalBitsAbsNumTerm :: (PEvalNumTerm a, Bits a) => Term a -> Term a
 pevalBitsAbsNumTerm l@SupportedTerm =
   unaryUnfoldOnce doPevalBitsAbsNumTerm absNumTerm l
@@ -8163,6 +8174,8 @@ doPevalBitsAbsNumTerm t =
       doPevalGeneralAbsNumTerm t
     ]
 
+-- | Partial evaluation of absolute value of numerical terms that does not
+-- overflow.
 doPevalNoOverflowAbsNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
 doPevalNoOverflowAbsNumTerm t =
   msum
@@ -8175,6 +8188,7 @@ doPevalNoOverflowAbsNumTerm t =
 
 -- Signum
 
+-- | Default partial evaluation of signum of numerical terms.
 pevalGeneralSignumNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 pevalGeneralSignumNumTerm l@SupportedTerm =
   unaryUnfoldOnce doPevalGeneralSignumNumTerm signumNumTerm l
@@ -8183,6 +8197,7 @@ doPevalGeneralSignumNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
 doPevalGeneralSignumNumTerm (ConTerm a) = Just $ conTerm $ signum a
 doPevalGeneralSignumNumTerm _ = Nothing
 
+-- | Partial evaluation of signum of numerical terms that does not overflow.
 doPevalNoOverflowSignumNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
 doPevalNoOverflowSignumNumTerm t =
   msum
