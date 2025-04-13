@@ -2908,9 +2908,20 @@ generalUnaryUnfolded :: (Typeable a, SupportedPrim b) => (a -> b) -> (Term a -> 
 
 -- | Unfold a binary operation once.
 generalBinaryUnfolded :: (Typeable a, Typeable b, SupportedPrim c) => (a -> b -> c) -> (Term a -> Term b -> Term c) -> Term a -> Term b -> Term c
+
+-- | Unsafe version of <a>pevalBVConcatTerm</a>. Use <a>NatRepr</a> for the
+--   bit-width representations.
 unsafePevalBVConcatTerm :: forall bv (n1 :: Nat) (n2 :: Nat) (r :: Nat). PEvalBVTerm bv => NatRepr n1 -> NatRepr n2 -> NatRepr r -> Term (bv n1) -> Term (bv n2) -> Term (bv r)
+
+-- | Unsafe version of <a>pevalBVExtendTerm</a>. Use <a>NatRepr</a> for the
+--   bit-width representations.
 unsafePevalBVExtendTerm :: forall bv (l :: Nat) (r :: Nat). PEvalBVTerm bv => NatRepr l -> NatRepr r -> Bool -> Term (bv l) -> Term (bv r)
+
+-- | Unsafe version of <a>pevalBVSelectTerm</a>. Use <a>NatRepr</a> for the
+--   bit-width representations.
 unsafePevalBVSelectTerm :: forall bv (n :: Nat) (ix :: Nat) (w :: Nat). PEvalBVTerm bv => NatRepr n -> NatRepr ix -> NatRepr w -> Term (bv n) -> Term (bv w)
+
+-- | Convert boolean term to a 1-bit bitvector term.
 boolToBVTerm :: forall bv (n :: Nat). (PEvalBVTerm bv, KnownNat n, 1 <= n, forall (m :: Nat). (KnownNat m, 1 <= m) => SupportedPrim (bv m)) => Term Bool -> Term (bv n)
 
 -- | Default partial evaluation of addition of numerical terms.
@@ -2918,10 +2929,23 @@ pevalDefaultAddNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
 
 -- | Default partial evaluation of negation of numerical terms.
 pevalDefaultNegNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a
+
+-- | Default partial evaluation of multiplication of numerical terms.
 pevalDefaultMulNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
+
+-- | Default partial evaluation of absolute value of finite-bit numerical
+--   terms.
 pevalBitsAbsNumTerm :: (PEvalNumTerm a, Bits a) => Term a -> Term a
+
+-- | Partial evaluation of absolute value of numerical terms that does not
+--   overflow.
 doPevalNoOverflowAbsNumTerm :: PEvalNumTerm a => Term a -> Maybe (Term a)
+
+-- | Default partial evaluation of signum of numerical terms.
 pevalGeneralSignumNumTerm :: PEvalNumTerm a => Term a -> Term a
+
+-- | Partial evaluation of signum of numerical terms that does not
+--   overflow.
 doPevalNoOverflowSignumNumTerm :: PEvalNumTerm a => Term a -> Maybe (Term a)
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.Prim.Internal.Term.FPBinaryOp
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.Prim.Internal.Term.FPRoundingBinaryOp
