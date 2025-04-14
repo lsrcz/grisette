@@ -26,6 +26,7 @@
 -- Portability :   GHC only
 module Grisette.Internal.Internal.Impl.Core.Data.Class.ToCon () where
 
+import Control.Exception (ArithException)
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
   ( Identity (Identity, runIdentity),
@@ -286,7 +287,8 @@ derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
-    ''NotRepresentableFPError
+    ''NotRepresentableFPError,
+    ''ArithException
   ]
   [''ToCon]
 
