@@ -145,6 +145,13 @@ instance Integral SymInteger where
   quotRem (SymInteger l) (SymInteger r) =
     (SymInteger $ pevalQuotIntegralTerm l r, SymInteger $ pevalRemIntegralTerm l r)
 
+-- | Checks if two formulas are the same. Not building the actual symbolic
+-- equality formula.
+--
+-- The reason why we choose this behavior is to allow symbolic variables to be
+-- used as keys in hash maps, which can be useful for memoization.
+--
+-- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
 instance Eq SymInteger where
   SymInteger l == SymInteger r = l == r
 
