@@ -291,6 +291,13 @@ buildGeneralFun arg v =
   where
     argSymbol = freshArgSymbol [SomeTerm v]
 
+-- | Checks if two formulas are the same. Not building the actual symbolic
+-- equality formula.
+--
+-- The reason why we choose this behavior is to allow symbolic variables to be
+-- used as keys in hash maps, which can be useful for memoization.
+--
+-- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
 instance Eq (a --> b) where
   GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
 

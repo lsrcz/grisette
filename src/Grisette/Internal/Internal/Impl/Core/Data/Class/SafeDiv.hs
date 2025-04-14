@@ -44,23 +44,9 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
   ( DivOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
     SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
   )
-import Grisette.Internal.SymPrim.BV
-  ( IntN,
-    WordN,
-  )
-import Grisette.Internal.SymPrim.Prim.Term
-  ( PEvalDivModIntegralTerm
-      ( pevalDivIntegralTerm,
-        pevalModIntegralTerm,
-        pevalQuotIntegralTerm,
-        pevalRemIntegralTerm
-      ),
-  )
-import Grisette.Internal.SymPrim.SymBV
-  ( SymIntN (SymIntN),
-    SymWordN (SymWordN),
-  )
-import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
+import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 
 concreteDivOrHelper ::
   (Integral a) =>
@@ -224,124 +210,99 @@ instance
   safeRem = concreteSafeDivHelper rem
   safeQuotRem = concreteSafeDivHelper quotRem
 
-#define DIVISION_OR_SYMBOLIC_FUNC(name, type, op) \
-name d (type l) rs@(type r) = \
-  symIte (rs .== con 0) d (type $ op l r)
+#define DIVISION_OR_SYMBOLIC_FUNC(name, op) \
+name d l r = symIte (r .== con 0) d (op l r)
 
-#define DIVISION_OR_SYMBOLIC_FUNC2(name, type, op1, op2) \
-name (dd, dm) (type l) rs@(type r) = \
-  (symIte (rs .== con 0) dd (type $ op1 l r), \
-   symIte (rs .== con 0) dm (type $ op2 l r))
+#define DIVISION_OR_SYMBOLIC_FUNC2(name, op1, op2) \
+name (dd, dm) l r = \
+  (symIte (r .== con 0) dd (op1 l r), symIte (r .== con 0) dm (op2 l r))
 
-#define SAFE_DIVISION_SYMBOLIC_FUNC(name, type, op) \
-name (type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError DivideByZero) \
-    (mrgSingle $ type $ op l r); \
+#define SAFE_DIVISION_SYMBOLIC_FUNC(name, op) \
+name l r = mrgIf (r .== con 0) (throwError DivideByZero) (mrgSingle $ op l r)
 
-#define SAFE_DIVISION_SYMBOLIC_FUNC2(name, type, op1, op2) \
-name (type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError DivideByZero) \
-    (mrgSingle (type $ op1 l r, type $ op2 l r)); \
+#define SAFE_DIVISION_SYMBOLIC_FUNC2(name, op1, op2) \
+name l r = mrgIf (r .== con 0) (throwError DivideByZero) (mrgSingle (op1 l r, op2 l r))
 
 #if 1
 instance DivOr SymInteger where
-  DIVISION_OR_SYMBOLIC_FUNC(divOr, SymInteger, pevalDivIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(modOr, SymInteger, pevalModIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(quotOr, SymInteger, pevalQuotIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(remOr, SymInteger, pevalRemIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC2(divModOr, SymInteger, pevalDivIntegralTerm, pevalModIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC2(quotRemOr, SymInteger, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+  DIVISION_OR_SYMBOLIC_FUNC(divOr, div)
+  DIVISION_OR_SYMBOLIC_FUNC(modOr, mod)
+  DIVISION_OR_SYMBOLIC_FUNC(quotOr, quot)
+  DIVISION_OR_SYMBOLIC_FUNC(remOr, rem)
+  DIVISION_OR_SYMBOLIC_FUNC2(divModOr, div, mod)
+  DIVISION_OR_SYMBOLIC_FUNC2(quotRemOr, quot, rem)
 instance
   (MonadUnion m, MonadError ArithException m) =>
   SafeDiv ArithException SymInteger m where
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymInteger, pevalDivIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymInteger, pevalModIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymInteger, pevalQuotIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, SymInteger, pevalRemIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, SymInteger, pevalDivIntegralTerm, pevalModIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, SymInteger, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, div)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, mod)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, quot)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, rem)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, div, mod)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, quot, rem)
 #endif
 
-#define DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(name, type, op) \
-name d ls@(type l) rs@(type r) = \
-  symIte \
-    (rs .== con 0) \
-    d \
-    (symIte (rs .== con (-1) .&& ls .== con minBound) \
-      d \
-      (type $ op l r)) \
+#define DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(name, op) \
+name d l r = \
+  symIte (r .== con 0) d $ \
+    symIte (r .== con (-1) .&& l .== con minBound) d (op l r)
 
-#define DIVISION_OR_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
-name (dd, dr) ls@(type l) rs@(type r) = \
-  (symIte \
-    (rs .== con 0) \
-    dd \
-    (symIte (rs .== con (-1) .&& ls .== con minBound) \
-      dd \
-      (type $ op1 l r)), \
-  symIte \
-    (rs .== con 0) \
-    dr \
-    (symIte (rs .== con (-1) .&& ls .== con minBound) \
-      dr \
-      (type $ op2 l r))) \
+#define DIVISION_OR_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, op1, op2) \
+name (dd, dr) l r = \
+  ( symIte (r .== con 0) dd $ \
+      symIte (r .== con (-1) .&& l .== con minBound) dd (op1 l r), \
+    symIte (r .== con 0) dr $ \
+      symIte (r .== con (-1) .&& l .== con minBound) dr (op2 l r) \
+  )
 
-#define SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(name, type, op) \
-name ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError DivideByZero) \
-    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
+#define SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(name, op) \
+name l r = \
+  mrgIf (r .== con 0) (throwError DivideByZero) $ \
+    mrgIf (r .== con (-1) .&& l .== con minBound) \
       (throwError Overflow) \
-      (mrgSingle $ type $ op l r)); \
+      (mrgSingle $ op l r)
 
-#define SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
-name ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError DivideByZero) \
-    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
+#define SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, op1, op2) \
+name l r = \
+  mrgIf (r .== con 0) (throwError DivideByZero) $ \
+    mrgIf (r .== con (-1) .&& l .== con minBound) \
       (throwError Overflow) \
-      (mrgSingle (type $ op1 l r, type $ op2 l r))); \
+      (mrgSingle (op1 l r, op2 l r))
 
 #if 1
 instance (KnownNat n, 1 <= n) => DivOr (SymIntN n) where
-  DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(divOr, SymIntN, pevalDivIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(modOr, SymIntN, pevalModIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(quotOr, SymIntN, pevalQuotIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(remOr, SymIntN, pevalRemIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC2_BOUNDED_SIGNED(divModOr, SymIntN, pevalDivIntegralTerm, pevalModIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC2_BOUNDED_SIGNED(quotRemOr, SymIntN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+  DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(divOr, div)
+  DIVISION_OR_SYMBOLIC_FUNC(modOr, mod)
+  DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(quotOr, quot)
+  DIVISION_OR_SYMBOLIC_FUNC(remOr, rem)
+  DIVISION_OR_SYMBOLIC_FUNC2_BOUNDED_SIGNED(divModOr, div, mod)
+  DIVISION_OR_SYMBOLIC_FUNC2_BOUNDED_SIGNED(quotRemOr, quot, rem)
 instance
   (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
   SafeDiv ArithException (SymIntN n) m where
-  SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeDiv, SymIntN, pevalDivIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymIntN, pevalModIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeQuot, SymIntN, pevalQuotIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, SymIntN, pevalRemIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(safeDivMod, SymIntN, pevalDivIntegralTerm, pevalModIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(safeQuotRem, SymIntN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeDiv, div)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, mod)
+  SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeQuot, quot)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, rem)
+  SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(safeDivMod, div, mod)
+  SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(safeQuotRem, quot, rem)
 #endif
 
 #if 1
 instance (KnownNat n, 1 <= n) => DivOr (SymWordN n) where
-  DIVISION_OR_SYMBOLIC_FUNC(divOr, SymWordN, pevalDivIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(modOr, SymWordN, pevalModIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(quotOr, SymWordN, pevalQuotIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC(remOr, SymWordN, pevalRemIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC2(divModOr, SymWordN, pevalDivIntegralTerm, pevalModIntegralTerm)
-  DIVISION_OR_SYMBOLIC_FUNC2(quotRemOr, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+  DIVISION_OR_SYMBOLIC_FUNC(divOr, div)
+  DIVISION_OR_SYMBOLIC_FUNC(modOr, mod)
+  DIVISION_OR_SYMBOLIC_FUNC(quotOr, quot)
+  DIVISION_OR_SYMBOLIC_FUNC(remOr, rem)
+  DIVISION_OR_SYMBOLIC_FUNC2(divModOr, div, mod)
+  DIVISION_OR_SYMBOLIC_FUNC2(quotRemOr, quot, rem)
 instance
   (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
   SafeDiv ArithException (SymWordN n) m where
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymWordN, pevalDivIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymWordN, pevalModIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymWordN, pevalQuotIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, SymWordN, pevalRemIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, SymWordN, pevalDivIntegralTerm, pevalModIntegralTerm)
-  SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, div)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, mod)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, quot)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, rem)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, div, mod)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, quot, rem)
 #endif

@@ -195,6 +195,13 @@ instance
 instance Show (sa -~> sb) where
   show (SymGeneralFun t) = pformatTerm t
 
+-- | Checks if two formulas are the same. Not building the actual symbolic
+-- equality formula.
+--
+-- The reason why we choose this behavior is to allow symbolic variables to be
+-- used as keys in hash maps, which can be useful for memoization.
+--
+-- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
 instance Eq (sa -~> sb) where
   SymGeneralFun l == SymGeneralFun r = l == r
 

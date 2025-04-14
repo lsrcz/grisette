@@ -12,6 +12,11 @@ and this project adheres to
 
 - Added missing instances for `ArithException`.
   ([#292](https://github.com/lsrcz/grisette/pull/292))
+- \[Breaking\] Added `Integral` instances for `SymInteger`, `SymIntN`, and
+  `SymWordN`. Also make `(/)`, `recip` and `logBase` no longer throw errors for
+  `SymAlgReal`. These functions are "unsafe" and should be used with caution as
+  they expose undefined behavior for some inputs.
+  ([#293](https://github.com/lsrcz/grisette/pull/293))
 
 ## [0.12.0.0] -- 2025-04-12
 

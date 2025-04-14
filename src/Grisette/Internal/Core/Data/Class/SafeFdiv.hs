@@ -33,10 +33,7 @@ import Grisette.Internal.SymPrim.AlgReal
   ( AlgReal (AlgExactRational),
     UnsupportedAlgRealOperation (UnsupportedAlgRealOperation),
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
-  )
-import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -132,22 +129,14 @@ instance
     throw $ UnsupportedAlgRealOperation "safeRecip" $ show l
 
 instance FdivOr SymAlgReal where
-  fdivOr d (SymAlgReal lt) r@(SymAlgReal rt) =
-    symIte (r .== con 0) d (SymAlgReal $ pevalFdivTerm lt rt)
-  recipOr d l@(SymAlgReal lt) =
-    symIte (l .== con 0) d (SymAlgReal $ pevalRecipTerm lt)
+  fdivOr d l r = symIte (r .== con 0) d (l / r)
+  recipOr d l = symIte (l .== con 0) d (recip l)
 
 instance
   (MonadError ArithException m, MonadUnion m) =>
   SafeFdiv ArithException SymAlgReal m
   where
-  safeFdiv (SymAlgReal lt) r@(SymAlgReal rt) =
-    mrgIf
-      (r .== con 0)
-      (throwError RatioZeroDenominator)
-      (pure $ SymAlgReal $ pevalFdivTerm lt rt)
-  safeRecip l@(SymAlgReal lt) =
-    mrgIf
-      (l .== con 0)
-      (throwError RatioZeroDenominator)
-      (pure $ SymAlgReal $ pevalRecipTerm lt)
+  safeFdiv l r =
+    mrgIf (r .== con 0) (throwError RatioZeroDenominator) (pure $ l / r)
+  safeRecip l =
+    mrgIf (l .== con 0) (throwError RatioZeroDenominator) (pure $ recip l)
