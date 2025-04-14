@@ -43,15 +43,15 @@
 </span><span id="line-39"></span><span class="annot"><span class="hs-comment">-- | Derive 'Serialize' instance for a data type.</span></span><span>
 </span><span id="line-40"></span><span class="annot"><a href="Grisette.Internal.TH.Derivation.DeriveCereal.html#deriveCereal"><span class="hs-identifier hs-type">deriveCereal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.Derivation.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-41"></span><span id="deriveCereal"><span class="annot"><span class="annottext">deriveCereal :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.Derivation.DeriveCereal.html#deriveCereal"><span class="hs-identifier hs-var hs-var">deriveCereal</span></a></span></span><span> </span><span id="local-6989586621682480075"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682480075"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Grisette.Internal.TH.Derivation.DeriveCereal.html#deriveCereal"><span class="hs-identifier hs-var hs-var">deriveCereal</span></a></span></span><span> </span><span id="local-6989586621682484971"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682484971"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-42"></span><span>  </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.Derivation.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span>
 </span><span id="line-43"></span><span>    </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682480075"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span>
+</span><a href="#local-6989586621682484971"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span>
 </span><span id="line-44"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; Bool
 </span><a href="Grisette.Internal.TH.Derivation.Common.html#useSerialForCerealAndBinary"><span class="hs-identifier hs-var">useSerialForCerealAndBinary</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682480075"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span>
+</span><a href="#local-6989586621682484971"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span>
 </span><span id="line-45"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
 </span><a href="Grisette.Internal.TH.Derivation.DeriveCereal.html#cerealWithSerialConfig"><span class="hs-identifier hs-var">cerealWithSerialConfig</span></a></span><span>
 </span><span id="line-46"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
