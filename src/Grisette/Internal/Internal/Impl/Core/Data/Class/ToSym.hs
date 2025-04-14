@@ -27,6 +27,7 @@
 -- Portability :   GHC only
 module Grisette.Internal.Internal.Impl.Core.Data.Class.ToSym () where
 
+import Control.Exception (ArithException)
 import Control.Monad.Identity
   ( Identity (Identity, runIdentity),
     IdentityT (IdentityT),
@@ -297,7 +298,8 @@ derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
-    ''NotRepresentableFPError
+    ''NotRepresentableFPError,
+    ''ArithException
   ]
   [''ToSym]
 

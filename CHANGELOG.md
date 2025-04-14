@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Added missing instances for `ArithException`.
+  ([#292](https://github.com/lsrcz/grisette/pull/292))
+
 ## [0.12.0.0] -- 2025-04-12
 
 ### Added

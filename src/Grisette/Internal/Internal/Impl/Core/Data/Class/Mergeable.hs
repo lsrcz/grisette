@@ -30,16 +30,7 @@
 -- Portability :   GHC only
 module Grisette.Internal.Internal.Impl.Core.Data.Class.Mergeable () where
 
-import Control.Exception
-  ( ArithException
-      ( Denormal,
-        DivideByZero,
-        LossOfPrecision,
-        Overflow,
-        RatioZeroDenominator,
-        Underflow
-      ),
-  )
+import Control.Exception (ArithException)
 import Control.Monad.Cont (ContT (ContT))
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity
@@ -320,6 +311,7 @@ derive
 derive
   [ ''AssertionError,
     ''VerificationConditions,
+    ''ArithException,
     ''NotRepresentableFPError,
     ''AlgRealPoly,
     ''RealPoint,
@@ -524,17 +516,3 @@ deriving via
   (Default ((f :.: g) p))
   instance
     (Mergeable (f (g p))) => Mergeable ((f :.: g) p)
-
--- Exceptions
-instance Mergeable ArithException where
-  rootStrategy =
-    SortedStrategy
-      ( \case
-          Overflow -> 0 :: Int
-          Underflow -> 1 :: Int
-          LossOfPrecision -> 2 :: Int
-          DivideByZero -> 3 :: Int
-          Denormal -> 4 :: Int
-          RatioZeroDenominator -> 5 :: Int
-      )
-      (const $ SimpleStrategy $ \_ l _ -> l)

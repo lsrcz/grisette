@@ -18,6 +18,7 @@
 -- Portability :   GHC only
 module Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint () where
 
+import Control.Exception (ArithException)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity
   ( Identity (Identity),
@@ -212,7 +213,8 @@ derive
   [ ''(),
     ''AssertionError,
     ''VerificationConditions,
-    ''NotRepresentableFPError
+    ''NotRepresentableFPError,
+    ''ArithException
   ]
   [''PPrint]
 
