@@ -309,8 +309,8 @@ instance (KnownNat n, 1 <= n) => Enum (symtype n) where \
     error $ "enumFromThenTo: enumFromThenTo isn't supported for " ++ symtypestring
 
 #if 1
-ENUM_BV (SymIntN, IntN, "SymIntN")
-ENUM_BV (SymWordN, WordN, "SymWordN")
+ENUM_BV(SymIntN, IntN, "SymIntN")
+ENUM_BV(SymWordN, WordN, "SymWordN")
 #endif
 
 #define ORD_BV(symtype, symtypestring) \
