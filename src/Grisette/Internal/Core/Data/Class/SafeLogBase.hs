@@ -25,12 +25,7 @@ import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
-import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( FloatingUnaryOp (FloatingLog),
-    PEvalFloatingTerm (pevalFloatingUnaryTerm),
-    PEvalFractionalTerm (pevalFdivTerm),
-  )
-import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -64,23 +59,13 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeLogBase e a m where
   {-# INLINE safeLogBase #-}
 
 instance LogBaseOr SymAlgReal where
-  logBaseOr d base@(SymAlgReal baset) (SymAlgReal at) =
-    symIte (base .== 1) d $
-      SymAlgReal $
-        pevalFdivTerm
-          (pevalFloatingUnaryTerm FloatingLog at)
-          (pevalFloatingUnaryTerm FloatingLog baset)
+  logBaseOr d base a = symIte (base .== 1) d $ logBase base a
   {-# INLINE logBaseOr #-}
 
 instance
   (MonadError ArithException m, MonadUnion m) =>
   SafeLogBase ArithException SymAlgReal m
   where
-  safeLogBase base@(SymAlgReal baset) (SymAlgReal at) =
-    mrgIf (base .== 1) (throwError RatioZeroDenominator) $
-      pure $
-        SymAlgReal $
-          pevalFdivTerm
-            (pevalFloatingUnaryTerm FloatingLog at)
-            (pevalFloatingUnaryTerm FloatingLog baset)
+  safeLogBase base a =
+    mrgIf (base .== 1) (throwError RatioZeroDenominator) $ pure $ logBase base a
   {-# INLINE safeLogBase #-}

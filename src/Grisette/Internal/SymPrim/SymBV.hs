@@ -134,10 +134,13 @@ import Grisette.Internal.SymPrim.Prim.Term
     SymRep (SymType),
     Term,
     conTerm,
+    pevalDivIntegralTerm,
     pevalEqTerm,
     pevalGeOrdTerm,
     pevalModIntegralTerm,
     pevalOrTerm,
+    pevalQuotIntegralTerm,
+    pevalRemIntegralTerm,
     pevalSubNumTerm,
     pformatTerm,
     symTerm,
@@ -277,6 +280,96 @@ instance (KnownNat n, 1 <= n) => Num (symtype n) where \
 #if 1
 NUM_BV(SymIntN)
 NUM_BV(SymWordN)
+#endif
+
+instance (KnownNat n, 1 <= n) => Bounded (SymIntN n) where
+  minBound = con $ minBound @(IntN n)
+  maxBound = con $ maxBound @(IntN n)
+  {-# INLINE minBound #-}
+  {-# INLINE maxBound #-}
+
+#define ENUM_BV(symtype, contype, symtypestring) \
+instance (KnownNat n, 1 <= n) => Enum (symtype n) where \
+  succ _ = error $ "succ: succ isn't supported for " ++ symtypestring; \
+  pred _ = error $ "pred: pred isn't supported for " ++ symtypestring; \
+  toEnum i \
+    | (fromIntegral i :: Integer) >= fromIntegral (minBound @(contype n)) \
+        && (fromIntegral i :: Integer) <= fromIntegral (maxBound @(contype n)) = \
+        con $ fromIntegral i \
+    | otherwise = error "toEnum: toEnum is out of bounds"; \
+  fromEnum _ = \
+    error $ "fromEnum: fromEnum isn't supported for " ++ symtypestring; \
+  enumFrom = \
+    error $ "enumFrom: enumFrom isn't supported for " ++ symtypestring; \
+  enumFromThen = \
+    error $ "enumFromThen: enumFromThen isn't supported for " ++ symtypestring; \
+  enumFromTo = \
+    error $ "enumFromTo: enumFromTo isn't supported for " ++ symtypestring; \
+  enumFromThenTo = \
+    error $ "enumFromThenTo: enumFromThenTo isn't supported for " ++ symtypestring
+
+#if 1
+ENUM_BV (SymIntN, IntN, "SymIntN")
+ENUM_BV (SymWordN, WordN, "SymWordN")
+#endif
+
+#define ORD_BV(symtype, symtypestring) \
+instance (KnownNat n, 1 <= n) => Ord (symtype n) where \
+  (<) = error $ "Ord: < isn't supported for " ++ symtypestring ++ ". Consider using the symbolic comparison operators (.<)."; \
+  (<=) = error $ "Ord: <= isn't supported for " ++ symtypestring ++ ". Consider using the symbolic comparison operators (.<=)."; \
+  (>=) = error $ "Ord: >= isn't supported for " ++ symtypestring ++ ". Consider using the symbolic comparison operators (.>=)."; \
+  (>) = error $ "Ord: > isn't supported for " ++ symtypestring ++ ". Consider using the symbolic comparison operators (.>)."; \
+  max (symtype l) (symtype r) = symtype $ pevalITETerm (pevalLeOrdTerm l r) r l; \
+  {-# INLINE max #-}; \
+  min (symtype l) (symtype r) = symtype $ pevalITETerm (pevalLeOrdTerm l r) l r; \
+  {-# INLINE min #-}; \
+  compare _ _ = \
+    error $ "compare: compare isn't supported for " ++ symtypestring ++ ". Consider using the symbolic comparison operators (symCompare)."
+
+#if 1
+ORD_BV(SymIntN, "SymIntN")
+ORD_BV(SymWordN, "SymWordN")
+#endif
+
+instance (KnownNat n, 1 <= n) => Real (SymIntN n) where
+  toRational _ = error $ "toRational: toRational isn't supported for " ++ "SymIntN"
+
+instance (KnownNat n, 1 <= n) => Real (SymWordN n) where
+  toRational _ = error $ "toRational: toRational isn't supported for " ++ "SymWordN"
+
+#define INTEGRAL_BV(symtype, symtypestring) \
+instance (KnownNat n, 1 <= n) => Integral (symtype n) where \
+  toInteger = error $ "toInteger: toInteger isn't supported for " ++ symtypestring; \
+  div (symtype l) (symtype r) = symtype $ pevalDivIntegralTerm l r; \
+  {-# INLINE div #-}; \
+  mod (symtype l) (symtype r) = symtype $ pevalModIntegralTerm l r; \
+  {-# INLINE mod #-}; \
+  quot (symtype l) (symtype r) = symtype $ pevalQuotIntegralTerm l r; \
+  {-# INLINE quot #-}; \
+  rem (symtype l) (symtype r) = symtype $ pevalRemIntegralTerm l r; \
+  {-# INLINE rem #-}; \
+  divMod (symtype l) (symtype r) = \
+    (symtype $ pevalDivIntegralTerm l r, symtype $ pevalModIntegralTerm l r); \
+  {-# INLINE divMod #-}; \
+  quotRem (symtype l) (symtype r) = \
+    (symtype $ pevalQuotIntegralTerm l r, symtype $ pevalRemIntegralTerm l r); \
+  {-# INLINE quotRem #-}
+
+#if 1
+-- | The functions are total and will not throw errors. The result is considered
+-- undefined if the divisor is 0.
+--
+-- It is the responsibility of the caller to ensure that the divisor is not
+-- zero with the symbolic constraints, or use the t'Grisette.Core.DivOr' or
+-- t'Grisette.Core.SafeDiv' classes.
+INTEGRAL_BV(SymIntN, "SymIntN")
+-- | The functions are total and will not throw errors. The result is considered
+-- undefined if the divisor is 0.
+--
+-- It is the responsibility of the caller to ensure that the divisor is not
+-- zero with the symbolic constraints, or use the t'Grisette.Core.DivOr' or
+-- t'Grisette.Core.SafeDiv' classes.
+INTEGRAL_BV(SymWordN, "SymWordN")
 #endif
 
 -- Bits
