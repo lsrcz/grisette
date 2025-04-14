@@ -48,12 +48,15 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FloatingTanh
       ),
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
+    PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalMulNumTerm,
         pevalNegNumTerm,
         pevalSignumNumTerm
       ),
+    PEvalOrdTerm (pevalLeOrdTerm),
+    SupportedPrim (pevalITETerm),
     pevalSubNumTerm,
     typedConstantSymbol,
   )
@@ -92,6 +95,21 @@ instance Apply SymAlgReal where
 instance Eq SymAlgReal where
   SymAlgReal a == SymAlgReal b = a == b
 
+instance Ord SymAlgReal where
+  (<) = error "Ord: < isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.<)."
+  (<=) = error "Ord: <= isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.<=)."
+  (>=) = error "Ord: >= isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.>=)."
+  (>) = error "Ord: > isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.>)."
+  max (SymAlgReal l) (SymAlgReal r) =
+    SymAlgReal $ pevalITETerm (pevalLeOrdTerm l r) r l
+  min (SymAlgReal l) (SymAlgReal r) =
+    SymAlgReal $ pevalITETerm (pevalLeOrdTerm l r) l r
+  compare _ _ =
+    error "compare: compare isn't supported for SymAlgReal. Consider using the symbolic comparison operators (symCompare)."
+
+instance Real SymAlgReal where
+  toRational = error "toRational: toRational isn't supported for SymAlgReal"
+
 instance Hashable SymAlgReal where
   hashWithSalt s (SymAlgReal a) = hashWithSalt s a
 
@@ -119,11 +137,23 @@ instance Num SymAlgReal where
   signum (SymAlgReal v) = SymAlgReal $ pevalSignumNumTerm v
   fromInteger = con . fromInteger
 
+-- | The function is total and will not throw errors. The result is considered
+-- undefined if the divisor is 0.
+--
+-- It is the responsibility of the caller to ensure that the divisor is not
+-- zero with the symbolic constraints, or use the t'Grisette.Core.FdivOr' or
+-- t'Grisette.Core.SafeFdiv' classes.
 instance Fractional SymAlgReal where
   fromRational = con . fromRational
-  (/) = error "consider using safeFdiv instead of (/) for SymAlgReal"
-  recip = error "consider using safeRecip instead of recip for SymAlgReal"
+  (SymAlgReal l) / (SymAlgReal r) = SymAlgReal $ pevalFdivTerm l r
+  recip (SymAlgReal l) = SymAlgReal $ pevalRecipTerm l
 
+-- | The functions are total and will not throw errors. The result for 'logBase'
+-- is considered undefined if the base is 1.
+--
+-- It is the responsibility of the caller to ensure that the base is not 1
+-- with the symbolic constraints, or use the t'Grisette.Core.LogBaseOr' or
+-- t'Grisette.Core.SafeLogBase' classes.
 instance Floating SymAlgReal where
   pi = fromRational $ toRational pi
   exp (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingExp v
@@ -142,7 +172,11 @@ instance Floating SymAlgReal where
   acosh = error "acosh isn't supported by the underlying sbv library"
   atanh = error "atanh isn't supported by the underlying sbv library"
   SymAlgReal l ** SymAlgReal r = SymAlgReal $ pevalPowerTerm l r
-  logBase = error "consider using safeLogBase instead of logBase for AlgReal"
+  logBase (SymAlgReal baset) (SymAlgReal at) =
+    SymAlgReal $
+      pevalFdivTerm
+        (pevalFloatingUnaryTerm FloatingLog at)
+        (pevalFloatingUnaryTerm FloatingLog baset)
 
 instance Serial SymAlgReal where
   serialize = serialize . underlyingAlgRealTerm

@@ -43,6 +43,12 @@ import Grisette.Internal.SymPrim.Prim.Term
     SymRep (SymType),
     Term,
     conTerm,
+    pevalDivIntegralTerm,
+    pevalITETerm,
+    pevalLeOrdTerm,
+    pevalModIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemIntegralTerm,
     pevalSubNumTerm,
     pformatTerm,
     symTerm,
@@ -89,6 +95,55 @@ instance Num SymInteger where
   abs (SymInteger v) = SymInteger $ pevalAbsNumTerm v
   signum (SymInteger v) = SymInteger $ pevalSignumNumTerm v
   fromInteger = con
+
+{-# NOINLINE [1] enumDeltaSymInteger #-}
+enumDeltaSymInteger :: SymInteger -> SymInteger -> [SymInteger]
+enumDeltaSymInteger x d = x `seq` (x : enumDeltaSymInteger (d + x) d)
+
+instance Enum SymInteger where
+  succ x = x + 1
+  pred x = x - 1
+  toEnum = fromIntegral
+  fromEnum = error "fromEnum: fromEnum isn't supported for SymInteger"
+  enumFrom x = enumDeltaSymInteger x 1
+  {-# INLINE enumFrom #-}
+  enumFromThen x y = enumDeltaSymInteger x (y - x)
+  {-# INLINE enumFromThen #-}
+  enumFromTo = error "enumFromTo: enumFromTo isn't supported for SymInteger"
+  enumFromThenTo =
+    error "enumFromThenTo: enumFromThenTo isn't supported for SymInteger"
+
+instance Ord SymInteger where
+  (<) = error "Ord: < isn't supported for SymInteger. Consider using the symbolic comparison operators (.<)."
+  (<=) = error "Ord: <= isn't supported for SymInteger. Consider using the symbolic comparison operators (.<=)."
+  (>=) = error "Ord: >= isn't supported for SymInteger. Consider using the symbolic comparison operators (.>=)."
+  (>) = error "Ord: > isn't supported for SymInteger. Consider using the symbolic comparison operators (.>)."
+  max (SymInteger l) (SymInteger r) =
+    SymInteger $ pevalITETerm (pevalLeOrdTerm l r) r l
+  min (SymInteger l) (SymInteger r) =
+    SymInteger $ pevalITETerm (pevalLeOrdTerm l r) l r
+  compare _ _ =
+    error "compare: compare isn't supported for SymInteger. Consider using the symbolic comparison operators (symCompare)."
+
+instance Real SymInteger where
+  toRational _ = error "toRational: toRational isn't supported for SymInteger"
+
+-- | The functions are total and will not throw errors. The result is considered
+-- undefined if the divisor is 0.
+--
+-- It is the responsibility of the caller to ensure that the divisor is not
+-- zero with the symbolic constraints, or use the t'Grisette.Core.DivOr' or
+-- t'Grisette.Core.SafeDiv' classes.
+instance Integral SymInteger where
+  toInteger = error "toInteger: toInteger isn't supported for SymInteger"
+  div (SymInteger l) (SymInteger r) = SymInteger $ pevalDivIntegralTerm l r
+  mod (SymInteger l) (SymInteger r) = SymInteger $ pevalModIntegralTerm l r
+  quot (SymInteger l) (SymInteger r) = SymInteger $ pevalQuotIntegralTerm l r
+  rem (SymInteger l) (SymInteger r) = SymInteger $ pevalRemIntegralTerm l r
+  divMod (SymInteger l) (SymInteger r) =
+    (SymInteger $ pevalDivIntegralTerm l r, SymInteger $ pevalModIntegralTerm l r)
+  quotRem (SymInteger l) (SymInteger r) =
+    (SymInteger $ pevalQuotIntegralTerm l r, SymInteger $ pevalRemIntegralTerm l r)
 
 instance Eq SymInteger where
   SymInteger l == SymInteger r = l == r
