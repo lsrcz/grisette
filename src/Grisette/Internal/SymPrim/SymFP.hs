@@ -209,6 +209,13 @@ instance (ValidFP eb sb) => Apply (SymFP eb sb) where
   type FunType (SymFP eb sb) = SymFP eb sb
   apply = id
 
+-- | Checks if two formulas are the same. Not building the actual symbolic
+-- equality formula.
+--
+-- The reason why we choose this behavior is to allow symbolic variables to be
+-- used as keys in hash maps, which can be useful for memoization.
+--
+-- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
 instance (ValidFP eb sb) => Eq (SymFP eb sb) where
   SymFP a == SymFP b = a == b
 

@@ -75,6 +75,13 @@ instance Apply SymBool where
   type FunType SymBool = SymBool
   apply = id
 
+-- | Checks if two formulas are the same. Not building the actual symbolic
+-- equality formula.
+--
+-- The reason why we choose this behavior is to allow symbolic variables to be
+-- used as keys in hash maps, which can be useful for memoization.
+--
+-- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
 instance Eq SymBool where
   SymBool l == SymBool r = l == r
 
