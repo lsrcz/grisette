@@ -3700,14 +3700,18 @@ instance Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms Grisette.Intern
 instance Grisette.Internal.Core.Data.Class.Function.Apply Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.ConRep Grisette.Internal.SymPrim.SymInteger.SymInteger
+instance GHC.Internal.Enum.Enum Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance GHC.Classes.Eq Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance GHC.Internal.Generics.Generic Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Data.Hashable.Class.Hashable Grisette.Internal.SymPrim.SymInteger.SymInteger
+instance GHC.Internal.Real.Integral Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance GHC.Internal.Data.String.IsString Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Language.Haskell.TH.Syntax.Lift Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.LinkedRep GHC.Num.Integer.Integer Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Control.DeepSeq.NFData Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance GHC.Internal.Num.Num Grisette.Internal.SymPrim.SymInteger.SymInteger
+instance GHC.Classes.Ord Grisette.Internal.SymPrim.SymInteger.SymInteger
+instance GHC.Internal.Real.Real Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Data.Bytes.Serial.Serial Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Data.Serialize.Serialize Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance GHC.Internal.Show.Show Grisette.Internal.SymPrim.SymInteger.SymInteger
@@ -3916,8 +3920,11 @@ instance Grisette.Internal.Core.Data.Class.BitCast.BitCast (Grisette.Internal.Sy
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.BitCast.BitCast (Grisette.Internal.SymPrim.SymBV.SymWordN n) (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Bits.Bits (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Bits.Bits (Grisette.Internal.SymPrim.SymBV.SymWordN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Enum.Bounded (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.ConRep (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.SymPrim.Prim.Internal.Term.ConRep (Grisette.Internal.SymPrim.SymBV.SymWordN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Enum.Enum (Grisette.Internal.SymPrim.SymBV.SymIntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Enum.Enum (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Classes.Eq (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Classes.Eq (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Bits.FiniteBits (Grisette.Internal.SymPrim.SymBV.SymIntN n)
@@ -3926,6 +3933,8 @@ instance GHC.Internal.Generics.Generic (Grisette.Internal.SymPrim.SymBV.SymIntN 
 instance GHC.Internal.Generics.Generic (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Data.Hashable.Class.Hashable (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Data.Hashable.Class.Hashable (Grisette.Internal.SymPrim.SymBV.SymWordN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Real.Integral (Grisette.Internal.SymPrim.SymBV.SymIntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Real.Integral (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Data.String.IsString (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Data.String.IsString (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance Language.Haskell.TH.Syntax.Lift (Grisette.Internal.SymPrim.SymBV.SymIntN n)
@@ -3936,6 +3945,10 @@ instance Control.DeepSeq.NFData (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance Control.DeepSeq.NFData (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Num.Num (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Num.Num (Grisette.Internal.SymPrim.SymBV.SymWordN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Classes.Ord (Grisette.Internal.SymPrim.SymBV.SymIntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Classes.Ord (Grisette.Internal.SymPrim.SymBV.SymWordN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Real.Real (Grisette.Internal.SymPrim.SymBV.SymIntN n)
+instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => GHC.Internal.Real.Real (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Data.Bytes.Serial.Serial (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Data.Bytes.Serial.Serial (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Data.Serialize.Serialize (Grisette.Internal.SymPrim.SymBV.SymIntN n)
@@ -3974,6 +3987,8 @@ instance Language.Haskell.TH.Syntax.Lift Grisette.Internal.SymPrim.SymAlgReal.Sy
 instance Grisette.Internal.SymPrim.Prim.Internal.Term.LinkedRep Grisette.Internal.SymPrim.AlgReal.AlgReal Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance Control.DeepSeq.NFData Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance GHC.Internal.Num.Num Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
+instance GHC.Classes.Ord Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
+instance GHC.Internal.Real.Real Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance Data.Bytes.Serial.Serial Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance Data.Serialize.Serialize Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance GHC.Internal.Show.Show Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
