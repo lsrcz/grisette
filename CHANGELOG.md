@@ -17,6 +17,13 @@ and this project adheres to
   `SymAlgReal`. These functions are "unsafe" and should be used with caution as
   they expose undefined behavior for some inputs.
   ([#293](https://github.com/lsrcz/grisette/pull/293))
+- Added `MergingIndex` type class for types that can be used as indices in a
+  'SortedStrategy'. ([#294](https://github.com/lsrcz/grisette/pull/294))
+
+### Changed
+
+- Removed `Show` constraints for merging indices.
+  ([#294](https://github.com/lsrcz/grisette/pull/294))
 
 ## [0.12.0.0] -- 2025-04-12
 
