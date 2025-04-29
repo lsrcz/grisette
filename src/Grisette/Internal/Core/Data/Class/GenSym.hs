@@ -857,7 +857,7 @@ CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(WordN)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(IntN)
 #endif
 
-instance (Integral a, Typeable a, Show a) => GenSym (Ratio a) (Ratio a) where
+instance (Integral a, Typeable a) => GenSym (Ratio a) (Ratio a) where
   fresh = return . mrgSingle
 
 instance GenSymSimple (Ratio a) (Ratio a) where

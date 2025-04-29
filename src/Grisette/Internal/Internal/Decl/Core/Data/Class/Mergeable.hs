@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -27,6 +28,7 @@
 module Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( -- * Merging strategy
     MergingStrategy (..),
+    MergingIndex,
 
     -- * Mergeable
     Mergeable (..),
@@ -58,10 +60,8 @@ where
 import Data.Functor.Classes
   ( Eq1,
     Ord1,
-    Show1,
     compare1,
     eq1,
-    showsPrec1,
   )
 import Data.Kind (Type)
 import Data.Typeable
@@ -88,6 +88,10 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 import Unsafe.Coerce (unsafeCoerce)
+
+-- | For a type to be used as an index in a 'SortedStrategy', it must be both
+-- 'Ord' and 'Typeable'.
+type MergingIndex a = (Ord a, Typeable a)
 
 -- | Merging strategies.
 --
@@ -178,7 +182,7 @@ data MergingStrategy a where
   -- >        then SimpleStrategy $ \_ t _ -> t
   -- >        else SimpleStrategy $ \cond (Just l) (Just r) -> Just $ symIte cond l r)
   SortedStrategy ::
-    (Ord idx, Typeable idx, Show idx) =>
+    (MergingIndex idx) =>
     -- | Indexing function
     (a -> idx) ->
     -- | Sub-strategy function
@@ -447,7 +451,7 @@ genericLiftRootStrategy m =
 -- | Helper type for combining arbitrary number of indices into one.
 -- Useful when trying to write efficient merge strategy for lists/vectors.
 data DynamicSortedIdx where
-  DynamicSortedIdx :: forall idx. (Show idx, Ord idx, Typeable idx) => idx -> DynamicSortedIdx
+  DynamicSortedIdx :: forall idx. (MergingIndex idx) => idx -> DynamicSortedIdx
 
 instance Eq DynamicSortedIdx where
   (DynamicSortedIdx (a :: a)) == (DynamicSortedIdx (b :: b)) = case eqT @a @b of
@@ -462,7 +466,7 @@ instance Ord DynamicSortedIdx where
   {-# INLINE compare #-}
 
 instance Show DynamicSortedIdx where
-  show (DynamicSortedIdx a) = show a
+  show (DynamicSortedIdx _) = "DynamicSortedIdx"
 
 -- | Resolves the indices and the terminal merge strategy for a value of some
 -- 'Mergeable' type.
@@ -519,10 +523,6 @@ instance (Eq1 container) => Eq (StrategyList container) where
 instance (Ord1 container) => Ord (StrategyList container) where
   compare (StrategyList idxs1 _) (StrategyList idxs2 _) = compare1 idxs1 idxs2
   {-# INLINE compare #-}
-
-instance (Show1 container) => Show (StrategyList container) where
-  showsPrec i (StrategyList idxs1 _) = showsPrec1 i idxs1
-  {-# INLINE showsPrec #-}
 
 instance Mergeable SymBool where
   rootStrategy = SimpleStrategy symIte
