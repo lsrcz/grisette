@@ -6250,7 +6250,7 @@ data MergingStrategy a
 --          then SimpleStrategy $ \_ t _ -&gt; t
 --          else SimpleStrategy $ \cond (Just l) (Just r) -&gt; Just $ symIte cond l r)
 --   </pre>
-[SortedStrategy] :: forall idx a. (Ord idx, Typeable idx, Show idx) => (a -> idx) -> (idx -> MergingStrategy a) -> MergingStrategy a
+[SortedStrategy] :: forall idx a. MergingIndex idx => (a -> idx) -> (idx -> MergingStrategy a) -> MergingStrategy a
 
 -- | For preventing the merging intentionally. This could be useful for
 --   keeping some value concrete and may help generate more efficient
@@ -6343,7 +6343,7 @@ product2Strategy :: (a -> b -> r) -> (r -> (a, b)) -> MergingStrategy a -> Mergi
 -- | Helper type for combining arbitrary number of indices into one. Useful
 --   when trying to write efficient merge strategy for lists/vectors.
 data DynamicSortedIdx
-[DynamicSortedIdx] :: forall idx. (Show idx, Ord idx, Typeable idx) => idx -> DynamicSortedIdx
+[DynamicSortedIdx] :: forall idx. MergingIndex idx => idx -> DynamicSortedIdx
 
 -- | Helper type for building efficient merge strategy for list-like
 --   containers.
@@ -9059,7 +9059,7 @@ instance (Grisette.Internal.Core.Data.Class.GenSym.GenSym a a, Grisette.Internal
 instance (Grisette.Internal.Core.Data.Class.GenSym.GenSym spec a, Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.Mergeable a) => Grisette.Internal.Core.Data.Class.GenSym.GenSym (Grisette.Internal.Core.Data.Class.GenSym.ListSpec spec) [a]
 instance (Grisette.Internal.Core.Data.Class.GenSym.GenSym aspec a, Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.Mergeable a) => Grisette.Internal.Core.Data.Class.GenSym.GenSym (GHC.Internal.Maybe.Maybe aspec) (GHC.Internal.Maybe.Maybe a)
 instance (Grisette.Internal.Core.Data.Class.GenSym.GenSymSimple (m (GHC.Internal.Maybe.Maybe a)) (m (GHC.Internal.Maybe.Maybe a)), Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.Mergeable1 m, Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.Mergeable a) => Grisette.Internal.Core.Data.Class.GenSym.GenSym (Control.Monad.Trans.Maybe.MaybeT m a) (Control.Monad.Trans.Maybe.MaybeT m a)
-instance (GHC.Internal.Real.Integral a, GHC.Internal.Data.Typeable.Internal.Typeable a, GHC.Internal.Show.Show a) => Grisette.Internal.Core.Data.Class.GenSym.GenSym (GHC.Internal.Real.Ratio a) (GHC.Internal.Real.Ratio a)
+instance (GHC.Internal.Real.Integral a, GHC.Internal.Data.Typeable.Internal.Typeable a) => Grisette.Internal.Core.Data.Class.GenSym.GenSym (GHC.Internal.Real.Ratio a) (GHC.Internal.Real.Ratio a)
 instance (Grisette.Internal.Core.Data.Class.GenSym.GenSym spec a, Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.Mergeable a) => Grisette.Internal.Core.Data.Class.GenSym.GenSym (Grisette.Internal.Core.Data.Class.GenSym.SimpleListSpec spec) [a]
 instance Grisette.Internal.Core.Data.Class.GenSym.GenSym Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance Grisette.Internal.Core.Data.Class.GenSym.GenSym Grisette.Internal.SymPrim.SymBool.SymBool Grisette.Internal.SymPrim.SymBool.SymBool
@@ -16792,7 +16792,7 @@ data MergingStrategy a
 --          then SimpleStrategy $ \_ t _ -&gt; t
 --          else SimpleStrategy $ \cond (Just l) (Just r) -&gt; Just $ symIte cond l r)
 --   </pre>
-[SortedStrategy] :: forall idx a. (Ord idx, Typeable idx, Show idx) => (a -> idx) -> (idx -> MergingStrategy a) -> MergingStrategy a
+[SortedStrategy] :: forall idx a. MergingIndex idx => (a -> idx) -> (idx -> MergingStrategy a) -> MergingStrategy a
 
 -- | For preventing the merging intentionally. This could be useful for
 --   keeping some value concrete and may help generate more efficient
@@ -16800,6 +16800,10 @@ data MergingStrategy a
 --   
 --   See <a>Grisette's paper</a> for details.
 [NoStrategy] :: forall a. MergingStrategy a
+
+-- | For a type to be used as an index in a <a>SortedStrategy</a>, it must
+--   be both <a>Ord</a> and <a>Typeable</a>.
+type MergingIndex a = (Ord a, Typeable a)
 
 -- | Useful utility function for building merge strategies manually.
 --   
@@ -16827,7 +16831,7 @@ product2Strategy :: (a -> b -> r) -> (r -> (a, b)) -> MergingStrategy a -> Mergi
 -- | Helper type for combining arbitrary number of indices into one. Useful
 --   when trying to write efficient merge strategy for lists/vectors.
 data DynamicSortedIdx
-[DynamicSortedIdx] :: forall idx. (Show idx, Ord idx, Typeable idx) => idx -> DynamicSortedIdx
+[DynamicSortedIdx] :: forall idx. MergingIndex idx => idx -> DynamicSortedIdx
 
 -- | Helper type for building efficient merge strategy for list-like
 --   containers.
