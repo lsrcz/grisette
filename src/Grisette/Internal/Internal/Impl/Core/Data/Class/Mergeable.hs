@@ -156,7 +156,7 @@ instance Mergeable1 Proxy where
   liftRootStrategy _ = SimpleStrategy $ \_ t _ -> t
   {-# INLINE liftRootStrategy #-}
 
-instance (Integral a, Typeable a, Show a) => Mergeable (Ratio a) where
+instance (Integral a, Typeable a) => Mergeable (Ratio a) where
   rootStrategy =
     let sub = SimpleStrategy $ \_ t _ -> t
      in SortedStrategy id $ const sub

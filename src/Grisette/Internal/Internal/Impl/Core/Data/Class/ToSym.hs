@@ -241,7 +241,7 @@ instance ToSym Double SymFP64 where
   {-# INLINE toSym #-}
 
 instance
-  (Integral b, Typeable b, Show b, ToSym a b) =>
+  (Integral b, Typeable b, ToSym a b) =>
   ToSym (Ratio a) (Ratio b)
   where
   toSym r = toSym (numerator r) % toSym (denominator r)

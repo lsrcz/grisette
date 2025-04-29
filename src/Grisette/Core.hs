@@ -846,6 +846,7 @@ module Grisette.Core
 
     -- ** Merging strategy
     MergingStrategy (..),
+    MergingIndex,
 
     -- ** Manual merging strategy construction
     wrapStrategy,
@@ -1845,6 +1846,7 @@ import Grisette.Internal.Core.Data.Symbol
     withMetadata,
     pattern Metadata,
   )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable (MergingIndex)
 import Instances.TH.Lift ()
 
 -- $setup
