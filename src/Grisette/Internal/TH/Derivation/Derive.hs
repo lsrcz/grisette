@@ -19,12 +19,14 @@ module Grisette.Internal.TH.Derivation.Derive
     allClasses01,
     allClasses012,
     basicClasses0,
+    basicClasses1,
+    basicClasses2,
+    basicClasses01,
+    basicClasses012,
     noExistentialClasses0,
     concreteOrdClasses0,
-    basicClasses1,
     noExistentialClasses1,
     concreteOrdClasses1,
-    basicClasses2,
     noExistentialClasses2,
     concreteOrdClasses2,
     showClasses,
@@ -664,6 +666,12 @@ basicClasses1 =
     ''UnifiedSymEq1
   ]
 
+-- | Basic classes for GADT functors.
+--
+-- This includes all the classes in 'basicClasses0' and 'basicClasses1'.
+basicClasses01 :: [Name]
+basicClasses01 = basicClasses0 ++ basicClasses1
+
 -- | @*1@ classes that can only be derived for GADT functors without existential
 -- type variables.
 --
@@ -720,6 +728,13 @@ basicClasses2 =
     ''SymOrd2,
     ''UnifiedSymEq2
   ]
+
+-- | Basic classes for GADT functors.
+--
+-- This includes all the classes in 'basicClasses0' and 'basicClasses1' and
+-- 'basicClasses2'.
+basicClasses012 :: [Name]
+basicClasses012 = basicClasses0 ++ basicClasses1 ++ basicClasses2
 
 -- | @*2@ classes that can only be derived for GADT functors without existential
 -- type variables.

@@ -9,7 +9,15 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.TH
-  ( -- * Convenient derivation of all instances relating to Grisette
+  ( -- * Convenient TH procedures for ADTs
+    makeGrisetteADT,
+    makeGrisetteADT1,
+    makeGrisetteADT2,
+    makeGrisetteBasicADT,
+    makeGrisetteBasicADT1,
+    makeGrisetteBasicADT2,
+
+    -- * Convenient derivation of all instances relating to Grisette
     EvalModeConfig (..),
     DeriveConfig (..),
     derive,
@@ -18,12 +26,14 @@ module Grisette.TH
     allClasses01,
     allClasses012,
     basicClasses0,
+    basicClasses1,
+    basicClasses2,
+    basicClasses01,
+    basicClasses012,
     noExistentialClasses0,
     concreteOrdClasses0,
-    basicClasses1,
     noExistentialClasses1,
     concreteOrdClasses1,
-    basicClasses2,
     noExistentialClasses2,
     concreteOrdClasses2,
     showClasses,
@@ -63,6 +73,14 @@ module Grisette.TH
   )
 where
 
+import Grisette.Internal.TH.ADT
+  ( makeGrisetteADT,
+    makeGrisetteADT1,
+    makeGrisetteADT2,
+    makeGrisetteBasicADT,
+    makeGrisetteBasicADT1,
+    makeGrisetteBasicADT2,
+  )
 import Grisette.Internal.TH.Ctor.SmartConstructor
   ( makeNamedSmartCtor,
     makePrefixedSmartCtor,
@@ -85,6 +103,8 @@ import Grisette.Internal.TH.Derivation.Derive
     allClasses012,
     allSymsClasses,
     basicClasses0,
+    basicClasses01,
+    basicClasses012,
     basicClasses1,
     basicClasses2,
     concreteOrdClasses0,
