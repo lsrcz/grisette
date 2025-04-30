@@ -96,14 +96,12 @@ type IntUExpr = UExpr SymInteger
 
 type BoolUExpr = UExpr SymBool
 
--- The `derive` and `makeSmartCtor` functions are provided by Grisette
--- to automatically derive some instances and construct some smart constructors
--- for the GADT.
+-- The `makeGrisetteBasicADT` function is provided by Grisette to automatically
+-- derive some instances and construct some smart constructors for the GADT.
 --
 -- The GADT will then be fully compatible with Grisette library. And we will see
 -- their usage in the following code.
-derive [''Expr] basicClasses0
-makeSmartCtor ''Expr
+makeGrisetteBasicADT ''Expr
 
 -- Here we construct some symbolic expressions.
 -- We use the data constructors to construct the expressions.

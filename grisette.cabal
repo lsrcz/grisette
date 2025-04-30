@@ -153,6 +153,7 @@ library
       Grisette.Internal.SymPrim.SymPrim
       Grisette.Internal.SymPrim.SymTabularFun
       Grisette.Internal.SymPrim.TabularFun
+      Grisette.Internal.TH.ADT
       Grisette.Internal.TH.Ctor.Common
       Grisette.Internal.TH.Ctor.SmartConstructor
       Grisette.Internal.TH.Ctor.UnifiedConstructor
