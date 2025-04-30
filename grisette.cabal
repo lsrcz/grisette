@@ -73,6 +73,7 @@ library
       Grisette.Internal.Core.Data.Class.BitCast
       Grisette.Internal.Core.Data.Class.BitVector
       Grisette.Internal.Core.Data.Class.CEGISSolver
+      Grisette.Internal.Core.Data.Class.Concrete
       Grisette.Internal.Core.Data.Class.Error
       Grisette.Internal.Core.Data.Class.EvalSym
       Grisette.Internal.Core.Data.Class.ExtractSym

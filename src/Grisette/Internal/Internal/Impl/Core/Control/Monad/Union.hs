@@ -34,7 +34,6 @@ module Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
     unionMergingStrategy,
     isMerged,
     unionSize,
-    IsConcrete,
   )
 where
 
@@ -48,7 +47,6 @@ import Data.Functor.Classes
     Show1 (liftShowsPrec),
     showsPrec1,
   )
-import qualified Data.HashMap.Lazy as HML
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt), hashWithSalt1)
 import qualified Data.Serialize as Cereal
@@ -71,7 +69,7 @@ import Grisette.Internal.Core.Data.Class.LogicalOp
   )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
-    MergingStrategy (SimpleStrategy),
+    MergingStrategy,
   )
 import Grisette.Internal.Core.Data.Class.PPrint
   ( PPrint (pformatPrec),
@@ -83,8 +81,7 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
   ( simpleMerge,
   )
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (mrgIte),
-    SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
+  ( SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable
@@ -440,41 +437,6 @@ instance (AllSyms a) => AllSyms (Union a) where
 
 instance AllSyms1 Union where
   liftAllSymsS f = liftAllSymsS f . unionBase
-
--- Concrete Key HashMaps
-
--- | Tag for concrete types.
--- Useful for specifying the merge strategy for some parametrized types where we should have different
--- merge strategy for symbolic and concrete ones.
-class (Eq t, Ord t, Hashable t) => IsConcrete t
-
-instance IsConcrete Bool
-
-instance IsConcrete Integer
-
-instance (IsConcrete k, Mergeable t) => Mergeable (HML.HashMap k (Union (Maybe t))) where
-  rootStrategy = SimpleStrategy mrgIte
-
-instance (IsConcrete k, Mergeable t) => SimpleMergeable (HML.HashMap k (Union (Maybe t))) where
-  mrgIte cond l r =
-    HML.unionWith (mrgIf cond) ul ur
-    where
-      ul =
-        foldr
-          ( \k m -> case HML.lookup k m of
-              Nothing -> HML.insert k (mrgSingle Nothing) m
-              _ -> m
-          )
-          l
-          (HML.keys r)
-      ur =
-        foldr
-          ( \k m -> case HML.lookup k m of
-              Nothing -> HML.insert k (mrgSingle Nothing) m
-              _ -> m
-          )
-          r
-          (HML.keys l)
 
 instance UnionWithExcept (Union (Either e v)) Union e v where
   extractUnionExcept = id
