@@ -827,13 +827,15 @@ module Grisette.Core
 
     -- ** Union Monad
     Union,
-    IsConcrete,
     unionUnaryOp,
     unionBinOp,
     liftUnion,
     unionMergingStrategy,
     liftToMonadUnion,
     unionSize,
+
+    -- ** Tag for concrete types
+    Concrete,
 
     -- ** Mergeable
     Mergeable (..),
@@ -1440,8 +1442,7 @@ import Grisette.Internal.Core.Control.Monad.CBMCExcept
   )
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Control.Monad.Union
-  ( IsConcrete,
-    Union,
+  ( Union,
     liftToMonadUnion,
     liftUnion,
     unionBinOp,
@@ -1499,6 +1500,7 @@ import Grisette.Internal.Core.Data.Class.CEGISSolver
     solverGenericCEGIS,
     solverGenericCEGISWithRefinement,
   )
+import Grisette.Internal.Core.Data.Class.Concrete (Concrete)
 import Grisette.Internal.Core.Data.Class.Error
   ( TransformError (..),
     symAssert,

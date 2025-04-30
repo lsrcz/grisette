@@ -19,7 +19,6 @@ module Grisette.Internal.Core.Control.Monad.Union
     unionMergingStrategy,
     isMerged,
     unionSize,
-    IsConcrete,
   )
 where
 
