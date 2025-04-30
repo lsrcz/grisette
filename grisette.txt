@@ -5240,6 +5240,60 @@ allClasses012 :: [Name]
 --   These classes can be derived for most GADTs.
 basicClasses0 :: [Name]
 
+-- | Basic classes for GADT functors.
+--   
+--   This includes:
+--   
+--   <ul>
+--   <li><a>Mergeable1</a></li>
+--   <li><a>EvalSym1</a></li>
+--   <li><a>ExtractSym1</a></li>
+--   <li><a>SubstSym1</a></li>
+--   <li><a>NFData1</a></li>
+--   <li><a>Hashable1</a></li>
+--   <li><a>Show1</a></li>
+--   <li><a>PPrint1</a></li>
+--   <li><a>AllSyms1</a></li>
+--   <li><a>Eq1</a></li>
+--   <li><a>SymEq1</a></li>
+--   <li><a>SymOrd1</a></li>
+--   <li><a>UnifiedSymEq1</a></li>
+--   </ul>
+basicClasses1 :: [Name]
+
+-- | Basic classes for GADT functors.
+--   
+--   This includes:
+--   
+--   <ul>
+--   <li><a>Mergeable2</a></li>
+--   <li><a>EvalSym2</a></li>
+--   <li><a>ExtractSym2</a></li>
+--   <li><a>SubstSym2</a></li>
+--   <li><a>NFData2</a></li>
+--   <li><a>Hashable2</a></li>
+--   <li><a>Show2</a></li>
+--   <li><a>PPrint2</a></li>
+--   <li><a>AllSyms2</a></li>
+--   <li><a>Eq2</a></li>
+--   <li><a>SymEq2</a></li>
+--   <li><a>SymOrd2</a></li>
+--   <li><a>UnifiedSymEq2</a></li>
+--   </ul>
+basicClasses2 :: [Name]
+
+-- | Basic classes for GADT functors.
+--   
+--   This includes all the classes in <a>basicClasses0</a> and
+--   <a>basicClasses1</a>.
+basicClasses01 :: [Name]
+
+-- | Basic classes for GADT functors.
+--   
+--   This includes all the classes in <a>basicClasses0</a> and
+--   <a>basicClasses1</a> and <a>basicClasses2</a>.
+basicClasses012 :: [Name]
+
 -- | Classes that can only be derived for GADTs without existential type
 --   variables.
 --   
@@ -5269,27 +5323,6 @@ noExistentialClasses0 :: [Name]
 --   </ul>
 concreteOrdClasses0 :: [Name]
 
--- | Basic classes for GADT functors.
---   
---   This includes:
---   
---   <ul>
---   <li><a>Mergeable1</a></li>
---   <li><a>EvalSym1</a></li>
---   <li><a>ExtractSym1</a></li>
---   <li><a>SubstSym1</a></li>
---   <li><a>NFData1</a></li>
---   <li><a>Hashable1</a></li>
---   <li><a>Show1</a></li>
---   <li><a>PPrint1</a></li>
---   <li><a>AllSyms1</a></li>
---   <li><a>Eq1</a></li>
---   <li><a>SymEq1</a></li>
---   <li><a>SymOrd1</a></li>
---   <li><a>UnifiedSymEq1</a></li>
---   </ul>
-basicClasses1 :: [Name]
-
 -- | <tt>*1</tt> classes that can only be derived for GADT functors without
 --   existential type variables.
 --   
@@ -5317,27 +5350,6 @@ noExistentialClasses1 :: [Name]
 --   <li><a>UnifiedSymOrd1</a></li>
 --   </ul>
 concreteOrdClasses1 :: [Name]
-
--- | Basic classes for GADT functors.
---   
---   This includes:
---   
---   <ul>
---   <li><a>Mergeable2</a></li>
---   <li><a>EvalSym2</a></li>
---   <li><a>ExtractSym2</a></li>
---   <li><a>SubstSym2</a></li>
---   <li><a>NFData2</a></li>
---   <li><a>Hashable2</a></li>
---   <li><a>Show2</a></li>
---   <li><a>PPrint2</a></li>
---   <li><a>AllSyms2</a></li>
---   <li><a>Eq2</a></li>
---   <li><a>SymEq2</a></li>
---   <li><a>SymOrd2</a></li>
---   <li><a>UnifiedSymEq2</a></li>
---   </ul>
-basicClasses2 :: [Name]
 
 -- | <tt>*2</tt> classes that can only be derived for GADT functors without
 --   existential type variables.
@@ -6530,6 +6542,75 @@ makeNamedSmartCtor :: [String] -> Name -> Q [Dec]
 --   just = \x -&gt; mrgSingle (Just x)
 --   </pre>
 makeSmartCtor :: Name -> Q [Dec]
+
+
+module Grisette.Internal.TH.ADT
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <a>derive</a>, <a>basicClasses0</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteBasicADT :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <a>derive</a>, <a>basicClasses01</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteBasicADT1 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <a>derive</a>, <a>basicClasses012</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADT2 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   See <a>derive</a>, <a>allClasses0</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteADT :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   See <a>derive</a>, <a>allClasses01</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteADT1 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   See <a>derive</a>, <a>allClasses012</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteADT2 :: Name -> Q [Dec]
 
 
 module Grisette.Internal.Core.Data.Class.SimpleMergeable
@@ -10185,6 +10266,72 @@ mrgTuple8 :: (Mergeable (a, b, c, d, e, f, g, h), Applicative m, TryMerge m) => 
 
 module Grisette.TH
 
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   See <a>derive</a>, <a>allClasses0</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteADT :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   See <a>derive</a>, <a>allClasses01</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteADT1 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   See <a>derive</a>, <a>allClasses012</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteADT2 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <a>derive</a>, <a>basicClasses0</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteBasicADT :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <a>derive</a>, <a>basicClasses01</a>, and <a>makeSmartCtor</a> for
+--   more details.
+makeGrisetteBasicADT1 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <a>derive</a>, <a>basicClasses012</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADT2 :: Name -> Q [Dec]
+
 -- | Configuration for constraints for evaluation modes tag.
 --   
 --   <ul>
@@ -10363,6 +10510,60 @@ allClasses012 :: [Name]
 --   These classes can be derived for most GADTs.
 basicClasses0 :: [Name]
 
+-- | Basic classes for GADT functors.
+--   
+--   This includes:
+--   
+--   <ul>
+--   <li><a>Mergeable1</a></li>
+--   <li><a>EvalSym1</a></li>
+--   <li><a>ExtractSym1</a></li>
+--   <li><a>SubstSym1</a></li>
+--   <li><a>NFData1</a></li>
+--   <li><a>Hashable1</a></li>
+--   <li><a>Show1</a></li>
+--   <li><a>PPrint1</a></li>
+--   <li><a>AllSyms1</a></li>
+--   <li><a>Eq1</a></li>
+--   <li><a>SymEq1</a></li>
+--   <li><a>SymOrd1</a></li>
+--   <li><a>UnifiedSymEq1</a></li>
+--   </ul>
+basicClasses1 :: [Name]
+
+-- | Basic classes for GADT functors.
+--   
+--   This includes:
+--   
+--   <ul>
+--   <li><a>Mergeable2</a></li>
+--   <li><a>EvalSym2</a></li>
+--   <li><a>ExtractSym2</a></li>
+--   <li><a>SubstSym2</a></li>
+--   <li><a>NFData2</a></li>
+--   <li><a>Hashable2</a></li>
+--   <li><a>Show2</a></li>
+--   <li><a>PPrint2</a></li>
+--   <li><a>AllSyms2</a></li>
+--   <li><a>Eq2</a></li>
+--   <li><a>SymEq2</a></li>
+--   <li><a>SymOrd2</a></li>
+--   <li><a>UnifiedSymEq2</a></li>
+--   </ul>
+basicClasses2 :: [Name]
+
+-- | Basic classes for GADT functors.
+--   
+--   This includes all the classes in <a>basicClasses0</a> and
+--   <a>basicClasses1</a>.
+basicClasses01 :: [Name]
+
+-- | Basic classes for GADT functors.
+--   
+--   This includes all the classes in <a>basicClasses0</a> and
+--   <a>basicClasses1</a> and <a>basicClasses2</a>.
+basicClasses012 :: [Name]
+
 -- | Classes that can only be derived for GADTs without existential type
 --   variables.
 --   
@@ -10392,27 +10593,6 @@ noExistentialClasses0 :: [Name]
 --   </ul>
 concreteOrdClasses0 :: [Name]
 
--- | Basic classes for GADT functors.
---   
---   This includes:
---   
---   <ul>
---   <li><a>Mergeable1</a></li>
---   <li><a>EvalSym1</a></li>
---   <li><a>ExtractSym1</a></li>
---   <li><a>SubstSym1</a></li>
---   <li><a>NFData1</a></li>
---   <li><a>Hashable1</a></li>
---   <li><a>Show1</a></li>
---   <li><a>PPrint1</a></li>
---   <li><a>AllSyms1</a></li>
---   <li><a>Eq1</a></li>
---   <li><a>SymEq1</a></li>
---   <li><a>SymOrd1</a></li>
---   <li><a>UnifiedSymEq1</a></li>
---   </ul>
-basicClasses1 :: [Name]
-
 -- | <tt>*1</tt> classes that can only be derived for GADT functors without
 --   existential type variables.
 --   
@@ -10440,27 +10620,6 @@ noExistentialClasses1 :: [Name]
 --   <li><a>UnifiedSymOrd1</a></li>
 --   </ul>
 concreteOrdClasses1 :: [Name]
-
--- | Basic classes for GADT functors.
---   
---   This includes:
---   
---   <ul>
---   <li><a>Mergeable2</a></li>
---   <li><a>EvalSym2</a></li>
---   <li><a>ExtractSym2</a></li>
---   <li><a>SubstSym2</a></li>
---   <li><a>NFData2</a></li>
---   <li><a>Hashable2</a></li>
---   <li><a>Show2</a></li>
---   <li><a>PPrint2</a></li>
---   <li><a>AllSyms2</a></li>
---   <li><a>Eq2</a></li>
---   <li><a>SymEq2</a></li>
---   <li><a>SymOrd2</a></li>
---   <li><a>UnifiedSymEq2</a></li>
---   </ul>
-basicClasses2 :: [Name]
 
 -- | <tt>*2</tt> classes that can only be derived for GADT functors without
 --   existential type variables.
