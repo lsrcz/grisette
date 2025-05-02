@@ -1,7 +1,13 @@
+{-# LANGUAGE CPP #-}
+
 module Grisette.Internal.Core.Data.Class.Concrete (Concrete) where
 
-import Control.Monad.Identity (Identity)
+#if MIN_VERSION_base(4,16,0)
 import Data.Bits (And, Iff, Ior, Xor)
+import Data.Tuple (Solo)
+#endif
+
+import Control.Monad.Identity (Identity)
 import Data.Complex (Complex)
 import Data.Functor.Compose (Compose)
 import qualified Data.Functor.Product as Functor
@@ -12,7 +18,6 @@ import Data.Monoid (All, Any, Dual, First, Last, Product, Sum)
 import Data.Ord (Down)
 import Data.Ratio (Ratio)
 import Data.Semigroup (Max, Min)
-import Data.Tuple (Solo)
 import Data.Void (Void)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Natural (Natural)
@@ -169,6 +174,7 @@ instance (Concrete a) => Concrete (Max a)
 
 instance (Concrete a) => Concrete (NonEmpty a)
 
+#if MIN_VERSION_base(4,16,0)
 instance (Concrete a) => Concrete (And a)
 
 instance (Concrete a) => Concrete (Iff a)
@@ -176,6 +182,7 @@ instance (Concrete a) => Concrete (Iff a)
 instance (Concrete a) => Concrete (Ior a)
 
 instance (Concrete a) => Concrete (Xor a)
+#endif
 
 instance (Concrete a) => Concrete (Identity a)
 
@@ -187,7 +194,9 @@ instance (Concrete a) => Concrete (Sum a)
 
 instance (Concrete a) => Concrete (Product a)
 
+#if MIN_VERSION_base(4,16,0)
 instance (Concrete a) => Concrete (Solo a)
+#endif
 
 instance (Concrete (f a), Concrete (g a)) => Concrete (Functor.Product f g a)
 
