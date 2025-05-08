@@ -18,6 +18,8 @@ import Data.Monoid (All, Any, Dual, First, Last, Product, Sum)
 import Data.Ord (Down)
 import Data.Ratio (Ratio)
 import Data.Semigroup (Max, Min)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Data.Void (Void)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Natural (Natural)
@@ -203,3 +205,7 @@ instance (Concrete (f a), Concrete (g a)) => Concrete (Functor.Product f g a)
 instance (Concrete (f a), Concrete (g a)) => Concrete (Functor.Sum f g a)
 
 instance (Concrete (f (g a))) => Concrete (Compose f g a)
+
+instance Concrete T.Text
+
+instance Concrete TL.Text
