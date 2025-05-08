@@ -108,6 +108,67 @@ instance Grisette.Internal.Core.Data.Class.BitCast.BitCast GHC.Internal.Word.Wor
 instance Grisette.Internal.Core.Data.Class.BitCast.BitCast GHC.Internal.Word.Word64 GHC.Types.Double
 instance Grisette.Internal.Core.Data.Class.BitCast.BitCast GHC.Internal.Word.Word64 GHC.Internal.Int.Int64
 
+module Grisette.Internal.Core.Data.Class.Concrete
+
+-- | A tag for concrete types.
+--   
+--   Can be used in code to constrain types to concrete ones. For example,
+--   when trying to support hash maps in Grisette, we may want to restrict
+--   the key type to be concrete. The <a>Concrete</a> type class is handy.
+class Concrete a
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Data.Semigroup.Internal.All
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Bits.And a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Data.Semigroup.Internal.Any
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Types.Bool
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Types.Char
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (Data.Complex.Complex a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete (f (g a)) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (Data.Functor.Compose.Compose f g a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Types.Double
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Ord.Down a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Semigroup.Internal.Dual a)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Either.Either a b)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Monoid.First a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Types.Float
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Functor.Identity.Identity a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Bits.Iff a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Types.Int
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Int.Int16
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Int.Int32
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Int.Int64
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Int.Int8
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Num.Integer.Integer
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Bits.Ior a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Monoid.Last a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete [a]
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (Data.Semigroup.Max a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Maybe.Maybe a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (Data.Semigroup.Min a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Num.Natural.Natural
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Base.NonEmpty a)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete (f a), Grisette.Internal.Core.Data.Class.Concrete.Concrete (g a)) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (Data.Functor.Product.Product f g a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Semigroup.Internal.Product a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Real.Ratio a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Tuple.Solo a)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete (f a), Grisette.Internal.Core.Data.Class.Concrete.Concrete (g a)) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (Data.Functor.Sum.Sum f g a)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Semigroup.Internal.Sum a)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d, Grisette.Internal.Core.Data.Class.Concrete.Concrete e, Grisette.Internal.Core.Data.Class.Concrete.Concrete f, Grisette.Internal.Core.Data.Class.Concrete.Concrete g, Grisette.Internal.Core.Data.Class.Concrete.Concrete h, Grisette.Internal.Core.Data.Class.Concrete.Concrete i, Grisette.Internal.Core.Data.Class.Concrete.Concrete j) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d, e, f, g, h, i, j)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d, Grisette.Internal.Core.Data.Class.Concrete.Concrete e, Grisette.Internal.Core.Data.Class.Concrete.Concrete f, Grisette.Internal.Core.Data.Class.Concrete.Concrete g, Grisette.Internal.Core.Data.Class.Concrete.Concrete h, Grisette.Internal.Core.Data.Class.Concrete.Concrete i, Grisette.Internal.Core.Data.Class.Concrete.Concrete j, Grisette.Internal.Core.Data.Class.Concrete.Concrete k) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d, e, f, g, h, i, j, k)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d, Grisette.Internal.Core.Data.Class.Concrete.Concrete e) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d, e)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d, Grisette.Internal.Core.Data.Class.Concrete.Concrete e, Grisette.Internal.Core.Data.Class.Concrete.Concrete f) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d, e, f)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d, Grisette.Internal.Core.Data.Class.Concrete.Concrete e, Grisette.Internal.Core.Data.Class.Concrete.Concrete f, Grisette.Internal.Core.Data.Class.Concrete.Concrete g) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d, e, f, g)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d, Grisette.Internal.Core.Data.Class.Concrete.Concrete e, Grisette.Internal.Core.Data.Class.Concrete.Concrete f, Grisette.Internal.Core.Data.Class.Concrete.Concrete g, Grisette.Internal.Core.Data.Class.Concrete.Concrete h) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d, e, f, g, h)
+instance (Grisette.Internal.Core.Data.Class.Concrete.Concrete a, Grisette.Internal.Core.Data.Class.Concrete.Concrete b, Grisette.Internal.Core.Data.Class.Concrete.Concrete c, Grisette.Internal.Core.Data.Class.Concrete.Concrete d, Grisette.Internal.Core.Data.Class.Concrete.Concrete e, Grisette.Internal.Core.Data.Class.Concrete.Concrete f, Grisette.Internal.Core.Data.Class.Concrete.Concrete g, Grisette.Internal.Core.Data.Class.Concrete.Concrete h, Grisette.Internal.Core.Data.Class.Concrete.Concrete i) => Grisette.Internal.Core.Data.Class.Concrete.Concrete (a, b, c, d, e, f, g, h, i)
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Base.Void
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Types.Word
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Word.Word16
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Word.Word32
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Word.Word64
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete GHC.Internal.Word.Word8
+instance Grisette.Internal.Core.Data.Class.Concrete.Concrete a => Grisette.Internal.Core.Data.Class.Concrete.Concrete (GHC.Internal.Data.Bits.Xor a)
+
 
 module Grisette.Internal.Core.Data.Class.Function
 
@@ -8342,11 +8403,6 @@ isMerged :: Union a -> Bool
 --   7
 --   </pre>
 unionSize :: Union a -> Int
-
--- | Tag for concrete types. Useful for specifying the merge strategy for
---   some parametrized types where we should have different merge strategy
---   for symbolic and concrete ones.
-class (Eq t, Ord t, Hashable t) => IsConcrete t
 
 
 module Grisette.Internal.Unified.BaseMonad
@@ -16772,11 +16828,6 @@ symFromIntegral :: SymFromIntegral from to => from -> to
 --   these combinators to ensure efficient merging by Grisette.
 data Union a
 
--- | Tag for concrete types. Useful for specifying the merge strategy for
---   some parametrized types where we should have different merge strategy
---   for symbolic and concrete ones.
-class (Eq t, Ord t, Hashable t) => IsConcrete t
-
 -- | Lift a unary operation to <a>Union</a>.
 unionUnaryOp :: (a -> a) -> Union a -> Union a
 
@@ -16805,6 +16856,13 @@ liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
 --   7
 --   </pre>
 unionSize :: Union a -> Int
+
+-- | A tag for concrete types.
+--   
+--   Can be used in code to constrain types to concrete ones. For example,
+--   when trying to support hash maps in Grisette, we may want to restrict
+--   the key type to be concrete. The <a>Concrete</a> type class is handy.
+class Concrete a
 
 -- | Each type is associated with a root merge strategy given by
 --   <a>rootStrategy</a>. The root merge strategy should be able to merge
