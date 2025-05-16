@@ -30,6 +30,7 @@ import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq (keyEq), KeyHashable (keyHashWithSalt), shouldUseAsKeyError, shouldUseAsKeyHasSymbolicVersionError)
 import Grisette.Internal.Core.Data.Class.Function
   ( Apply (FunType, apply),
     Function ((#)),
@@ -149,18 +150,29 @@ instance
 instance Show (sa =~> sb) where
   show (SymTabularFun t) = pformatTerm t
 
--- | Checks if two formulas are the same. Not building the actual symbolic
--- equality formula.
+-- | This will crash the program.
 --
--- The reason why we choose this behavior is to allow symbolic variables to be
--- used as keys in hash maps, which can be useful for memoization.
+-- 'SymTabularFun' cannot be compared concretely.
 --
--- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymTabularFun'@ instead.
 instance Eq (sa =~> sb) where
-  SymTabularFun l == SymTabularFun r = l == r
+  (==) = shouldUseAsKeyHasSymbolicVersionError "SymTabularFun" "(==)" "(.==)"
 
+instance KeyEq (sa =~> sb) where
+  keyEq (SymTabularFun l) (SymTabularFun r) = l == r
+
+-- | This will crash the program.
+--
+-- 'SymTabularFun' cannot be hashed concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymTabularFun'@ instead.
 instance Hashable (sa =~> sb) where
-  hashWithSalt s (SymTabularFun v) = s `hashWithSalt` v
+  hashWithSalt = shouldUseAsKeyError "SymTabularFun" "hashWithSalt"
+
+instance KeyHashable (sa =~> sb) where
+  keyHashWithSalt s (SymTabularFun v) = hashWithSalt s v
 
 instance AllSyms (sa =~> sb) where
   allSymsS v@SymTabularFun {} = (SomeSym v :)

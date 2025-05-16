@@ -22,6 +22,12 @@ import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( KeyEq (keyEq),
+    KeyHashable (keyHashWithSalt),
+    shouldUseAsKeyError,
+    shouldUseAsKeyHasSymbolicVersionError,
+  )
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
@@ -75,18 +81,32 @@ instance Apply SymBool where
   type FunType SymBool = SymBool
   apply = id
 
--- | Checks if two formulas are the same. Not building the actual symbolic
--- equality formula.
+-- | This will crash the program.
 --
--- The reason why we choose this behavior is to allow symbolic variables to be
--- used as keys in hash maps, which can be useful for memoization.
+-- 'SymBool' cannot be compared concretely.
 --
--- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymBool'@ instead.
+--
+-- If you want symbolic version of the equality operator, use
+-- t'Grisette.Core.SymEq' instead.
 instance Eq SymBool where
-  SymBool l == SymBool r = l == r
+  (==) = shouldUseAsKeyHasSymbolicVersionError "SymBool" "(==)" "(.==)"
 
+instance KeyEq SymBool where
+  keyEq (SymBool l) (SymBool r) = l == r
+
+-- | This will crash the program.
+--
+-- 'SymBool' cannot be hashed concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymBool'@ instead.
 instance Hashable SymBool where
-  hashWithSalt s (SymBool v) = s `hashWithSalt` v
+  hashWithSalt = shouldUseAsKeyError "SymBool" "hashWithSalt"
+
+instance KeyHashable SymBool where
+  keyHashWithSalt s (SymBool v) = s `hashWithSalt` v
 
 instance Solvable Bool SymBool where
   con = SymBool . conTerm

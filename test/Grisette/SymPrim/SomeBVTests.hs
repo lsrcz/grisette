@@ -32,7 +32,9 @@ import Data.Bits
 import Data.Proxy (Proxy (Proxy))
 import Data.Serialize (decode, encode)
 import Grisette
-  ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
+  ( AsKey (AsKey),
+    AsKey1 (AsKey1),
+    BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
     ITEOp (symIte),
     LogicalOp (symNot),
     Mergeable (rootStrategy),
@@ -124,7 +126,7 @@ testSymFuncMatch ::
 testSymFuncMatch name f a b r = testCase name $ do
   let actual = f a b
   let expected = r
-  actual @?= expected
+  AsKey actual @?= AsKey expected
 
 testSymFuncMatchLit ::
   String ->
@@ -136,7 +138,7 @@ testSymFuncMatchLit ::
 testSymFuncMatchLit name f a b r = testCase name $ do
   let SomeBVLit actual = f a b
   let SomeBVLit expected = r
-  actual @?= expected
+  AsKey actual @?= AsKey expected
 
 testFuncMisMatch ::
   (NFData r, Show r, Eq r) =>
@@ -221,7 +223,7 @@ someBVTests =
         [ testCase "conBV" $ do
             let actual = conBV (bv 4 5)
             let expected = bv 4 5 :: SomeSymIntN
-            actual @?= expected,
+            AsKey actual @?= AsKey expected,
           testGroup
             "conBVView"
             [ testCase "is concrete" $ do
@@ -241,9 +243,9 @@ someBVTests =
                   ConBV _ -> fail "is not concrete"
                   _ -> return ()
             ],
-          testCase "ssymBV" $ ssymBV 4 "a" @?= SomeBV (ssym "a" :: SymIntN 4),
+          testCase "ssymBV" $ AsKey (ssymBV 4 "a") @?= AsKey (SomeBV (ssym "a" :: SymIntN 4)),
           testCase "isymBV" $
-            isymBV 4 "a" 1 @?= SomeBV (isym "a" 1 :: SymIntN 4),
+            AsKey (isymBV 4 "a" 1) @?= AsKey (SomeBV (isym "a" 1 :: SymIntN 4)),
           testGroup
             "unarySomeBV"
             [ testCase "SomeBV" $ do
@@ -489,13 +491,13 @@ someBVTests =
               let actual =
                     mrgIf "cond" (return l) (return r) :: Union SomeIntN
               let expected = UMrg rootStrategy merged
-              actual @?= expected,
+              AsKey actual @?= AsKey expected,
           testGroup "SomeSymIntN" $ do
             (name, l, r, merged) <-
               [ ( "same bitwidth",
                   ssymBV 4 "a",
                   ssymBV 4 "b",
-                  (UnionSingle $ symIte "cond" (ssymBV 4 "a") (ssymBV 4 "b"))
+                  (UnionSingle $ AsKey $ symIte "cond" (ssymBV 4 "a") (ssymBV 4 "b"))
                 ),
                 ( "different bitwidth",
                   ssymBV 4 "a",
@@ -503,8 +505,8 @@ someBVTests =
                   ifWithLeftMost
                     True
                     "cond"
-                    (UnionSingle $ ssymBV 4 "a")
-                    (UnionSingle $ ssymBV 5 "b")
+                    (UnionSingle $ AsKey $ ssymBV 4 "a")
+                    (UnionSingle $ AsKey $ ssymBV 5 "b")
                 ),
                 ( "different bitwidth, should invert",
                   ssymBV 5 "b",
@@ -512,48 +514,52 @@ someBVTests =
                   ifWithLeftMost
                     True
                     (symNot "cond")
-                    (UnionSingle $ ssymBV 4 "a")
-                    (UnionSingle $ ssymBV 5 "b")
+                    (UnionSingle $ AsKey $ ssymBV 4 "a")
+                    (UnionSingle $ AsKey $ ssymBV 5 "b")
                 )
               ]
             return $ testCase name $ do
               let actual =
-                    mrgIf "cond" (return l) (return r) :: Union SomeSymIntN
+                    mrgIf
+                      "cond"
+                      (return $ AsKey l)
+                      (return $ AsKey r) ::
+                      Union (AsKey SomeSymIntN)
               let expected = UMrg rootStrategy merged
-              actual @?= expected
+              AsKey1 actual @?= AsKey1 expected
         ],
       testGroup
         "GenSym"
         [ testCase "Proxy n" $ do
-            let actual = genSym (Proxy :: Proxy 4) "a" :: Union SomeSymIntN
-            let expected = mrgSingle $ isymBV 4 "a" 0
-            actual @?= expected,
+            let actual = genSym (Proxy :: Proxy 4) "a" :: Union (AsKey SomeSymIntN)
+            let expected = mrgSingle $ AsKey $ isymBV 4 "a" 0
+            AsKey1 actual @?= AsKey1 expected,
           testCase "SomeBV" $ do
             let actual =
-                  genSym (bv 4 1 :: SomeSymIntN) "a" :: Union SomeSymIntN
-            let expected = mrgSingle $ isymBV 4 "a" 0
-            actual @?= expected,
+                  genSym (bv 4 1 :: SomeSymIntN) "a" :: Union (AsKey SomeSymIntN)
+            let expected = mrgSingle $ AsKey $ isymBV 4 "a" 0
+            AsKey1 actual @?= AsKey1 expected,
           testCase "Int" $ do
             let actual =
-                  genSym (4 :: Int) "a" :: Union SomeSymIntN
-            let expected = mrgSingle $ isymBV 4 "a" 0
-            actual @?= expected
+                  genSym (4 :: Int) "a" :: Union (AsKey SomeSymIntN)
+            let expected = mrgSingle $ AsKey $ isymBV 4 "a" 0
+            AsKey1 actual @?= AsKey1 expected
         ],
       testGroup
         "GenSymSimple"
         [ testCase "Proxy n" $ do
             let actual = genSymSimple (Proxy :: Proxy 4) "a" :: SomeSymIntN
             let expected = isymBV 4 "a" 0
-            actual @?= expected,
+            AsKey actual @?= AsKey expected,
           testCase "SomeBV" $ do
             let actual =
                   genSymSimple (bv 4 1 :: SomeSymIntN) "a" :: SomeSymIntN
             let expected = isymBV 4 "a" 0
-            actual @?= expected,
+            AsKey actual @?= AsKey expected,
           testCase "Int" $ do
             let actual = genSymSimple (4 :: Int) "a" :: SomeSymIntN
             let expected = isymBV 4 "a" 0
-            actual @?= expected
+            AsKey actual @?= AsKey expected
         ],
       testProperty "arbitraryBV" $
         forAll (arbitraryBV 4) $
@@ -605,13 +611,13 @@ someBVTests =
         [ testCase "same bitwidth" $ do
             let a = ssymBV 4 "a" :: SomeSymIntN
             let b = ssymBV 4 "b" :: SomeSymIntN
-            a .== b @?= ("a" :: SymIntN 4) .== "b"
-            a ./= b @?= ("a" :: SymIntN 4) ./= "b",
+            AsKey (a .== b) @?= AsKey (("a" :: SymIntN 4) .== "b")
+            AsKey (a ./= b) @?= AsKey (("a" :: SymIntN 4) ./= "b"),
           testCase "different bitwidth" $ do
             let a = ssymBV 4 "a" :: SomeSymIntN
             let b = ssymBV 3 "b" :: SomeSymIntN
-            a .== b @?= con False
-            a ./= b @?= con True
+            AsKey (a .== b) @?= AsKey (con False)
+            AsKey (a ./= b) @?= AsKey (con True)
         ],
       testGroup
         "Num"

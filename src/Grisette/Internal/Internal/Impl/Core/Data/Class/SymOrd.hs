@@ -59,6 +59,7 @@ import Grisette.Internal.Core.Control.Exception
     VerificationConditions,
   )
 import Grisette.Internal.Core.Control.Monad.Union (Union)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
   )
@@ -476,4 +477,16 @@ instance SymOrd1 Down where
       LT -> mrgSingle GT
       EQ -> mrgSingle EQ
       GT -> mrgSingle LT
+  {-# INLINE liftSymCompare #-}
+
+instance (SymOrd a) => SymOrd (AsKey a) where
+  symCompare (AsKey l) (AsKey r) = symCompare l r
+  {-# INLINE symCompare #-}
+
+instance (SymOrd1 f, SymOrd a) => SymOrd (AsKey1 f a) where
+  symCompare = symCompare1
+  {-# INLINE symCompare #-}
+
+instance (SymOrd1 f) => SymOrd1 (AsKey1 f) where
+  liftSymCompare f (AsKey1 l) (AsKey1 r) = liftSymCompare f l r
   {-# INLINE liftSymCompare #-}

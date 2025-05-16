@@ -61,6 +61,7 @@ import Generics.Deriving
   ( Default (unDefault),
     Default1 (unDefault1),
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -254,3 +255,15 @@ instance
 instance (Generic1 f, GAllSyms Arity1 (Rep1 f)) => AllSyms1 (Default1 f) where
   liftAllSymsS f = genericLiftAllSymsS f . unDefault1
   {-# INLINE liftAllSymsS #-}
+
+instance (AllSyms a) => AllSyms (AsKey a) where
+  allSymsS (AsKey a) = allSymsS a
+  {-# INLINE allSymsS #-}
+
+instance (AllSyms1 f) => AllSyms1 (AsKey1 f) where
+  liftAllSymsS f (AsKey1 a) = liftAllSymsS f a
+  {-# INLINE liftAllSymsS #-}
+
+instance (AllSyms1 f, AllSyms a) => AllSyms (AsKey1 f a) where
+  allSymsS (AsKey1 a) = allSymsS a
+  {-# INLINE allSymsS #-}

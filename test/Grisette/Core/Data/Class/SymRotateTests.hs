@@ -8,13 +8,15 @@ import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette
-  ( IntN,
+  ( AsKey (AsKey),
+    IntN,
     Solvable (con),
     SymIntN,
     SymRotate (symRotate, symRotateNegated),
     SymWordN,
     WordN,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
@@ -126,7 +128,8 @@ symbolicTypeSymRotateTests ::
     Typeable s,
     Integral c,
     Solvable c s,
-    Show c
+    Show c,
+    KeyEq s
   ) =>
   proxy s ->
   Test
@@ -139,15 +142,15 @@ symbolicTypeSymRotateTests p =
             forAll (chooseInt (-finiteBitSize x, finiteBitSize x)) $
               \(s :: Int) ->
                 ioProperty $
-                  symRotate (con x :: s) (fromIntegral s)
+                  AsKey (symRotate (con x :: s) (fromIntegral s))
                     @?= con (symRotate x (fromIntegral s)),
           testProperty "symRotate max" $ \(x :: c) ->
             ioProperty $
-              symRotate (con x :: s) (con maxBound)
+              AsKey (symRotate (con x :: s) (con maxBound))
                 @?= con (symRotate x maxBound),
           testProperty "symRotate min" $ \(x :: c) ->
             ioProperty $ do
-              symRotate (con x :: s) (con minBound)
+              AsKey (symRotate (con x :: s) (con minBound))
                 @?= con (symRotate x minBound)
         ]
     ]

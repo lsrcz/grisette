@@ -70,6 +70,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
@@ -500,3 +501,15 @@ deriving via
   (Default ((f :.: g) p))
   instance
     (ToSym (f0 (g0 p0)) (f (g p))) => ToSym ((f0 :.: g0) p0) ((f :.: g) p)
+
+instance {-# INCOHERENT #-} (ToSym a b) => ToSym (AsKey a) (AsKey b) where
+  toSym (AsKey a) = AsKey $ toSym a
+  {-# INLINE toSym #-}
+
+instance {-# INCOHERENT #-} (ToSym a b) => ToSym a (AsKey b) where
+  toSym a = AsKey $ toSym a
+  {-# INLINE toSym #-}
+
+instance {-# INCOHERENT #-} (ToSym a b) => ToSym (AsKey a) b where
+  toSym (AsKey a) = toSym a
+  {-# INLINE toSym #-}

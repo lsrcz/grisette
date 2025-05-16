@@ -57,6 +57,7 @@ import GHC.Generics
     type (:*:) ((:*:)),
   )
 import Generics.Deriving (Default (Default), Default1 (Default1))
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( GMergeable,
@@ -308,3 +309,26 @@ instance SimpleMergeable SymBool where
 instance {-# OVERLAPPABLE #-} (SimpleMergeable a) => ITEOp a where
   symIte = mrgIte
   {-# INLINE symIte #-}
+
+instance (SimpleMergeable a) => SimpleMergeable (AsKey a) where
+  mrgIte c (AsKey t) (AsKey f) = AsKey $ mrgIte c t f
+  {-# INLINE mrgIte #-}
+
+instance (SimpleMergeable (f a)) => SimpleMergeable (AsKey1 f a) where
+  mrgIte c (AsKey1 t) (AsKey1 f) = AsKey1 $ mrgIte c t f
+  {-# INLINE mrgIte #-}
+
+instance
+  (SimpleMergeable1 f) =>
+  SimpleMergeable1 (AsKey1 f)
+  where
+  liftMrgIte m c (AsKey1 t) (AsKey1 f) = AsKey1 $ liftMrgIte m c t f
+  {-# INLINE liftMrgIte #-}
+
+instance (SymBranching f) => SymBranching (AsKey1 f) where
+  mrgIfWithStrategy strategy cond (AsKey1 t) (AsKey1 f) =
+    AsKey1 $ mrgIfWithStrategy strategy cond t f
+  mrgIfPropagatedStrategy cond (AsKey1 t) (AsKey1 f) =
+    AsKey1 $ mrgIfPropagatedStrategy cond t f
+  {-# INLINE mrgIfWithStrategy #-}
+  {-# INLINE mrgIfPropagatedStrategy #-}

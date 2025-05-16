@@ -9,7 +9,8 @@ module Grisette.Core.Data.Class.BitCastTests (bitCastTests) where
 
 import Data.Typeable (Proxy (Proxy), Typeable, typeRep)
 import Grisette
-  ( BitCast (bitCast),
+  ( AsKey,
+    BitCast (bitCast),
     FP32,
     IntN,
     IntN32,
@@ -63,8 +64,8 @@ bitCastTests =
         concat
           [ bitCastBit1Tests @Bool @(IntN 1),
             bitCastBit1Tests @Bool @(WordN 1),
-            bitCastBit1Tests @SymBool @(SymIntN 1),
-            bitCastBit1Tests @SymBool @(SymWordN 1)
+            bitCastBit1Tests @(AsKey SymBool) @(AsKey (SymIntN 1)),
+            bitCastBit1Tests @(AsKey SymBool) @(AsKey (SymWordN 1))
           ],
       testGroup
         "FP"
@@ -77,17 +78,17 @@ bitCastTests =
             bitCast (0xc4002800 :: IntN32) @?= (-512.625 :: FP32),
           testCase "SymFP32" $ do
             bitCastOrCanonical (-512.625 :: SymFP32)
-              @?= (0xc4002800 :: SymWordN32)
-            bitCastOrCanonical (fpNaN :: SymFP32) @?= (0x7fc00000 :: SymWordN32)
-            bitCast (0xc4002800 :: SymWordN32) @?= (-512.625 :: SymFP32)
+              @?= (0xc4002800 :: AsKey SymWordN32)
+            bitCastOrCanonical (fpNaN :: SymFP32) @?= (0x7fc00000 :: AsKey SymWordN32)
+            bitCast (0xc4002800 :: SymWordN32) @?= (-512.625 :: AsKey SymFP32)
             bitCastOrCanonical (-512.625 :: SymFP32)
-              @?= (0xc4002800 :: SymIntN32)
-            bitCastOrCanonical (fpNaN :: SymFP32) @?= (0x7fc00000 :: SymIntN32)
-            bitCast (0xc4002800 :: SymIntN32) @?= (-512.625 :: SymFP32)
+              @?= (0xc4002800 :: AsKey SymIntN32)
+            bitCastOrCanonical (fpNaN :: SymFP32) @?= (0x7fc00000 :: AsKey SymIntN32)
+            bitCast (0xc4002800 :: SymIntN32) @?= (-512.625 :: AsKey SymFP32)
         ],
       testCase "Nested" $ do
-        let int32 = "x" :: SymIntN32
-        let word32 = bitCast int32 :: SymWordN32
-        let final = bitCast word32 :: SymIntN32
+        let int32 = "x" :: AsKey SymIntN32
+        let word32 = bitCast int32 :: AsKey SymWordN32
+        let final = bitCast word32 :: AsKey SymIntN32
         final @?= int32
     ]

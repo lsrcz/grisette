@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
@@ -18,6 +19,7 @@ module Grisette.Internal.Core.Data.Class.SymFromIntegral
 where
 
 import GHC.TypeLits (KnownNat, type (<=))
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalFromIntegralTerm (pevalFromIntegralTerm),
@@ -107,4 +109,28 @@ instance
   SymFromIntegral (SymIntN n) (SymFP eb sb)
   where
   symFromIntegral (SymIntN x) = SymFP $ pevalFromIntegralTerm x
+  {-# INLINE symFromIntegral #-}
+
+instance
+  {-# INCOHERENT #-}
+  (SymFromIntegral a b) =>
+  SymFromIntegral (AsKey a) (AsKey b)
+  where
+  symFromIntegral (AsKey x) = AsKey $ symFromIntegral x
+  {-# INLINE symFromIntegral #-}
+
+instance
+  {-# INCOHERENT #-}
+  (SymFromIntegral a b) =>
+  SymFromIntegral (AsKey a) b
+  where
+  symFromIntegral (AsKey x) = symFromIntegral x
+  {-# INLINE symFromIntegral #-}
+
+instance
+  {-# INCOHERENT #-}
+  (SymFromIntegral a b) =>
+  SymFromIntegral a (AsKey b)
+  where
+  symFromIntegral x = AsKey $ symFromIntegral x
   {-# INLINE symFromIntegral #-}

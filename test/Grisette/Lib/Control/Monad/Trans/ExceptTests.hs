@@ -22,9 +22,9 @@ import Grisette.Lib.Control.Monad.Trans.Except
     mrgWithExceptT,
   )
 import Grisette.SymPrim (SymBool, SymInteger)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
 
 unmergedExceptT :: ExceptT SymInteger Union SymBool
 unmergedExceptT =
@@ -50,15 +50,15 @@ exceptTests =
     [ testCase "mrgExcept" $ do
         let actual = mrgExcept (Left "a") :: ExceptT SymInteger Union SymBool
         let expected = ExceptT (mrgSingle (Left "a"))
-        actual @?= expected,
+        actual .@?= expected,
       testCase "mrgRunExceptT" $ do
-        mrgRunExceptT unmergedExceptT @?= runExceptT mergedExceptT,
+        mrgRunExceptT unmergedExceptT .@?= runExceptT mergedExceptT,
       testCase "mrgWithExceptT" $ do
-        mrgWithExceptT (+ 1) unmergedExceptT @?= mergedExceptTPlus1,
+        mrgWithExceptT (+ 1) unmergedExceptT .@?= mergedExceptTPlus1,
       testCase "mrgThrowE" $ do
         let actual = mrgThrowE "a" :: ExceptT SymInteger Union SymBool
-        actual @?= ExceptT (mrgSingle (Left "a")),
+        actual .@?= ExceptT (mrgSingle (Left "a")),
       testCase "mrgCatchE" $ do
         let actual = mrgCatchE unmergedExceptT (throwError . (+ 1))
-        actual @?= mergedExceptTPlus1
+        actual .@?= mergedExceptTPlus1
     ]

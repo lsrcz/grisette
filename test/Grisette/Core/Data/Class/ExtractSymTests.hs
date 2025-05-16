@@ -28,6 +28,7 @@ import Grisette
   ( ExtractSym (extractSym),
     ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
+    Solvable (ssym),
     SymBool,
     SymEq ((.==)),
     SymbolSetOps (emptySet),
@@ -88,7 +89,7 @@ extractSymTests =
                   @?= buildSymbolSet (ssymbolBool "a", isymbolBool "b" 1),
               testCase "ITE" $
                 extractSym
-                  (symIte (ssymBool "a") (isymBool "b" 1) (ssymBool "c"))
+                  (symIte (ssym "a") (isymBool "b" 1) (ssymBool "c"))
                   @?= buildSymbolSet
                     ( ssymbolBool "a",
                       isymbolBool "b" 1,
@@ -146,11 +147,11 @@ extractSymTests =
             "Either SymBool SymBool"
             [ testCase "Left v" $
                 extractSym
-                  (Left (ssymBool "a") :: Either SymBool SymBool)
+                  (Left (ssym "a") :: Either SymBool SymBool)
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "Right v" $
                 extractSym
-                  (Right (ssymBool "a") :: Either SymBool SymBool)
+                  (Right (ssym "a") :: Either SymBool SymBool)
                   @?= buildSymbolSet (ssymbolBool "a")
             ],
           testGroup
@@ -173,13 +174,13 @@ extractSymTests =
                   @?= emptySet,
               testCase "ExceptT (Just (Left v))" $
                 extractSym
-                  ( ExceptT (Just (Left (ssymBool "a"))) ::
+                  ( ExceptT (Just (Left (ssym "a"))) ::
                       ExceptT SymBool Maybe SymBool
                   )
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "ExceptT (Just (Right v))" $
                 extractSym
-                  ( ExceptT (Just (Right (ssymBool "a"))) ::
+                  ( ExceptT (Just (Right (ssym "a"))) ::
                       ExceptT SymBool Maybe SymBool
                   )
                   @?= buildSymbolSet (ssymbolBool "a")
@@ -197,7 +198,7 @@ extractSymTests =
                   testCase "WriterT (Just (v1, v2))" $
                     extractSym
                       ( WriterLazy.WriterT
-                          (Just (ssymBool "a", ssymBool "b")) ::
+                          (Just (ssym "a", ssym "b")) ::
                           WriterLazy.WriterT SymBool Maybe SymBool
                       )
                       @?= buildSymbolSet (ssymbolBool "a", ssymbolBool "b")
@@ -213,7 +214,7 @@ extractSymTests =
                   testCase "WriterT (Just (v1, v2))" $
                     extractSym
                       ( WriterStrict.WriterT
-                          (Just (ssymBool "a", ssymBool "b")) ::
+                          (Just (ssym "a", ssym "b")) ::
                           WriterStrict.WriterT SymBool Maybe SymBool
                       )
                       @?= buildSymbolSet (ssymbolBool "a", ssymbolBool "b")
@@ -241,13 +242,13 @@ extractSymTests =
             "IdentityT (Either SymBool) SymBool"
             [ testCase "Identity (Left v)" $
                 extractSym
-                  ( IdentityT $ Left (ssymBool "a") ::
+                  ( IdentityT $ Left (ssym "a") ::
                       IdentityT (Either SymBool) SymBool
                   )
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "Identity (Right v)" $
                 extractSym
-                  ( IdentityT $ Right (ssymBool "a") ::
+                  ( IdentityT $ Right (ssym "a") ::
                       IdentityT (Either SymBool) SymBool
                   )
                   @?= buildSymbolSet (ssymbolBool "a")
@@ -260,10 +261,10 @@ extractSymTests =
             [ testCase "A1" $
                 extractSym A1 @?= emptySet,
               testCase "A2" $
-                extractSym (A2 (ssymBool "a"))
+                extractSym (A2 (ssym "a"))
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "A3" $
-                extractSym (A3 (ssymBool "a") (ssymBool "b"))
+                extractSym (A3 (ssym "a") (ssym "b"))
                   @?= buildSymbolSet (ssymbolBool "a", ssymbolBool "b")
             ]
         ]

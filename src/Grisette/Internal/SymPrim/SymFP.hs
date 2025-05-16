@@ -38,6 +38,7 @@ import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq (keyEq), KeyHashable (keyHashWithSalt), shouldUseAsKeyError, shouldUseAsKeyHasSymbolicVersionError)
 import Grisette.Internal.Core.Data.Class.BitCast
   ( BitCast (bitCast),
     BitCastCanonical (bitCastCanonicalValue),
@@ -209,18 +210,32 @@ instance (ValidFP eb sb) => Apply (SymFP eb sb) where
   type FunType (SymFP eb sb) = SymFP eb sb
   apply = id
 
--- | Checks if two formulas are the same. Not building the actual symbolic
--- equality formula.
+-- | This will crash the program.
 --
--- The reason why we choose this behavior is to allow symbolic variables to be
--- used as keys in hash maps, which can be useful for memoization.
+-- 'SymFP' cannot be compared concretely.
 --
--- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymFP'@ instead.
+--
+-- If you want symbolic version of the equality operator, use
+-- t'Grisette.Core.SymEq' instead.
 instance (ValidFP eb sb) => Eq (SymFP eb sb) where
-  SymFP a == SymFP b = a == b
+  (==) = shouldUseAsKeyHasSymbolicVersionError "SymFP" "(==)" "(.==)"
 
+instance (ValidFP eb sb) => KeyEq (SymFP eb sb) where
+  keyEq (SymFP l) (SymFP r) = l == r
+
+-- | This will crash the program.
+--
+-- 'SymFP' cannot be hashed concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymFP'@ instead.
 instance (ValidFP eb sb) => Hashable (SymFP eb sb) where
-  hashWithSalt s (SymFP a) = hashWithSalt s a
+  hashWithSalt = shouldUseAsKeyError "SymFP" "hashWithSalt"
+
+instance (ValidFP eb sb) => KeyHashable (SymFP eb sb) where
+  keyHashWithSalt s (SymFP a) = hashWithSalt s a
 
 instance (ValidFP eb sb) => IsString (SymFP eb sb) where
   fromString = ssym . fromString
@@ -288,11 +303,30 @@ instance Apply SymFPRoundingMode where
   type FunType SymFPRoundingMode = SymFPRoundingMode
   apply = id
 
+-- | This will crash the program.
+--
+-- 'SymFPRoundingMode' cannot be compared concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymFPRoundingMode'@ instead.
 instance Eq SymFPRoundingMode where
-  SymFPRoundingMode a == SymFPRoundingMode b = a == b
+  (==) =
+    shouldUseAsKeyHasSymbolicVersionError "SymFPRoundingMode" "(==)" "(.==)"
 
+instance KeyEq SymFPRoundingMode where
+  keyEq (SymFPRoundingMode l) (SymFPRoundingMode r) = l == r
+
+-- | This will crash the program.
+--
+-- 'SymFPRoundingMode' cannot be hashed concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymFPRoundingMode'@ instead.
 instance Hashable SymFPRoundingMode where
-  hashWithSalt s (SymFPRoundingMode a) = hashWithSalt s a
+  hashWithSalt = shouldUseAsKeyError "SymFPRoundingMode" "hashWithSalt"
+
+instance KeyHashable SymFPRoundingMode where
+  keyHashWithSalt s (SymFPRoundingMode a) = hashWithSalt s a
 
 instance IsString SymFPRoundingMode where
   fromString = ssym . fromString

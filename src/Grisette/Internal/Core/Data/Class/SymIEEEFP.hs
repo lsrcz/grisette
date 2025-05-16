@@ -15,6 +15,7 @@ module Grisette.Internal.Core.Data.Class.SymIEEEFP
   )
 where
 
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( fpIsInfinite,
     fpIsNaN,
@@ -123,3 +124,40 @@ deriving via
   (ConcreteFloat (FP eb sb))
   instance
     (ValidFP eb sb) => SymIEEEFPTraits (FP eb sb)
+
+instance (SymIEEEFPTraits a) => SymIEEEFPTraits (AsKey a) where
+  symFpIsNaN (AsKey a) = symFpIsNaN a
+  {-# INLINE symFpIsNaN #-}
+
+  symFpIsPositive (AsKey a) = symFpIsPositive a
+  {-# INLINE symFpIsPositive #-}
+
+  symFpIsNegative (AsKey a) = symFpIsNegative a
+  {-# INLINE symFpIsNegative #-}
+
+  symFpIsInfinite (AsKey a) = symFpIsInfinite a
+  {-# INLINE symFpIsInfinite #-}
+
+  symFpIsPositiveZero (AsKey a) = symFpIsPositiveZero a
+  {-# INLINE symFpIsPositiveZero #-}
+
+  symFpIsNegativeZero (AsKey a) = symFpIsNegativeZero a
+  {-# INLINE symFpIsNegativeZero #-}
+
+  symFpIsZero (AsKey a) = symFpIsZero a
+  {-# INLINE symFpIsZero #-}
+
+  symFpIsNormal (AsKey a) = symFpIsNormal a
+  {-# INLINE symFpIsNormal #-}
+
+  symFpIsSubnormal (AsKey a) = symFpIsSubnormal a
+  {-# INLINE symFpIsSubnormal #-}
+
+  symFpIsPoint (AsKey a) = symFpIsPoint a
+  {-# INLINE symFpIsPoint #-}
+
+  symFpIsPositiveInfinite (AsKey a) = symFpIsPositiveInfinite a
+  {-# INLINE symFpIsPositiveInfinite #-}
+
+  symFpIsNegativeInfinite (AsKey a) = symFpIsNegativeInfinite a
+  {-# INLINE symFpIsNegativeInfinite #-}

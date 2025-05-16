@@ -61,6 +61,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
@@ -323,3 +324,15 @@ deriving via
   (Default ((f :.: g) p))
   instance
     (SymEq (f (g p))) => SymEq ((f :.: g) p)
+
+instance (SymEq a) => SymEq (AsKey a) where
+  (AsKey l) .== (AsKey r) = l .== r
+  {-# INLINE (.==) #-}
+
+instance (SymEq1 f) => SymEq1 (AsKey1 f) where
+  liftSymEq f (AsKey1 l) (AsKey1 r) = liftSymEq f l r
+  {-# INLINE liftSymEq #-}
+
+instance (SymEq1 f, SymEq a) => SymEq (AsKey1 f a) where
+  (.==) = symEq1
+  {-# INLINE (.==) #-}

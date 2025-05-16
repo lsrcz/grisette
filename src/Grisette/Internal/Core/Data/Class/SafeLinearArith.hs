@@ -30,6 +30,7 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp ((.&&), (.||)),
   )
@@ -227,3 +228,14 @@ instance
       (mrgSingle res)
     where
       res = ls - rs
+
+instance (SafeLinearArith e a m) => SafeLinearArith e (AsKey a) m where
+  safeAdd (AsKey a) (AsKey b) = do
+    r <- safeAdd a b
+    mrgSingle $ AsKey r
+  safeNeg (AsKey a) = do
+    r <- safeNeg a
+    mrgSingle $ AsKey r
+  safeSub (AsKey a) (AsKey b) = do
+    r <- safeSub a b
+    mrgSingle $ AsKey r

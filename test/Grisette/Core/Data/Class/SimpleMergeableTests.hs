@@ -31,18 +31,20 @@ import Grisette
     LogicalOp (symNot, (.&&), (.||)),
     Mergeable,
     SimpleMergeable (mrgIte),
+    Solvable (con, ssym),
     SymBool,
     Union,
     mrgIf,
     mrgIte1,
     mrgSingle,
   )
-import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
+import Grisette.Core.Data.Class.TestValues (ssymBool)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey, AsKey1)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
-newtype AndMonoidSymBool = AndMonoidSymBool SymBool
+newtype AndMonoidSymBool = AndMonoidSymBool (AsKey SymBool)
   deriving (Show, Generic, Eq)
   deriving (Mergeable) via (Default AndMonoidSymBool)
 
@@ -50,7 +52,7 @@ instance Semigroup AndMonoidSymBool where
   (AndMonoidSymBool a) <> (AndMonoidSymBool b) = AndMonoidSymBool (a .&& b)
 
 instance Monoid AndMonoidSymBool where
-  mempty = AndMonoidSymBool $ conBool True
+  mempty = AndMonoidSymBool $ con True
 
 simpleMergeableTests :: Test
 simpleMergeableTests =
@@ -59,313 +61,320 @@ simpleMergeableTests =
     [ testGroup
         "SimpleMergeable for common types"
         [ testCase "SymBool" $ do
-            mrgIte (ssymBool "a") (ssymBool "b") (ssymBool "c")
-              @?= symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
+            mrgIte (ssym "a") (ssym "b" :: AsKey SymBool) (ssym "c")
+              @?= symIte (ssym "a") (ssym "b") (ssym "c"),
           testCase "()" $ do
-            mrgIte (ssymBool "a") () () @?= (),
+            mrgIte (ssym "a") () () @?= (),
           testCase "(SymBool, SymBool)" $ do
             mrgIte
-              (ssymBool "a")
-              (ssymBool "b", ssymBool "d")
-              (ssymBool "c", ssymBool "e")
-              @?= ( symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
-                    symIte (ssymBool "a") (ssymBool "d") (ssymBool "e")
+              (ssym "a")
+              (ssym "b" :: AsKey SymBool, ssym "d" :: AsKey SymBool)
+              (ssym "c", ssym "e")
+              @?= ( symIte (ssym "a") (ssym "b") (ssym "c"),
+                    symIte (ssym "a") (ssym "d") (ssym "e")
                   ),
           testCase "(SymBool, SymBool, SymBool)" $ do
             mrgIte
-              (ssymBool "a")
-              (ssymBool "b", ssymBool "d", ssymBool "f")
-              (ssymBool "c", ssymBool "e", ssymBool "g")
-              @?= ( symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
-                    symIte (ssymBool "a") (ssymBool "d") (ssymBool "e"),
-                    symIte (ssymBool "a") (ssymBool "f") (ssymBool "g")
+              (ssym "a")
+              ( ssym "b" :: AsKey SymBool,
+                ssym "d" :: AsKey SymBool,
+                ssym "f" :: AsKey SymBool
+              )
+              (ssym "c", ssym "e", ssym "g")
+              @?= ( symIte (ssym "a") (ssym "b") (ssym "c"),
+                    symIte (ssym "a") (ssym "d") (ssym "e"),
+                    symIte (ssym "a") (ssym "f") (ssym "g")
                   ),
           testCase "(SymBool, SymBool, SymBool, SymBool)" $ do
             mrgIte
-              (ssymBool "a")
-              (ssymBool "b", ssymBool "d", ssymBool "f", ssymBool "h")
-              (ssymBool "c", ssymBool "e", ssymBool "g", ssymBool "i")
-              @?= ( symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
-                    symIte (ssymBool "a") (ssymBool "d") (ssymBool "e"),
-                    symIte (ssymBool "a") (ssymBool "f") (ssymBool "g"),
-                    symIte (ssymBool "a") (ssymBool "h") (ssymBool "i")
+              (ssym "a")
+              ( ssym "b" :: AsKey SymBool,
+                ssym "d" :: AsKey SymBool,
+                ssym "f" :: AsKey SymBool,
+                ssym "h" :: AsKey SymBool
+              )
+              (ssym "c", ssym "e", ssym "g", ssym "i")
+              @?= ( symIte (ssym "a") (ssym "b") (ssym "c"),
+                    symIte (ssym "a") (ssym "d") (ssym "e"),
+                    symIte (ssym "a") (ssym "f") (ssym "g"),
+                    symIte (ssym "a") (ssym "h") (ssym "i")
                   ),
           testCase "(SymBool, SymBool, SymBool, SymBool, SymBool)" $ do
             mrgIte
-              (ssymBool "a")
-              ( ssymBool "b",
-                ssymBool "d",
-                ssymBool "f",
-                ssymBool "h",
-                ssymBool "j"
+              (ssym "a")
+              ( ssym "b" :: AsKey SymBool,
+                ssym "d" :: AsKey SymBool,
+                ssym "f" :: AsKey SymBool,
+                ssym "h" :: AsKey SymBool,
+                ssym "j" :: AsKey SymBool
               )
-              ( ssymBool "c",
-                ssymBool "e",
-                ssymBool "g",
-                ssymBool "i",
-                ssymBool "k"
+              ( ssym "c",
+                ssym "e",
+                ssym "g",
+                ssym "i",
+                ssym "k"
               )
-              @?= ( symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
-                    symIte (ssymBool "a") (ssymBool "d") (ssymBool "e"),
-                    symIte (ssymBool "a") (ssymBool "f") (ssymBool "g"),
-                    symIte (ssymBool "a") (ssymBool "h") (ssymBool "i"),
-                    symIte (ssymBool "a") (ssymBool "j") (ssymBool "k")
+              @?= ( symIte (ssym "a") (ssym "b") (ssym "c"),
+                    symIte (ssym "a") (ssym "d") (ssym "e"),
+                    symIte (ssym "a") (ssym "f") (ssym "g"),
+                    symIte (ssym "a") (ssym "h") (ssym "i"),
+                    symIte (ssym "a") (ssym "j") (ssym "k")
                   ),
           testCase "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)" $ do
             mrgIte
-              (ssymBool "a")
-              ( ssymBool "b",
-                ssymBool "d",
-                ssymBool "f",
-                ssymBool "h",
-                ssymBool "j",
-                ssymBool "l"
+              (ssym "a")
+              ( ssym "b" :: AsKey SymBool,
+                ssym "d" :: AsKey SymBool,
+                ssym "f" :: AsKey SymBool,
+                ssym "h" :: AsKey SymBool,
+                ssym "j" :: AsKey SymBool,
+                ssym "l" :: AsKey SymBool
               )
-              ( ssymBool "c",
-                ssymBool "e",
-                ssymBool "g",
-                ssymBool "i",
-                ssymBool "k",
-                ssymBool "m"
+              ( ssym "c",
+                ssym "e",
+                ssym "g",
+                ssym "i",
+                ssym "k",
+                ssym "m"
               )
-              @?= ( symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
-                    symIte (ssymBool "a") (ssymBool "d") (ssymBool "e"),
-                    symIte (ssymBool "a") (ssymBool "f") (ssymBool "g"),
-                    symIte (ssymBool "a") (ssymBool "h") (ssymBool "i"),
-                    symIte (ssymBool "a") (ssymBool "j") (ssymBool "k"),
-                    symIte (ssymBool "a") (ssymBool "l") (ssymBool "m")
+              @?= ( symIte (ssym "a") (ssym "b") (ssym "c"),
+                    symIte (ssym "a") (ssym "d") (ssym "e"),
+                    symIte (ssym "a") (ssym "f") (ssym "g"),
+                    symIte (ssym "a") (ssym "h") (ssym "i"),
+                    symIte (ssym "a") (ssym "j") (ssym "k"),
+                    symIte (ssym "a") (ssym "l") (ssym "m")
                   ),
           testCase
             "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
             $ do
               mrgIte
-                (ssymBool "a")
-                ( ssymBool "b",
-                  ssymBool "d",
-                  ssymBool "f",
-                  ssymBool "h",
-                  ssymBool "j",
-                  ssymBool "l",
-                  ssymBool "n"
+                (ssym "a")
+                ( ssym "b" :: AsKey SymBool,
+                  ssym "d" :: AsKey SymBool,
+                  ssym "f" :: AsKey SymBool,
+                  ssym "h" :: AsKey SymBool,
+                  ssym "j" :: AsKey SymBool,
+                  ssym "l" :: AsKey SymBool,
+                  ssym "n" :: AsKey SymBool
                 )
-                ( ssymBool "c",
-                  ssymBool "e",
-                  ssymBool "g",
-                  ssymBool "i",
-                  ssymBool "k",
-                  ssymBool "m",
-                  ssymBool "o"
+                ( ssym "c",
+                  ssym "e",
+                  ssym "g",
+                  ssym "i",
+                  ssym "k",
+                  ssym "m",
+                  ssym "o"
                 )
-                @?= ( symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
-                      symIte (ssymBool "a") (ssymBool "d") (ssymBool "e"),
-                      symIte (ssymBool "a") (ssymBool "f") (ssymBool "g"),
-                      symIte (ssymBool "a") (ssymBool "h") (ssymBool "i"),
-                      symIte (ssymBool "a") (ssymBool "j") (ssymBool "k"),
-                      symIte (ssymBool "a") (ssymBool "l") (ssymBool "m"),
-                      symIte (ssymBool "a") (ssymBool "n") (ssymBool "o")
+                @?= ( symIte (ssym "a") (ssym "b") (ssym "c"),
+                      symIte (ssym "a") (ssym "d") (ssym "e"),
+                      symIte (ssym "a") (ssym "f") (ssym "g"),
+                      symIte (ssym "a") (ssym "h") (ssym "i"),
+                      symIte (ssym "a") (ssym "j") (ssym "k"),
+                      symIte (ssym "a") (ssym "l") (ssym "m"),
+                      symIte (ssym "a") (ssym "n") (ssym "o")
                     ),
           testCase
             "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
             $ do
               mrgIte
                 (ssymBool "a")
-                ( ssymBool "b",
-                  ssymBool "d",
-                  ssymBool "f",
-                  ssymBool "h",
-                  ssymBool "j",
-                  ssymBool "l",
-                  ssymBool "n",
-                  ssymBool "p"
+                ( ssym "b" :: AsKey SymBool,
+                  ssym "d" :: AsKey SymBool,
+                  ssym "f" :: AsKey SymBool,
+                  ssym "h" :: AsKey SymBool,
+                  ssym "j" :: AsKey SymBool,
+                  ssym "l" :: AsKey SymBool,
+                  ssym "n" :: AsKey SymBool,
+                  ssym "p" :: AsKey SymBool
                 )
-                ( ssymBool "c",
-                  ssymBool "e",
-                  ssymBool "g",
-                  ssymBool "i",
-                  ssymBool "k",
-                  ssymBool "m",
-                  ssymBool "o",
-                  ssymBool "q"
+                ( ssym "c" :: AsKey SymBool,
+                  ssym "e" :: AsKey SymBool,
+                  ssym "g" :: AsKey SymBool,
+                  ssym "i" :: AsKey SymBool,
+                  ssym "k" :: AsKey SymBool,
+                  ssym "m" :: AsKey SymBool,
+                  ssym "o" :: AsKey SymBool,
+                  ssym "q" :: AsKey SymBool
                 )
-                @?= ( symIte (ssymBool "a") (ssymBool "b") (ssymBool "c"),
-                      symIte (ssymBool "a") (ssymBool "d") (ssymBool "e"),
-                      symIte (ssymBool "a") (ssymBool "f") (ssymBool "g"),
-                      symIte (ssymBool "a") (ssymBool "h") (ssymBool "i"),
-                      symIte (ssymBool "a") (ssymBool "j") (ssymBool "k"),
-                      symIte (ssymBool "a") (ssymBool "l") (ssymBool "m"),
-                      symIte (ssymBool "a") (ssymBool "n") (ssymBool "o"),
-                      symIte (ssymBool "a") (ssymBool "p") (ssymBool "q")
+                @?= ( symIte (ssym "a") (ssym "b") (ssym "c"),
+                      symIte (ssym "a") (ssym "d") (ssym "e"),
+                      symIte (ssym "a") (ssym "f") (ssym "g"),
+                      symIte (ssym "a") (ssym "h") (ssym "i"),
+                      symIte (ssym "a") (ssym "j") (ssym "k"),
+                      symIte (ssym "a") (ssym "l") (ssym "m"),
+                      symIte (ssym "a") (ssym "n") (ssym "o"),
+                      symIte (ssym "a") (ssym "p") (ssym "q")
                     ),
           testCase "SymBool -> SymBool" $ do
-            let f = mrgIte (ssymBool "a") symNot ((ssymBool "b") .&&)
-            f (ssymBool "c")
+            let f = mrgIte (ssym "a") symNot ((ssym "b" :: AsKey SymBool) .&&)
+            f (ssym "c")
               @?= symIte
-                (ssymBool "a")
-                (symNot $ ssymBool "c")
-                ((ssymBool "b") .&& (ssymBool "c")),
+                (ssym "a")
+                (symNot $ ssym "c")
+                ((ssym "b") .&& (ssym "c")),
           testCase "MaybeT (Union) SymBool" $ do
-            let l :: MaybeT (Union) SymBool =
+            let l :: MaybeT (AsKey1 Union) (AsKey SymBool) =
                   MaybeT
                     ( mrgIf
-                        (ssymBool "b")
+                        (ssym "b")
                         (mrgSingle Nothing)
-                        (mrgSingle $ Just $ ssymBool "c")
+                        (mrgSingle $ Just $ ssym "c")
                     )
-            let r :: MaybeT (Union) SymBool =
+            let r :: MaybeT (AsKey1 Union) (AsKey SymBool) =
                   MaybeT
                     ( mrgIf
-                        (ssymBool "d")
+                        (ssym "d")
                         (mrgSingle Nothing)
-                        (mrgSingle $ Just $ ssymBool "e")
+                        (mrgSingle $ Just $ ssym "e")
                     )
-            let res :: MaybeT (Union) SymBool =
+            let res :: MaybeT (AsKey1 Union) (AsKey SymBool) =
                   MaybeT
                     ( mrgIf
-                        (ssymBool "a")
+                        (ssym "a")
                         ( mrgIf
-                            (ssymBool "b")
+                            (ssym "b")
                             (mrgSingle Nothing)
-                            (mrgSingle $ Just $ ssymBool "c")
+                            (mrgSingle $ Just $ ssym "c")
                         )
                         ( mrgIf
-                            (ssymBool "d")
+                            (ssym "d")
                             (mrgSingle Nothing)
-                            (mrgSingle $ Just $ ssymBool "e")
+                            (mrgSingle $ Just $ ssym "e")
                         )
                     )
-            mrgIte (ssymBool "a") l r @?= res
-            mrgIte1 (ssymBool "a") l r @?= res
-            mrgIf (ssymBool "a") l r @?= res,
+            mrgIte (ssym "a") l r @?= res
+            mrgIte1 (ssym "a") l r @?= res
+            mrgIf (ssym "a") l r @?= res,
           testCase "ExceptT SymBool (Union) SymBool" $ do
-            let l :: ExceptT SymBool (Union) SymBool =
+            let l :: ExceptT (AsKey SymBool) (AsKey1 Union) (AsKey SymBool) =
                   ExceptT
                     ( mrgIf
-                        (ssymBool "b")
-                        (mrgSingle $ Left $ ssymBool "c")
-                        (mrgSingle $ Right $ ssymBool "d")
+                        (ssym "b")
+                        (mrgSingle $ Left $ ssym "c")
+                        (mrgSingle $ Right $ ssym "d")
                     )
             let r =
                   ExceptT
                     ( mrgIf
-                        (ssymBool "e")
-                        (mrgSingle $ Left $ ssymBool "f")
-                        (mrgSingle $ Right $ ssymBool "g")
+                        (ssym "e")
+                        (mrgSingle $ Left $ ssym "f")
+                        (mrgSingle $ Right $ ssym "g")
                     )
             let res =
                   ExceptT
                     ( mrgIf
-                        (ssymBool "a")
+                        (ssym "a")
                         ( mrgIf
-                            (ssymBool "b")
-                            (mrgSingle $ Left $ ssymBool "c")
-                            (mrgSingle $ Right $ ssymBool "d")
+                            (ssym "b")
+                            (mrgSingle $ Left $ ssym "c")
+                            (mrgSingle $ Right $ ssym "d")
                         )
                         ( mrgIf
-                            (ssymBool "e")
-                            (mrgSingle $ Left $ ssymBool "f")
-                            (mrgSingle $ Right $ ssymBool "g")
+                            (ssym "e")
+                            (mrgSingle $ Left $ ssym "f")
+                            (mrgSingle $ Right $ ssym "g")
                         )
                     )
-            mrgIte (ssymBool "a") l r @?= res
-            mrgIte1 (ssymBool "a") l r @?= res
-            mrgIf (ssymBool "a") l r @?= res,
+            mrgIte (ssym "a") l r @?= res
+            mrgIte1 (ssym "a") l r @?= res
+            mrgIf (ssym "a") l r @?= res,
           testGroup
             "StateT Integer (Union) SymBool"
             [ testCase "Lazy" $ do
-                let st1 :: StateLazy.StateT Integer (Union) SymBool =
+                let st1 :: StateLazy.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateLazy.StateT $ \(x :: Integer) ->
-                        mrgSingle (ssymBool "a", x + 2)
-                let st2 :: StateLazy.StateT Integer (Union) SymBool =
+                        mrgSingle (ssym "a", x + 2)
+                let st2 :: StateLazy.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateLazy.StateT $ \(x :: Integer) ->
-                        mrgSingle (ssymBool "b", x * 2)
-                let st3 = mrgIte (ssymBool "c") st1 st2
-                let st31 = mrgIte1 (ssymBool "c") st1 st2
-                let st3u1 = mrgIf (ssymBool "c") st1 st2
+                        mrgSingle (ssym "b", x * 2)
+                let st3 = mrgIte (ssym "c") st1 st2
+                let st31 = mrgIte1 (ssym "c") st1 st2
+                let st3u1 = mrgIf (ssym "c") st1 st2
                 StateLazy.runStateT st3 2
                   @?= mrgSingle
-                    (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"), 4)
+                    (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateLazy.runStateT st3 3
                   @?= mrgIf
-                    (ssymBool "c")
-                    (mrgSingle (ssymBool "a", 5))
-                    (mrgSingle (ssymBool "b", 6))
+                    (ssym "c")
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6))
                 StateLazy.runStateT st31 2
                   @?= mrgSingle
-                    (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"), 4)
+                    (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateLazy.runStateT st31 3
                   @?= mrgIf
-                    (ssymBool "c")
-                    (mrgSingle (ssymBool "a", 5))
-                    (mrgSingle (ssymBool "b", 6))
+                    (ssym "c")
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6))
                 StateLazy.runStateT st3u1 2
                   @?= mrgSingle
-                    (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"), 4)
+                    (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateLazy.runStateT st3u1 3
                   @?= mrgIf
-                    (ssymBool "c")
-                    (mrgSingle (ssymBool "a", 5))
-                    (mrgSingle (ssymBool "b", 6)),
+                    (ssym "c")
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6)),
               testCase "Strict" $ do
-                let st1 :: StateStrict.StateT Integer (Union) SymBool =
+                let st1 :: StateStrict.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateStrict.StateT $ \(x :: Integer) ->
-                        mrgSingle (ssymBool "a", x + 2)
-                let st2 :: StateStrict.StateT Integer (Union) SymBool =
+                        mrgSingle (ssym "a", x + 2)
+                let st2 :: StateStrict.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateStrict.StateT $ \(x :: Integer) ->
-                        mrgSingle (ssymBool "b", x * 2)
-                let st3 = mrgIte (ssymBool "c") st1 st2
-                let st31 = mrgIte1 (ssymBool "c") st1 st2
-                let st3u1 = mrgIf (ssymBool "c") st1 st2
+                        mrgSingle (ssym "b", x * 2)
+                let st3 = mrgIte (ssym "c") st1 st2
+                let st31 = mrgIte1 (ssym "c") st1 st2
+                let st3u1 = mrgIf (ssym "c") st1 st2
                 StateStrict.runStateT st3 2
                   @?= mrgSingle
-                    (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"), 4)
+                    (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateStrict.runStateT st3 3
                   @?= mrgIf
-                    (ssymBool "c")
-                    (mrgSingle (ssymBool "a", 5))
-                    (mrgSingle (ssymBool "b", 6))
+                    (ssym "c")
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6))
                 StateStrict.runStateT st31 2
                   @?= mrgSingle
-                    (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"), 4)
+                    (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateStrict.runStateT st31 3
                   @?= mrgIf
-                    (ssymBool "c")
-                    (mrgSingle (ssymBool "a", 5))
-                    (mrgSingle (ssymBool "b", 6))
+                    (ssym "c")
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6))
                 StateStrict.runStateT st3u1 2
                   @?= mrgSingle
-                    (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"), 4)
+                    (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateStrict.runStateT st3u1 3
                   @?= mrgIf
-                    (ssymBool "c")
-                    (mrgSingle (ssymBool "a", 5))
-                    (mrgSingle (ssymBool "b", 6))
+                    (ssym "c")
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6))
             ],
           testCase "ContT (SymBool, Integer) (Union) (SymBool, Integer)" $ do
-            let c1 :: ContT (SymBool, Integer) (Union) (SymBool, Integer) =
-                  ContT $ \f -> f (ssymBool "a", 2)
-            let c2 :: ContT (SymBool, Integer) (Union) (SymBool, Integer) =
-                  ContT $ \f -> f (ssymBool "b", 3)
-            let c3 = mrgIte (ssymBool "c") c1 c2
-            let c3u1 = mrgIf (ssymBool "c") c1 c2
+            let c1 :: ContT (AsKey SymBool, Integer) (AsKey1 Union) (AsKey SymBool, Integer) =
+                  ContT $ \f -> f (ssym "a", 2)
+            let c2 :: ContT (AsKey SymBool, Integer) (AsKey1 Union) (AsKey SymBool, Integer) =
+                  ContT $ \f -> f (ssym "b", 3)
+            let c3 = mrgIte (ssym "c") c1 c2
+            let c3u1 = mrgIf (ssym "c") c1 c2
             let r =
                   mrgIf
-                    (ssymBool "c")
+                    (ssym "c")
                     ( mrgIf
-                        (ssymBool "p")
-                        (mrgSingle (ssymBool "a", 2))
-                        (mrgSingle (symNot $ ssymBool "a", 3))
+                        (ssym "p")
+                        (mrgSingle (ssym "a", 2))
+                        (mrgSingle (symNot $ ssym "a", 3))
                     )
                     ( mrgIf
-                        (ssymBool "p")
-                        (mrgSingle (ssymBool "b", 3))
-                        (mrgSingle (symNot $ ssymBool "b", 4))
+                        (ssym "p")
+                        (mrgSingle (ssym "b", 3))
+                        (mrgSingle (symNot $ ssym "b", 4))
                     )
             let f (a, x) =
                   mrgIf
-                    (ssymBool "p")
+                    (ssym "p")
                     (mrgSingle (a, x))
                     (mrgSingle (symNot a, x + 1)) ::
-                    Union (SymBool, Integer)
+                    AsKey1 Union (AsKey SymBool, Integer)
             runContT c3 f @?= r
             runContT c3u1 f @?= r,
           testGroup
@@ -373,11 +382,11 @@ simpleMergeableTests =
             [ testCase "Lazy" $ do
                 let rws1 ::
                       RWSTLazy.RWST
-                        (Integer, SymBool)
+                        (Integer, AsKey SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
-                        (Integer, SymBool)
-                        (Union)
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .&& bs),
@@ -388,11 +397,11 @@ simpleMergeableTests =
                             )
                 let rws2 ::
                       RWSTLazy.RWST
-                        (Integer, SymBool)
+                        (Integer, AsKey SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
-                        (Integer, SymBool)
-                        (Union)
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .|| bs),
@@ -405,43 +414,44 @@ simpleMergeableTests =
                 let rws3u1 = mrgIf (ssymBool "c") rws1 rws2
 
                 let res1 ::
-                      Union
-                        ( (Integer, SymBool),
-                          (Integer, SymBool),
+                      AsKey1
+                        Union
+                        ( (Integer, AsKey SymBool),
+                          (Integer, AsKey SymBool),
                           (Monoid.Sum Integer, AndMonoidSymBool)
                         ) =
                         mrgIf
-                          (ssymBool "c")
+                          (ssym "c")
                           ( mrgSingle
-                              ( (1, ssymBool "a" .&& ssymBool "b"),
-                                (-1, ssymBool "a" .|| ssymBool "b"),
+                              ( (1, ssym "a" .&& ssym "b"),
+                                (-1, ssym "a" .|| ssym "b"),
                                 ( 0,
                                   AndMonoidSymBool $
-                                    ssymBool "b" .&& ssymBool "a"
+                                    ssym "b" .&& ssym "a"
                                 )
                               )
                           )
                           ( mrgSingle
-                              ( (1, ssymBool "a" .|| ssymBool "b"),
-                                (-1, ssymBool "a" .&& ssymBool "b"),
+                              ( (1, ssym "a" .|| ssym "b"),
+                                (-1, ssym "a" .&& ssym "b"),
                                 ( 0,
                                   AndMonoidSymBool $
-                                    ssymBool "b" .|| ssymBool "a"
+                                    ssym "b" .|| ssym "a"
                                 )
                               )
                           )
-                RWSTLazy.runRWST rws3 (0, ssymBool "a") (1, ssymBool "b")
+                RWSTLazy.runRWST rws3 (0, ssym "a") (1, ssym "b")
                   @?= res1
-                RWSTLazy.runRWST rws3u1 (0, ssymBool "a") (1, ssymBool "b")
+                RWSTLazy.runRWST rws3u1 (0, ssym "a") (1, ssym "b")
                   @?= res1,
               testCase "Strict" $ do
                 let rws1 ::
                       RWSTStrict.RWST
-                        (Integer, SymBool)
+                        (Integer, AsKey SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
-                        (Integer, SymBool)
-                        (Union)
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .&& bs),
@@ -452,11 +462,11 @@ simpleMergeableTests =
                             )
                 let rws2 ::
                       RWSTStrict.RWST
-                        (Integer, SymBool)
+                        (Integer, AsKey SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
-                        (Integer, SymBool)
-                        (Union)
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .|| bs),
@@ -469,34 +479,35 @@ simpleMergeableTests =
                 let rws3u1 = mrgIf (ssymBool "c") rws1 rws2
 
                 let res1 ::
-                      Union
-                        ( (Integer, SymBool),
-                          (Integer, SymBool),
+                      AsKey1
+                        Union
+                        ( (Integer, AsKey SymBool),
+                          (Integer, AsKey SymBool),
                           (Monoid.Sum Integer, AndMonoidSymBool)
                         ) =
                         mrgIf
                           (ssymBool "c")
                           ( mrgSingle
-                              ( (1, ssymBool "a" .&& ssymBool "b"),
-                                (-1, ssymBool "a" .|| ssymBool "b"),
+                              ( (1, ssym "a" .&& ssym "b"),
+                                (-1, ssym "a" .|| ssym "b"),
                                 ( 0,
                                   AndMonoidSymBool $
-                                    ssymBool "b" .&& ssymBool "a"
+                                    ssym "b" .&& ssym "a"
                                 )
                               )
                           )
                           ( mrgSingle
-                              ( (1, ssymBool "a" .|| ssymBool "b"),
-                                (-1, ssymBool "a" .&& ssymBool "b"),
+                              ( (1, ssym "a" .|| ssym "b"),
+                                (-1, ssym "a" .&& ssym "b"),
                                 ( 0,
                                   AndMonoidSymBool $
-                                    ssymBool "b" .|| ssymBool "a"
+                                    ssym "b" .|| ssym "a"
                                 )
                               )
                           )
-                RWSTStrict.runRWST rws3 (0, ssymBool "a") (1, ssymBool "b")
+                RWSTStrict.runRWST rws3 (0, ssym "a") (1, ssym "b")
                   @?= res1
-                RWSTStrict.runRWST rws3u1 (0, ssymBool "a") (1, ssymBool "b")
+                RWSTStrict.runRWST rws3u1 (0, ssym "a") (1, ssym "b")
                   @?= res1
             ],
           testGroup
@@ -505,150 +516,150 @@ simpleMergeableTests =
                 let st1 ::
                       WriterLazy.WriterT
                         (Monoid.Sum Integer)
-                        (Union)
-                        SymBool =
-                        WriterLazy.WriterT $ mrgSingle (ssymBool "a", 1)
+                        (AsKey1 Union)
+                        (AsKey SymBool) =
+                        WriterLazy.WriterT $ mrgSingle (ssym "a", 1)
                 let st2 ::
                       WriterLazy.WriterT
                         (Monoid.Sum Integer)
-                        (Union)
-                        SymBool =
-                        WriterLazy.WriterT $ mrgSingle (ssymBool "b", 2)
+                        (AsKey1 Union)
+                        (AsKey SymBool) =
+                        WriterLazy.WriterT $ mrgSingle (ssym "b", 2)
                 let st3 ::
                       WriterLazy.WriterT
                         (Monoid.Sum Integer)
-                        (Union)
-                        SymBool =
-                        WriterLazy.WriterT $ mrgSingle (ssymBool "c", 1)
-                let st4 = mrgIte (ssymBool "d") st1 st2
-                let st41 = mrgIte1 (ssymBool "d") st1 st2
-                let st4u1 = mrgIf (ssymBool "d") st1 st2
-                let st5 = mrgIte (ssymBool "d") st1 st3
-                let st51 = mrgIte1 (ssymBool "d") st1 st3
-                let st5u1 = mrgIf (ssymBool "d") st1 st3
+                        (AsKey1 Union)
+                        (AsKey SymBool) =
+                        WriterLazy.WriterT $ mrgSingle (ssym "c", 1)
+                let st4 = mrgIte (ssym "d") st1 st2
+                let st41 = mrgIte1 (ssym "d") st1 st2
+                let st4u1 = mrgIf (ssym "d") st1 st2
+                let st5 = mrgIte (ssym "d") st1 st3
+                let st51 = mrgIte1 (ssym "d") st1 st3
+                let st5u1 = mrgIf (ssym "d") st1 st3
                 WriterLazy.runWriterT st4
                   @?= mrgIf
-                    (ssymBool "d")
-                    (mrgSingle (ssymBool "a", 1))
-                    (mrgSingle (ssymBool "b", 2))
+                    (ssym "d")
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterLazy.runWriterT st41
                   @?= mrgIf
-                    (ssymBool "d")
-                    (mrgSingle (ssymBool "a", 1))
-                    (mrgSingle (ssymBool "b", 2))
+                    (ssym "d")
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterLazy.runWriterT st4u1
                   @?= mrgIf
-                    (ssymBool "d")
-                    (mrgSingle (ssymBool "a", 1))
-                    (mrgSingle (ssymBool "b", 2))
+                    (ssym "d")
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterLazy.runWriterT st5
                   @?= mrgSingle
-                    (symIte (ssymBool "d") (ssymBool "a") (ssymBool "c"), 1)
+                    (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
                 WriterLazy.runWriterT st51
                   @?= mrgSingle
-                    (symIte (ssymBool "d") (ssymBool "a") (ssymBool "c"), 1)
+                    (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
                 WriterLazy.runWriterT st5u1
                   @?= mrgSingle
-                    (symIte (ssymBool "d") (ssymBool "a") (ssymBool "c"), 1),
+                    (symIte (ssym "d") (ssym "a") (ssym "c"), 1),
               testCase "Strict" $ do
                 let st1 ::
                       WriterStrict.WriterT
                         (Monoid.Sum Integer)
-                        (Union)
-                        SymBool =
-                        WriterStrict.WriterT $ mrgSingle (ssymBool "a", 1)
+                        (AsKey1 Union)
+                        (AsKey SymBool) =
+                        WriterStrict.WriterT $ mrgSingle (ssym "a", 1)
                 let st2 ::
                       WriterStrict.WriterT
                         (Monoid.Sum Integer)
-                        (Union)
-                        SymBool =
-                        WriterStrict.WriterT $ mrgSingle (ssymBool "b", 2)
+                        (AsKey1 Union)
+                        (AsKey SymBool) =
+                        WriterStrict.WriterT $ mrgSingle (ssym "b", 2)
                 let st3 ::
                       WriterStrict.WriterT
                         (Monoid.Sum Integer)
-                        (Union)
-                        SymBool =
-                        WriterStrict.WriterT $ mrgSingle (ssymBool "c", 1)
-                let st4 = mrgIte (ssymBool "d") st1 st2
-                let st41 = mrgIte1 (ssymBool "d") st1 st2
-                let st4u1 = mrgIf (ssymBool "d") st1 st2
-                let st5 = mrgIte (ssymBool "d") st1 st3
-                let st51 = mrgIte1 (ssymBool "d") st1 st3
-                let st5u1 = mrgIf (ssymBool "d") st1 st3
+                        (AsKey1 Union)
+                        (AsKey SymBool) =
+                        WriterStrict.WriterT $ mrgSingle (ssym "c", 1)
+                let st4 = mrgIte (ssym "d") st1 st2
+                let st41 = mrgIte1 (ssym "d") st1 st2
+                let st4u1 = mrgIf (ssym "d") st1 st2
+                let st5 = mrgIte (ssym "d") st1 st3
+                let st51 = mrgIte1 (ssym "d") st1 st3
+                let st5u1 = mrgIf (ssym "d") st1 st3
                 WriterStrict.runWriterT st4
                   @?= mrgIf
-                    (ssymBool "d")
-                    (mrgSingle (ssymBool "a", 1))
-                    (mrgSingle (ssymBool "b", 2))
+                    (ssym "d")
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterStrict.runWriterT st41
                   @?= mrgIf
-                    (ssymBool "d")
-                    (mrgSingle (ssymBool "a", 1))
-                    (mrgSingle (ssymBool "b", 2))
+                    (ssym "d")
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterStrict.runWriterT st4u1
                   @?= mrgIf
-                    (ssymBool "d")
-                    (mrgSingle (ssymBool "a", 1))
-                    (mrgSingle (ssymBool "b", 2))
+                    (ssym "d")
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterStrict.runWriterT st5
                   @?= mrgSingle
-                    (symIte (ssymBool "d") (ssymBool "a") (ssymBool "c"), 1)
+                    (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
                 WriterStrict.runWriterT st51
                   @?= mrgSingle
-                    (symIte (ssymBool "d") (ssymBool "a") (ssymBool "c"), 1)
+                    (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
                 WriterStrict.runWriterT st5u1
                   @?= mrgSingle
-                    (symIte (ssymBool "d") (ssymBool "a") (ssymBool "c"), 1)
+                    (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
             ],
           testCase "ReaderT Integer (Union) Integer" $ do
-            let r1 :: ReaderT Integer (Union) Integer =
+            let r1 :: ReaderT Integer (AsKey1 Union) Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x + 2
-            let r2 :: ReaderT Integer (Union) Integer =
+            let r2 :: ReaderT Integer (AsKey1 Union) Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x * 2
-            let r3 = mrgIte (ssymBool "c") r1 r2
-            let r3u1 = mrgIf (ssymBool "c") r1 r2
+            let r3 = mrgIte (ssym "c") r1 r2
+            let r3u1 = mrgIf (ssym "c") r1 r2
             runReaderT r3 2 @?= mrgSingle 4
-            runReaderT r3 3 @?= mrgIf (ssymBool "c") (mrgSingle 5) (mrgSingle 6)
+            runReaderT r3 3 @?= mrgIf (ssym "c") (mrgSingle 5) (mrgSingle 6)
             runReaderT r3u1 2 @?= mrgSingle 4
             runReaderT r3u1 3
               @?= mrgIf
-                (ssymBool "c")
+                (ssym "c")
                 (mrgSingle 5)
                 (mrgSingle 6)
 
-            let r4 :: ReaderT SymBool (Union) SymBool =
-                  ReaderT $ \x -> mrgSingle $ x .&& ssymBool "x"
-            let r5 :: ReaderT SymBool (Union) SymBool =
-                  ReaderT $ \x -> mrgSingle $ x .|| ssymBool "y"
-            let r61 = mrgIte1 (ssymBool "c") r4 r5
-            runReaderT r61 (ssymBool "a")
+            let r4 :: ReaderT (AsKey SymBool) (AsKey1 Union) (AsKey SymBool) =
+                  ReaderT $ \x -> mrgSingle $ x .&& ssym "x"
+            let r5 :: ReaderT (AsKey SymBool) (AsKey1 Union) (AsKey SymBool) =
+                  ReaderT $ \x -> mrgSingle $ x .|| ssym "y"
+            let r61 = mrgIte1 (ssym "c") r4 r5
+            runReaderT r61 (ssym "a")
               @?= mrgSingle
                 ( symIte
-                    (ssymBool "c")
-                    (ssymBool "a" .&& ssymBool "x")
-                    (ssymBool "a" .|| ssymBool "y")
+                    (ssym "c")
+                    (ssym "a" .&& ssym "x")
+                    (ssym "a" .|| ssym "y")
                 ),
           testCase "Identity SymBool" $ do
-            let i1 :: Identity SymBool = Identity $ ssymBool "a"
-            let i2 :: Identity SymBool = Identity $ ssymBool "b"
-            let i3 = mrgIte (ssymBool "c") i1 i2
-            let i31 = mrgIte1 (ssymBool "c") i1 i2
-            runIdentity i3 @?= symIte (ssymBool "c") (ssymBool "a") (ssymBool "b")
+            let i1 :: Identity (AsKey SymBool) = Identity $ ssym "a"
+            let i2 :: Identity (AsKey SymBool) = Identity $ ssym "b"
+            let i3 = mrgIte (ssym "c") i1 i2
+            let i31 = mrgIte1 (ssym "c") i1 i2
+            runIdentity i3 @?= symIte (ssym "c") (ssym "a") (ssym "b")
             runIdentity i31
-              @?= symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"),
+              @?= symIte (ssym "c") (ssym "a") (ssym "b"),
           testCase "IdentityT (Union) SymBool" $ do
-            let i1 :: IdentityT (Union) SymBool =
-                  IdentityT $ mrgSingle $ ssymBool "a"
-            let i2 :: IdentityT (Union) SymBool =
-                  IdentityT $ mrgSingle $ ssymBool "b"
-            let i3 = mrgIte (ssymBool "c") i1 i2
-            let i31 = mrgIte1 (ssymBool "c") i1 i2
-            let i3u1 = mrgIf (ssymBool "c") i1 i2
+            let i1 :: IdentityT (AsKey1 Union) (AsKey SymBool) =
+                  IdentityT $ mrgSingle $ ssym "a"
+            let i2 :: IdentityT (AsKey1 Union) (AsKey SymBool) =
+                  IdentityT $ mrgSingle $ ssym "b"
+            let i3 = mrgIte (ssym "c") i1 i2
+            let i31 = mrgIte1 (ssym "c") i1 i2
+            let i3u1 = mrgIf (ssym "c") i1 i2
             runIdentityT i3
-              @?= mrgSingle (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"))
+              @?= mrgSingle (symIte (ssym "c") (ssym "a") (ssym "b"))
             runIdentityT i31
-              @?= mrgSingle (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"))
+              @?= mrgSingle (symIte (ssym "c") (ssym "a") (ssym "b"))
             runIdentityT i3u1
-              @?= mrgSingle (symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"))
+              @?= mrgSingle (symIte (ssym "c") (ssym "a") (ssym "b"))
         ]
     ]

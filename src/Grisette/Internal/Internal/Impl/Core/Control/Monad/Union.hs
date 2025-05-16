@@ -48,10 +48,18 @@ import Data.Functor.Classes
     showsPrec1,
   )
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt), hashWithSalt1)
+import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt))
 import qualified Data.Serialize as Cereal
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( KeyEq (keyEq),
+    KeyEq1 (liftKeyEq),
+    KeyHashable (keyHashWithSalt),
+    KeyHashable1 (liftKeyHashWithSalt),
+    shouldUseAsKeyError,
+    shouldUseAsKeyHasSymbolicVersionError,
+  )
 import Grisette.Internal.Core.Data.Class.EvalSym
   ( EvalSym (evalSym),
     EvalSym1 (liftEvalSym),
@@ -385,19 +393,32 @@ instance ExtractSym1 Union where
       go (UnionSingle x) = e x
       go (UnionIf _ _ cond t f) = extractSymMaybe cond <> go t <> go f
 
+instance (Hashable a) => KeyHashable (Union a) where
+  keyHashWithSalt = liftKeyHashWithSalt hashWithSalt
+  {-# INLINE keyHashWithSalt #-}
+
+instance KeyHashable1 Union where
+  liftKeyHashWithSalt f s (UAny a) =
+    liftKeyHashWithSalt f s a `hashWithSalt` (0 :: Int)
+  liftKeyHashWithSalt f s (UMrg _ a) =
+    liftKeyHashWithSalt f s a `hashWithSalt` (1 :: Int)
+
 instance (Hashable a) => Hashable (Union a) where
-  hashWithSalt = hashWithSalt1
+  hashWithSalt = shouldUseAsKeyError "Union" "hashWithSalt"
 
 instance Hashable1 Union where
-  liftHashWithSalt f s (UAny u) =
-    liftHashWithSalt f (s `hashWithSalt` (0 :: Int)) u
-  liftHashWithSalt f s (UMrg _ u) =
-    liftHashWithSalt f (s `hashWithSalt` (1 :: Int)) u
+  liftHashWithSalt = shouldUseAsKeyError "Union" "liftHashWithSalt"
+
+instance (Eq a) => KeyEq (Union a) where
+  keyEq = liftKeyEq (==)
+
+instance KeyEq1 Union where
+  liftKeyEq f (UAny l) (UAny r) = liftKeyEq f l r
+  liftKeyEq f (UMrg _ l) (UMrg _ r) = liftKeyEq f l r
+  liftKeyEq _ _ _ = False
 
 instance (Eq a) => Eq (Union a) where
-  UAny l == UAny r = l == r
-  UMrg _ l == UMrg _ r = l == r
-  _ == _ = False
+  (==) = shouldUseAsKeyHasSymbolicVersionError "Union" "(==)" "(.==)"
 
 instance Eq1 Union where
   liftEq e l r = liftEq e (unionBase l) (unionBase r)

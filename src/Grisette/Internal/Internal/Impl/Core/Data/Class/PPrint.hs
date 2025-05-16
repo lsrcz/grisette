@@ -64,6 +64,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
   ( Doc,
@@ -412,3 +413,12 @@ instance PPrint (SymbolSet knd) where
       n
       "SymbolSet"
       [pformatListLike "{" "}" $ pformat <$> HS.toList s]
+
+instance (PPrint a) => PPrint (AsKey a) where
+  pformatPrec p (AsKey t) = pformatPrec p t
+
+instance (PPrint1 f, PPrint a) => PPrint (AsKey1 f a) where
+  pformatPrec p (AsKey1 t) = pformatPrec p t
+
+instance (PPrint1 f) => PPrint1 (AsKey1 f) where
+  liftPFormatPrec f l n (AsKey1 t) = liftPFormatPrec f l n t

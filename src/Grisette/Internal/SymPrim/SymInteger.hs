@@ -22,6 +22,7 @@ import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq (keyEq), KeyHashable (keyHashWithSalt), shouldUseAsKeyError, shouldUseAsKeyHasSymbolicVersionError, shouldUseSymbolicVersionError)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
@@ -113,17 +114,22 @@ instance Enum SymInteger where
   enumFromThenTo =
     error "enumFromThenTo: enumFromThenTo isn't supported for SymInteger"
 
+-- | Except for 'max' and 'min', the other functions will crash the program.
+--
+-- 'SymInteger' cannot be compared concretely.
+--
+-- If you want symbolic version of the comparison operators, use
+-- t'Grisette.Core.SymOrd' instead.
 instance Ord SymInteger where
-  (<) = error "Ord: < isn't supported for SymInteger. Consider using the symbolic comparison operators (.<)."
-  (<=) = error "Ord: <= isn't supported for SymInteger. Consider using the symbolic comparison operators (.<=)."
-  (>=) = error "Ord: >= isn't supported for SymInteger. Consider using the symbolic comparison operators (.>=)."
-  (>) = error "Ord: > isn't supported for SymInteger. Consider using the symbolic comparison operators (.>)."
+  (<) = shouldUseSymbolicVersionError "SymInteger" "(<)" "(.<)"
+  (<=) = shouldUseSymbolicVersionError "SymInteger" "(<=)" "(.<=)"
+  (>=) = shouldUseSymbolicVersionError "SymInteger" "(>=)" "(.>=)"
+  (>) = shouldUseSymbolicVersionError "SymInteger" "(>)" "(.>)"
   max (SymInteger l) (SymInteger r) =
     SymInteger $ pevalITETerm (pevalLeOrdTerm l r) r l
   min (SymInteger l) (SymInteger r) =
     SymInteger $ pevalITETerm (pevalLeOrdTerm l r) l r
-  compare _ _ =
-    error "compare: compare isn't supported for SymInteger. Consider using the symbolic comparison operators (symCompare)."
+  compare = shouldUseSymbolicVersionError "SymInteger" "compare" "symCompare"
 
 instance Real SymInteger where
   toRational _ = error "toRational: toRational isn't supported for SymInteger"
@@ -145,18 +151,32 @@ instance Integral SymInteger where
   quotRem (SymInteger l) (SymInteger r) =
     (SymInteger $ pevalQuotIntegralTerm l r, SymInteger $ pevalRemIntegralTerm l r)
 
--- | Checks if two formulas are the same. Not building the actual symbolic
--- equality formula.
+-- | This will crash the program.
 --
--- The reason why we choose this behavior is to allow symbolic variables to be
--- used as keys in hash maps, which can be useful for memoization.
+-- 'SymInteger' cannot be compared concretely.
 --
--- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymInteger'@ instead.
+--
+-- If you want symbolic version of the equality operator, use
+-- t'Grisette.Core.SymEq' instead.
 instance Eq SymInteger where
-  SymInteger l == SymInteger r = l == r
+  (==) = shouldUseAsKeyHasSymbolicVersionError "SymInteger" "(==)" "(.==)"
 
+instance KeyEq SymInteger where
+  keyEq (SymInteger l) (SymInteger r) = l == r
+
+-- | This will crash the program.
+--
+-- 'SymInteger' cannot be hashed concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymInteger'@ instead.
 instance Hashable SymInteger where
-  hashWithSalt s (SymInteger v) = s `hashWithSalt` v
+  hashWithSalt = shouldUseAsKeyError "SymInteger" "hashWithSalt"
+
+instance KeyHashable SymInteger where
+  keyHashWithSalt s (SymInteger v) = s `hashWithSalt` v
 
 instance Solvable Integer SymInteger where
   con = SymInteger . conTerm

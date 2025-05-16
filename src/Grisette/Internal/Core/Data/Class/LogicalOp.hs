@@ -18,6 +18,7 @@ import Control.Applicative (liftA2)
 #endif
 
 import Control.Monad.Identity (Identity)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.Prim.Term
   ( pevalAndTerm,
@@ -136,3 +137,12 @@ instance (LogicalOp a) => LogicalOp (Identity a) where
   symNot = fmap symNot
   symXor = liftA2 symXor
   symImplies = liftA2 symImplies
+
+instance (LogicalOp a) => LogicalOp (AsKey a) where
+  true = AsKey true
+  false = AsKey false
+  (AsKey l) .|| (AsKey r) = AsKey $ l .|| r
+  (AsKey l) .&& (AsKey r) = AsKey $ l .&& r
+  symNot (AsKey v) = AsKey $ symNot v
+  (AsKey l) `symXor` (AsKey r) = AsKey $ l `symXor` r
+  (AsKey l) `symImplies` (AsKey r) = AsKey $ l `symImplies` r

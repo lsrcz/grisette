@@ -65,6 +65,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Class.BitCast (bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (conView),
@@ -438,3 +439,21 @@ deriving via
   (Default ((f :.: g) p))
   instance
     (ToCon (f0 (g0 p0)) (f (g p))) => ToCon ((f0 :.: g0) p0) ((f :.: g) p)
+
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon (AsKey a) b where
+  toCon (AsKey a) = toCon a
+
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon a (AsKey b) where
+  toCon a = AsKey <$> toCon a
+
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon (AsKey a) (AsKey b) where
+  toCon (AsKey a) = AsKey <$> toCon a
+
+instance {-# INCOHERENT #-} (ToCon (f a) b) => ToCon (AsKey1 f a) b where
+  toCon (AsKey1 a) = toCon a
+
+instance {-# INCOHERENT #-} (ToCon a (f b)) => ToCon a (AsKey1 f b) where
+  toCon a = AsKey1 <$> toCon a
+
+instance {-# INCOHERENT #-} (ToCon (f a) (f b)) => ToCon (AsKey1 f a) (AsKey1 f b) where
+  toCon (AsKey1 a) = AsKey1 <$> toCon a

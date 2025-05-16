@@ -28,9 +28,10 @@ import Data.SBV (Word32)
 import Data.Word (Word16, Word64)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.BitCast
   ( BitCast (bitCast),
-    BitCastOr,
+    BitCastOr (bitCastOr),
     bitCastOrCanonical,
   )
 import Grisette.Internal.Core.Data.Class.IEEEFP (fpIsNaN)
@@ -39,7 +40,7 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Internal.Core.Data.Class.SymIEEEFP
   ( SymIEEEFPTraits (symFpIsNaN),
   )
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle, tryMerge)
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.SymPrim.FP
   ( FP,
@@ -139,3 +140,51 @@ instance
       (symFpIsNaN a)
       (throwError NaNError)
       (return $ bitCastOrCanonical a)
+
+instance
+  {-# INCOHERENT #-}
+  (SafeBitCast e a b m) =>
+  SafeBitCast e (AsKey a) (AsKey b) m
+  where
+  safeBitCast (AsKey a) = do
+    r <- safeBitCast a
+    mrgSingle $ AsKey r
+
+instance
+  {-# INCOHERENT #-}
+  (SafeBitCast e a b m) =>
+  SafeBitCast e (AsKey a) b m
+  where
+  safeBitCast (AsKey a) = do
+    r <- safeBitCast a
+    mrgSingle r
+
+instance
+  {-# INCOHERENT #-}
+  (SafeBitCast e a b m) =>
+  SafeBitCast e a (AsKey b) m
+  where
+  safeBitCast a = do
+    r <- safeBitCast a
+    mrgSingle $ AsKey r
+
+instance
+  {-# INCOHERENT #-}
+  (BitCastOr a b) =>
+  BitCastOr (AsKey a) (AsKey b)
+  where
+  bitCastOr (AsKey d) (AsKey a) = AsKey $ bitCastOr d a
+
+instance
+  {-# INCOHERENT #-}
+  (BitCastOr a b) =>
+  BitCastOr a (AsKey b)
+  where
+  bitCastOr (AsKey d) a = AsKey $ bitCastOr d a
+
+instance
+  {-# INCOHERENT #-}
+  (BitCastOr a b) =>
+  BitCastOr (AsKey a) b
+  where
+  bitCastOr d (AsKey a) = bitCastOr d a

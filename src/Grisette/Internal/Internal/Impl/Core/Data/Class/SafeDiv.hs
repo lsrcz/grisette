@@ -23,10 +23,12 @@ module Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv () where
 
 import Control.Exception (ArithException (DivideByZero, Overflow))
 import Control.Monad.Except (MonadError (throwError))
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
@@ -306,3 +308,33 @@ instance
   SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, div, mod)
   SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, quot, rem)
 #endif
+
+instance (DivOr a) => DivOr (AsKey a) where
+  divOr (AsKey def) (AsKey n) (AsKey d) = AsKey $ divOr def n d
+  modOr (AsKey def) (AsKey n) (AsKey d) = AsKey $ modOr def n d
+  divModOr (AsKey defDiv, AsKey defMod) (AsKey n) (AsKey d) =
+    bimap AsKey AsKey $ divModOr (defDiv, defMod) n d
+  quotOr (AsKey def) (AsKey n) (AsKey d) = AsKey $ quotOr def n d
+  remOr (AsKey def) (AsKey n) (AsKey d) = AsKey $ remOr def n d
+  quotRemOr (AsKey defDiv, AsKey defRem) (AsKey n) (AsKey d) =
+    bimap AsKey AsKey $ quotRemOr (defDiv, defRem) n d
+
+instance (SafeDiv e a m) => SafeDiv e (AsKey a) m where
+  safeDiv (AsKey n) (AsKey d) = do
+    r <- safeDiv n d
+    mrgSingle $ AsKey r
+  safeMod (AsKey n) (AsKey d) = do
+    r <- safeMod n d
+    mrgSingle $ AsKey r
+  safeDivMod (AsKey n) (AsKey d) = do
+    (rd, rm) <- safeDivMod n d
+    mrgSingle (AsKey rd, AsKey rm)
+  safeQuot (AsKey n) (AsKey d) = do
+    r <- safeQuot n d
+    mrgSingle $ AsKey r
+  safeRem (AsKey n) (AsKey d) = do
+    r <- safeRem n d
+    mrgSingle $ AsKey r
+  safeQuotRem (AsKey n) (AsKey d) = do
+    (rq, rr) <- safeQuotRem n d
+    mrgSingle (AsKey rq, AsKey rr)

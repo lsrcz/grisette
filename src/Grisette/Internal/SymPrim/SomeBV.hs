@@ -120,6 +120,10 @@ import GHC.TypeNats
   )
 import Generics.Deriving (Default (Default))
 import Grisette.Internal.Core.Control.Monad.Union (Union)
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( KeyEq (keyEq),
+    KeyHashable (keyHashWithSalt),
+  )
 import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV
@@ -391,6 +395,15 @@ data SomeBVLit where
   deriving anyclass (Hashable, NFData)
   deriving (Mergeable, ExtractSym, AllSyms) via (Default SomeBVLit)
 
+instance KeyEq SomeBVLit where
+  keyEq (SomeBVIntLit l) (SomeBVIntLit r) = l == r
+  keyEq (SomeBVCondLit l) (SomeBVCondLit r) = keyEq l r
+  keyEq _ _ = False
+
+instance KeyHashable SomeBVLit where
+  keyHashWithSalt s (SomeBVIntLit i) = s `hashWithSalt` (0 :: Int) `hashWithSalt` i
+  keyHashWithSalt s (SomeBVCondLit u) = s `hashWithSalt` (1 :: Int) `keyHashWithSalt` u
+
 instance PPrint SomeBVLit where
   pformat (SomeBVIntLit i) = pformat i
   pformat (SomeBVCondLit u) = pformat u
@@ -533,6 +546,18 @@ instance
   {-# INLINE hashWithSalt #-}
 
 instance
+  ( forall n. (KnownNat n, 1 <= n) => KeyHashable (bv n),
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
+  ) =>
+  KeyHashable (SomeBV bv)
+  where
+  keyHashWithSalt s (SomeBV (bv :: bv n)) =
+    s `hashWithSalt` (natVal (Proxy @n)) `keyHashWithSalt` bv
+  keyHashWithSalt s (SomeBVLit i) = s `keyHashWithSalt` i
+  {-# INLINE keyHashWithSalt #-}
+
+instance
   (forall n. (KnownNat n, 1 <= n) => Lift (bv n)) =>
   Lift (SomeBV bv)
   where
@@ -557,6 +582,22 @@ instance
   rnf (SomeBV bv) = rnf bv
   rnf (SomeBVLit i) = rnf i
   {-# INLINE rnf #-}
+
+instance
+  ( forall n. (KnownNat n, 1 <= n) => KeyEq (bv n),
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
+  ) =>
+  KeyEq (SomeBV bv)
+  where
+  keyEq (SomeBV (l :: bv l)) (SomeBV (r :: bv r)) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> keyEq l r
+      Nothing -> False
+  keyEq (SomeBV (l :: bv l)) (SomeBVLit r) = keyEq l (assignLitBitWidth r)
+  keyEq l r@SomeBV {} = keyEq r l
+  keyEq _ _ = throw $ UndeterminedBitwidth "keyEq"
+  {-# INLINE keyEq #-}
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => Eq (bv n),

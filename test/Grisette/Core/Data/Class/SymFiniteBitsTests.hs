@@ -30,7 +30,6 @@ import Grisette.Internal.Core.Data.Class.SymFiniteBits
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
 import Type.Reflection (Typeable, typeRep)
 
 someBVSymFiniteBitsTest ::
@@ -50,10 +49,10 @@ someBVSymFiniteBitsTest _ =
     (show $ typeRep @bv)
     [ testCase "symTestBit" $ do
         let a = bv 4 0b0101 :: bv
-        symTestBit a 0 @?= true
-        symTestBit a 1 @?= false
-        symTestBit a 2 @?= true
-        symTestBit a 3 @?= false,
+        symTestBit a 0 .@?= true
+        symTestBit a 1 .@?= false
+        symTestBit a 2 .@?= true
+        symTestBit a 3 .@?= false,
       testCase "symSetBitTo" $ do
         let a = bv 4 0b0101 :: bv
         symSetBitTo a 0 "b" .@?= symIte "b" (bv 4 0b0101) (bv 4 0b0100)
@@ -67,28 +66,28 @@ someBVSymFiniteBitsTest _ =
                 (symIte "b" (bv 4 0b0110) (bv 4 0b0100))
         actual .@?= expected,
       testCase "symBitBlast" $ do
-        symBitBlast (bv 4 0b0101 :: bv) @?= [true, false, true, false],
+        symBitBlast (bv 4 0b0101 :: bv) .@?= [true, false, true, false],
       testCase "symLsb" $ do
-        symLsb (bv 4 0b0101 :: bv) @?= true
-        symLsb (bv 4 0b0100 :: bv) @?= false,
+        symLsb (bv 4 0b0101 :: bv) .@?= true
+        symLsb (bv 4 0b0100 :: bv) .@?= false,
       testCase "symMsb" $ do
-        symMsb (bv 4 0b0101 :: bv) @?= false
-        symMsb (bv 4 0b1101 :: bv) @?= true,
+        symMsb (bv 4 0b0101 :: bv) .@?= false
+        symMsb (bv 4 0b1101 :: bv) .@?= true,
       testCase "symPopCount" $ do
-        symPopCount (bv 4 0 :: bv) @?= 0
-        symPopCount (bv 4 0b0101 :: bv) @?= 2
-        symPopCount (bv 4 0b1101 :: bv) @?= 3
-        symPopCount (bv 4 0b1111 :: bv) @?= 4,
+        symPopCount (bv 4 0 :: bv) .@?= 0
+        symPopCount (bv 4 0b0101 :: bv) .@?= 2
+        symPopCount (bv 4 0b1101 :: bv) .@?= 3
+        symPopCount (bv 4 0b1111 :: bv) .@?= 4,
       testCase "symCountLeadingZeros" $ do
-        symCountLeadingZeros (bv 4 0 :: bv) @?= 4
-        symCountLeadingZeros (bv 4 0b0101 :: bv) @?= 1
-        symCountLeadingZeros (bv 4 0b1101 :: bv) @?= 0
-        symCountLeadingZeros (bv 4 0b0011 :: bv) @?= 2,
+        symCountLeadingZeros (bv 4 0 :: bv) .@?= 4
+        symCountLeadingZeros (bv 4 0b0101 :: bv) .@?= 1
+        symCountLeadingZeros (bv 4 0b1101 :: bv) .@?= 0
+        symCountLeadingZeros (bv 4 0b0011 :: bv) .@?= 2,
       testCase "symCountTrailingZeros" $ do
-        symCountTrailingZeros (bv 4 0 :: bv) @?= 4
-        symCountTrailingZeros (bv 4 0b1010 :: bv) @?= 1
-        symCountTrailingZeros (bv 4 0b1011 :: bv) @?= 0
-        symCountTrailingZeros (bv 4 0b1100 :: bv) @?= 2
+        symCountTrailingZeros (bv 4 0 :: bv) .@?= 4
+        symCountTrailingZeros (bv 4 0b1010 :: bv) .@?= 1
+        symCountTrailingZeros (bv 4 0b1011 :: bv) .@?= 0
+        symCountTrailingZeros (bv 4 0b1100 :: bv) .@?= 2
     ]
 
 bvSymFiniteBitsTest ::
@@ -107,10 +106,10 @@ bvSymFiniteBitsTest _ =
     (show $ typeRep @bv)
     [ testCase "symTestBit" $ do
         let a = 5 :: bv 4
-        symTestBit a 0 @?= true
-        symTestBit a 1 @?= false
-        symTestBit a 2 @?= true
-        symTestBit a 3 @?= false,
+        symTestBit a 0 .@?= true
+        symTestBit a 1 .@?= false
+        symTestBit a 2 .@?= true
+        symTestBit a 3 .@?= false,
       testCase "symSetBitTo" $ do
         let a = 5 :: bv 4
         symSetBitTo a 0 "b" .@?= symIte "b" 0b0101 0b0100
@@ -124,28 +123,28 @@ bvSymFiniteBitsTest _ =
                 (symIte "b" 0b0110 0b0100)
         actual .@?= expected,
       testCase "symBitBlast" $ do
-        symBitBlast (0b0101 :: bv 4) @?= [true, false, true, false],
+        symBitBlast (0b0101 :: bv 4) .@?= [true, false, true, false],
       testCase "symLsb" $ do
-        symLsb (0b0101 :: bv 4) @?= true
-        symLsb (0b0100 :: bv 4) @?= false,
+        symLsb (0b0101 :: bv 4) .@?= true
+        symLsb (0b0100 :: bv 4) .@?= false,
       testCase "symMsb" $ do
-        symMsb (0b0101 :: bv 4) @?= false
-        symMsb (0b1101 :: bv 4) @?= true,
+        symMsb (0b0101 :: bv 4) .@?= false
+        symMsb (0b1101 :: bv 4) .@?= true,
       testCase "symPopCount" $ do
-        symPopCount (0 :: bv 4) @?= 0
-        symPopCount (0b0101 :: bv 4) @?= 2
-        symPopCount (0b1101 :: bv 4) @?= 3
-        symPopCount (0b1111 :: bv 4) @?= 4,
+        symPopCount (0 :: bv 4) .@?= 0
+        symPopCount (0b0101 :: bv 4) .@?= 2
+        symPopCount (0b1101 :: bv 4) .@?= 3
+        symPopCount (0b1111 :: bv 4) .@?= 4,
       testCase "symCountLeadingZeros" $ do
-        symCountLeadingZeros (0 :: bv 4) @?= 4
-        symCountLeadingZeros (0b0101 :: bv 4) @?= 1
-        symCountLeadingZeros (0b1101 :: bv 4) @?= 0
-        symCountLeadingZeros (0b0011 :: bv 4) @?= 2,
+        symCountLeadingZeros (0 :: bv 4) .@?= 4
+        symCountLeadingZeros (0b0101 :: bv 4) .@?= 1
+        symCountLeadingZeros (0b1101 :: bv 4) .@?= 0
+        symCountLeadingZeros (0b0011 :: bv 4) .@?= 2,
       testCase "symCountTrailingZeros" $ do
-        symCountTrailingZeros (0 :: bv 4) @?= 4
-        symCountTrailingZeros (0b1010 :: bv 4) @?= 1
-        symCountTrailingZeros (0b1011 :: bv 4) @?= 0
-        symCountTrailingZeros (0b1100 :: bv 4) @?= 2
+        symCountTrailingZeros (0 :: bv 4) .@?= 4
+        symCountTrailingZeros (0b1010 :: bv 4) .@?= 1
+        symCountTrailingZeros (0b1011 :: bv 4) .@?= 0
+        symCountTrailingZeros (0b1100 :: bv 4) .@?= 2
     ]
 
 symFiniteBitsTests :: Test

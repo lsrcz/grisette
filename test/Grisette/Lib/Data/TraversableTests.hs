@@ -24,6 +24,7 @@ import Grisette.Lib.Data.Traversable
     mrgTraverse,
   )
 import Grisette.TestUtil.NoMerge (oneNotMerged)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework
   ( Test,
     TestOptions' (topt_timeout),
@@ -31,7 +32,6 @@ import Test.Framework
     testGroup,
   )
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
 
 traversableFunctionTests :: Test
 traversableFunctionTests =
@@ -76,11 +76,11 @@ traversableFunctionTests =
                             (throwError 2)
                             (mrgIf "d" (return 3) (return 6))
                         mrgSingle [a, b]
-                  actual @?= expected,
+                  actual .@?= expected,
                 testCase "merge intermediate" $ do
                   let actual = func1 (const oneNotMerged) [1 .. 1000]
                   let expected = mrgReturn $ replicate 1000 1
-                  actual @?= expected
+                  actual .@?= expected
               ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testGroup "mrgSequenceA, mrgSequence" $ do
@@ -126,11 +126,11 @@ traversableFunctionTests =
                             (throwError 2)
                             (mrgIf "d" (return 3) (return 6))
                         mrgSingle [a, b]
-                  actual @?= expected,
+                  actual .@?= expected,
                 testCase "merge intermediate" $ do
                   let actual = func1 (replicate 1000 oneNotMerged)
                   let expected = mrgReturn $ replicate 1000 1
-                  actual @?= expected
+                  actual .@?= expected
               ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testGroup "mrgMapAccumM, mrgForAccumM" $ do
@@ -153,7 +153,7 @@ traversableFunctionTests =
                             [(i - 1) * i `div` 2 - i | i <- [1 .. 1000]]
                           ) ::
                           Union (Integer, [Integer])
-                  actual @?= expected,
+                  actual .@?= expected,
                 testCase "merge intermediate" $ do
                   let actual =
                         func1
@@ -168,6 +168,6 @@ traversableFunctionTests =
                   let expected =
                         mrgReturn (1, replicate 1000 1) ::
                           Union (Integer, [Integer])
-                  actual @?= expected
+                  actual .@?= expected
               ]
     ]

@@ -8,7 +8,8 @@ import Control.Exception
   )
 import Control.Monad.Except (ExceptT (ExceptT))
 import Grisette
-  ( AssertionError (AssertionError),
+  ( AsKey (AsKey),
+    AssertionError (AssertionError),
     EvalSym (evalSym),
     ExtractSym (extractSym),
     LogicalOp (symNot),
@@ -29,6 +30,7 @@ import Grisette
     mrgSingle,
     symAssert,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey1 (AsKey1))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -44,15 +46,14 @@ exceptionTests =
           testCase "ToSym" $ do
             toSym AssertionError @?= AssertionError,
           testCase "SymEq" $ do
-            AssertionError .== AssertionError @?= con True,
+            AsKey (AssertionError .== AssertionError) @?= con True,
           testCase "SymOrd" $ do
-            AssertionError .<= AssertionError @?= con True
-            AssertionError .< AssertionError @?= con False
-            AssertionError .>= AssertionError @?= con True
-            AssertionError .> AssertionError @?= con False
-            AssertionError
-              `symCompare` AssertionError
-              @?= (mrgSingle EQ :: Union Ordering),
+            AsKey (AssertionError .<= AssertionError) @?= con True
+            AsKey (AssertionError .< AssertionError) @?= con False
+            AsKey (AssertionError .>= AssertionError) @?= con True
+            AsKey (AssertionError .> AssertionError) @?= con False
+            AsKey1 (AssertionError `symCompare` AssertionError)
+              @?= (mrgSingle EQ :: AsKey1 Union Ordering),
           testCase "GEvalSym" $ do
             evalSym False emptyModel AssertionError @?= AssertionError,
           testCase "GExtractSym" $ do
@@ -82,42 +83,38 @@ exceptionTests =
             toSym AssertionViolation @?= AssertionViolation
             toSym AssumptionViolation @?= AssumptionViolation,
           testCase "SymEq" $ do
-            AssertionViolation .== AssertionViolation @?= con True
-            AssertionViolation .== AssumptionViolation @?= con False
-            AssumptionViolation .== AssertionViolation @?= con False
-            AssumptionViolation .== AssumptionViolation @?= con True,
+            AsKey (AssertionViolation .== AssertionViolation) @?= con True
+            AsKey (AssertionViolation .== AssumptionViolation) @?= con False
+            AsKey (AssumptionViolation .== AssertionViolation) @?= con False
+            AsKey (AssumptionViolation .== AssumptionViolation) @?= con True,
           testCase "SymOrd" $ do
-            AssertionViolation .<= AssertionViolation @?= con True
-            AssertionViolation .< AssertionViolation @?= con False
-            AssertionViolation .>= AssertionViolation @?= con True
-            AssertionViolation .> AssertionViolation @?= con False
-            AssertionViolation
-              `symCompare` AssertionViolation
-              @?= (mrgSingle EQ :: Union Ordering)
+            AsKey (AssertionViolation .<= AssertionViolation) @?= con True
+            AsKey (AssertionViolation .< AssertionViolation) @?= con False
+            AsKey (AssertionViolation .>= AssertionViolation) @?= con True
+            AsKey (AssertionViolation .> AssertionViolation) @?= con False
+            AsKey1 (AssertionViolation `symCompare` AssertionViolation)
+              @?= (mrgSingle EQ :: AsKey1 Union Ordering)
 
-            AssertionViolation .<= AssumptionViolation @?= con True
-            AssertionViolation .< AssumptionViolation @?= con True
-            AssertionViolation .>= AssumptionViolation @?= con False
-            AssertionViolation .> AssumptionViolation @?= con False
-            AssertionViolation
-              `symCompare` AssumptionViolation
-              @?= (mrgSingle LT :: Union Ordering)
+            AsKey (AssertionViolation .<= AssumptionViolation) @?= con True
+            AsKey (AssertionViolation .< AssumptionViolation) @?= con True
+            AsKey (AssertionViolation .>= AssumptionViolation) @?= con False
+            AsKey (AssertionViolation .> AssumptionViolation) @?= con False
+            AsKey1 (AssertionViolation `symCompare` AssumptionViolation)
+              @?= (mrgSingle LT :: AsKey1 Union Ordering)
 
-            AssumptionViolation .<= AssertionViolation @?= con False
-            AssumptionViolation .< AssertionViolation @?= con False
-            AssumptionViolation .>= AssertionViolation @?= con True
-            AssumptionViolation .> AssertionViolation @?= con True
-            AssumptionViolation
-              `symCompare` AssertionViolation
-              @?= (mrgSingle GT :: Union Ordering)
+            AsKey (AssumptionViolation .<= AssertionViolation) @?= con False
+            AsKey (AssumptionViolation .< AssertionViolation) @?= con False
+            AsKey (AssumptionViolation .>= AssertionViolation) @?= con True
+            AsKey (AssumptionViolation .> AssertionViolation) @?= con True
+            AsKey1 (AssumptionViolation `symCompare` AssertionViolation)
+              @?= (mrgSingle GT :: AsKey1 Union Ordering)
 
-            AssumptionViolation .<= AssumptionViolation @?= con True
-            AssumptionViolation .< AssumptionViolation @?= con False
-            AssumptionViolation .>= AssumptionViolation @?= con True
-            AssumptionViolation .> AssumptionViolation @?= con False
-            AssumptionViolation
-              `symCompare` AssumptionViolation
-              @?= (mrgSingle EQ :: Union Ordering),
+            AsKey (AssumptionViolation .<= AssumptionViolation) @?= con True
+            AsKey (AssumptionViolation .< AssumptionViolation) @?= con False
+            AsKey (AssumptionViolation .>= AssumptionViolation) @?= con True
+            AsKey (AssumptionViolation .> AssumptionViolation) @?= con False
+            AsKey1 (AssumptionViolation `symCompare` AssumptionViolation)
+              @?= (mrgSingle EQ :: AsKey1 Union Ordering),
           testCase "GEvalSym" $ do
             evalSym False emptyModel AssertionViolation
               @?= AssertionViolation
@@ -135,7 +132,7 @@ exceptionTests =
                       (symNot "a")
                       (mrgSingle AssertionViolation)
                       (mrgSingle AssumptionViolation) ::
-                      Union VerificationConditions
+                      AsKey1 Union VerificationConditions
                   ),
           testCase
             "Transform VerificationConditions to VerificationConditions"
@@ -144,7 +141,7 @@ exceptionTests =
               transformError AssumptionViolation @?= AssumptionViolation
         ],
       testCase "symAssert" $ do
-        (symAssert "a" :: ExceptT VerificationConditions Union ())
+        (symAssert "a" :: ExceptT VerificationConditions (AsKey1 Union) ())
           @?= ExceptT
             ( mrgIf
                 (symNot "a")

@@ -23,12 +23,13 @@ where
 import Control.Exception (ArithException (RatioZeroDenominator), throw)
 import Control.Monad.Error.Class (MonadError (throwError))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle, tryMerge)
 import Grisette.Internal.SymPrim.AlgReal
   ( AlgReal (AlgExactRational),
     UnsupportedAlgRealOperation (UnsupportedAlgRealOperation),
@@ -140,3 +141,17 @@ instance
     mrgIf (r .== con 0) (throwError RatioZeroDenominator) (pure $ l / r)
   safeRecip l =
     mrgIf (l .== con 0) (throwError RatioZeroDenominator) (pure $ recip l)
+
+instance (SafeFdiv e a m) => SafeFdiv e (AsKey a) m where
+  safeFdiv (AsKey a) (AsKey b) = do
+    r <- safeFdiv a b
+    mrgSingle $ AsKey r
+  safeRecip (AsKey a) = do
+    r <- safeRecip a
+    mrgSingle $ AsKey r
+
+instance (FdivOr a) => FdivOr (AsKey a) where
+  fdivOr (AsKey d) (AsKey a) (AsKey b) = AsKey $ fdivOr d a b
+  {-# INLINE fdivOr #-}
+  recipOr (AsKey d) (AsKey a) = AsKey $ recipOr d a
+  {-# INLINE recipOr #-}

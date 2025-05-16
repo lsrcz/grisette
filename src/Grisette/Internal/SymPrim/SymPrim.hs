@@ -19,6 +19,7 @@ import Data.Binary (Binary)
 import Data.Bytes.Serial (Serial)
 import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq, KeyHashable)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType))
@@ -60,6 +61,8 @@ type Prim a =
     SymOrd a,
     AllSyms a,
     Hashable a,
+    KeyEq a,
+    KeyHashable a,
     Lift a,
     Typeable a
   )

@@ -72,6 +72,7 @@ import GHC.TypeNats
     type (+),
     type (<=),
   )
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq (keyEq), KeyHashable (keyHashWithSalt), shouldUseAsKeyError, shouldUseAsKeyHasSymbolicVersionError)
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV
@@ -439,36 +440,56 @@ SHOW_BV(SymWordN)
 
 #define HASHABLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => Hashable (symtype n) where \
-  hashWithSalt s (symtype v) = s `hashWithSalt` v
+  hashWithSalt = shouldUseAsKeyError "symtype" "hashWithSalt"
+
+#define KEY_HASHABLE_BV(symtype) \
+instance (KnownNat n, 1 <= n) => KeyHashable (symtype n) where \
+  keyHashWithSalt s (symtype v) = s `hashWithSalt` v
 
 #if 1
+-- | This will crash the program.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' ('SymIntN' n)@ instead.
 HASHABLE_BV(SymIntN)
+KEY_HASHABLE_BV(SymIntN)
+-- | This will crash the program.
+--
+-- 'SymWordN' cannot be hashed concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' ('SymWordN' n)@ instead.
 HASHABLE_BV(SymWordN)
+KEY_HASHABLE_BV(SymWordN)
 #endif
 
 -- Eq
 
 #define EQ_BV(symtype) \
 instance (KnownNat n, 1 <= n) => Eq (symtype n) where \
-  (symtype l) == (symtype r) = l == r
+  (==) = shouldUseAsKeyHasSymbolicVersionError "symtype" "(==)" "(.==)"
+
+#define KEY_EQ_BV(symtype) \
+instance (KnownNat n, 1 <= n) => KeyEq (symtype n) where \
+  keyEq (symtype l) (symtype r) = l == r
 
 #if 1
--- | Checks if two formulas are the same. Not building the actual symbolic
--- equality formula.
+-- This will crash the program.
 --
--- The reason why we choose this behavior is to allow symbolic variables to be
--- used as keys in hash maps, which can be useful for memoization.
+-- 'SymIntN' cannot be compared concretely.
 --
--- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' ('SymIntN' n)@ instead.
 EQ_BV(SymIntN)
--- | Checks if two formulas are the same. Not building the actual symbolic
--- equality formula.
+KEY_EQ_BV(SymIntN)
+-- | This will crash the program.
 --
--- The reason why we choose this behavior is to allow symbolic variables to be
--- used as keys in hash maps, which can be useful for memoization.
+-- 'SymWordN' cannot be compared concretely.
 --
--- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' ('SymWordN' n)@ instead.
 EQ_BV(SymWordN)
+KEY_EQ_BV(SymWordN)
 #endif
 
 -- IsString

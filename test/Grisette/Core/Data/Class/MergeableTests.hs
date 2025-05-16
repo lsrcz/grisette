@@ -28,7 +28,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Grisette
-  ( DynamicSortedIdx (DynamicSortedIdx),
+  ( AsKey,
+    DynamicSortedIdx (DynamicSortedIdx),
     ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
     Mergeable (rootStrategy),
@@ -42,6 +43,7 @@ import Grisette
     mrgSingle,
     resolveStrategy,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey1)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -76,10 +78,10 @@ mergeableTests =
     "Mergeable"
     [ testGroup
         "Mergeable for common types"
-        [ let SimpleStrategy f = rootStrategy :: MergingStrategy SymBool
+        [ let SimpleStrategy f = rootStrategy :: MergingStrategy (AsKey SymBool)
            in testGroup
                 "Mergeable for SymBool"
-                [ testCase "true condition" $
+                [ testCase "true condition" $ do
                     f (con True) (ssym "a") (ssym "b") @?= ssym "a",
                   testCase "false condition" $
                     f (con False) (ssym "a") (ssym "b") @?= ssym "b",
@@ -198,7 +200,7 @@ mergeableTests =
                     let (idxsL, SimpleStrategy fL) =
                           resolveStrategy
                             rootStrategy
-                            (Left (ssym "a") :: Either SymBool SymBool)
+                            (Left (ssym "a") :: Either (AsKey SymBool) (AsKey SymBool))
                     idxsL @?= [DynamicSortedIdx False]
                     fL (ssym "a") (Left $ ssym "b") (Left $ ssym "c")
                       @?= Left (symIte (ssym "a") (ssym "b") (ssym "c")),
@@ -206,7 +208,7 @@ mergeableTests =
                     let (idxsR, SimpleStrategy fR) =
                           resolveStrategy
                             rootStrategy
-                            (Right (ssym "a") :: Either SymBool SymBool)
+                            (Right (ssym "a") :: Either (AsKey SymBool) (AsKey SymBool))
                     idxsR @?= [DynamicSortedIdx True]
                     fR (ssym "a") (Right $ ssym "b") (Right $ ssym "c")
                       @?= Right (symIte (ssym "a") (ssym "b") (ssym "c"))
@@ -229,11 +231,11 @@ mergeableTests =
                         [DynamicSortedIdx True, DynamicSortedIdx x]
                         [(ssym "a", Just x, Just x, Just x)]
                 ],
-              testCase "Maybe SymBool / Just v" $ do
+              testCase "Maybe AsKey SymBool / Just v" $ do
                 let (idxsJ, SimpleStrategy fJ) =
                       resolveStrategy
                         rootStrategy
-                        (Just (ssym "a") :: Maybe SymBool)
+                        (Just (ssym "a") :: Maybe (AsKey SymBool))
                 idxsJ @?= [DynamicSortedIdx True]
                 fJ (ssym "a") (Just $ ssym "b") (Just $ ssym "c")
                   @?= Just (symIte (ssym "a") (ssym "b") (ssym "c"))
@@ -268,12 +270,12 @@ mergeableTests =
                 "[SymBool]"
                 [ testCase "[]" $
                     testMergeableSimpleEquivClass
-                      ([] :: [SymBool])
+                      ([] :: [AsKey SymBool])
                       [DynamicSortedIdx (0 :: Int)]
                       [(ssym "a", [], [], [])],
                   testCase "[v1, v2]" $
                     testMergeableSimpleEquivClass
-                      [ssym "a" :: SymBool, ssym "b"]
+                      [ssym "a" :: AsKey SymBool, ssym "b"]
                       [DynamicSortedIdx (2 :: Int)]
                       [ ( ssym "a",
                           [ssym "b", ssym "c"],
@@ -287,7 +289,7 @@ mergeableTests =
             ],
           testCase "(,)" $
             testMergeableSimpleEquivClass
-              ([1 :: Integer], [ssym "b" :: SymBool, ssym "c"])
+              ([1 :: Integer], [ssym "b" :: AsKey SymBool, ssym "c"])
               [ DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx $
                   buildStrategyList rootStrategy [1 :: Integer],
@@ -306,8 +308,8 @@ mergeableTests =
           testCase "(,,)" $
             testMergeableSimpleEquivClass
               ( [1 :: Integer],
-                [ssym "b" :: SymBool, ssym "c"],
-                ssym "d" :: SymBool
+                [ssym "b" :: AsKey SymBool, ssym "c"],
+                ssym "d" :: AsKey SymBool
               )
               [ DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx $
@@ -328,9 +330,9 @@ mergeableTests =
           testCase "(,,,)" $
             testMergeableSimpleEquivClass
               ( [1 :: Integer],
-                [ssym "b" :: SymBool, ssym "c"],
-                ssym "d" :: SymBool,
-                [ssym "f" :: SymBool]
+                [ssym "b" :: AsKey SymBool, ssym "c"],
+                ssym "d" :: AsKey SymBool,
+                [ssym "f" :: AsKey SymBool]
               )
               [ DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx $
@@ -353,9 +355,9 @@ mergeableTests =
           testCase "(,,,,)" $
             testMergeableSimpleEquivClass
               ( [1 :: Integer],
-                [ssym "b" :: SymBool, ssym "c"],
-                ssym "d" :: SymBool,
-                [ssym "f" :: SymBool],
+                [ssym "b" :: AsKey SymBool, ssym "c"],
+                ssym "d" :: AsKey SymBool,
+                [ssym "f" :: AsKey SymBool],
                 [2 :: Integer, 3]
               )
               [ DynamicSortedIdx (1 :: Int),
@@ -383,9 +385,9 @@ mergeableTests =
           testCase "(,,,,,)" $
             testMergeableSimpleEquivClass
               ( [1 :: Integer],
-                [ssym "b" :: SymBool, ssym "c"],
-                ssym "d" :: SymBool,
-                [ssym "f" :: SymBool],
+                [ssym "b" :: AsKey SymBool, ssym "c"],
+                ssym "d" :: AsKey SymBool,
+                [ssym "f" :: AsKey SymBool],
                 [2 :: Integer, 3],
                 2 :: Integer
               )
@@ -416,12 +418,12 @@ mergeableTests =
           testCase "(,,,,,,)" $
             testMergeableSimpleEquivClass
               ( [1 :: Integer],
-                [ssym "b" :: SymBool, ssym "c"],
-                ssym "d" :: SymBool,
-                [ssym "f" :: SymBool],
+                [ssym "b" :: AsKey SymBool, ssym "c"],
+                ssym "d" :: AsKey SymBool,
+                [ssym "f" :: AsKey SymBool],
                 [2 :: Integer, 3],
                 2 :: Integer,
-                Just (ssym "a" :: SymBool)
+                Just (ssym "a" :: AsKey SymBool)
               )
               [ DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx $
@@ -466,12 +468,12 @@ mergeableTests =
           testCase "(,,,,,,,)" $
             testMergeableSimpleEquivClass
               ( [1 :: Integer],
-                [ssym "b" :: SymBool, ssym "c"],
-                ssym "d" :: SymBool,
-                [ssym "f" :: SymBool],
+                [ssym "b" :: AsKey SymBool, ssym "c"],
+                ssym "d" :: AsKey SymBool,
+                [ssym "f" :: AsKey SymBool],
                 [2 :: Integer, 3],
                 2 :: Integer,
-                Just (ssym "a" :: SymBool),
+                Just (ssym "a" :: AsKey SymBool),
                 Left 1 :: Either Integer Integer
               )
               [ DynamicSortedIdx (1 :: Int),
@@ -519,15 +521,15 @@ mergeableTests =
                   )
                 )
               ],
-          let f1 :: Maybe SymBool -> SymBool =
+          let f1 :: Maybe (AsKey SymBool) -> AsKey SymBool =
                 \case Just x -> x; Nothing -> (con True)
-              f2 :: Maybe SymBool -> SymBool =
+              f2 :: Maybe (AsKey SymBool) -> AsKey SymBool =
                 \case Just x -> (symNot x); Nothing -> (con False)
            in testGroup
                 "Function"
                 [ testCase "Simply mergeable result" $ do
                     case rootStrategy ::
-                           MergingStrategy (Maybe SymBool -> SymBool) of
+                           MergingStrategy (Maybe (AsKey SymBool) -> AsKey SymBool) of
                       SimpleStrategy f -> do
                         let r = f (ssym "a") f1 f2
                         r (Just (ssym "x"))
@@ -584,7 +586,7 @@ mergeableTests =
                       resolveStrategy
                         rootStrategy
                         ( MaybeT (Just (Just (ssym "a"))) ::
-                            MaybeT Maybe SymBool
+                            MaybeT Maybe (AsKey SymBool)
                         )
                 idxsJ @?= [DynamicSortedIdx True, DynamicSortedIdx True]
                 fJ
@@ -648,7 +650,7 @@ mergeableTests =
                           resolveStrategy
                             rootStrategy
                             ( ExceptT (Just (Left (ssym "a"))) ::
-                                ExceptT SymBool Maybe SymBool
+                                ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                             )
                     idxsJL @?= [DynamicSortedIdx True, DynamicSortedIdx False]
                     fJL
@@ -662,7 +664,7 @@ mergeableTests =
                           resolveStrategy
                             rootStrategy
                             ( ExceptT (Just (Right (ssym "a"))) ::
-                                ExceptT SymBool Maybe SymBool
+                                ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                             )
                     idxsJR @?= [DynamicSortedIdx True, DynamicSortedIdx True]
                     fJR
@@ -679,11 +681,11 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (StateLazy.StateT Integer Union SymBool)
-                let st1 :: StateLazy.StateT Integer Union SymBool =
+                          (StateLazy.StateT Integer (AsKey1 Union) (AsKey SymBool))
+                let st1 :: StateLazy.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateLazy.StateT $ \(x :: Integer) ->
                         mrgSingle (ssym "a", x + 2)
-                let st2 :: StateLazy.StateT Integer Union SymBool =
+                let st2 :: StateLazy.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateLazy.StateT $ \(x :: Integer) ->
                         mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
@@ -698,11 +700,11 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (StateStrict.StateT Integer Union SymBool)
-                let st1 :: StateStrict.StateT Integer Union SymBool =
+                          (StateStrict.StateT Integer (AsKey1 Union) (AsKey SymBool))
+                let st1 :: StateStrict.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateStrict.StateT $
                         \(x :: Integer) -> mrgSingle (ssym "a", x + 2)
-                let st2 :: StateStrict.StateT Integer Union SymBool =
+                let st2 :: StateStrict.StateT Integer (AsKey1 Union) (AsKey SymBool) =
                       StateStrict.StateT $
                         \(x :: Integer) -> mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
@@ -718,10 +720,10 @@ mergeableTests =
             let SimpleStrategy s =
                   rootStrategy ::
                     MergingStrategy
-                      (ContT (SymBool, Integer) Union (SymBool, Integer))
-            let c1 :: ContT (SymBool, Integer) Union (SymBool, Integer) =
+                      (ContT (AsKey SymBool, Integer) (AsKey1 Union) (AsKey SymBool, Integer))
+            let c1 :: ContT (AsKey SymBool, Integer) (AsKey1 Union) (AsKey SymBool, Integer) =
                   ContT $ \f -> f (ssym "a", 2)
-            let c2 :: ContT (SymBool, Integer) Union (SymBool, Integer) =
+            let c2 :: ContT (AsKey SymBool, Integer) (AsKey1 Union) (AsKey SymBool, Integer) =
                   ContT $ \f -> f (ssym "b", 3)
             let c3 = s (ssym "c") c1 c2
             runContT
@@ -751,19 +753,19 @@ mergeableTests =
                       rootStrategy ::
                         MergingStrategy
                           ( RWSTLazy.RWST
-                              (Integer, SymBool)
-                              (Integer, SymBool)
-                              (Integer, SymBool)
-                              Union
-                              (Integer, SymBool)
+                              (Integer, AsKey SymBool)
+                              (Integer, AsKey SymBool)
+                              (Integer, AsKey SymBool)
+                              (AsKey1 Union)
+                              (Integer, AsKey SymBool)
                           )
                 let rws1 ::
                       RWSTLazy.RWST
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        Union
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .&& bs),
@@ -772,11 +774,11 @@ mergeableTests =
                             )
                 let rws2 ::
                       RWSTLazy.RWST
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        Union
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .|| bs),
@@ -786,10 +788,11 @@ mergeableTests =
                 let rws3 = s (ssym "c") rws1 rws2
 
                 let res1 ::
-                      Union
-                        ( (Integer, SymBool),
-                          (Integer, SymBool),
-                          (Integer, SymBool)
+                      AsKey1
+                        Union
+                        ( (Integer, AsKey SymBool),
+                          (Integer, AsKey SymBool),
+                          (Integer, AsKey SymBool)
                         ) =
                         mrgIf
                           (ssym "c")
@@ -811,19 +814,19 @@ mergeableTests =
                       rootStrategy ::
                         MergingStrategy
                           ( RWSTStrict.RWST
-                              (Integer, SymBool)
-                              (Integer, SymBool)
-                              (Integer, SymBool)
-                              Union
-                              (Integer, SymBool)
+                              (Integer, AsKey SymBool)
+                              (Integer, AsKey SymBool)
+                              (Integer, AsKey SymBool)
+                              (AsKey1 Union)
+                              (Integer, AsKey SymBool)
                           )
                 let rws1 ::
                       RWSTStrict.RWST
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        Union
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .&& bs),
@@ -832,11 +835,11 @@ mergeableTests =
                             )
                 let rws2 ::
                       RWSTStrict.RWST
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        (Integer, SymBool)
-                        Union
-                        (Integer, SymBool) =
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (Integer, AsKey SymBool)
+                        (AsKey1 Union)
+                        (Integer, AsKey SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
                             ( (ir + is, br .|| bs),
@@ -846,10 +849,11 @@ mergeableTests =
                 let rws3 = s (ssym "c") rws1 rws2
 
                 let res1 ::
-                      Union
-                        ( (Integer, SymBool),
-                          (Integer, SymBool),
-                          (Integer, SymBool)
+                      AsKey1
+                        Union
+                        ( (Integer, AsKey SymBool),
+                          (Integer, AsKey SymBool),
+                          (Integer, AsKey SymBool)
                         ) =
                         mrgIf
                           (ssym "c")
@@ -873,12 +877,12 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (WriterLazy.WriterT Integer Union SymBool)
-                let w1 :: WriterLazy.WriterT Integer Union SymBool =
+                          (WriterLazy.WriterT Integer (AsKey1 Union) (AsKey SymBool))
+                let w1 :: WriterLazy.WriterT Integer (AsKey1 Union) (AsKey SymBool) =
                       WriterLazy.WriterT $ mrgSingle (ssym "a", 1)
-                let w2 :: WriterLazy.WriterT Integer Union SymBool =
+                let w2 :: WriterLazy.WriterT Integer (AsKey1 Union) (AsKey SymBool) =
                       WriterLazy.WriterT $ mrgSingle (ssym "b", 2)
-                let w3 :: WriterLazy.WriterT Integer Union SymBool =
+                let w3 :: WriterLazy.WriterT Integer (AsKey1 Union) (AsKey SymBool) =
                       WriterLazy.WriterT $ mrgSingle (ssym "c", 1)
                 let w4 = s (ssym "d") w1 w2
                 let w5 = s (ssym "d") w1 w3
@@ -893,12 +897,12 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (WriterStrict.WriterT Integer Union SymBool)
-                let w1 :: WriterStrict.WriterT Integer Union SymBool =
+                          (WriterStrict.WriterT Integer (AsKey1 Union) (AsKey SymBool))
+                let w1 :: WriterStrict.WriterT Integer (AsKey1 Union) (AsKey SymBool) =
                       WriterStrict.WriterT $ mrgSingle (ssym "a", 1)
-                let w2 :: WriterStrict.WriterT Integer Union SymBool =
+                let w2 :: WriterStrict.WriterT Integer (AsKey1 Union) (AsKey SymBool) =
                       WriterStrict.WriterT $ mrgSingle (ssym "b", 2)
-                let w3 :: WriterStrict.WriterT Integer Union SymBool =
+                let w3 :: WriterStrict.WriterT Integer (AsKey1 Union) (AsKey SymBool) =
                       WriterStrict.WriterT $ mrgSingle (ssym "c", 1)
                 let w4 = s (ssym "d") w1 w2
                 let w5 = s (ssym "d") w1 w3
@@ -913,10 +917,10 @@ mergeableTests =
           testCase "ReaderT" $ do
             let SimpleStrategy s =
                   rootStrategy ::
-                    MergingStrategy (ReaderT Integer Union Integer)
-            let r1 :: ReaderT Integer Union Integer =
+                    MergingStrategy (ReaderT Integer (AsKey1 Union) Integer)
+            let r1 :: ReaderT Integer (AsKey1 Union) Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x + 2
-            let r2 :: ReaderT Integer Union Integer =
+            let r2 :: ReaderT Integer (AsKey1 Union) Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x * 2
             let r3 = s (ssym "c") r1 r2
             runReaderT r3 2 @?= mrgSingle 4
@@ -931,7 +935,7 @@ mergeableTests =
                     [(ssym "a", Identity x, Identity x, Identity x)],
               testCase "Identity SymBool" $ do
                 testMergeableSimpleEquivClass
-                  (Identity (ssym "a" :: SymBool))
+                  (Identity (ssym "a" :: AsKey SymBool))
                   []
                   [ ( ssym "a",
                       Identity $ ssym "b",
@@ -970,7 +974,7 @@ mergeableTests =
                 "IdentityT Maybe SymBool"
                 [ testCase "IdentityT Nothing" $
                     testMergeableSimpleEquivClass
-                      (IdentityT Nothing :: IdentityT Maybe SymBool)
+                      (IdentityT Nothing :: IdentityT Maybe (AsKey SymBool))
                       [DynamicSortedIdx False]
                       [ ( ssym "a",
                           IdentityT Nothing,
@@ -980,7 +984,7 @@ mergeableTests =
                       ],
                   testCase "IdentityT (Just v)" $
                     testMergeableSimpleEquivClass
-                      (IdentityT $ Just $ ssym "a" :: IdentityT Maybe SymBool)
+                      (IdentityT $ Just $ ssym "a" :: IdentityT Maybe (AsKey SymBool))
                       [DynamicSortedIdx True]
                       [ ( ssym "a",
                           IdentityT $ Just $ ssym "b",
@@ -1029,12 +1033,12 @@ mergeableTests =
                 "Sum Maybe Maybe SymBool"
                 [ testCase "InL Nothing" $
                     testMergeableSimpleEquivClass
-                      (InL Nothing :: Sum Maybe Maybe SymBool)
+                      (InL Nothing :: Sum Maybe Maybe (AsKey SymBool))
                       [DynamicSortedIdx False, DynamicSortedIdx False]
                       [(ssym "a", InL Nothing, InL Nothing, InL Nothing)],
                   testCase "InL (Just v)" $
                     testMergeableSimpleEquivClass
-                      (InL $ Just $ ssym "a" :: Sum Maybe Maybe SymBool)
+                      (InL $ Just $ ssym "a" :: Sum Maybe Maybe (AsKey SymBool))
                       [DynamicSortedIdx False, DynamicSortedIdx True]
                       [ ( ssym "a",
                           InL $ Just $ ssym "b",
@@ -1044,12 +1048,12 @@ mergeableTests =
                       ],
                   testCase "InR Nothing" $
                     testMergeableSimpleEquivClass
-                      (InR Nothing :: Sum Maybe Maybe SymBool)
+                      (InR Nothing :: Sum Maybe Maybe (AsKey SymBool))
                       [DynamicSortedIdx True, DynamicSortedIdx False]
                       [(ssym "a", InR Nothing, InR Nothing, InR Nothing)],
                   testCase "InR (Just v)" $
                     testMergeableSimpleEquivClass
-                      (InR $ Just $ ssym "a" :: Sum Maybe Maybe SymBool)
+                      (InR $ Just $ ssym "a" :: Sum Maybe Maybe (AsKey SymBool))
                       [DynamicSortedIdx True, DynamicSortedIdx True]
                       [ ( ssym "a",
                           InR $ Just $ ssym "b",

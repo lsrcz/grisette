@@ -17,9 +17,11 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Grisette
-  ( ITEOp (symIte),
+  ( EvalSym,
+    ITEOp (symIte),
     Mergeable (rootStrategy),
     SymBranching (mrgIfPropagatedStrategy),
+    SymEq,
     TryMerge,
     mrgSingle,
     tryMerge,
@@ -27,14 +29,14 @@ import Grisette
 import Grisette.Internal.Core.Control.Monad.Union (Union (UMrg))
 import Grisette.Internal.Core.Data.UnionBase (UnionBase (UnionSingle))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
 
 data TryMergeInstanceTest where
   TryMergeInstanceTest ::
     forall u a.
-    (TryMerge u, Mergeable a, Show (u a), Eq (u a)) =>
+    (TryMerge u, Mergeable a, Show (u a), Eq (u a), SymEq (u a), EvalSym (u a)) =>
     { testName :: String,
       testUnmerged :: u a,
       testMerged :: u a
@@ -54,13 +56,13 @@ tryMergeTests =
     "TryMerge"
     [ testCase "mrgSingle" $ do
         let actual = mrgSingle 1 :: Union Integer
-        actual @?= (UMrg rootStrategy (UnionSingle 1)),
+        actual .@?= (UMrg rootStrategy (UnionSingle 1)),
       testCase "mrgSingle" $ do
         let actual = mrgSingle 1 :: Union Integer
-        actual @?= (UMrg rootStrategy (UnionSingle 1)),
+        actual .@?= (UMrg rootStrategy (UnionSingle 1)),
       testCase "tryMerge" $ do
         let actual = tryMerge $ return 1 :: Union Integer
-        actual @?= (UMrg rootStrategy (UnionSingle 1)),
+        actual .@?= (UMrg rootStrategy (UnionSingle 1)),
       testGroup "Instances" $ do
         test <-
           [ TryMergeInstanceTest
@@ -163,6 +165,6 @@ tryMergeTests =
           TryMergeInstanceTest name unmerged merged ->
             [ testCase name $ do
                 let actual = tryMerge unmerged
-                actual @?= merged
+                actual .@?= merged
             ]
     ]

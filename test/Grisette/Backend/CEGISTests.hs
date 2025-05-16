@@ -15,6 +15,7 @@ import Data.String (IsString (fromString))
 import GHC.Stack (HasCallStack)
 import Grisette
   ( Apply (apply),
+    AsKey (AsKey),
     CEGISResult (CEGISSolverFailure, CEGISSuccess, CEGISVerifierFailure),
     EvalSym (evalSym),
     ExtractSym,
@@ -54,7 +55,7 @@ import Grisette.SymPrim
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit (Assertion, assertFailure, (@=?), (@?=))
+import Test.HUnit (Assertion, assertFailure, (@?=))
 
 testCegis ::
   (HasCallStack, ExtractSym a, EvalSym a, SymEq a) =>
@@ -69,17 +70,17 @@ testCegis config shouldSuccess inputs bs = do
       \(cexInputs, internal) -> buildFormula internal (bs cexInputs)
   case cegisExceptVCResult of
     (_, CEGISSuccess m) -> do
-      shouldSuccess @=? True
+      shouldSuccess @?= True
       verify "cegisExceptVC" m (bs inputs)
-    _ -> shouldSuccess @=? False
+    _ -> shouldSuccess @?= False
   cegisForAllExceptVCResult <-
     cegisForAllExceptVC config (inputs, "internal" :: SymInteger) return $
       buildFormula "internal" (bs inputs)
   case cegisForAllExceptVCResult of
     (_, CEGISSuccess m) -> do
-      shouldSuccess @=? True
+      shouldSuccess @?= True
       verify "cegisForAllExceptVC" m (bs inputs)
-    _ -> shouldSuccess @=? False
+    _ -> shouldSuccess @?= False
   where
     verify _ _ [] = return ()
     verify funName m (v : vs) = do
@@ -120,7 +121,7 @@ cegisTests =
                     [1 :: Integer, 2]
                     (\idx -> cegisPostCond $ fromString $ "a" ++ show idx)
                 Right m2 <- solve z3 ("a1" .&& "a2")
-                m1 @=? m2,
+                m1 @?= m2,
               testCase "Lowering of TabularFun" $ do
                 let s1 = "s1" :: SymInteger =~> SymInteger
                 let s2 = "s2" :: SymInteger =~> SymInteger
@@ -134,10 +135,10 @@ cegisTests =
                           .== 100
                 let s1e = evalSym False m1 s1
                 let s2e = evalSym False m1 s2
-                s1e # 1 @=? 10
-                s1e # 3 @=? 100
-                s2e # 2 @=? 10
-                s2e # 4 @=? 100,
+                AsKey (s1e # 1) @?= AsKey 10
+                AsKey (s1e # 3) @?= AsKey 100
+                AsKey (s2e # 2) @?= AsKey 10
+                AsKey (s2e # 4) @?= AsKey 100,
               testCase "Lowering of GeneralFun" $ do
                 let s1 = "s1" :: SymInteger -~> SymInteger
                 let s2 = "s2" :: SymInteger -~> SymInteger
@@ -151,10 +152,10 @@ cegisTests =
                           .== 100
                 let s1e = evalSym False m1 s1
                 let s2e = evalSym False m1 s2
-                s1e # 1 @=? 10
-                s1e # 3 @=? 100
-                s2e # 2 @=? 10
-                s2e # 4 @=? 100
+                AsKey (s1e # 1) @?= AsKey 10
+                AsKey (s1e # 3) @?= AsKey 100
+                AsKey (s2e # 2) @?= AsKey 10
+                AsKey (s2e # 4) @?= AsKey 100
             ],
           testGroup
             "Boolean"

@@ -8,7 +8,8 @@ import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Data.Text as T
 import Grisette
-  ( EnumGenBound (EnumGenBound),
+  ( AsKey,
+    EnumGenBound (EnumGenBound),
     EnumGenUpperBound (EnumGenUpperBound),
     Fresh,
     FreshT,
@@ -18,6 +19,7 @@ import Grisette
     MonadFresh (localIdentifier),
     SExpr (Atom),
     SimpleListSpec (SimpleListSpec),
+    Solvable (con, isym, ssym),
     SymBool,
     choose,
     chooseFresh,
@@ -36,8 +38,8 @@ import Grisette
     runFreshT,
     withMetadata,
   )
-import Grisette.Core.Data.Class.TestValues (conBool, isymBool, ssymBool)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey1 (AsKey1))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -53,36 +55,35 @@ genSymTests =
             [ testGroup
                 "() spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: Union SymBool)
-                      @?= mrgSingle (isymBool "a" 0),
+                    AsKey1 (genSym () "a" :: Union (AsKey SymBool))
+                      @?= mrgSingle (isym "a" 0),
                   testCase "genSymSimple" $
-                    (genSymSimple () "a" :: SymBool)
-                      @?= isymBool "a" 0
+                    (genSymSimple () "a" :: AsKey SymBool) @?= isym "a" 0
                 ],
               testGroup
                 "SymBool spec"
                 [ testCase "genSym" $
-                    (genSym (conBool True) "a" :: Union SymBool)
-                      @?= mrgSingle (isymBool "a" 0),
+                    AsKey1 (genSym (con True :: AsKey SymBool) "a" :: Union (AsKey SymBool))
+                      @?= mrgSingle (isym "a" 0),
                   testCase "genSymSimple" $
-                    (genSymSimple (conBool True) "a" :: SymBool)
-                      @?= isymBool "a" 0
+                    (genSymSimple (con True :: AsKey SymBool) "a" :: AsKey SymBool)
+                      @?= isym "a" 0
                 ]
             ],
           testGroup
             "Bool"
             [ testCase "() spec" $
-                (genSym () "a" :: Union Bool)
-                  @?= mrgIf (isymBool "a" 0) (mrgSingle False) (mrgSingle True),
+                AsKey1 (genSym () "a" :: Union Bool)
+                  @?= AsKey1 (mrgIf (isym "a" 0) (mrgSingle False) (mrgSingle True)),
               testGroup
                 "Bool spec"
                 [ testGroup
                     "genSym"
                     [ testCase "True" $
-                        (genSym True "a" :: Union Bool)
+                        AsKey1 (genSym True "a" :: Union Bool)
                           @?= mrgSingle True,
                       testCase "False" $
-                        (genSym False "a" :: Union Bool)
+                        AsKey1 (genSym False "a" :: Union Bool)
                           @?= mrgSingle False
                     ],
                   testGroup
@@ -101,53 +102,51 @@ genSymTests =
             [ testGroup
                 "Integer spec"
                 [ testCase "genSym" $
-                    (genSym (1 :: Integer) "a" :: Union Integer)
+                    AsKey1 (genSym (1 :: Integer) "a" :: Union Integer)
                       @?= mrgSingle 1,
                   testCase "genSymSimple" $
                     (genSymSimple (1 :: Integer) "a" :: Integer)
                       @?= 1
                 ],
               testCase "Upper bound spec" $
-                ( genSym (EnumGenUpperBound (3 :: Integer)) "a" ::
-                    Union Integer
-                )
+                AsKey1 (genSym (EnumGenUpperBound (3 :: Integer)) "a" :: Union Integer)
                   @?= mrgIf
-                    (isymBool "a" 0)
+                    (isym "a" 0)
                     (mrgSingle 0)
-                    (mrgIf (isymBool "a" 1) (mrgSingle 1) (mrgSingle 2)),
+                    (mrgIf (isym "a" 1) (mrgSingle 1) (mrgSingle 2)),
               testCase "Bound spec" $
-                (genSym (EnumGenBound (-1 :: Integer) 2) "a" :: Union Integer)
+                AsKey1 (genSym (EnumGenBound (-1 :: Integer) 2) "a" :: Union Integer)
                   @?= mrgIf
-                    (isymBool "a" 0)
+                    (isym "a" 0)
                     (mrgSingle (-1))
-                    (mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1))
+                    (mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1))
             ],
           testGroup
             "Char"
             [ testGroup
                 "Char spec"
                 [ testCase "genSym" $
-                    (genSym 'x' "a" :: Union Char)
+                    AsKey1 (genSym 'x' "a" :: Union Char)
                       @?= mrgSingle 'x',
                   testCase "genSymSimple" $
                     (genSymSimple 'x' "a" :: Char) @?= 'x'
                 ],
               testCase "Upper bound spec" $
-                (genSym (EnumGenUpperBound @Char (toEnum 3)) "a" :: Union Char)
+                AsKey1 (genSym (EnumGenUpperBound @Char (toEnum 3)) "a" :: Union Char)
                   @?= mrgIf
-                    (isymBool "a" 0)
+                    (isym "a" 0)
                     (mrgSingle $ toEnum 0)
                     ( mrgIf
-                        (isymBool "a" 1)
+                        (isym "a" 1)
                         (mrgSingle $ toEnum 1)
                         (mrgSingle $ toEnum 2)
                     ),
               testCase "Bound spec" $
-                (genSym (EnumGenBound 'a' 'd') "a" :: Union Char)
+                AsKey1 (genSym (EnumGenBound 'a' 'd') "a" :: Union Char)
                   @?= mrgIf
-                    (isymBool "a" 0)
+                    (isym "a" 0)
                     (mrgSingle 'a')
-                    (mrgIf (isymBool "a" 1) (mrgSingle 'b') (mrgSingle 'c'))
+                    (mrgIf (isym "a" 1) (mrgSingle 'b') (mrgSingle 'c'))
             ],
           testGroup
             "Maybe SymBool"
@@ -156,36 +155,38 @@ genSymTests =
                 [ testGroup
                     "Nothing"
                     [ testCase "genSym" $
-                        ( genSym (Nothing :: Maybe SymBool) "a" ::
-                            Union (Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym (Nothing :: Maybe (AsKey SymBool)) "a" ::
+                              Union (Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle Nothing,
                       testCase "genSymSimple" $
-                        ( genSymSimple (Nothing :: Maybe SymBool) "a" ::
-                            Maybe SymBool
+                        ( genSymSimple (Nothing :: Maybe (AsKey SymBool)) "a" ::
+                            Maybe (AsKey SymBool)
                         )
                           @?= Nothing
                     ],
                   testGroup
                     "Just v"
                     [ testCase "genSym" $
-                        ( genSym (Just (ssymBool "a")) "a" ::
-                            Union (Maybe SymBool)
-                        )
-                          @?= mrgSingle (Just (isymBool "a" 0)),
+                        AsKey1
+                          ( genSym (Just (ssym "a" :: AsKey SymBool)) "a" ::
+                              Union (Maybe (AsKey SymBool))
+                          )
+                          @?= mrgSingle (Just (isym "a" 0)),
                       testCase "genSymSimple" $
-                        ( genSymSimple (Just (ssymBool "a")) "a" ::
-                            Maybe SymBool
+                        ( genSymSimple (Just (ssym "a" :: AsKey SymBool)) "a" ::
+                            Maybe (AsKey SymBool)
                         )
-                          @?= Just (isymBool "a" 0)
+                          @?= Just (isym "a" 0)
                     ]
                 ],
               testCase "() spec" $
-                (genSym () "a" :: Union (Maybe SymBool))
+                AsKey1 (genSym () "a" :: Union (Maybe (AsKey SymBool)))
                   @?= mrgIf
-                    (isymBool "a" 0)
+                    (isym "a" 0)
                     (mrgSingle Nothing)
-                    (mrgSingle (Just (isymBool "a" 1)))
+                    (mrgSingle (Just (isym "a" 1)))
             ],
           testGroup
             "Either SymBool SymBool"
@@ -194,75 +195,77 @@ genSymTests =
                 [ testGroup
                     "Left v"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( Left (ssymBool "a") ::
-                                Either SymBool SymBool
-                            )
-                            "a" ::
-                            Union (Either SymBool SymBool)
+                        ( AsKey1 $
+                            genSym
+                              ( Left (ssym "a") ::
+                                  Either (AsKey SymBool) (AsKey SymBool)
+                              )
+                              "a" ::
+                            AsKey1 Union (Either (AsKey SymBool) (AsKey SymBool))
                         )
-                          @?= mrgSingle (Left (isymBool "a" 0)),
+                          @?= mrgSingle (Left (isym "a" 0)),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( Left (ssymBool "a") ::
-                                Either SymBool SymBool
+                            ( Left (ssym "a") ::
+                                Either (AsKey SymBool) (AsKey SymBool)
                             )
                             "a" ::
-                            Either SymBool SymBool
+                            Either (AsKey SymBool) (AsKey SymBool)
                         )
-                          @?= Left (isymBool "a" 0)
+                          @?= Left (isym "a" 0)
                     ],
                   testGroup
                     "Right v"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( Right (ssymBool "a") ::
-                                Either SymBool SymBool
-                            )
-                            "a" ::
-                            Union (Either SymBool SymBool)
+                        ( AsKey1 $
+                            genSym
+                              ( Right (ssym "a") ::
+                                  Either (AsKey SymBool) (AsKey SymBool)
+                              )
+                              "a" ::
+                            AsKey1 Union (Either (AsKey SymBool) (AsKey SymBool))
                         )
-                          @?= mrgSingle (Right (isymBool "a" 0)),
+                          @?= mrgSingle (Right (isym "a" 0)),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( Right (ssymBool "a") ::
-                                Either SymBool SymBool
+                            ( Right (ssym "a") ::
+                                Either (AsKey SymBool) (AsKey SymBool)
                             )
                             "a" ::
-                            Either SymBool SymBool
+                            Either (AsKey SymBool) (AsKey SymBool)
                         )
-                          @?= Right (isymBool "a" 0)
+                          @?= Right (isym "a" 0)
                     ]
                 ],
               testCase "() spec" $ do
-                (genSym () "a" :: Union (Either SymBool SymBool))
+                (AsKey1 (genSym () "a" :: Union (Either (AsKey SymBool) (AsKey SymBool))))
                   @?= mrgIf
-                    (isymBool "a" 0)
-                    (mrgSingle $ Left $ isymBool "a" 1)
-                    (mrgSingle $ Right $ isymBool "a" 2)
+                    (isym "a" 0)
+                    (mrgSingle $ Left $ isym "a" 1)
+                    (mrgSingle $ Right $ isym "a" 2)
             ],
           testGroup
             "lists"
             [ testGroup
                 "Max length spec"
                 [ testCase "max length = 0" $
-                    (genSym (0 :: Integer) "a" :: Union [SymBool])
+                    AsKey1 (genSym (0 :: Integer) "a" :: Union [AsKey SymBool])
                       @?= mrgSingle [],
                   testCase "max length = 3" $
-                    (genSym (3 :: Integer) "a" :: Union [SymBool])
+                    AsKey1 (genSym (3 :: Integer) "a" :: Union [AsKey SymBool])
                       @?= mrgIf
-                        (isymBool "a" 3)
+                        (isym "a" 3)
                         (mrgSingle [])
                         ( mrgIf
-                            (isymBool "a" 4)
-                            (mrgSingle [isymBool "a" 2])
+                            (isym "a" 4)
+                            (mrgSingle [isym "a" 2])
                             ( mrgIf
-                                (isymBool "a" 5)
-                                (mrgSingle [isymBool "a" 1, isymBool "a" 2])
+                                (isym "a" 5)
+                                (mrgSingle [isym "a" 1, isym "a" 2])
                                 ( mrgSingle
-                                    [ isymBool "a" 0,
-                                      isymBool "a" 1,
-                                      isymBool "a" 2
+                                    [ isym "a" 0,
+                                      isym "a" 1,
+                                      isym "a" 2
                                     ]
                                 )
                             )
@@ -271,42 +274,43 @@ genSymTests =
               testGroup
                 "Min & max length spec"
                 [ testCase "min length = 1, max length = 3" $
-                    (genSym (ListSpec 1 3 ()) "a" :: Union [SymBool])
+                    AsKey1 (genSym (ListSpec 1 3 ()) "a" :: Union [AsKey SymBool])
                       @?= mrgIf
-                        (isymBool "a" 3)
-                        (mrgSingle [isymBool "a" 2])
+                        (isym "a" 3)
+                        (mrgSingle [isym "a" 2])
                         ( mrgIf
-                            (isymBool "a" 4)
-                            (mrgSingle [isymBool "a" 1, isymBool "a" 2])
+                            (isym "a" 4)
+                            (mrgSingle [isym "a" 1, isym "a" 2])
                             ( mrgSingle
-                                [ isymBool "a" 0,
-                                  isymBool "a" 1,
-                                  isymBool "a" 2
+                                [ isym "a" 0,
+                                  isym "a" 1,
+                                  isym "a" 2
                                 ]
                             )
                         ),
                   testCase "min length = 1, max length = 2, nested" $
-                    ( genSym (ListSpec 1 2 (ListSpec 1 2 ())) "a" ::
-                        Union [Union [SymBool]]
-                    )
+                    AsKey1
+                      ( genSym (ListSpec 1 2 (ListSpec 1 2 ())) "a" ::
+                          Union [AsKey1 Union [AsKey SymBool]]
+                      )
                       @?= mrgIf
-                        (isymBool "a" 6)
+                        (isym "a" 6)
                         ( mrgSingle
                             [ mrgIf
-                                (isymBool "a" 5)
-                                (mrgSingle [isymBool "a" 4])
-                                (mrgSingle [isymBool "a" 3, isymBool "a" 4])
+                                (isym "a" 5)
+                                (mrgSingle [isym "a" 4])
+                                (mrgSingle [isym "a" 3, isym "a" 4])
                             ]
                         )
                         ( mrgSingle
                             [ mrgIf
-                                (isymBool "a" 2)
-                                (mrgSingle [isymBool "a" 1])
-                                (mrgSingle [isymBool "a" 0, isymBool "a" 1]),
+                                (isym "a" 2)
+                                (mrgSingle [isym "a" 1])
+                                (mrgSingle [isym "a" 0, isym "a" 1]),
                               mrgIf
-                                (isymBool "a" 5)
-                                (mrgSingle [isymBool "a" 4])
-                                (mrgSingle [isymBool "a" 3, isymBool "a" 4])
+                                (isym "a" 5)
+                                (mrgSingle [isym "a" 4])
+                                (mrgSingle [isym "a" 3, isym "a" 4])
                             ]
                         )
                 ],
@@ -315,62 +319,65 @@ genSymTests =
                 [ testGroup
                     "length = 2"
                     [ testCase "genSym" $
-                        (genSym (SimpleListSpec 2 ()) "a" :: Union [SymBool])
-                          @?= mrgSingle [isymBool "a" 0, isymBool "a" 1],
+                        AsKey1
+                          (genSym (SimpleListSpec 2 ()) "a" :: Union [AsKey SymBool])
+                          @?= mrgSingle [isym "a" 0, isym "a" 1],
                       testCase "genSymSimple" $
-                        (genSymSimple (SimpleListSpec 2 ()) "a" :: [SymBool])
-                          @?= [isymBool "a" 0, isymBool "a" 1]
+                        (genSymSimple (SimpleListSpec 2 ()) "a" :: [AsKey SymBool])
+                          @?= [isym "a" 0, isym "a" 1]
                     ],
                   testGroup
                     "length = 2, nested"
                     [ testCase "genSym" $
-                        ( genSym
-                            (SimpleListSpec 2 (SimpleListSpec 2 ()))
-                            "a" ::
-                            Union [[SymBool]]
-                        )
+                        AsKey1
+                          ( genSym
+                              (SimpleListSpec 2 (SimpleListSpec 2 ()))
+                              "a" ::
+                              Union [[AsKey SymBool]]
+                          )
                           @?= mrgSingle
-                            [ [isymBool "a" 0, isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                            [ [isym "a" 0, isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ],
                       testCase "genSymSimple" $
                         ( genSymSimple
                             (SimpleListSpec 2 (SimpleListSpec 2 ()))
                             "a" ::
-                            [[SymBool]]
+                            [[AsKey SymBool]]
                         )
-                          @?= [ [isymBool "a" 0, isymBool "a" 1],
-                                [isymBool "a" 2, isymBool "a" 3]
+                          @?= [ [isym "a" 0, isym "a" 1],
+                                [isym "a" 2, isym "a" 3]
                               ]
                     ]
                 ],
               testGroup
                 "List with same shape spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        [[conBool True], [ssymBool "a", ssymBool "b"]]
-                        "a" ::
-                        Union [[SymBool]]
-                    )
+                    AsKey1
+                      ( genSym
+                          [[con True :: AsKey SymBool], [ssym "a", ssym "b"]]
+                          "a" ::
+                          Union [[AsKey SymBool]]
+                      )
                       @?= mrgSingle
-                        [ [isymBool "a" 0],
-                          [isymBool "a" 1, isymBool "a" 2]
+                        [ [isym "a" 0],
+                          [isym "a" 1, isym "a" 2]
                         ],
                   testCase "genSymSimple" $
                     ( genSymSimple
-                        [ [conBool True],
-                          [ssymBool "a", ssymBool "b"]
+                        [ [con True :: AsKey SymBool],
+                          [ssym "a", ssym "b"]
                         ]
                         "a" ::
-                        [[SymBool]]
+                        [[AsKey SymBool]]
                     )
-                      @?= [[isymBool "a" 0], [isymBool "a" 1, isymBool "a" 2]]
+                      @?= [[isym "a" 0], [isym "a" 1, isym "a" 2]]
                 ]
             ],
           testGroup
             "()"
             [ testCase "() spec" $ do
-                (genSym () "a" :: Union ()) @?= mrgSingle ()
+                AsKey1 (genSym () "a" :: Union ()) @?= mrgSingle ()
                 (genSymSimple () "a" :: ()) @?= ()
             ],
           testGroup
@@ -378,41 +385,43 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        ( EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2
-                        )
-                        "a" ::
-                        Union (Integer, Integer)
-                    )
+                    AsKey1
+                      ( genSym
+                          ( EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2
+                          )
+                          "a" ::
+                          Union (Integer, Integer)
+                      )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
+                        x1 <- mrgIf (isym "a" 0) (mrgSingle 0) (mrgSingle 1)
+                        x2 <- mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1)
                         mrgSingle (x1, x2),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
-                          [ [ssymBool "b"],
-                            [ssymBool "b", ssymBool "c"]
+                          [ [ssym "b" :: AsKey SymBool],
+                            [ssym "b", ssym "c"]
                           ]
                         )
                         "a" ::
-                        (SymBool, [[SymBool]])
+                        (AsKey SymBool, [[AsKey SymBool]])
                     )
-                      @?= ( isymBool "a" 0,
-                            [ [isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                      @?= ( isym "a" 0,
+                            [ [isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ]
                           )
                 ],
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: Union (SymBool, SymBool))
-                      @?= mrgSingle (isymBool "a" 0, isymBool "a" 1),
+                    AsKey1
+                      (genSym () "a" :: Union (AsKey SymBool, AsKey SymBool))
+                      @?= mrgSingle (isym "a" 0, isym "a" 1),
                   testCase "genSymSimple" $
-                    (genSymSimple () "a" :: (SymBool, SymBool))
-                      @?= (isymBool "a" 0, isymBool "a" 1)
+                    (genSymSimple () "a" :: (AsKey SymBool, AsKey SymBool))
+                      @?= (isym "a" 0, isym "a" 1)
                 ]
             ],
           testGroup
@@ -420,41 +429,43 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        ( EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2
-                        )
-                        "a" ::
-                        Union (Integer, Integer, Integer)
-                    )
+                    AsKey1
+                      ( genSym
+                          ( EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2
+                          )
+                          "a" ::
+                          Union (Integer, Integer, Integer)
+                      )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
+                        x1 <- mrgIf (isym "a" 0) (mrgSingle 0) (mrgSingle 1)
+                        x2 <- mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1)
+                        x3 <- mrgIf (isym "a" 2) (mrgSingle 0) (mrgSingle 1)
                         mrgSingle (x1, x2, x3),
                   testCase "genSymSimple" $
                     ( genSymSimple
-                        ((), [[ssymBool "b"], [ssymBool "b", ssymBool "c"]], ())
+                        ((), [[ssym "b" :: AsKey SymBool], [ssym "b", ssym "c"]], ())
                         "a" ::
-                        (SymBool, [[SymBool]], SymBool)
+                        (AsKey SymBool, [[AsKey SymBool]], AsKey SymBool)
                     )
-                      @?= ( isymBool "a" 0,
-                            [ [isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                      @?= ( isym "a" 0,
+                            [ [isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ],
-                            isymBool "a" 4
+                            isym "a" 4
                           )
                 ],
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: Union (SymBool, SymBool, SymBool))
+                    AsKey1
+                      (genSym () "a" :: Union (AsKey SymBool, AsKey SymBool, AsKey SymBool))
                       @?= mrgSingle
-                        (isymBool "a" 0, isymBool "a" 1, isymBool "a" 2),
+                        (isym "a" 0, isym "a" 1, isym "a" 2),
                   testCase "genSymSimple" $
-                    (genSymSimple () "a" :: (SymBool, SymBool, SymBool))
-                      @?= (isymBool "a" 0, isymBool "a" 1, isymBool "a" 2)
+                    (genSymSimple () "a" :: (AsKey SymBool, AsKey SymBool, AsKey SymBool))
+                      @?= (isym "a" 0, isym "a" 1, isym "a" 2)
                 ]
             ],
           testGroup
@@ -462,59 +473,61 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        ( EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2
-                        )
-                        "a" ::
-                        Union (Integer, Integer, Integer, Integer)
-                    )
+                    AsKey1
+                      ( genSym
+                          ( EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2
+                          )
+                          "a" ::
+                          Union (Integer, Integer, Integer, Integer)
+                      )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
+                        x1 <- mrgIf (isym "a" 0) (mrgSingle 0) (mrgSingle 1)
+                        x2 <- mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1)
+                        x3 <- mrgIf (isym "a" 2) (mrgSingle 0) (mrgSingle 1)
+                        x4 <- mrgIf (isym "a" 3) (mrgSingle 0) (mrgSingle 1)
                         mrgSingle (x1, x2, x3, x4),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
-                          [[ssymBool "b"], [ssymBool "b", ssymBool "c"]],
+                          [[ssym "b" :: AsKey SymBool], [ssym "b", ssym "c"]],
                           (),
                           ()
                         )
                         "a" ::
-                        (SymBool, [[SymBool]], SymBool, SymBool)
+                        (AsKey SymBool, [[AsKey SymBool]], AsKey SymBool, AsKey SymBool)
                     )
-                      @?= ( isymBool "a" 0,
-                            [ [isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                      @?= ( isym "a" 0,
+                            [ [isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ],
-                            isymBool "a" 4,
-                            isymBool "a" 5
+                            isym "a" 4,
+                            isym "a" 5
                           )
                 ],
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    ( genSym () "a" ::
-                        Union (SymBool, SymBool, SymBool, SymBool)
-                    )
+                    AsKey1
+                      ( genSym () "a" ::
+                          Union (AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool)
+                      )
                       @?= mrgSingle
-                        ( isymBool "a" 0,
-                          isymBool "a" 1,
-                          isymBool "a" 2,
-                          isymBool "a" 3
+                        ( isym "a" 0,
+                          isym "a" 1,
+                          isym "a" 2,
+                          isym "a" 3
                         ),
                   testCase "genSymSimple" $
                     ( genSymSimple () "a" ::
-                        (SymBool, SymBool, SymBool, SymBool)
+                        (AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool)
                     )
-                      @?= ( isymBool "a" 0,
-                            isymBool "a" 1,
-                            isymBool "a" 2,
-                            isymBool "a" 3
+                      @?= ( isym "a" 0,
+                            isym "a" 1,
+                            isym "a" 2,
+                            isym "a" 3
                           )
                 ]
             ],
@@ -523,67 +536,69 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        ( EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2
-                        )
-                        "a" ::
-                        Union (Integer, Integer, Integer, Integer, Integer)
-                    )
+                    AsKey1
+                      ( genSym
+                          ( EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2
+                          )
+                          "a" ::
+                          Union (Integer, Integer, Integer, Integer, Integer)
+                      )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
+                        x1 <- mrgIf (isym "a" 0) (mrgSingle 0) (mrgSingle 1)
+                        x2 <- mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1)
+                        x3 <- mrgIf (isym "a" 2) (mrgSingle 0) (mrgSingle 1)
+                        x4 <- mrgIf (isym "a" 3) (mrgSingle 0) (mrgSingle 1)
+                        x5 <- mrgIf (isym "a" 4) (mrgSingle 0) (mrgSingle 1)
                         mrgSingle (x1, x2, x3, x4, x5),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
-                          [ [ssymBool "b"],
-                            [ssymBool "b", ssymBool "c"]
+                          [ [ssym "b" :: AsKey SymBool],
+                            [ssym "b", ssym "c"]
                           ],
                           (),
                           (),
                           ()
                         )
                         "a" ::
-                        (SymBool, [[SymBool]], SymBool, SymBool, SymBool)
+                        (AsKey SymBool, [[AsKey SymBool]], AsKey SymBool, AsKey SymBool, AsKey SymBool)
                     )
-                      @?= ( isymBool "a" 0,
-                            [ [isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                      @?= ( isym "a" 0,
+                            [ [isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ],
-                            isymBool "a" 4,
-                            isymBool "a" 5,
-                            isymBool "a" 6
+                            isym "a" 4,
+                            isym "a" 5,
+                            isym "a" 6
                           )
                 ],
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    ( genSym () "a" ::
-                        Union (SymBool, SymBool, SymBool, SymBool, SymBool)
-                    )
+                    AsKey1
+                      ( genSym () "a" ::
+                          Union (AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool)
+                      )
                       @?= mrgSingle
-                        ( isymBool "a" 0,
-                          isymBool "a" 1,
-                          isymBool "a" 2,
-                          isymBool "a" 3,
-                          isymBool "a" 4
+                        ( isym "a" 0,
+                          isym "a" 1,
+                          isym "a" 2,
+                          isym "a" 3,
+                          isym "a" 4
                         ),
                   testCase "genSymSimple" $
                     ( genSymSimple () "a" ::
-                        (SymBool, SymBool, SymBool, SymBool, SymBool)
+                        (AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool)
                     )
-                      @?= ( isymBool "a" 0,
-                            isymBool "a" 1,
-                            isymBool "a" 2,
-                            isymBool "a" 3,
-                            isymBool "a" 4
+                      @?= ( isym "a" 0,
+                            isym "a" 1,
+                            isym "a" 2,
+                            isym "a" 3,
+                            isym "a" 4
                           )
                 ]
             ],
@@ -592,37 +607,38 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        ( EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2
-                        )
-                        "a" ::
-                        Union
-                          ( Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer
+                    AsKey1
+                      ( genSym
+                          ( EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2
                           )
-                    )
+                          "a" ::
+                          Union
+                            ( Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer
+                            )
+                      )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
-                        x6 <- mrgIf (isymBool "a" 5) (mrgSingle 0) (mrgSingle 1)
+                        x1 <- mrgIf (isym "a" 0) (mrgSingle 0) (mrgSingle 1)
+                        x2 <- mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1)
+                        x3 <- mrgIf (isym "a" 2) (mrgSingle 0) (mrgSingle 1)
+                        x4 <- mrgIf (isym "a" 3) (mrgSingle 0) (mrgSingle 1)
+                        x5 <- mrgIf (isym "a" 4) (mrgSingle 0) (mrgSingle 1)
+                        x6 <- mrgIf (isym "a" 5) (mrgSingle 0) (mrgSingle 1)
                         mrgSingle (x1, x2, x3, x4, x5, x6),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
-                          [ [ssymBool "b"],
-                            [ssymBool "b", ssymBool "c"]
+                          [ [ssym "b" :: AsKey SymBool],
+                            [ssym "b", ssym "c"]
                           ],
                           (),
                           (),
@@ -630,61 +646,62 @@ genSymTests =
                           ()
                         )
                         "a" ::
-                        ( SymBool,
-                          [[SymBool]],
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool
+                        ( AsKey SymBool,
+                          [[AsKey SymBool]],
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool
                         )
                     )
-                      @?= ( isymBool "a" 0,
-                            [ [isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                      @?= ( isym "a" 0,
+                            [ [isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ],
-                            isymBool "a" 4,
-                            isymBool "a" 5,
-                            isymBool "a" 6,
-                            isymBool "a" 7
+                            isym "a" 4,
+                            isym "a" 5,
+                            isym "a" 6,
+                            isym "a" 7
                           )
                 ],
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    ( genSym () "a" ::
-                        Union
-                          ( SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool
-                          )
-                    )
+                    AsKey1
+                      ( genSym () "a" ::
+                          Union
+                            ( AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool
+                            )
+                      )
                       @?= mrgSingle
-                        ( isymBool "a" 0,
-                          isymBool "a" 1,
-                          isymBool "a" 2,
-                          isymBool "a" 3,
-                          isymBool "a" 4,
-                          isymBool "a" 5
+                        ( isym "a" 0,
+                          isym "a" 1,
+                          isym "a" 2,
+                          isym "a" 3,
+                          isym "a" 4,
+                          isym "a" 5
                         ),
                   testCase "genSymSimple" $
                     ( genSymSimple () "a" ::
-                        ( SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool
+                        ( AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool
                         )
                     )
-                      @?= ( isymBool "a" 0,
-                            isymBool "a" 1,
-                            isymBool "a" 2,
-                            isymBool "a" 3,
-                            isymBool "a" 4,
-                            isymBool "a" 5
+                      @?= ( isym "a" 0,
+                            isym "a" 1,
+                            isym "a" 2,
+                            isym "a" 3,
+                            isym "a" 4,
+                            isym "a" 5
                           )
                 ]
             ],
@@ -693,40 +710,41 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        ( EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2
-                        )
-                        "a" ::
-                        Union
-                          ( Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer
+                    AsKey1
+                      ( genSym
+                          ( EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2
                           )
-                    )
+                          "a" ::
+                          Union
+                            ( Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer
+                            )
+                      )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
-                        x6 <- mrgIf (isymBool "a" 5) (mrgSingle 0) (mrgSingle 1)
-                        x7 <- mrgIf (isymBool "a" 6) (mrgSingle 0) (mrgSingle 1)
+                        x1 <- mrgIf (isym "a" 0) (mrgSingle 0) (mrgSingle 1)
+                        x2 <- mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1)
+                        x3 <- mrgIf (isym "a" 2) (mrgSingle 0) (mrgSingle 1)
+                        x4 <- mrgIf (isym "a" 3) (mrgSingle 0) (mrgSingle 1)
+                        x5 <- mrgIf (isym "a" 4) (mrgSingle 0) (mrgSingle 1)
+                        x6 <- mrgIf (isym "a" 5) (mrgSingle 0) (mrgSingle 1)
+                        x7 <- mrgIf (isym "a" 6) (mrgSingle 0) (mrgSingle 1)
                         mrgSingle (x1, x2, x3, x4, x5, x6, x7),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
-                          [ [ssymBool "b"],
-                            [ssymBool "b", ssymBool "c"]
+                          [ [ssym "b" :: AsKey SymBool],
+                            [ssym "b", ssym "c"]
                           ],
                           (),
                           (),
@@ -735,67 +753,68 @@ genSymTests =
                           ()
                         )
                         "a" ::
-                        ( SymBool,
-                          [[SymBool]],
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool
+                        ( AsKey SymBool,
+                          [[AsKey SymBool]],
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool
                         )
                     )
-                      @?= ( isymBool "a" 0,
-                            [ [isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                      @?= ( isym "a" 0,
+                            [ [isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ],
-                            isymBool "a" 4,
-                            isymBool "a" 5,
-                            isymBool "a" 6,
-                            isymBool "a" 7,
-                            isymBool "a" 8
+                            isym "a" 4,
+                            isym "a" 5,
+                            isym "a" 6,
+                            isym "a" 7,
+                            isym "a" 8
                           )
                 ],
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    ( genSym () "a" ::
-                        Union
-                          ( SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool
-                          )
-                    )
+                    AsKey1
+                      ( genSym () "a" ::
+                          Union
+                            ( AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool
+                            )
+                      )
                       @?= mrgSingle
-                        ( isymBool "a" 0,
-                          isymBool "a" 1,
-                          isymBool "a" 2,
-                          isymBool "a" 3,
-                          isymBool "a" 4,
-                          isymBool "a" 5,
-                          isymBool "a" 6
+                        ( isym "a" 0,
+                          isym "a" 1,
+                          isym "a" 2,
+                          isym "a" 3,
+                          isym "a" 4,
+                          isym "a" 5,
+                          isym "a" 6
                         ),
                   testCase "genSymSimple" $
                     ( genSymSimple () "a" ::
-                        ( SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool
+                        ( AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool
                         )
                     )
-                      @?= ( isymBool "a" 0,
-                            isymBool "a" 1,
-                            isymBool "a" 2,
-                            isymBool "a" 3,
-                            isymBool "a" 4,
-                            isymBool "a" 5,
-                            isymBool "a" 6
+                      @?= ( isym "a" 0,
+                            isym "a" 1,
+                            isym "a" 2,
+                            isym "a" 3,
+                            isym "a" 4,
+                            isym "a" 5,
+                            isym "a" 6
                           )
                 ]
             ],
@@ -804,43 +823,44 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
-                        ( EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2,
-                          EnumGenUpperBound @Integer 2
-                        )
-                        "a" ::
-                        Union
-                          ( Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer,
-                            Integer
+                    AsKey1
+                      ( genSym
+                          ( EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2,
+                            EnumGenUpperBound @Integer 2
                           )
-                    )
+                          "a" ::
+                          Union
+                            ( Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer,
+                              Integer
+                            )
+                      )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
-                        x6 <- mrgIf (isymBool "a" 5) (mrgSingle 0) (mrgSingle 1)
-                        x7 <- mrgIf (isymBool "a" 6) (mrgSingle 0) (mrgSingle 1)
-                        x8 <- mrgIf (isymBool "a" 7) (mrgSingle 0) (mrgSingle 1)
+                        x1 <- mrgIf (isym "a" 0) (mrgSingle 0) (mrgSingle 1)
+                        x2 <- mrgIf (isym "a" 1) (mrgSingle 0) (mrgSingle 1)
+                        x3 <- mrgIf (isym "a" 2) (mrgSingle 0) (mrgSingle 1)
+                        x4 <- mrgIf (isym "a" 3) (mrgSingle 0) (mrgSingle 1)
+                        x5 <- mrgIf (isym "a" 4) (mrgSingle 0) (mrgSingle 1)
+                        x6 <- mrgIf (isym "a" 5) (mrgSingle 0) (mrgSingle 1)
+                        x7 <- mrgIf (isym "a" 6) (mrgSingle 0) (mrgSingle 1)
+                        x8 <- mrgIf (isym "a" 7) (mrgSingle 0) (mrgSingle 1)
                         mrgSingle (x1, x2, x3, x4, x5, x6, x7, x8),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
-                          [ [ssymBool "b"],
-                            [ssymBool "b", ssymBool "c"]
+                          [ [ssym "b" :: AsKey SymBool],
+                            [ssym "b", ssym "c"]
                           ],
                           (),
                           (),
@@ -850,73 +870,74 @@ genSymTests =
                           ()
                         )
                         "a" ::
-                        ( SymBool,
-                          [[SymBool]],
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool
+                        ( AsKey SymBool,
+                          [[AsKey SymBool]],
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool
                         )
                     )
-                      @?= ( isymBool "a" 0,
-                            [ [isymBool "a" 1],
-                              [isymBool "a" 2, isymBool "a" 3]
+                      @?= ( isym "a" 0,
+                            [ [isym "a" 1],
+                              [isym "a" 2, isym "a" 3]
                             ],
-                            isymBool "a" 4,
-                            isymBool "a" 5,
-                            isymBool "a" 6,
-                            isymBool "a" 7,
-                            isymBool "a" 8,
-                            isymBool "a" 9
+                            isym "a" 4,
+                            isym "a" 5,
+                            isym "a" 6,
+                            isym "a" 7,
+                            isym "a" 8,
+                            isym "a" 9
                           )
                 ],
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    ( genSym () "a" ::
-                        Union
-                          ( SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool,
-                            SymBool
-                          )
-                    )
+                    AsKey1
+                      ( genSym () "a" ::
+                          Union
+                            ( AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool,
+                              AsKey SymBool
+                            )
+                      )
                       @?= mrgSingle
-                        ( isymBool "a" 0,
-                          isymBool "a" 1,
-                          isymBool "a" 2,
-                          isymBool "a" 3,
-                          isymBool "a" 4,
-                          isymBool "a" 5,
-                          isymBool "a" 6,
-                          isymBool "a" 7
+                        ( isym "a" 0,
+                          isym "a" 1,
+                          isym "a" 2,
+                          isym "a" 3,
+                          isym "a" 4,
+                          isym "a" 5,
+                          isym "a" 6,
+                          isym "a" 7
                         ),
                   testCase "genSymSimple" $
                     ( genSymSimple () "a" ::
-                        ( SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool,
-                          SymBool
+                        ( AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool,
+                          AsKey SymBool
                         )
                     )
-                      @?= ( isymBool "a" 0,
-                            isymBool "a" 1,
-                            isymBool "a" 2,
-                            isymBool "a" 3,
-                            isymBool "a" 4,
-                            isymBool "a" 5,
-                            isymBool "a" 6,
-                            isymBool "a" 7
+                      @?= ( isym "a" 0,
+                            isym "a" 1,
+                            isym "a" 2,
+                            isym "a" 3,
+                            isym "a" 4,
+                            isym "a" 5,
+                            isym "a" 6,
+                            isym "a" 7
                           )
                 ]
             ],
@@ -927,121 +948,136 @@ genSymTests =
                 [ testGroup
                     "MaybeT Nothing"
                     [ testCase "genSym" $
-                        ( genSym (MaybeT Nothing :: MaybeT Maybe SymBool) "a" ::
-                            Union (MaybeT Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              (MaybeT Nothing :: MaybeT Maybe (AsKey SymBool))
+                              "a" ::
+                              Union (MaybeT Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle (MaybeT Nothing),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            (MaybeT Nothing :: MaybeT Maybe SymBool)
+                            (MaybeT Nothing :: MaybeT Maybe (AsKey SymBool))
                             "a" ::
-                            MaybeT Maybe SymBool
+                            MaybeT Maybe (AsKey SymBool)
                         )
                           @?= MaybeT Nothing
                     ],
                   testGroup
                     "MaybeT (Just Nothing)"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( MaybeT (Just Nothing) ::
-                                MaybeT Maybe SymBool
-                            )
-                            "a" ::
-                            Union (MaybeT Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              ( MaybeT (Just Nothing) ::
+                                  MaybeT Maybe (AsKey SymBool)
+                              )
+                              "a" ::
+                              Union (MaybeT Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle (MaybeT (Just Nothing)),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( MaybeT (Just (Just $ ssymBool "a")) ::
-                                MaybeT Maybe SymBool
+                            ( MaybeT (Just (Just $ ssym "a")) ::
+                                MaybeT Maybe (AsKey SymBool)
                             )
                             "a" ::
-                            MaybeT Maybe SymBool
+                            MaybeT Maybe (AsKey SymBool)
                         )
-                          @?= MaybeT (Just (Just $ isymBool "a" 0))
+                          @?= MaybeT (Just (Just $ isym "a" 0))
                     ],
                   testGroup
                     "MaybeT (Just (Just v))"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( MaybeT (Just (Just $ ssymBool "a")) ::
-                                MaybeT Maybe SymBool
-                            )
-                            "a" ::
-                            Union (MaybeT Maybe SymBool)
-                        )
-                          @?= mrgSingle (MaybeT (Just (Just $ isymBool "a" 0))),
+                        AsKey1
+                          ( genSym
+                              ( MaybeT (Just (Just $ ssym "a")) ::
+                                  MaybeT Maybe (AsKey SymBool)
+                              )
+                              "a" ::
+                              Union (MaybeT Maybe (AsKey SymBool))
+                          )
+                          @?= mrgSingle (MaybeT (Just (Just $ isym "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( MaybeT (Just (Just $ ssymBool "a")) ::
-                                MaybeT Maybe SymBool
+                            ( MaybeT (Just (Just $ ssym "a")) ::
+                                MaybeT Maybe (AsKey SymBool)
                             )
                             "a" ::
-                            MaybeT Maybe SymBool
+                            MaybeT Maybe (AsKey SymBool)
                         )
-                          @?= MaybeT (Just (Just $ isymBool "a" 0))
+                          @?= MaybeT (Just (Just $ isym "a" 0))
                     ]
                 ],
               testCase "No spec" $
-                (genSym () "a" :: Union (MaybeT Maybe SymBool))
+                AsKey1
+                  (genSym () "a" :: Union (MaybeT Maybe (AsKey SymBool)))
                   @?= mrgIf
-                    (isymBool "a" 0)
+                    (isym "a" 0)
                     (mrgSingle $ MaybeT Nothing)
                     ( mrgIf
-                        (isymBool "a" 1)
+                        (isym "a" 1)
                         (mrgSingle $ MaybeT $ Just Nothing)
-                        (mrgSingle $ MaybeT $ Just $ Just $ isymBool "a" 2)
+                        (mrgSingle $ MaybeT $ Just $ Just $ isym "a" 2)
                     ),
               testGroup
                 "Maybe (Maybe SymBool) spec"
                 [ testGroup
                     "Nothing"
                     [ testCase "genSym" $
-                        ( genSym (Nothing :: Maybe (Maybe SymBool)) "a" ::
-                            Union (MaybeT Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              (Nothing :: Maybe (Maybe (AsKey SymBool)))
+                              "a" ::
+                              Union (MaybeT Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle (MaybeT Nothing),
                       testCase "genSymSimple" $
-                        ( genSymSimple (Nothing :: Maybe (Maybe SymBool)) "a" ::
-                            MaybeT Maybe SymBool
+                        ( genSymSimple
+                            (Nothing :: Maybe (Maybe (AsKey SymBool)))
+                            "a" ::
+                            MaybeT Maybe (AsKey SymBool)
                         )
                           @?= MaybeT Nothing
                     ],
                   testGroup
                     "Just Nothing"
                     [ testCase "genSym" $
-                        ( genSym (Just Nothing :: Maybe (Maybe SymBool)) "a" ::
-                            Union (MaybeT Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              (Just Nothing :: Maybe (Maybe (AsKey SymBool)))
+                              "a" ::
+                              Union (MaybeT Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle (MaybeT (Just Nothing)),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            (Just Nothing :: Maybe (Maybe SymBool))
+                            (Just Nothing :: Maybe (Maybe (AsKey SymBool)))
                             "a" ::
-                            MaybeT Maybe SymBool
+                            MaybeT Maybe (AsKey SymBool)
                         )
                           @?= MaybeT (Just Nothing)
                     ],
                   testGroup
                     "Just (Just v)"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( Just $ Just $ ssymBool "a" ::
-                                Maybe (Maybe SymBool)
-                            )
-                            "a" ::
-                            Union (MaybeT Maybe SymBool)
-                        )
-                          @?= mrgSingle (MaybeT (Just (Just $ isymBool "a" 0))),
+                        AsKey1
+                          ( genSym
+                              ( Just $ Just $ ssym "a" ::
+                                  Maybe (Maybe (AsKey SymBool))
+                              )
+                              "a" ::
+                              Union (MaybeT Maybe (AsKey SymBool))
+                          )
+                          @?= mrgSingle (MaybeT (Just (Just $ isym "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( Just $ Just $ ssymBool "a" ::
-                                Maybe (Maybe SymBool)
+                            ( Just $ Just $ ssym "a" ::
+                                Maybe (Maybe (AsKey SymBool))
                             )
                             "a" ::
-                            MaybeT Maybe SymBool
+                            MaybeT Maybe (AsKey SymBool)
                         )
-                          @?= MaybeT (Just (Just $ isymBool "a" 0))
+                          @?= MaybeT (Just (Just $ isym "a" 0))
                     ]
                 ]
             ],
@@ -1052,141 +1088,148 @@ genSymTests =
                 [ testGroup
                     "ExceptT Nothing"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( ExceptT Nothing ::
-                                ExceptT SymBool Maybe SymBool
-                            )
-                            "a" ::
-                            Union (ExceptT SymBool Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              ( ExceptT Nothing ::
+                                  ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
+                              )
+                              "a" ::
+                              Union (ExceptT (AsKey SymBool) Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle (ExceptT Nothing),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             ( ExceptT Nothing ::
-                                ExceptT SymBool Maybe SymBool
+                                ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                             )
                             "a" ::
-                            ExceptT SymBool Maybe SymBool
+                            ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                         )
                           @?= ExceptT Nothing
                     ],
                   testGroup
                     "ExceptT (Just (Left v))"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( ExceptT $ Just $ Left $ ssymBool "a" ::
-                                ExceptT SymBool Maybe SymBool
-                            )
-                            "a" ::
-                            Union (ExceptT SymBool Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              ( ExceptT $ Just $ Left $ ssym "a" ::
+                                  ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
+                              )
+                              "a" ::
+                              Union (ExceptT (AsKey SymBool) Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle
-                            (ExceptT $ Just $ Left $ isymBool "a" 0),
+                            (ExceptT $ Just $ Left $ isym "a" 0),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( ExceptT $ Just $ Left $ ssymBool "a" ::
-                                ExceptT SymBool Maybe SymBool
+                            ( ExceptT $ Just $ Left $ ssym "a" ::
+                                ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                             )
                             "a" ::
-                            ExceptT SymBool Maybe SymBool
+                            ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                         )
-                          @?= ExceptT (Just $ Left $ isymBool "a" 0)
+                          @?= ExceptT (Just $ Left $ isym "a" 0)
                     ],
                   testGroup
                     "ExceptT (Just (Right v))"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( ExceptT $ Just $ Right $ ssymBool "a" ::
-                                ExceptT SymBool Maybe SymBool
-                            )
-                            "a" ::
-                            Union (ExceptT SymBool Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              ( ExceptT $ Just $ Right $ ssym "a" ::
+                                  ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
+                              )
+                              "a" ::
+                              Union (ExceptT (AsKey SymBool) Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle
-                            (ExceptT $ Just $ Right $ isymBool "a" 0),
+                            (ExceptT $ Just $ Right $ isym "a" 0),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( ExceptT $ Just $ Right $ ssymBool "a" ::
-                                ExceptT SymBool Maybe SymBool
+                            ( ExceptT $ Just $ Right $ ssym "a" ::
+                                ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                             )
                             "a" ::
-                            ExceptT SymBool Maybe SymBool
+                            ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                         )
-                          @?= ExceptT (Just $ Right $ isymBool "a" 0)
+                          @?= ExceptT (Just $ Right $ isym "a" 0)
                     ]
                 ],
               testCase "() spec" $ do
-                (genSym () "a" :: Union (ExceptT SymBool Maybe SymBool))
+                AsKey1
+                  (genSym () "a" :: Union (ExceptT (AsKey SymBool) Maybe (AsKey SymBool)))
                   @?= mrgIf
-                    (isymBool "a" 0)
+                    (isym "a" 0)
                     (mrgSingle $ ExceptT Nothing)
                     ( mrgIf
-                        (isymBool "a" 1)
-                        (mrgSingle $ ExceptT $ Just $ Left $ isymBool "a" 2)
-                        (mrgSingle $ ExceptT $ Just $ Right $ isymBool "a" 3)
+                        (isym "a" 1)
+                        (mrgSingle $ ExceptT $ Just $ Left $ isym "a" 2)
+                        (mrgSingle $ ExceptT $ Just $ Right $ isym "a" 3)
                     ),
               testGroup
                 "Maybe (Either SymBool SymBool) spec"
                 [ testGroup
                     "Nothing"
                     [ testCase "genSym" $
-                        ( genSym
-                            (Nothing :: Maybe (Either SymBool SymBool))
-                            "a" ::
-                            Union (ExceptT SymBool Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              (Nothing :: Maybe (Either (AsKey SymBool) (AsKey SymBool)))
+                              "a" ::
+                              Union (ExceptT (AsKey SymBool) Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle (ExceptT Nothing),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            (Nothing :: Maybe (Either SymBool SymBool))
+                            (Nothing :: Maybe (Either (AsKey SymBool) (AsKey SymBool)))
                             "a" ::
-                            ExceptT SymBool Maybe SymBool
+                            ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                         )
                           @?= ExceptT Nothing
                     ],
                   testGroup
                     "Just (left v)"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( Just $ Left $ ssymBool "a" ::
-                                Maybe (Either SymBool SymBool)
-                            )
-                            "a" ::
-                            Union (ExceptT SymBool Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              ( Just $ Left $ ssym "a" ::
+                                  Maybe (Either (AsKey SymBool) (AsKey SymBool))
+                              )
+                              "a" ::
+                              Union (ExceptT (AsKey SymBool) Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle
-                            (ExceptT (Just (Left $ isymBool "a" 0))),
+                            (ExceptT (Just (Left $ isym "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( Just $ Left $ ssymBool "a" ::
-                                Maybe (Either SymBool SymBool)
+                            ( Just $ Left $ ssym "a" ::
+                                Maybe (Either (AsKey SymBool) (AsKey SymBool))
                             )
                             "a" ::
-                            ExceptT SymBool Maybe SymBool
+                            ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                         )
-                          @?= ExceptT (Just (Left $ isymBool "a" 0))
+                          @?= ExceptT (Just (Left $ isym "a" 0))
                     ],
                   testGroup
                     "Just (left v)"
                     [ testCase "genSym" $
-                        ( genSym
-                            ( Just $ Right $ ssymBool "a" ::
-                                Maybe (Either SymBool SymBool)
-                            )
-                            "a" ::
-                            Union (ExceptT SymBool Maybe SymBool)
-                        )
+                        AsKey1
+                          ( genSym
+                              ( Just $ Right $ ssym "a" ::
+                                  Maybe (Either (AsKey SymBool) (AsKey SymBool))
+                              )
+                              "a" ::
+                              Union (ExceptT (AsKey SymBool) Maybe (AsKey SymBool))
+                          )
                           @?= mrgSingle
-                            (ExceptT (Just (Right $ isymBool "a" 0))),
+                            (ExceptT (Just (Right $ isym "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
-                            ( Just $ Right $ ssymBool "a" ::
-                                Maybe (Either SymBool SymBool)
+                            ( Just $ Right $ ssym "a" ::
+                                Maybe (Either (AsKey SymBool) (AsKey SymBool))
                             )
                             "a" ::
-                            ExceptT SymBool Maybe SymBool
+                            ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                         )
-                          @?= ExceptT (Just (Right $ isymBool "a" 0))
+                          @?= ExceptT (Just (Right $ isym "a" 0))
                     ]
                 ]
             ]
@@ -1194,76 +1237,78 @@ genSymTests =
       testGroup
         "choose*"
         [ testCase "chooseFresh" $ do
-            (runFresh (chooseFresh [1, 2, 3]) "a" :: Union Int)
+            (AsKey1 (runFresh (chooseFresh [1, 2, 3]) "a" :: Union Int))
               @?= mrgIf
-                (isymBool "a" 0)
+                (isym "a" 0)
                 (mrgSingle 1)
-                (mrgIf (isymBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
+                (mrgIf (isym "a" 1) (mrgSingle 2) (mrgSingle 3)),
           testCase "choose" $ do
-            (choose [1, 2, 3] "a" :: Union Int)
+            (AsKey1 (choose [1, 2, 3] "a" :: Union Int))
               @?= mrgIf
-                (isymBool "a" 0)
+                (isym "a" 0)
                 (mrgSingle 1)
-                (mrgIf (isymBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
+                (mrgIf (isym "a" 1) (mrgSingle 2) (mrgSingle 3)),
           testCase "chooseSimpleFresh" $ do
-            (runFresh (chooseSimpleFresh ["x", "y", "z"]) "a" :: SymBool)
+            (runFresh (chooseSimpleFresh ["x", "y", "z"]) "a" :: AsKey SymBool)
               @?= symIte
-                (isymBool "a" 0)
-                (ssymBool "x")
-                (symIte (isymBool "a" 1) (ssymBool "y") (ssymBool "z")),
+                (isym "a" 0)
+                (ssym "x")
+                (symIte (isym "a" 1) (ssym "y") (ssym "z")),
           testCase "chooseSimple" $ do
-            (chooseSimple ["x", "y", "z"] "a" :: SymBool)
+            (chooseSimple ["x", "y", "z"] "a" :: AsKey SymBool)
               @?= symIte
-                (isymBool "a" 0)
-                (ssymBool "x")
-                (symIte (isymBool "a" 1) (ssymBool "y") (ssymBool "z")),
+                (isym "a" 0)
+                (ssym "x")
+                (symIte (isym "a" 1) (ssym "y") (ssym "z")),
           testCase "chooseUnionFresh" $ do
-            ( runFresh
-                ( chooseUnionFresh
-                    [ mrgIf (ssymBool "x") 1 2,
-                      mrgIf (ssymBool "x") 2 3,
-                      mrgIf (ssymBool "x") 3 4
-                    ]
-                )
-                "a" ::
-                Union Int
+            AsKey1
+              ( runFresh
+                  ( chooseUnionFresh
+                      [ mrgIf (ssym "x") 1 2,
+                        mrgIf (ssym "x") 2 3,
+                        mrgIf (ssym "x") 3 4
+                      ]
+                  )
+                  "a" ::
+                  Union Int
               )
               @?= mrgIf
-                (isymBool "a" 0)
-                (mrgIf (ssymBool "x") 1 2)
+                (isym "a" 0)
+                (mrgIf (ssym "x") 1 2)
                 ( mrgIf
-                    (isymBool "a" 1)
-                    (mrgIf (ssymBool "x") 2 3)
-                    (mrgIf (ssymBool "x") 3 4)
+                    (isym "a" 1)
+                    (mrgIf (ssym "x") 2 3)
+                    (mrgIf (ssym "x") 3 4)
                 ),
           testCase "chooseUnion" $ do
-            ( chooseUnion
-                [ mrgIf (ssymBool "x") 1 2,
-                  mrgIf (ssymBool "x") 2 3,
-                  mrgIf (ssymBool "x") 3 4
-                ]
-                "a" ::
-                Union Int
+            AsKey1
+              ( chooseUnion
+                  [ mrgIf (ssym "x") 1 2,
+                    mrgIf (ssym "x") 2 3,
+                    mrgIf (ssym "x") 3 4
+                  ]
+                  "a" ::
+                  Union Int
               )
               @?= mrgIf
-                (isymBool "a" 0)
-                (mrgIf (ssymBool "x") 1 2)
+                (isym "a" 0)
+                (mrgIf (ssym "x") 1 2)
                 ( mrgIf
-                    (isymBool "a" 1)
-                    (mrgIf (ssymBool "x") 2 3)
-                    (mrgIf (ssymBool "x") 3 4)
+                    (isym "a" 1)
+                    (mrgIf (ssym "x") 2 3)
+                    (mrgIf (ssym "x") 3 4)
                 ),
           testCase "liftFresh" $ do
-            let orig = simpleFresh () :: Fresh (SymBool, SymBool)
+            let orig = simpleFresh () :: Fresh (AsKey SymBool, AsKey SymBool)
             let actual = flip runFreshT "a" $ do
                   r1 <- liftFresh orig
                   r2 <- liftFresh orig
                   return (r1, r2) ::
-                    FreshT Union ((SymBool, SymBool), (SymBool, SymBool))
+                    FreshT (AsKey1 Union) ((AsKey SymBool, AsKey SymBool), (AsKey SymBool, AsKey SymBool))
             let expected =
                   return
-                    ( (isymBool "a" 0, isymBool "a" 1),
-                      (isymBool "a" 2, isymBool "a" 3)
+                    ( (isym "a" 0, isym "a" 1),
+                      (isym "a" 2, isym "a" 3)
                     )
             actual @?= expected
         ],
@@ -1278,12 +1323,12 @@ genSymTests =
                   b2 <- simpleFresh ()
                   return (b1, b2)
               c <- simpleFresh ()
-              return [a, b1, b2, c :: SymBool]
+              return [a, b1, b2, c :: AsKey SymBool]
         let actual = runFresh computation "c"
         actual
-          @?= [ isymBool "c" 0,
-                isymBool (withMetadata "c" (Atom ("b" :: T.Text))) 0,
-                isymBool (withMetadata "c" (Atom ("b" :: T.Text))) 1,
-                isymBool "c" 1
+          @?= [ isym "c" 0,
+                isym (withMetadata "c" (Atom ("b" :: T.Text))) 0,
+                isym (withMetadata "c" (Atom ("b" :: T.Text))) 1,
+                isym "c" 1
               ]
     ]

@@ -45,6 +45,7 @@ import Grisette.Internal.TH.Derivation.Common
       ),
     EvalModeConfig (EvalModeConstraints),
   )
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Grisette.Unified
   ( BaseMonad,
     EvalModeBV,
@@ -141,19 +142,19 @@ unifiedClassesTest =
                     (a Grisette..== 1)
                     (return a)
                     (throwError "err")
-            testBranchingBase a @?= expected,
+            testBranchingBase a .@?= expected,
           testCase "branching 'Con" $
             testBranching 1 @?= (return 1 :: Either T.Text Integer),
           testCase "branching 'Sym" $
-            testBranching 1 @?= (return 1 :: ExceptT T.Text Union SymInteger)
+            testBranching 1 .@?= (return 1 :: ExceptT T.Text Union SymInteger)
         ],
       testGroup
         "UnifiedSEq"
         [ testCase "testSEq 'Con" $ do
             let x1 = X True [1 :: WordN 8] (Identity XNil) [Identity XNil] (1 :: Integer) [1]
             let x2 = X False [1 :: WordN 8] (Identity XNil) [Identity XNil] (1 :: Integer) [2]
-            testSEq x1 x1 @?= True
-            testSEq x1 x2 @?= False,
+            testSEq x1 x1 .@?= True
+            testSEq x1 x2 .@?= False,
           testCase "testSEq 'Sym" $ do
             let x1 =
                   X
@@ -172,7 +173,7 @@ unifiedClassesTest =
                     ("y" :: SymInteger)
                     ["z"]
             testSEq x1 x2
-              @?= symAnd
+              .@?= symAnd
                 [ (("a" :: SymBool) .== "b"),
                   (("x" :: SymInteger) .== "y"),
                   (("w" :: SymInteger) .== "z")
