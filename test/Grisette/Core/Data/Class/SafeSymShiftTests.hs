@@ -13,7 +13,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Typeable (Proxy (Proxy))
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette
-  ( IntN,
+  ( EvalSym,
+    IntN,
     Mergeable,
     SafeSymShift
       ( safeSymShiftL,
@@ -22,13 +23,16 @@ import Grisette
         safeSymStrictShiftR
       ),
     Solvable (con),
+    SymEq,
     SymIntN,
     SymWordN,
     Union,
     WordN,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey1)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -37,7 +41,7 @@ import Test.QuickCheck (Arbitrary, ioProperty)
 import Test.QuickCheck.Gen (chooseInt)
 import Test.QuickCheck.Property (forAll)
 
-type EM = ExceptT ArithException Union
+type EM = ExceptT ArithException (AsKey1 Union)
 
 overflowError :: (Mergeable a) => EM a
 overflowError = mrgThrowError Overflow
@@ -115,7 +119,9 @@ concreteUnsignedSymTypeSafeSymShiftTests ::
     FiniteBits s,
     Bounded c,
     Solvable c s,
-    Show c
+    Show c,
+    SymEq s,
+    EvalSym s
   ) =>
   proxy s ->
   [Test]
@@ -127,24 +133,24 @@ concreteUnsignedSymTypeSafeSymShiftTests _ =
             let shiftAmount = fromIntegral s
             let shiftLExpected = mrgReturn (con (shiftL x s)) :: EM s
             let shiftRExpected = mrgReturn (con (shiftR x s)) :: EM s
-            safeSymShiftL (con x) shiftAmount @?= shiftLExpected
-            safeSymStrictShiftL (con x) shiftAmount @?= shiftLExpected
-            safeSymShiftR (con x) shiftAmount @?= shiftRExpected
-            safeSymStrictShiftR (con x) shiftAmount @?= shiftRExpected,
+            safeSymShiftL (con x) shiftAmount .@?= shiftLExpected
+            safeSymStrictShiftL (con x) shiftAmount .@?= shiftLExpected
+            safeSymShiftR (con x) shiftAmount .@?= shiftRExpected
+            safeSymStrictShiftR (con x) shiftAmount .@?= shiftRExpected,
     testCase "Bit size" $ do
       let x = con (maxBound :: c)
       let shiftAmount = fromIntegral $ finiteBitSize x
-      safeSymShiftL x shiftAmount @?= (mrgReturn 0 :: EM s)
-      safeSymStrictShiftL x shiftAmount @?= overflowError
-      safeSymShiftR x shiftAmount @?= (mrgReturn 0 :: EM s)
-      safeSymStrictShiftR x shiftAmount @?= overflowError,
+      safeSymShiftL x shiftAmount .@?= (mrgReturn 0 :: EM s)
+      safeSymStrictShiftL x shiftAmount .@?= overflowError
+      safeSymShiftR x shiftAmount .@?= (mrgReturn 0 :: EM s)
+      safeSymStrictShiftR x shiftAmount .@?= overflowError,
     testCase "Max bound" $ do
       let x = con (maxBound :: c)
       let shiftAmount = con (maxBound :: c)
-      safeSymShiftL x shiftAmount @?= (mrgReturn 0 :: EM s)
-      safeSymStrictShiftL x shiftAmount @?= overflowError
-      safeSymShiftR x shiftAmount @?= (mrgReturn 0 :: EM s)
-      safeSymStrictShiftR x shiftAmount @?= overflowError
+      safeSymShiftL x shiftAmount .@?= (mrgReturn 0 :: EM s)
+      safeSymStrictShiftL x shiftAmount .@?= overflowError
+      safeSymShiftR x shiftAmount .@?= (mrgReturn 0 :: EM s)
+      safeSymStrictShiftR x shiftAmount .@?= overflowError
   ]
 
 concreteSignedAtLeastThreeBitsSymTypeSafeSymShiftTests ::
@@ -158,7 +164,9 @@ concreteSignedAtLeastThreeBitsSymTypeSafeSymShiftTests ::
     Bounded c,
     Integral c,
     Solvable c s,
-    Show c
+    Show c,
+    EvalSym s,
+    SymEq s
   ) =>
   proxy s ->
   [Test]
@@ -168,10 +176,10 @@ concreteSignedAtLeastThreeBitsSymTypeSafeSymShiftTests p =
     ( do
         let x = con (-1 :: c)
         let shiftAmount = con (minBound :: c)
-        safeSymShiftL x shiftAmount @?= (overflowError :: EM s)
-        safeSymStrictShiftL x shiftAmount @?= overflowError
-        safeSymShiftR x shiftAmount @?= overflowError
-        safeSymStrictShiftR x shiftAmount @?= overflowError
+        safeSymShiftL x shiftAmount .@?= (overflowError :: EM s)
+        safeSymStrictShiftL x shiftAmount .@?= overflowError
+        safeSymShiftR x shiftAmount .@?= overflowError
+        safeSymStrictShiftR x shiftAmount .@?= overflowError
     )
     : concreteUnsignedSymTypeSafeSymShiftTests p
 
@@ -223,17 +231,17 @@ safeSymShiftTests =
             [ testGroup
                 "shift left"
                 [ testCase "By 0" $ do
-                    safeSymShiftL (-1) 0 @?= (mrgReturn $ -1 :: EM (IntN 1))
+                    safeSymShiftL (-1) 0 .@?= (mrgReturn $ -1 :: EM (IntN 1))
                     safeSymStrictShiftL (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (IntN 1))
-                    safeSymShiftR (-1) 0 @?= (mrgReturn $ -1 :: EM (IntN 1))
+                      .@?= (mrgReturn $ -1 :: EM (IntN 1))
+                    safeSymShiftR (-1) 0 .@?= (mrgReturn $ -1 :: EM (IntN 1))
                     safeSymStrictShiftR (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (IntN 1)),
+                      .@?= (mrgReturn $ -1 :: EM (IntN 1)),
                   testCase "By -1" $ do
-                    safeSymShiftL (-1) (-1 :: IntN 1) @?= overflowError
-                    safeSymStrictShiftL (-1) (-1 :: IntN 1) @?= overflowError
-                    safeSymShiftR (-1) (-1 :: IntN 1) @?= overflowError
-                    safeSymStrictShiftR (-1) (-1 :: IntN 1) @?= overflowError
+                    safeSymShiftL (-1) (-1 :: IntN 1) .@?= overflowError
+                    safeSymStrictShiftL (-1) (-1 :: IntN 1) .@?= overflowError
+                    safeSymShiftR (-1) (-1 :: IntN 1) .@?= overflowError
+                    safeSymStrictShiftR (-1) (-1 :: IntN 1) .@?= overflowError
                 ]
             ]
         ],
@@ -244,31 +252,31 @@ safeSymShiftTests =
             [ testGroup
                 "shift left"
                 [ testCase "By 0" $ do
-                    safeSymShiftL (-1) 0 @?= (mrgReturn $ -1 :: EM (IntN 2))
+                    safeSymShiftL (-1) 0 .@?= (mrgReturn $ -1 :: EM (IntN 2))
                     safeSymStrictShiftL (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (IntN 2))
-                    safeSymShiftR (-1) 0 @?= (mrgReturn $ -1 :: EM (IntN 2))
+                      .@?= (mrgReturn $ -1 :: EM (IntN 2))
+                    safeSymShiftR (-1) 0 .@?= (mrgReturn $ -1 :: EM (IntN 2))
                     safeSymStrictShiftR (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (IntN 2)),
+                      .@?= (mrgReturn $ -1 :: EM (IntN 2)),
                   testCase "By 1" $ do
-                    safeSymShiftL (-1) 1 @?= (mrgReturn $ -2 :: EM (IntN 2))
+                    safeSymShiftL (-1) 1 .@?= (mrgReturn $ -2 :: EM (IntN 2))
                     safeSymStrictShiftL (-1) 1
-                      @?= (mrgReturn $ -2 :: EM (IntN 2))
-                    safeSymShiftR (-1) 1 @?= (mrgReturn $ -1 :: EM (IntN 2))
+                      .@?= (mrgReturn $ -2 :: EM (IntN 2))
+                    safeSymShiftR (-1) 1 .@?= (mrgReturn $ -1 :: EM (IntN 2))
                     safeSymStrictShiftR (-1) 1
-                      @?= (mrgReturn $ -1 :: EM (IntN 2))
-                    safeSymShiftR 1 1 @?= (mrgReturn 0 :: EM (IntN 2))
-                    safeSymStrictShiftR 1 1 @?= (mrgReturn 0 :: EM (IntN 2)),
+                      .@?= (mrgReturn $ -1 :: EM (IntN 2))
+                    safeSymShiftR 1 1 .@?= (mrgReturn 0 :: EM (IntN 2))
+                    safeSymStrictShiftR 1 1 .@?= (mrgReturn 0 :: EM (IntN 2)),
                   testCase "By -1" $ do
-                    safeSymShiftL (-1) (-1 :: IntN 2) @?= overflowError
-                    safeSymStrictShiftL (-1) (-1 :: IntN 2) @?= overflowError
-                    safeSymShiftR (-1) (-1 :: IntN 2) @?= overflowError
-                    safeSymStrictShiftR (-1) (-1 :: IntN 2) @?= overflowError,
+                    safeSymShiftL (-1) (-1 :: IntN 2) .@?= overflowError
+                    safeSymStrictShiftL (-1) (-1 :: IntN 2) .@?= overflowError
+                    safeSymShiftR (-1) (-1 :: IntN 2) .@?= overflowError
+                    safeSymStrictShiftR (-1) (-1 :: IntN 2) .@?= overflowError,
                   testCase "By -2" $ do
-                    safeSymShiftL (-1) (-2 :: IntN 2) @?= overflowError
-                    safeSymStrictShiftL (-1) (-2 :: IntN 2) @?= overflowError
-                    safeSymShiftR (-1) (-2 :: IntN 2) @?= overflowError
-                    safeSymStrictShiftR (-1) (-2 :: IntN 2) @?= overflowError
+                    safeSymShiftL (-1) (-2 :: IntN 2) .@?= overflowError
+                    safeSymStrictShiftL (-1) (-2 :: IntN 2) .@?= overflowError
+                    safeSymShiftR (-1) (-2 :: IntN 2) .@?= overflowError
+                    safeSymStrictShiftR (-1) (-2 :: IntN 2) .@?= overflowError
                 ]
             ]
         ],
@@ -304,17 +312,17 @@ safeSymShiftTests =
             [ testGroup
                 "shift left"
                 [ testCase "By 0" $ do
-                    safeSymShiftL (-1) 0 @?= (mrgReturn $ -1 :: EM (SymIntN 1))
+                    safeSymShiftL (-1) 0 .@?= (mrgReturn $ -1 :: EM (SymIntN 1))
                     safeSymStrictShiftL (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (SymIntN 1))
-                    safeSymShiftR (-1) 0 @?= (mrgReturn $ -1 :: EM (SymIntN 1))
+                      .@?= (mrgReturn $ -1 :: EM (SymIntN 1))
+                    safeSymShiftR (-1) 0 .@?= (mrgReturn $ -1 :: EM (SymIntN 1))
                     safeSymStrictShiftR (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (SymIntN 1)),
+                      .@?= (mrgReturn $ -1 :: EM (SymIntN 1)),
                   testCase "By -1" $ do
-                    safeSymShiftL (-1) (-1 :: SymIntN 1) @?= overflowError
-                    safeSymStrictShiftL (-1) (-1 :: SymIntN 1) @?= overflowError
-                    safeSymShiftR (-1) (-1 :: SymIntN 1) @?= overflowError
-                    safeSymStrictShiftR (-1) (-1 :: SymIntN 1) @?= overflowError
+                    safeSymShiftL (-1) (-1 :: SymIntN 1) .@?= overflowError
+                    safeSymStrictShiftL (-1) (-1 :: SymIntN 1) .@?= overflowError
+                    safeSymShiftR (-1) (-1 :: SymIntN 1) .@?= overflowError
+                    safeSymStrictShiftR (-1) (-1 :: SymIntN 1) .@?= overflowError
                 ]
             ]
         ],
@@ -325,32 +333,32 @@ safeSymShiftTests =
             [ testGroup
                 "shift left"
                 [ testCase "By 0" $ do
-                    safeSymShiftL (-1) 0 @?= (mrgReturn $ -1 :: EM (SymIntN 2))
+                    safeSymShiftL (-1) 0 .@?= (mrgReturn $ -1 :: EM (SymIntN 2))
                     safeSymStrictShiftL (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (SymIntN 2))
-                    safeSymShiftR (-1) 0 @?= (mrgReturn $ -1 :: EM (SymIntN 2))
+                      .@?= (mrgReturn $ -1 :: EM (SymIntN 2))
+                    safeSymShiftR (-1) 0 .@?= (mrgReturn $ -1 :: EM (SymIntN 2))
                     safeSymStrictShiftR (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (SymIntN 2)),
+                      .@?= (mrgReturn $ -1 :: EM (SymIntN 2)),
                   testCase "By 1" $ do
-                    safeSymShiftL (-1) 1 @?= (mrgReturn $ -2 :: EM (SymIntN 2))
+                    safeSymShiftL (-1) 1 .@?= (mrgReturn $ -2 :: EM (SymIntN 2))
                     safeSymStrictShiftL (-1) 1
-                      @?= (mrgReturn $ -2 :: EM (SymIntN 2))
-                    safeSymShiftR (-1) 1 @?= (mrgReturn $ -1 :: EM (SymIntN 2))
+                      .@?= (mrgReturn $ -2 :: EM (SymIntN 2))
+                    safeSymShiftR (-1) 1 .@?= (mrgReturn $ -1 :: EM (SymIntN 2))
                     safeSymStrictShiftR (-1) 1
-                      @?= (mrgReturn $ -1 :: EM (SymIntN 2))
-                    safeSymShiftR 1 1 @?= (mrgReturn 0 :: EM (SymIntN 2))
-                    safeSymStrictShiftR 1 1 @?= (mrgReturn 0 :: EM (SymIntN 2)),
+                      .@?= (mrgReturn $ -1 :: EM (SymIntN 2))
+                    safeSymShiftR 1 1 .@?= (mrgReturn 0 :: EM (SymIntN 2))
+                    safeSymStrictShiftR 1 1 .@?= (mrgReturn 0 :: EM (SymIntN 2)),
                   testCase "By -1" $ do
-                    safeSymShiftL (-1) (-1 :: SymIntN 2) @?= overflowError
-                    safeSymStrictShiftL (-1) (-1 :: SymIntN 2) @?= overflowError
-                    safeSymShiftR (-1) (-1 :: SymIntN 2) @?= overflowError
+                    safeSymShiftL (-1) (-1 :: SymIntN 2) .@?= overflowError
+                    safeSymStrictShiftL (-1) (-1 :: SymIntN 2) .@?= overflowError
+                    safeSymShiftR (-1) (-1 :: SymIntN 2) .@?= overflowError
                     safeSymStrictShiftR (-1) (-1 :: SymIntN 2)
-                      @?= overflowError,
+                      .@?= overflowError,
                   testCase "By -2" $ do
-                    safeSymShiftL (-1) (-2 :: SymIntN 2) @?= overflowError
-                    safeSymStrictShiftL (-1) (-2 :: SymIntN 2) @?= overflowError
-                    safeSymShiftR (-1) (-2 :: SymIntN 2) @?= overflowError
-                    safeSymStrictShiftR (-1) (-2 :: SymIntN 2) @?= overflowError
+                    safeSymShiftL (-1) (-2 :: SymIntN 2) .@?= overflowError
+                    safeSymStrictShiftL (-1) (-2 :: SymIntN 2) .@?= overflowError
+                    safeSymShiftR (-1) (-2 :: SymIntN 2) .@?= overflowError
+                    safeSymStrictShiftR (-1) (-2 :: SymIntN 2) .@?= overflowError
                 ]
             ]
         ]

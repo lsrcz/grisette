@@ -69,6 +69,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSymMaybe),
     ExtractSym1 (liftExtractSymMaybe),
@@ -394,3 +395,15 @@ instance (ExtractSym (SymType b)) => ExtractSym (a --> b) where
     case decideSymbolKind @knd of
       Left HRefl -> Nothing
       Right HRefl -> SymbolSet <$> extractTerm (HS.singleton $ someTypedSymbol t) f
+
+instance (ExtractSym a) => ExtractSym (AsKey a) where
+  extractSymMaybe (AsKey t) = extractSymMaybe t
+  {-# INLINE extractSymMaybe #-}
+
+instance (ExtractSym1 f, ExtractSym a) => ExtractSym (AsKey1 f a) where
+  extractSymMaybe (AsKey1 t) = extractSymMaybe1 t
+  {-# INLINE extractSymMaybe #-}
+
+instance (ExtractSym1 a) => ExtractSym1 (AsKey1 a) where
+  liftExtractSymMaybe f (AsKey1 t) = liftExtractSymMaybe f t
+  {-# INLINE liftExtractSymMaybe #-}

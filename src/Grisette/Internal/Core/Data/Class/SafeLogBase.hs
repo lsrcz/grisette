@@ -20,11 +20,12 @@ where
 import Control.Exception (ArithException (RatioZeroDenominator))
 import Control.Monad.Error.Class (MonadError (throwError))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 
 -- $setup
@@ -68,4 +69,15 @@ instance
   where
   safeLogBase base a =
     mrgIf (base .== 1) (throwError RatioZeroDenominator) $ pure $ logBase base a
+  {-# INLINE safeLogBase #-}
+
+instance (LogBaseOr a) => LogBaseOr (AsKey a) where
+  logBaseOr (AsKey d) (AsKey base) (AsKey a) =
+    AsKey $ logBaseOr d base a
+  {-# INLINE logBaseOr #-}
+
+instance (SafeLogBase e a m) => SafeLogBase e (AsKey a) m where
+  safeLogBase (AsKey base) (AsKey a) = do
+    r <- safeLogBase base a
+    mrgSingle $ AsKey r
   {-# INLINE safeLogBase #-}

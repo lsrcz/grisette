@@ -23,9 +23,9 @@ import Grisette.Lib.Control.Monad.Except
     mrgWithError,
   )
 import Grisette.SymPrim (SymBool, SymInteger)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
 
 exceptUnion :: ExceptT SymInteger Union SymInteger
 exceptUnion = mrgIfPropagatedStrategy "a" (throwError "b") (return "c")
@@ -36,29 +36,29 @@ monadExceptFunctionTests =
     "Except"
     [ testCase "mrgThrowError" $
         runExceptT (mrgThrowError 1 :: ExceptT Integer Union ())
-          @?= mrgSingle (Left 1),
+          .@?= mrgSingle (Left 1),
       testCase "mrgCatchError" $
         ( mrgIfPropagatedStrategy "a" (throwError "b") (return "c") ::
             ExceptT SymBool Union SymBool
         )
           `mrgCatchError` return
-          @?= mrgSingle (symIte "a" "b" "c"),
+          .@?= mrgSingle (symIte "a" "b" "c"),
       testCase "mrgLiftEither" $ do
         runExceptT (mrgLiftEither (Left "a") :: ExceptT SymBool Union ())
-          @?= mrgSingle (Left "a"),
+          .@?= mrgSingle (Left "a"),
       testCase "mrgTryError" $ do
         let expected = mrgIf "a" (mrgSingle (Left "b")) (mrgSingle (Right "c"))
-        mrgTryError exceptUnion @?= expected,
+        mrgTryError exceptUnion .@?= expected,
       testCase "mrgWithError" $ do
         let expected = mrgIf "a" (mrgThrowError $ "b" + 1) (mrgSingle "c")
-        mrgWithError (+ 1) exceptUnion @?= expected,
+        mrgWithError (+ 1) exceptUnion .@?= expected,
       testCase "mrgCatchError" $
         mrgHandleError
           return
           ( mrgIfPropagatedStrategy "a" (throwError "b") (return "c") ::
               ExceptT SymBool Union SymBool
           )
-          @?= mrgSingle (symIte "a" "b" "c"),
+          .@?= mrgSingle (symIte "a" "b" "c"),
       testCase "mrgMapError" $ do
         let expected =
               ( mrgIf
@@ -76,7 +76,7 @@ monadExceptFunctionTests =
                 Right (Right v) -> return $ Right $ Right $ v .== 1
           )
           exceptUnion
-          @?= expected,
+          .@?= expected,
       testCase "mrgModifyError" $ do
         let original =
               mrgIf "a" (mrgThrowError "b") (mrgSingle "c") ::
@@ -86,5 +86,5 @@ monadExceptFunctionTests =
                 "a"
                 (mrgThrowError $ ("b" :: SymInteger) .== 1)
                 (mrgSingle "c")
-        mrgModifyError (.== 1) original @?= expected
+        mrgModifyError (.== 1) original .@?= expected
     ]

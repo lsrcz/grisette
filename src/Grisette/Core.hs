@@ -825,6 +825,16 @@ module Grisette.Core
     -- For more details of the algorithm, please refer to
     -- [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf).
 
+    -- ** Use symbolic types as concrete key based on structural term equality
+    AsKey (..),
+    AsKey1 (..),
+    KeyEq (..),
+    KeyEq1 (..),
+    KeyHashable (..),
+    KeyHashable1 (..),
+    KeyOrd (..),
+    KeyOrd1 (..),
+
     -- ** Union Monad
     Union,
     unionUnaryOp,
@@ -1449,6 +1459,16 @@ import Grisette.Internal.Core.Control.Monad.Union
     unionMergingStrategy,
     unionSize,
     unionUnaryOp,
+  )
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( AsKey (..),
+    AsKey1 (..),
+    KeyEq (..),
+    KeyEq1 (..),
+    KeyHashable (..),
+    KeyHashable1 (..),
+    KeyOrd (..),
+    KeyOrd1 (..),
   )
 import Grisette.Internal.Core.Data.Class.BitCast
   ( BitCast (..),

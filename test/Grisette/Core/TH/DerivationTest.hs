@@ -20,7 +20,9 @@ import Data.Functor.Classes (showsPrec1, showsPrec2)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette
-  ( FP32,
+  ( AsKey (AsKey),
+    AsKey1 (AsKey1),
+    FP32,
     Mergeable,
     PPrint (pformat, pformatPrec),
     Solvable (con),
@@ -45,6 +47,7 @@ import Grisette.Core.TH.DerivationData
     replaceVVVShown,
   )
 import Grisette.Core.TH.PartialEvalMode (PartialEvalMode)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Grisette.Unified
   ( BaseMonad,
     EvalModeTag (C),
@@ -56,7 +59,6 @@ import qualified Grisette.Unified as GU
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit ((@?=))
 import Test.QuickCheck.Property ((.&.), (===))
 
 #if MIN_VERSION_base(4,16,0)
@@ -84,7 +86,7 @@ derivationExtraTest =
       let x = Extra True [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
       let y = Extra False [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
       let a = ftst @'C True (return x) (return y)
-      a @?= return x
+      a .@?= return x
   ]
 #else
 derivationExtraTest :: [Test]
@@ -142,24 +144,24 @@ derivationTest =
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
           let v1 = gggToVVV g1
               v2 = gggToVVV g2
-           in con (g1 == g2) === (v1 .== v2),
+           in AsKey (con (g1 == g2)) === AsKey (v1 .== v2),
       testProperty "GADT SymEq1 and SymEq are consistent" $
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
-          symEq1 g1 g2 === (g1 .== g2),
+          AsKey (symEq1 g1 g2) === AsKey (g1 .== g2),
       testProperty "GADT SymEq2 and SymEq are consistent" $
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
-          symEq2 g1 g2 === (g1 .== g2),
+          AsKey (symEq2 g1 g2) === AsKey (g1 .== g2),
       testProperty "GADT SymOrd and Ord are consistent" $
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
           let v1 = gggToVVV g1
               v2 = gggToVVV g2
-           in mrgSingle (g1 `compare` g2) === (v1 `symCompare` v2),
+           in mrgSingle (g1 `compare` g2) === AsKey1 (v1 `symCompare` v2),
       testProperty "GADT SymOrd1 and SymOrd are consistent" $
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
-          symCompare1 g1 g2 === (g1 `symCompare` g2),
+          AsKey1 (symCompare1 g1 g2) === AsKey1 (g1 `symCompare` g2),
       testProperty "GADT SymOrd2 and SymOrd are consistent" $
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
-          symCompare2 g1 g2 === (g1 `symCompare` g2),
+          AsKey1 (symCompare2 g1 g2) === AsKey1 (g1 `symCompare` g2),
       testProperty "Serialize" $ do
         \(s :: Serializable Int) ->
           let bs = runPutS (serialize s)

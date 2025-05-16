@@ -7,7 +7,9 @@ where
 
 import Control.Monad.Except (ExceptT)
 import Grisette
-  ( ITEOp (symIte),
+  ( AsKey,
+    AsKey1,
+    ITEOp (symIte),
     SymBranching (mrgIfPropagatedStrategy),
     Union,
     mrgSingle,
@@ -25,9 +27,9 @@ monadTransClassTests =
     [ testCase "mrgLift" $ do
         ( mrgLift
             ( mrgIfPropagatedStrategy "a" (return "b") (return "c") ::
-                Union SymBool
+                AsKey1 Union (AsKey SymBool)
             ) ::
-            ExceptT SymBool Union SymBool
+            ExceptT (AsKey SymBool) (AsKey1 Union) (AsKey SymBool)
           )
           @?= mrgSingle (symIte "a" "b" "c")
     ]

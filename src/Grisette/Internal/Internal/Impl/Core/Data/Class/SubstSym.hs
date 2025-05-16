@@ -66,6 +66,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
   ( SubstSym (substSym),
     SubstSym1 (liftSubstSym),
@@ -359,3 +360,15 @@ instance (SubstSym (SymType b)) => SubstSym (a --> b) where
     GeneralFun s $
       substTerm sym (underlyingTerm val) (HS.singleton $ someTypedSymbol s) t
   {-# INLINE substSym #-}
+
+instance (SubstSym a) => SubstSym (AsKey a) where
+  substSym sym val (AsKey t) = AsKey $ substSym sym val t
+  {-# INLINE substSym #-}
+
+instance (SubstSym1 f, SubstSym a) => SubstSym (AsKey1 f a) where
+  substSym sym val (AsKey1 t) = AsKey1 $ substSym sym val t
+  {-# INLINE substSym #-}
+
+instance (SubstSym1 f) => SubstSym1 (AsKey1 f) where
+  liftSubstSym f sym val (AsKey1 t) = AsKey1 $ liftSubstSym f sym val t
+  {-# INLINE liftSubstSym #-}

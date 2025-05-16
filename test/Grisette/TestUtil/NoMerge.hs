@@ -10,7 +10,8 @@ where
 
 import GHC.Generics (Generic)
 import Grisette
-  ( Mergeable (rootStrategy),
+  ( AsKey1,
+    Mergeable (rootStrategy),
     MergingStrategy (NoStrategy),
     SymBranching (mrgIfPropagatedStrategy),
     Union,
@@ -22,8 +23,8 @@ data NoMerge = NoMerge
 instance Mergeable NoMerge where
   rootStrategy = NoStrategy
 
-oneNotMerged :: Union Int
+oneNotMerged :: AsKey1 Union Int
 oneNotMerged = mrgIfPropagatedStrategy "a" (return 1) (return 1)
 
-noMergeNotMerged :: Union NoMerge
+noMergeNotMerged :: AsKey1 Union NoMerge
 noMergeNotMerged = mrgIfPropagatedStrategy "a" (return NoMerge) (return NoMerge)

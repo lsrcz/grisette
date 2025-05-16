@@ -67,6 +67,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
   ( EvalSym (evalSym),
     EvalSym1 (liftEvalSym),
@@ -338,3 +339,14 @@ instance (EvalSym (SymType b)) => EvalSym (a --> b) where
   evalSym fillDefault model (GeneralFun s t) =
     GeneralFun s $
       evalTerm fillDefault model (HS.singleton $ someTypedSymbol s) t
+
+instance (EvalSym a) => EvalSym (AsKey a) where
+  evalSym fillDefault model (AsKey t) = AsKey $ evalSym fillDefault model t
+  {-# INLINE evalSym #-}
+
+instance (EvalSym1 f, EvalSym a) => EvalSym (AsKey1 f a) where
+  evalSym fillDefault model (AsKey1 t) = AsKey1 $ evalSym fillDefault model t
+
+instance (EvalSym1 a) => EvalSym1 (AsKey1 a) where
+  liftEvalSym f fillDefault model (AsKey1 t) = AsKey1 $ liftEvalSym f fillDefault model t
+  {-# INLINE liftEvalSym #-}

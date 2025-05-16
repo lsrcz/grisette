@@ -38,8 +38,13 @@ import Data.Functor.Classes
     showsUnaryWith,
   )
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt), hashWithSalt1)
+import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt))
 import qualified Data.Serialize as Cereal
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( KeyHashable (keyHashWithSalt),
+    KeyHashable1 (liftKeyHashWithSalt),
+    shouldUseAsKeyError,
+  )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
   )
@@ -134,14 +139,26 @@ instance PPrint1 UnionBase where
                 liftPFormatPrec fa fl 11 f
               ]
 
+instance (Hashable a) => KeyHashable (UnionBase a) where
+  keyHashWithSalt = liftKeyHashWithSalt hashWithSalt
+  {-# INLINE keyHashWithSalt #-}
+
+instance KeyHashable1 UnionBase where
+  liftKeyHashWithSalt f s (UnionSingle a) = s `hashWithSalt` (0 :: Int) `f` a
+  liftKeyHashWithSalt f s (UnionIf _ _ c l r) =
+    let g = liftKeyHashWithSalt f
+     in ( s
+            `hashWithSalt` (1 :: Int)
+              `keyHashWithSalt` c
+        )
+          `g` l
+          `g` r
+
 instance (Hashable a) => Hashable (UnionBase a) where
-  hashWithSalt = hashWithSalt1
+  hashWithSalt = shouldUseAsKeyError "UnionBase" "hashWithSalt"
 
 instance Hashable1 UnionBase where
-  liftHashWithSalt f s (UnionSingle a) = s `hashWithSalt` (0 :: Int) `f` a
-  liftHashWithSalt f s (UnionIf _ _ c l r) =
-    let p = liftHashWithSalt f
-     in (s `hashWithSalt` (1 :: Int) `hashWithSalt` c) `p` l `p` r
+  liftHashWithSalt = shouldUseAsKeyError "UnionBase" "liftHashWithSalt"
 
 instance (AllSyms a) => AllSyms (UnionBase a) where
   allSymsS (UnionSingle v) = allSymsS v

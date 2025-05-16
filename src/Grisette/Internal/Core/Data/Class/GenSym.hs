@@ -112,6 +112,7 @@ import Grisette.Internal.Core.Control.Monad.Union
     isMerged,
     unionBase,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy, sortIndices),
     Mergeable1 (liftRootStrategy),
@@ -155,6 +156,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Unified.Lib.Data.Functor (mrgFmap)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -1787,3 +1789,39 @@ instance
     where
       go (UnionSingle x) = fresh x
       go (UnionIf _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
+
+instance {-# INCOHERENT #-} (GenSym a b) => GenSym a (AsKey b) where
+  fresh spec = mrgFmap AsKey <$> fresh spec
+
+instance {-# INCOHERENT #-} (GenSym a b) => GenSym (AsKey a) b where
+  fresh (AsKey spec) = fresh spec
+
+instance {-# INCOHERENT #-} (GenSym a b) => GenSym (AsKey a) (AsKey b) where
+  fresh (AsKey spec) = mrgFmap AsKey <$> fresh spec
+
+instance {-# INCOHERENT #-} (GenSymSimple a b) => GenSymSimple a (AsKey b) where
+  simpleFresh spec = AsKey <$> simpleFresh spec
+
+instance {-# INCOHERENT #-} (GenSymSimple a b) => GenSymSimple (AsKey a) (AsKey b) where
+  simpleFresh (AsKey spec) = AsKey <$> simpleFresh spec
+
+instance {-# INCOHERENT #-} (GenSymSimple a b) => GenSymSimple (AsKey a) b where
+  simpleFresh (AsKey spec) = simpleFresh spec
+
+instance {-# INCOHERENT #-} (GenSym a (f b)) => GenSym a (AsKey1 f b) where
+  fresh spec = mrgFmap AsKey1 <$> fresh spec
+
+instance {-# INCOHERENT #-} (GenSym (f a) (f b)) => GenSym (AsKey1 f a) (AsKey1 f b) where
+  fresh (AsKey1 spec) = mrgFmap AsKey1 <$> fresh spec
+
+instance {-# INCOHERENT #-} (GenSym (f a) b) => GenSym (AsKey1 f a) b where
+  fresh (AsKey1 spec) = fresh spec
+
+instance {-# INCOHERENT #-} (GenSymSimple a (f b)) => GenSymSimple a (AsKey1 f b) where
+  simpleFresh spec = AsKey1 <$> simpleFresh spec
+
+instance {-# INCOHERENT #-} (GenSymSimple (f a) (f b)) => GenSymSimple (AsKey1 f a) (AsKey1 f b) where
+  simpleFresh (AsKey1 spec) = AsKey1 <$> simpleFresh spec
+
+instance {-# INCOHERENT #-} (GenSymSimple (f a) b) => GenSymSimple (AsKey1 f a) b where
+  simpleFresh (AsKey1 spec) = simpleFresh spec

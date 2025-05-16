@@ -33,6 +33,7 @@ where
 
 import Data.Bifunctor (Bifunctor (first))
 import Data.Kind (Type)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
@@ -245,3 +246,11 @@ unionToCon u =
       if cl then unionToCon l else unionToCon r
     _ -> Nothing
 {-# INLINE unionToCon #-}
+
+instance (PlainUnion u) => PlainUnion (AsKey1 u) where
+  singleView (AsKey1 u) = singleView u
+  ifView (AsKey1 u) = case ifView u of
+    Just (c, l, r) -> Just (c, AsKey1 l, AsKey1 r)
+    Nothing -> Nothing
+  toGuardedList (AsKey1 u) = toGuardedList u
+  overestimateUnionValues (AsKey1 u) = overestimateUnionValues u

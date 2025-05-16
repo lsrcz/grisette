@@ -32,6 +32,7 @@ import Grisette.Core.Data.Class.TestValues
     symFalse,
     symTrue,
   )
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -77,7 +78,7 @@ toConTests =
                         ssymBool "a" .== ssymBool "b",
                         symIte (ssymBool "a") (ssymBool "b") (ssymBool "c")
                       ]
-                traverse_ (\v -> toCon v @?= Just v) sbools
+                traverse_ (\v -> toCon v .@?= Just v) sbools
             ],
           testProperty "Bool" $ ioProperty . toConForConcreteOkProp @Bool,
           testProperty "Integer" $ ioProperty . toConForConcreteOkProp @Integer,

@@ -19,7 +19,7 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette (LogicalOp ((.||)), SubstSym (substSym), SymBool)
+import Grisette (AsKey (getAsKey), LogicalOp ((.||)), Solvable (ssym), SubstSym (substSym), SymBool)
 import Grisette.Core.Data.Class.TestValues (ssymBool, ssymbolBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -40,10 +40,10 @@ substSymTests =
         "SubstSym for common types"
         [ testCase "SymBool" $ do
             let asym = ssymbolBool "a"
-            let a = ssymBool "a"
-            let b = ssymBool "b"
-            let c = ssymBool "c"
-            let subst = substSym asym b
+            let a = ssym "a" :: AsKey SymBool
+            let b = ssym "b" :: AsKey SymBool
+            let c = ssym "c" :: AsKey SymBool
+            let subst = substSym asym (getAsKey b)
             subst a @?= b
             subst c @?= c
             subst (a .|| c) @?= b .|| c,
@@ -74,10 +74,10 @@ substSymTests =
                 ioProperty . concreteSubstSymOkProp @[Integer],
               testCase "[SymBool]" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                let subst = substSym asym b
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                let subst = substSym asym (getAsKey b)
                 subst [a, c] @?= [b, c]
             ],
           testGroup
@@ -86,11 +86,11 @@ substSymTests =
                 ioProperty . concreteSubstSymOkProp @(Maybe Integer),
               testCase "Maybe SymBool" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                let subst :: Maybe SymBool -> Maybe SymBool
-                    subst = substSym asym b
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                let subst :: Maybe (AsKey SymBool) -> Maybe (AsKey SymBool)
+                    subst = substSym asym (getAsKey b)
                 subst (Just a) @?= Just b
                 subst (Just c) @?= Just c
                 subst Nothing @?= Nothing
@@ -102,11 +102,11 @@ substSymTests =
                   . concreteSubstSymOkProp @(Either Integer Integer),
               testCase "Either SymBool SymBool" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                let subst :: Either SymBool SymBool -> Either SymBool SymBool
-                    subst = substSym asym b
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                let subst :: Either (AsKey SymBool) (AsKey SymBool) -> Either (AsKey SymBool) (AsKey SymBool)
+                    subst = substSym asym (getAsKey b)
                 subst (Left a) @?= Left b
                 subst (Left c) @?= Left c
                 subst (Right a) @?= Right b
@@ -120,11 +120,11 @@ substSymTests =
                   . MaybeT,
               testCase "MaybeT Maybe SymBool" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                let subst :: MaybeT Maybe SymBool -> MaybeT Maybe SymBool
-                    subst = substSym asym b
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                let subst :: MaybeT Maybe (AsKey SymBool) -> MaybeT Maybe (AsKey SymBool)
+                    subst = substSym asym (getAsKey b)
                 subst (MaybeT Nothing) @?= MaybeT Nothing
                 subst (MaybeT (Just Nothing)) @?= MaybeT (Just Nothing)
                 subst (MaybeT (Just (Just a))) @?= MaybeT (Just (Just b))
@@ -138,13 +138,13 @@ substSymTests =
                   . ExceptT,
               testCase "ExceptT SymBool Maybe SymBool" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
                 let subst ::
-                      ExceptT SymBool Maybe SymBool ->
-                      ExceptT SymBool Maybe SymBool
-                    subst = substSym asym b
+                      ExceptT (AsKey SymBool) Maybe (AsKey SymBool) ->
+                      ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
+                    subst = substSym asym (getAsKey b)
                 subst (ExceptT Nothing) @?= ExceptT Nothing
                 subst (ExceptT $ Just $ Left a) @?= ExceptT (Just $ Left b)
                 subst (ExceptT $ Just $ Left c) @?= ExceptT (Just $ Left c)
@@ -158,10 +158,10 @@ substSymTests =
                 ioProperty . concreteSubstSymOkProp @(Integer, Integer),
               testCase "(SymBool, SymBool)" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                substSym asym b (a, c) @?= (b, c)
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                substSym asym (getAsKey b) (a, c) @?= (b, c)
             ],
           testGroup
             "(,,)"
@@ -170,10 +170,10 @@ substSymTests =
                   . concreteSubstSymOkProp @(Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool)" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                substSym asym b (a, c, a) @?= (b, c, b)
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                substSym asym (getAsKey b) (a, c, a) @?= (b, c, b)
             ],
           testGroup
             "(,,,)"
@@ -183,10 +183,10 @@ substSymTests =
                     @(Integer, Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool, SymBool)" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                substSym asym b (a, c, a, c) @?= (b, c, b, c)
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                substSym asym (getAsKey b) (a, c, a, c) @?= (b, c, b, c)
             ],
           testGroup
             "(,,,,)"
@@ -196,10 +196,10 @@ substSymTests =
                     @(Integer, Integer, Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool, SymBool, SymBool)" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                substSym asym b (a, c, a, c, a) @?= (b, c, b, c, b)
+                let a = ssym "a" :: AsKey SymBool
+                let b = ssym "b" :: AsKey SymBool
+                let c = ssym "c" :: AsKey SymBool
+                substSym asym (getAsKey b) (a, c, a, c, a) @?= (b, c, b, c, b)
             ],
           testGroup
             "(,,,,,)"
@@ -212,10 +212,10 @@ substSymTests =
                 "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                 $ do
                   let asym = ssymbolBool "a"
-                  let a = ssymBool "a"
-                  let b = ssymBool "b"
-                  let c = ssymBool "c"
-                  substSym asym b (a, c, a, c, a, c) @?= (b, c, b, c, b, c)
+                  let a = ssym "a" :: AsKey SymBool
+                  let b = ssym "b" :: AsKey SymBool
+                  let c = ssym "c" :: AsKey SymBool
+                  substSym asym (getAsKey b) (a, c, a, c, a, c) @?= (b, c, b, c, b, c)
             ],
           testGroup
             "(,,,,,,)"
@@ -235,10 +235,10 @@ substSymTests =
                 "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                 $ do
                   let asym = ssymbolBool "a"
-                  let a = ssymBool "a"
-                  let b = ssymBool "b"
-                  let c = ssymBool "c"
-                  substSym asym b (a, c, a, c, a, c, a)
+                  let a = ssym "a" :: AsKey SymBool
+                  let b = ssym "b" :: AsKey SymBool
+                  let c = ssym "c" :: AsKey SymBool
+                  substSym asym (getAsKey b) (a, c, a, c, a, c, a)
                     @?= (b, c, b, c, b, c, b)
             ],
           testGroup
@@ -260,10 +260,10 @@ substSymTests =
                 "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                 $ do
                   let asym = ssymbolBool "a"
-                  let a = ssymBool "a"
-                  let b = ssymBool "b"
-                  let c = ssymBool "c"
-                  substSym asym b (a, c, a, c, a, c, a, c)
+                  let a = ssym "a" :: AsKey SymBool
+                  let b = ssym "b" :: AsKey SymBool
+                  let c = ssym "c" :: AsKey SymBool
+                  substSym asym (getAsKey b) (a, c, a, c, a, c, a, c)
                     @?= (b, c, b, c, b, c, b, c)
             ],
           testProperty "ByteString" $
@@ -285,13 +285,13 @@ substSymTests =
                 "Sum Maybe Maybe SymBool"
                 ( do
                     let asym = ssymbolBool "a"
-                    let a = ssymBool "a"
-                    let b = ssymBool "b"
-                    let c = ssymBool "c"
+                    let a = ssym "a"
+                    let b = ssym "b"
+                    let c = ssym "c"
                     let subst ::
-                          Sum Maybe Maybe SymBool ->
-                          Sum Maybe Maybe SymBool
-                        subst = substSym asym b
+                          Sum Maybe Maybe (AsKey SymBool) ->
+                          Sum Maybe Maybe (AsKey SymBool)
+                        subst = substSym asym (getAsKey b)
                     subst (InL Nothing) @?= InL Nothing
                     subst (InL (Just a)) @?= InL (Just b)
                     subst (InL (Just c)) @?= InL (Just c)
@@ -313,13 +313,13 @@ substSymTests =
                     ),
                   testCase "WriterT SymBool (Either SymBool) SymBool" $ do
                     let asym = ssymbolBool "a"
-                    let a = ssymBool "a"
-                    let b = ssymBool "b"
-                    let c = ssymBool "c"
+                    let a = ssym "a"
+                    let b = ssym "b"
+                    let c = ssym "c"
                     let subst ::
-                          WriterLazy.WriterT SymBool (Either SymBool) SymBool ->
-                          WriterLazy.WriterT SymBool (Either SymBool) SymBool
-                        subst = substSym asym b
+                          WriterLazy.WriterT (AsKey SymBool) (Either (AsKey SymBool)) (AsKey SymBool) ->
+                          WriterLazy.WriterT (AsKey SymBool) (Either (AsKey SymBool)) (AsKey SymBool)
+                        subst = substSym asym (getAsKey b)
                     subst
                       (WriterLazy.WriterT (Left a))
                       @?= WriterLazy.WriterT (Left b)
@@ -348,19 +348,19 @@ substSymTests =
                     ),
                   testCase "WriterT SymBool (Either SymBool) SymBool" $ do
                     let asym = ssymbolBool "a"
-                    let a = ssymBool "a"
-                    let b = ssymBool "b"
-                    let c = ssymBool "c"
+                    let a = ssym "a"
+                    let b = ssym "b"
+                    let c = ssym "c"
                     let subst ::
                           WriterStrict.WriterT
-                            SymBool
-                            (Either SymBool)
-                            SymBool ->
+                            (AsKey SymBool)
+                            (Either (AsKey SymBool))
+                            (AsKey SymBool) ->
                           WriterStrict.WriterT
-                            SymBool
-                            (Either SymBool)
-                            SymBool
-                        subst = substSym asym b
+                            (AsKey SymBool)
+                            (Either (AsKey SymBool))
+                            (AsKey SymBool)
+                        subst = substSym asym (getAsKey b)
                     subst
                       (WriterStrict.WriterT (Left a))
                       @?= WriterStrict.WriterT (Left b)
@@ -382,11 +382,11 @@ substSymTests =
                 (ioProperty . concreteSubstSymOkProp @(Identity Integer)),
               testCase "Identity SymBool" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
-                let subst :: Identity SymBool -> Identity SymBool
-                    subst = substSym asym b
+                let a = ssym "a"
+                let b = ssym "b"
+                let c = ssym "c"
+                let subst :: Identity (AsKey SymBool) -> Identity (AsKey SymBool)
+                    subst = substSym asym (getAsKey b)
                 subst (Identity a) @?= Identity b
                 subst (Identity c) @?= Identity c
             ],
@@ -400,13 +400,13 @@ substSymTests =
                   . IdentityT,
               testCase "IdentityT (Either SymBool) SymBool" $ do
                 let asym = ssymbolBool "a"
-                let a = ssymBool "a"
-                let b = ssymBool "b"
-                let c = ssymBool "c"
+                let a = ssym "a"
+                let b = ssym "b"
+                let c = ssym "c"
                 let subst ::
-                      IdentityT (Either SymBool) SymBool ->
-                      IdentityT (Either SymBool) SymBool
-                    subst = substSym asym b
+                      IdentityT (Either (AsKey SymBool)) (AsKey SymBool) ->
+                      IdentityT (Either (AsKey SymBool)) (AsKey SymBool)
+                    subst = substSym asym (getAsKey b)
                 subst (IdentityT (Left a)) @?= IdentityT (Left b)
                 subst (IdentityT (Left c)) @?= IdentityT (Left c)
                 subst (IdentityT (Right a)) @?= IdentityT (Right b)

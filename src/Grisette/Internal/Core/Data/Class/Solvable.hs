@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -7,8 +9,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
 -- Module      :   Grisette.Internal.Core.Data.Class.Solvable
@@ -29,6 +29,7 @@ where
 
 import Data.String (IsString)
 import qualified Data.Text as T
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
@@ -63,15 +64,18 @@ class (IsString t) => Solvable c t | t -> c where
   -- Two symbolic constants with the same symbol are the same symbolic constant,
   -- and will always be assigned with the same value by the solver.
   --
+  -- In the examples, we use 'AsKey' to check if two symbolic constants are the
+  -- same term, concretely.
+  --
   -- >>> sym "a" :: SymBool
   -- a
-  -- >>> (sym "a" :: SymBool) == sym "a"
+  -- >>> AsKey (sym "a" :: SymBool) == AsKey (sym "a" :: SymBool)
   -- True
-  -- >>> (sym "a" :: SymBool) == sym "b"
+  -- >>> AsKey (sym "a" :: SymBool) == AsKey (sym "b")
   -- False
   -- >>> (sym "a" :: SymBool) .&& sym "a"
   -- a
-  -- >>> (sym "a" :: SymBool) == isym "a" 1
+  -- >>> AsKey (sym "a" :: SymBool) == AsKey (isym "a" 1)
   -- False
   sym :: Symbol -> t
 
@@ -80,11 +84,14 @@ class (IsString t) => Solvable c t | t -> c where
   -- Two symbolic constants with the same identifier are the same symbolic
   -- constant, and will always be assigned with the same value by the solver.
   --
+  -- In the examples, we use 'AsKey' to check if two symbolic constants are the
+  -- same term, concretely.
+  --
   -- >>> ssym "a" :: SymBool
   -- a
-  -- >>> (ssym "a" :: SymBool) == ssym "a"
+  -- >>> AsKey (ssym "a" :: SymBool) == AsKey (ssym "a" :: SymBool)
   -- True
-  -- >>> (ssym "a" :: SymBool) == ssym "b"
+  -- >>> AsKey (ssym "a" :: SymBool) == AsKey (ssym "b")
   -- False
   -- >>> (ssym "a" :: SymBool) .&& ssym "a"
   -- a
@@ -121,10 +128,13 @@ pattern Con c <-
 -- generate different symbolic constants. Calling 'slocsym' at the same
 -- location for multiple times will generate the same symbolic constants.
 --
--- >>> ($$(slocsym "a") :: SymBool) == $$(slocsym "a")
+-- In the examples, we use 'AsKey' to check if two symbolic constants are the
+-- same term, concretely.
+--
+-- >>> AsKey ($$(slocsym "a") :: SymBool) == AsKey ($$(slocsym "a") :: SymBool)
 -- False
 -- >>> let f _ = $$(slocsym "a") :: SymBool
--- >>> f () == f ()
+-- >>> AsKey (f ()) == AsKey (f ())
 -- True
 slocsym :: (Solvable c s) => T.Text -> SpliceQ s
 slocsym nm = [||ssym $$(withLocation nm)||]
@@ -140,3 +150,17 @@ slocsym nm = [||ssym $$(withLocation nm)||]
 -- location for multiple times will generate the same symbolic constants.
 ilocsym :: (Solvable c s) => T.Text -> Int -> SpliceQ s
 ilocsym nm idx = [||isym $$(withLocation nm) idx||]
+
+instance (Solvable c s) => Solvable c (AsKey s) where
+  con = AsKey . con
+  conView (AsKey s) = conView s
+  sym = AsKey . sym
+  ssym = AsKey . ssym
+  isym ident = AsKey . isym ident
+
+instance (Solvable c (f s)) => Solvable c (AsKey1 f s) where
+  con = AsKey1 . con
+  conView (AsKey1 s) = conView s
+  sym = AsKey1 . sym
+  ssym = AsKey1 . ssym
+  isym ident = AsKey1 . isym ident

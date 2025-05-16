@@ -3,7 +3,9 @@
 module Grisette.Lib.Data.FunctorTests (functorFunctionTests) where
 
 import Grisette
-  ( ITEOp (symIte),
+  ( AsKey,
+    AsKey1,
+    ITEOp (symIte),
     SymBranching (mrgIfPropagatedStrategy),
     SymInteger,
     Union,
@@ -38,10 +40,10 @@ functorFunctionTests =
             let actual =
                   mrgFmap (\x -> x * x) $
                     mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
-            actual @?= (mrgSingle 1 :: Union Integer),
+            actual @?= (mrgSingle 1 :: AsKey1 Union Integer),
           testCase "merge arguments" $ do
             let actual = mrgFmap (const NoMerge) oneNotMerged
-            actual @?= (mrgSingle NoMerge :: Union NoMerge)
+            actual @?= (mrgSingle NoMerge :: AsKey1 Union NoMerge)
         ],
       testGroup
         ".<$>"
@@ -49,24 +51,24 @@ functorFunctionTests =
             let actual =
                   (\x -> x * x)
                     .<$> mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
-            actual @?= (mrgSingle 1 :: Union Integer),
+            actual @?= (mrgSingle 1 :: AsKey1 Union Integer),
           testCase "merge arguments" $ do
             let actual = (const NoMerge) .<$> oneNotMerged
-            actual @?= (mrgSingle NoMerge :: Union NoMerge)
+            actual @?= (mrgSingle NoMerge :: AsKey1 Union NoMerge)
         ],
       testGroup
         ".<$"
         [ testCase "merge result" $
-            1 .<$ noMergeNotMerged @?= (mrgSingle 1 :: Union Integer),
+            1 .<$ noMergeNotMerged @?= (mrgSingle 1 :: AsKey1 Union Integer),
           testCase "merge arguments" $
-            NoMerge .<$ oneNotMerged @?= (mrgSingle NoMerge :: Union NoMerge)
+            NoMerge .<$ oneNotMerged @?= (mrgSingle NoMerge :: AsKey1 Union NoMerge)
         ],
       testGroup
         ".$>"
         [ testCase "merge result" $
-            noMergeNotMerged .$> 1 @?= (mrgSingle 1 :: Union Integer),
+            noMergeNotMerged .$> 1 @?= (mrgSingle 1 :: AsKey1 Union Integer),
           testCase "merge arguments" $
-            oneNotMerged .$> NoMerge @?= (mrgSingle NoMerge :: Union NoMerge)
+            oneNotMerged .$> NoMerge @?= (mrgSingle NoMerge :: AsKey1 Union NoMerge)
         ],
       testGroup
         ".<&>"
@@ -74,10 +76,10 @@ functorFunctionTests =
             let actual =
                   mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
                     .<&> (\x -> x * x)
-            actual @?= (mrgSingle 1 :: Union Integer),
+            actual @?= (mrgSingle 1 :: AsKey1 Union Integer),
           testCase "merge arguments" $ do
             let actual = oneNotMerged .<&> (const NoMerge)
-            actual @?= (mrgSingle NoMerge :: Union NoMerge)
+            actual @?= (mrgSingle NoMerge :: AsKey1 Union NoMerge)
         ],
       testCase "mrgUnzip" $ do
         let actual =
@@ -87,10 +89,10 @@ functorFunctionTests =
               ( mrgSingle (symIte "x" "a" "b"),
                 mrgIf "x" 1 2
               ) ::
-                (Union SymInteger, Union Integer)
+                (AsKey1 Union (AsKey SymInteger), AsKey1 Union Integer)
         actual @?= expected,
       testCase "mrgVoid" $ do
         let actual = mrgVoid noMergeNotMerged
-        let expected = mrgSingle () :: Union ()
+        let expected = mrgSingle () :: AsKey1 Union ()
         actual @?= expected
     ]

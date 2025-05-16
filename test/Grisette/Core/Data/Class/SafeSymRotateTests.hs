@@ -16,10 +16,12 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Typeable (Proxy (Proxy))
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette
-  ( IntN,
+  ( EvalSym,
+    IntN,
     Mergeable,
     SafeSymRotate (safeSymRotateL, safeSymRotateR),
     Solvable (con),
+    SymEq,
     SymIntN,
     SymWordN,
     Union,
@@ -27,6 +29,7 @@ import Grisette
   )
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -93,13 +96,14 @@ concreteUnsignedSymTypeSafeSymRotateTests ::
   ( Arbitrary c,
     Show s,
     Num s,
-    Eq s,
     SafeSymRotate ArithException s EM,
     FiniteBits c,
     Bounded c,
     Integral c,
     Solvable c s,
-    Show c
+    Show c,
+    SymEq s,
+    EvalSym s
   ) =>
   proxy s ->
   [Test]
@@ -114,8 +118,8 @@ concreteUnsignedSymTypeSafeSymRotateTests _ =
             let rotateAmount = fromIntegral s
             let rotateLExpected = mrgReturn (con (rotateL x s)) :: EM s
             let rotateRExpected = mrgReturn (con (rotateR x s)) :: EM s
-            safeSymRotateL (con x) rotateAmount @?= rotateLExpected
-            safeSymRotateR (con x) rotateAmount @?= rotateRExpected
+            safeSymRotateL (con x) rotateAmount .@?= rotateLExpected
+            safeSymRotateR (con x) rotateAmount .@?= rotateRExpected
   ]
 
 concreteSignedAtLeastThreeBitsSymTypeSafeSymRotateTests ::
@@ -123,13 +127,14 @@ concreteSignedAtLeastThreeBitsSymTypeSafeSymRotateTests ::
   ( Arbitrary c,
     Show s,
     Num s,
-    Eq s,
     SafeSymRotate ArithException s EM,
     FiniteBits c,
     Bounded c,
     Integral c,
     Solvable c s,
-    Show c
+    Show c,
+    SymEq s,
+    EvalSym s
   ) =>
   proxy s ->
   [Test]
@@ -139,8 +144,8 @@ concreteSignedAtLeastThreeBitsSymTypeSafeSymRotateTests p =
     ( do
         let x = con (-1 :: c)
         let rotateAmount = con (minBound :: c)
-        safeSymRotateL x rotateAmount @?= (overflowError :: EM s)
-        safeSymRotateR x rotateAmount @?= overflowError
+        safeSymRotateL x rotateAmount .@?= (overflowError :: EM s)
+        safeSymRotateR x rotateAmount .@?= overflowError
     )
     : concreteUnsignedSymTypeSafeSymRotateTests p
 
@@ -192,11 +197,11 @@ safeSymRotateTests =
             [ testGroup
                 "rotate left"
                 [ testCase "By 0" $ do
-                    safeSymRotateL (-1) 0 @?= (mrgReturn $ -1 :: EM (IntN 1))
-                    safeSymRotateR (-1) 0 @?= (mrgReturn $ -1 :: EM (IntN 1)),
+                    safeSymRotateL (-1) 0 .@?= (mrgReturn $ -1 :: EM (IntN 1))
+                    safeSymRotateR (-1) 0 .@?= (mrgReturn $ -1 :: EM (IntN 1)),
                   testCase "By -1" $ do
-                    safeSymRotateL (-1) (-1 :: IntN 1) @?= overflowError
-                    safeSymRotateR (-1) (-1 :: IntN 1) @?= overflowError
+                    safeSymRotateL (-1) (-1 :: IntN 1) .@?= overflowError
+                    safeSymRotateR (-1) (-1 :: IntN 1) .@?= overflowError
                 ]
             ]
         ],
@@ -207,17 +212,17 @@ safeSymRotateTests =
             [ testGroup
                 "rotate left"
                 [ testCase "By 0" $ do
-                    safeSymRotateL (-2) 0 @?= (mrgReturn $ -2 :: EM (IntN 2))
-                    safeSymRotateR (-2) 0 @?= (mrgReturn $ -2 :: EM (IntN 2)),
+                    safeSymRotateL (-2) 0 .@?= (mrgReturn $ -2 :: EM (IntN 2))
+                    safeSymRotateR (-2) 0 .@?= (mrgReturn $ -2 :: EM (IntN 2)),
                   testCase "By 1" $ do
-                    safeSymRotateL (-2) 1 @?= (mrgReturn 1 :: EM (IntN 2))
-                    safeSymRotateR (-2) 1 @?= (mrgReturn 1 :: EM (IntN 2)),
+                    safeSymRotateL (-2) 1 .@?= (mrgReturn 1 :: EM (IntN 2))
+                    safeSymRotateR (-2) 1 .@?= (mrgReturn 1 :: EM (IntN 2)),
                   testCase "By -1" $ do
-                    safeSymRotateL (-1) (-1 :: IntN 2) @?= overflowError
-                    safeSymRotateR (-1) (-1 :: IntN 2) @?= overflowError,
+                    safeSymRotateL (-1) (-1 :: IntN 2) .@?= overflowError
+                    safeSymRotateR (-1) (-1 :: IntN 2) .@?= overflowError,
                   testCase "By -2" $ do
-                    safeSymRotateL (-1) (-2 :: IntN 2) @?= overflowError
-                    safeSymRotateR (-1) (-2 :: IntN 2) @?= overflowError
+                    safeSymRotateL (-1) (-2 :: IntN 2) .@?= overflowError
+                    safeSymRotateR (-1) (-2 :: IntN 2) .@?= overflowError
                 ]
             ]
         ],
@@ -254,12 +259,12 @@ safeSymRotateTests =
             [ testGroup
                 "rotate left"
                 [ testCase "By 0" $ do
-                    safeSymRotateL (-1) 0 @?= (mrgReturn $ -1 :: EM (SymIntN 1))
+                    safeSymRotateL (-1) 0 .@?= (mrgReturn $ -1 :: EM (SymIntN 1))
                     safeSymRotateR (-1) 0
-                      @?= (mrgReturn $ -1 :: EM (SymIntN 1)),
+                      .@?= (mrgReturn $ -1 :: EM (SymIntN 1)),
                   testCase "By -1" $ do
-                    safeSymRotateL (-1) (-1 :: SymIntN 1) @?= overflowError
-                    safeSymRotateR (-1) (-1 :: SymIntN 1) @?= overflowError
+                    safeSymRotateL (-1) (-1 :: SymIntN 1) .@?= overflowError
+                    safeSymRotateR (-1) (-1 :: SymIntN 1) .@?= overflowError
                 ]
             ]
         ],
@@ -270,18 +275,18 @@ safeSymRotateTests =
             [ testGroup
                 "rotate left"
                 [ testCase "By 0" $ do
-                    safeSymRotateL (-2) 0 @?= (mrgReturn $ -2 :: EM (SymIntN 2))
+                    safeSymRotateL (-2) 0 .@?= (mrgReturn $ -2 :: EM (SymIntN 2))
                     safeSymRotateR (-2) 0
-                      @?= (mrgReturn $ -2 :: EM (SymIntN 2)),
+                      .@?= (mrgReturn $ -2 :: EM (SymIntN 2)),
                   testCase "By 1" $ do
-                    safeSymRotateL (-2) 1 @?= (mrgReturn 1 :: EM (IntN 2))
-                    safeSymRotateR (-2) 1 @?= (mrgReturn 1 :: EM (IntN 2)),
+                    safeSymRotateL (-2) 1 .@?= (mrgReturn 1 :: EM (IntN 2))
+                    safeSymRotateR (-2) 1 .@?= (mrgReturn 1 :: EM (IntN 2)),
                   testCase "By -1" $ do
-                    safeSymRotateL (-1) (-1 :: SymIntN 2) @?= overflowError
-                    safeSymRotateR (-1) (-1 :: SymIntN 2) @?= overflowError,
+                    safeSymRotateL (-1) (-1 :: SymIntN 2) .@?= overflowError
+                    safeSymRotateR (-1) (-1 :: SymIntN 2) .@?= overflowError,
                   testCase "By -2" $ do
-                    safeSymRotateL (-1) (-2 :: SymIntN 2) @?= overflowError
-                    safeSymRotateR (-1) (-2 :: SymIntN 2) @?= overflowError
+                    safeSymRotateL (-1) (-2 :: SymIntN 2) .@?= overflowError
+                    safeSymRotateR (-1) (-2 :: SymIntN 2) .@?= overflowError
                 ]
             ]
         ]

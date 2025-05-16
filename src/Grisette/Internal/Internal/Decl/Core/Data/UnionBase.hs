@@ -31,6 +31,7 @@ where
 
 import Control.Monad (ap)
 import GHC.Generics (Generic, Generic1)
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), KeyEq (keyEq), KeyEq1 (liftKeyEq), shouldUseAsKeyHasSymbolicVersionError)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
@@ -73,8 +74,22 @@ data UnionBase a where
     -- | False branch
     UnionBase a ->
     UnionBase a
-  deriving (Generic, Eq, Lift, Generic1)
+  deriving (Generic, Lift, Generic1)
   deriving (Functor)
+
+instance (Eq a) => Eq (UnionBase a) where
+  (==) = shouldUseAsKeyHasSymbolicVersionError "UnionBase" "(==)" "(.==)"
+
+instance (Eq a) => KeyEq (UnionBase a) where
+  keyEq = liftKeyEq (==)
+  {-# INLINE keyEq #-}
+
+instance KeyEq1 UnionBase where
+  liftKeyEq f (UnionSingle l) (UnionSingle r) = f l r
+  liftKeyEq f (UnionIf _ _ c l r) (UnionIf _ _ c' l' r') =
+    keyEq c c' && liftKeyEq f l l' && liftKeyEq f r r'
+  liftKeyEq _ _ _ = False
+  {-# INLINE liftKeyEq #-}
 
 instance Applicative UnionBase where
   pure = UnionSingle
@@ -146,10 +161,10 @@ ifWithStrategyInv _ (Con v) t f
   | v = t
   | otherwise = f
 ifWithStrategyInv strategy cond (UnionIf _ True condTrue tt _) f
-  | cond == condTrue = ifWithStrategyInv strategy cond tt f
+  | AsKey cond == AsKey condTrue = ifWithStrategyInv strategy cond tt f
 -- {| symNot cond == condTrue || cond == symNot condTrue = ifWithStrategyInv strategy cond ft f
 ifWithStrategyInv strategy cond t (UnionIf _ True condFalse _ ff)
-  | cond == condFalse = ifWithStrategyInv strategy cond t ff
+  | AsKey cond == AsKey condFalse = ifWithStrategyInv strategy cond t ff
 -- {| symNot cond == condTrue || cond == symNot condTrue = ifWithStrategyInv strategy cond t tf -- buggy here condTrue
 ifWithStrategyInv (SimpleStrategy m) cond (UnionSingle l) (UnionSingle r) =
   UnionSingle $ m cond l r

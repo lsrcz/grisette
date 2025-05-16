@@ -60,6 +60,7 @@ import Grisette
   ( AllSyms,
     AllSyms1,
     AllSyms2,
+    AsKey,
     BasicSymPrim,
     Default (Default),
     DeriveConfig (unconstrainedPositions),
@@ -451,7 +452,7 @@ deriveWith
 
 data Serializable a
   = Se1 a
-  | Se2 SymBool
+  | Se2 (AsKey SymBool)
   deriving (Show, Eq)
 
 instance (Arbitrary a) => Arbitrary (Serializable a) where

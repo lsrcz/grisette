@@ -29,6 +29,7 @@ import Grisette
     SymEq ((.==)),
     ToSym (toSym),
   )
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -48,7 +49,7 @@ toSymTests =
             "SymBool"
             [ testCase "From Bool" $ do
                 let bools = [True, False]
-                traverse_ (\v -> toSym v @?= (con v :: SymBool)) bools,
+                traverse_ (\v -> toSym v .@?= (con v :: SymBool)) bools,
               testCase "From SymBool" $ do
                 let sbools :: [SymBool] =
                       [ con True,
@@ -60,7 +61,7 @@ toSymTests =
                         (ssym "a" :: SymBool) .== ssym "b",
                         symIte (ssym "a") (ssym "b") (ssym "c")
                       ]
-                traverse_ (\v -> toSym v @?= v) sbools
+                traverse_ (\v -> toSym v .@?= v) sbools
             ],
           testProperty "Bool" $ ioProperty . toSymForConcreteOkProp @Bool,
           testProperty "Integer" $ ioProperty . toSymForConcreteOkProp @Integer,
@@ -85,9 +86,9 @@ toSymTests =
                 ioProperty
                   . toSymForConcreteOkProp @[Integer],
               testCase "[SymBool]" $ do
-                toSym ([] :: [Bool]) @?= ([] :: [SymBool])
+                toSym ([] :: [Bool]) .@?= ([] :: [SymBool])
                 toSym ([True, False] :: [Bool])
-                  @?= ([con True, con False] :: [SymBool])
+                  .@?= ([con True, con False] :: [SymBool])
             ],
           testGroup
             "Maybe"
@@ -95,9 +96,9 @@ toSymTests =
                 ioProperty
                   . toSymForConcreteOkProp @(Maybe Integer),
               testCase "Maybe SymBool" $ do
-                toSym (Nothing :: Maybe Bool) @?= (Nothing :: Maybe SymBool)
+                toSym (Nothing :: Maybe Bool) .@?= (Nothing :: Maybe SymBool)
                 toSym (Just True :: Maybe Bool)
-                  @?= (Just $ con True :: Maybe SymBool)
+                  .@?= (Just $ con True :: Maybe SymBool)
             ],
           testGroup
             "Either"
@@ -105,9 +106,9 @@ toSymTests =
                 ioProperty . toSymForConcreteOkProp @(Either Integer Integer),
               testCase "Eithe SymBool SymBool" $ do
                 toSym (Left True :: Either Bool Bool)
-                  @?= (Left $ con True :: Either SymBool SymBool)
+                  .@?= (Left $ con True :: Either SymBool SymBool)
                 toSym (Right True :: Either Bool Bool)
-                  @?= (Right $ con True :: Either SymBool SymBool)
+                  .@?= (Right $ con True :: Either SymBool SymBool)
             ],
           testGroup
             "MaybeT"
@@ -116,11 +117,11 @@ toSymTests =
                   toSymForConcreteOkProp $ MaybeT v,
               testCase "MaybeT Maybe SymBool" $ do
                 toSym (MaybeT Nothing :: MaybeT Maybe Bool)
-                  @?= (MaybeT Nothing :: MaybeT Maybe SymBool)
+                  .@?= (MaybeT Nothing :: MaybeT Maybe SymBool)
                 toSym (MaybeT $ Just Nothing :: MaybeT Maybe Bool)
-                  @?= (MaybeT $ Just Nothing :: MaybeT Maybe SymBool)
+                  .@?= (MaybeT $ Just Nothing :: MaybeT Maybe SymBool)
                 toSym (MaybeT $ Just $ Just True :: MaybeT Maybe Bool)
-                  @?= (MaybeT $ Just $ Just $ con True :: MaybeT Maybe SymBool)
+                  .@?= (MaybeT $ Just $ Just $ con True :: MaybeT Maybe SymBool)
             ],
           testGroup
             "ExceptT"
@@ -129,15 +130,15 @@ toSymTests =
                   toSymForConcreteOkProp $ ExceptT v,
               testCase "ExceptT SymBool Maybe SymBool" $ do
                 toSym (ExceptT Nothing :: ExceptT Bool Maybe Bool)
-                  @?= (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .@?= (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                 toSym (ExceptT $ Just $ Left True :: ExceptT Bool Maybe Bool)
-                  @?= ( ExceptT $ Just $ Left $ con True ::
-                          ExceptT SymBool Maybe SymBool
-                      )
+                  .@?= ( ExceptT $ Just $ Left $ con True ::
+                           ExceptT SymBool Maybe SymBool
+                       )
                 toSym (ExceptT $ Just $ Right False :: ExceptT Bool Maybe Bool)
-                  @?= ( ExceptT $ Just $ Right $ con False ::
-                          ExceptT SymBool Maybe SymBool
-                      )
+                  .@?= ( ExceptT $ Just $ Right $ con False ::
+                           ExceptT SymBool Maybe SymBool
+                       )
             ],
           testGroup
             "(,)"
@@ -145,7 +146,7 @@ toSymTests =
                 ioProperty . toSymForConcreteOkProp @(Integer, Integer),
               testCase "(SymBool, SymBool)" $
                 toSym (True, False)
-                  @?= (con True :: SymBool, con False :: SymBool)
+                  .@?= (con True :: SymBool, con False :: SymBool)
             ],
           testGroup
             "(,,)"
@@ -155,10 +156,10 @@ toSymTests =
                     @(Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool)" $
                 toSym (True, False, True)
-                  @?= ( con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool
-                      )
+                  .@?= ( con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool
+                       )
             ],
           testGroup
             "(,,,)"
@@ -168,11 +169,11 @@ toSymTests =
                     @(Integer, Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool, SymBool)" $
                 toSym (True, False, True, False)
-                  @?= ( con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool
-                      )
+                  .@?= ( con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool
+                       )
             ],
           testGroup
             "(,,,,)"
@@ -182,12 +183,12 @@ toSymTests =
                     @(Integer, Integer, Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool, SymBool, SymBool)" $
                 toSym (True, False, True, False, True)
-                  @?= ( con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool
-                      )
+                  .@?= ( con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool
+                       )
             ],
           testGroup
             "(,,,,,)"
@@ -199,13 +200,13 @@ toSymTests =
               testCase
                 "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                 $ toSym (True, False, True, False, True, False)
-                  @?= ( con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool
-                      )
+                  .@?= ( con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool
+                       )
             ],
           testGroup
             "(,,,,,,)"
@@ -223,14 +224,14 @@ toSymTests =
                      ),
               testCase "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)" $
                 toSym (True, False, True, False, True, False, True)
-                  @?= ( con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool
-                      )
+                  .@?= ( con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool
+                       )
             ],
           testGroup
             "(,,,,,,,)"
@@ -250,15 +251,15 @@ toSymTests =
               testCase
                 "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                 $ toSym (True, False, True, False, True, False, True, False)
-                  @?= ( con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool,
-                        con True :: SymBool,
-                        con False :: SymBool
-                      )
+                  .@?= ( con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool,
+                         con True :: SymBool,
+                         con False :: SymBool
+                       )
             ],
           testGroup
             "Sum"
@@ -276,17 +277,17 @@ toSymTests =
                           (InR v),
               testCase "Sum Maybe (Either SymBool) SymBool" $ do
                 toSym (InL $ Just True :: Sum Maybe (Either Bool) Bool)
-                  @?= ( InL $ Just $ con True ::
-                          Sum Maybe (Either SymBool) SymBool
-                      )
+                  .@?= ( InL $ Just $ con True ::
+                           Sum Maybe (Either SymBool) SymBool
+                       )
                 toSym (InR $ Left True :: Sum Maybe (Either Bool) Bool)
-                  @?= ( InR $ Left $ con True ::
-                          Sum Maybe (Either SymBool) SymBool
-                      )
+                  .@?= ( InR $ Left $ con True ::
+                           Sum Maybe (Either SymBool) SymBool
+                       )
                 toSym (InR $ Right False :: Sum Maybe (Either Bool) Bool)
-                  @?= ( InR $ Right $ con False ::
-                          Sum Maybe (Either SymBool) SymBool
-                      )
+                  .@?= ( InR $ Right $ con False ::
+                           Sum Maybe (Either SymBool) SymBool
+                       )
             ],
           testProperty "functions" $
             ioProperty
@@ -297,7 +298,7 @@ toSymTests =
                       func ((fk, fv) : _) xv | fk == xv = fv
                       func (_ : fs) xv = func fs xv
                    in (toSym (func f x) :: Either SymBool SymBool)
-                        @?= toSym (func f) x,
+                        .@?= toSym (func f) x,
           testGroup
             "StateT"
             [ testProperty "Lazy" $
@@ -313,7 +314,7 @@ toSymTests =
                        in ( StateLazy.runStateT (toSym st) x ::
                               Either SymBool (SymBool, Bool)
                           )
-                            @?= toSym (func f) x,
+                            .@?= toSym (func f) x,
               testProperty "Strict" $
                 ioProperty
                   . \( f :: [(Bool, Either Bool (Bool, Bool))],
@@ -327,7 +328,7 @@ toSymTests =
                        in ( StateStrict.runStateT (toSym st) x ::
                               Either SymBool (SymBool, Bool)
                           )
-                            @?= toSym (func f) x
+                            .@?= toSym (func f) x
             ],
           testGroup
             "WriterT"
@@ -338,7 +339,7 @@ toSymTests =
                    in ( WriterLazy.runWriterT (toSym w) ::
                           Either SymBool (SymBool, Integer)
                       )
-                        @?= toSym f,
+                        .@?= toSym f,
               testProperty "Strict" $
                 ioProperty . \(f :: Either Bool (Bool, Integer)) ->
                   let w :: WriterStrict.WriterT Integer (Either Bool) Bool =
@@ -346,7 +347,7 @@ toSymTests =
                    in ( WriterStrict.runWriterT (toSym w) ::
                           Either SymBool (SymBool, Integer)
                       )
-                        @?= toSym f
+                        .@?= toSym f
             ],
           testProperty "ReaderT" $
             ioProperty . \(f :: [(Bool, Either Bool Bool)], x :: Bool) ->
@@ -355,7 +356,7 @@ toSymTests =
                   func (_ : fs) xv = func fs xv
                   st :: ReaderT Bool (Either Bool) Bool = ReaderT (func f)
                in (runReaderT (toSym st) x :: Either SymBool SymBool)
-                    @?= toSym (func f) x,
+                    .@?= toSym (func f) x,
           testGroup
             "Identity"
             [ testProperty "Identity Integer" $
@@ -363,7 +364,7 @@ toSymTests =
                   . toSymForConcreteOkProp @(Identity Integer),
               testCase "Identity SymBool" $ do
                 toSym (Identity True :: Identity Bool)
-                  @?= (Identity $ con True :: Identity SymBool)
+                  .@?= (Identity $ con True :: Identity SymBool)
             ],
           testGroup
             "IdentityT"
@@ -373,9 +374,9 @@ toSymTests =
                     (IdentityT x),
               testCase "IdentityT Maybe SymBool" $ do
                 toSym (IdentityT (Just True) :: IdentityT Maybe Bool)
-                  @?= (IdentityT $ Just $ con True :: IdentityT Maybe SymBool)
+                  .@?= (IdentityT $ Just $ con True :: IdentityT Maybe SymBool)
                 toSym (IdentityT Nothing :: IdentityT Maybe Bool)
-                  @?= (IdentityT Nothing :: IdentityT Maybe SymBool)
+                  .@?= (IdentityT Nothing :: IdentityT Maybe SymBool)
             ]
         ]
     ]

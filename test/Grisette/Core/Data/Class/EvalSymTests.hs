@@ -20,7 +20,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Grisette
-  ( EvalSym (evalSym),
+  ( AsKey (AsKey),
+    EvalSym (evalSym),
     ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
     ModelOps (emptyModel),
@@ -51,7 +52,7 @@ evalSymTests =
     "EvalSym"
     [ plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testCase "proper memo" $ do
-          let pair = ("a" :: SymInteger, "b" :: SymInteger)
+          let pair = ("a" :: AsKey SymInteger, "b" :: AsKey SymInteger)
           let iter (x, y) = (y, x + y)
           let r = iterate iter pair !! 100
           Right m <- solve z3 $ snd r .== 0
@@ -61,7 +62,7 @@ evalSymTests =
         [ testGroup
             "SymBool"
             [ let model = emptyModel
-                  eval :: SymBool -> SymBool
+                  eval :: AsKey SymBool -> AsKey SymBool
                   eval = evalSym False model
                in testGroup
                     "Empty model / no fill default"
@@ -80,9 +81,8 @@ evalSymTests =
                           @?= ssym "a"
                           .&& ssym "b",
                       testCase ".==" $
-                        eval ((ssym "a" :: SymBool) .== ssym "b")
-                          @?= (ssym "a" :: SymBool)
-                          .== ssym "b",
+                        eval (AsKey $ (ssym "a" :: SymBool) .== ssym "b")
+                          @?= AsKey ((ssym "a" :: SymBool) .== ssym "b"),
                       testCase "symNot" $
                         eval (symNot (ssym "a"))
                           @?= symNot (ssym "a"),
@@ -91,7 +91,7 @@ evalSymTests =
                           @?= symIte (ssym "a") (ssym "b") (ssym "c")
                     ],
               let model = emptyModel
-                  eval :: SymBool -> SymBool
+                  eval :: AsKey SymBool -> AsKey SymBool
                   eval = evalSym True model
                in testGroup
                     "Empty model / with fill default"
@@ -106,7 +106,7 @@ evalSymTests =
                       testCase ".&&" $
                         eval (ssym "a" .&& ssym "b") @?= con False,
                       testCase ".==" $
-                        eval ((ssym "a" :: SymBool) .== ssym "b") @?= con True,
+                        eval (AsKey $ (ssym "a" :: SymBool) .== ssym "b") @?= con True,
                       testCase "symNot" $
                         eval (symNot (ssym "a")) @?= con True,
                       testCase "symIte" $
@@ -120,7 +120,7 @@ evalSymTests =
                         "b" ::= False,
                         "c" ::= True
                       )
-                  eval :: SymBool -> SymBool
+                  eval :: AsKey SymBool -> AsKey SymBool
                   eval = evalSym True model
                in testGroup
                     "Some model"
@@ -135,7 +135,7 @@ evalSymTests =
                       testCase ".&&" $
                         eval (ssym "a" .&& ssym "b") @?= con False,
                       testCase ".==" $
-                        eval ((ssym "a" :: SymBool) .== ssym "b") @?= con False,
+                        eval (AsKey $ (ssym "a" :: SymBool) .== ssym "b") @?= con False,
                       testCase "symNot" $
                         eval (symNot (ssym "a")) @?= con False,
                       testCase "symIte" $
@@ -166,7 +166,7 @@ evalSymTests =
                 ioProperty . concreteEvalSymOkProp @[Integer],
               let model =
                     buildModel ("a" ::= True, "b" ::= False)
-                  eval :: Bool -> [SymBool] -> [SymBool]
+                  eval :: Bool -> [AsKey SymBool] -> [AsKey SymBool]
                   eval = flip evalSym model
                in testGroup
                     "[SymBool]"
@@ -193,7 +193,7 @@ evalSymTests =
             [ testProperty "Maybe Integer" $
                 ioProperty . concreteEvalSymOkProp @(Maybe Integer),
               let model = buildModel ("a" ::= True)
-                  eval :: Bool -> Maybe SymBool -> Maybe SymBool
+                  eval :: Bool -> Maybe (AsKey SymBool) -> Maybe (AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "Maybe SymBool"
@@ -225,8 +225,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    Either SymBool SymBool ->
-                    Either SymBool SymBool
+                    Either (AsKey SymBool) (AsKey SymBool) ->
+                    Either (AsKey SymBool) (AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "Either SymBool SymBool"
@@ -263,8 +263,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    MaybeT Maybe SymBool ->
-                    MaybeT Maybe SymBool
+                    MaybeT Maybe (AsKey SymBool) ->
+                    MaybeT Maybe (AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "MaybeT should work"
@@ -307,8 +307,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    ExceptT SymBool Maybe SymBool ->
-                    ExceptT SymBool Maybe SymBool
+                    ExceptT (AsKey SymBool) Maybe (AsKey SymBool) ->
+                    ExceptT (AsKey SymBool) Maybe (AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "ExceptT SymBool Maybe SymBool"
@@ -356,8 +356,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    (SymBool, SymBool) ->
-                    (SymBool, SymBool)
+                    (AsKey SymBool, AsKey SymBool) ->
+                    (AsKey SymBool, AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool)"
@@ -377,8 +377,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    (SymBool, SymBool, SymBool) ->
-                    (SymBool, SymBool, SymBool)
+                    (AsKey SymBool, AsKey SymBool, AsKey SymBool) ->
+                    (AsKey SymBool, AsKey SymBool, AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool)"
@@ -399,8 +399,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    (SymBool, SymBool, SymBool, SymBool) ->
-                    (SymBool, SymBool, SymBool, SymBool)
+                    (AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool) ->
+                    (AsKey SymBool, AsKey SymBool, AsKey SymBool, AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool)"
@@ -421,8 +421,18 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    (SymBool, SymBool, SymBool, SymBool, SymBool) ->
-                    (SymBool, SymBool, SymBool, SymBool, SymBool)
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
+                    ) ->
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
+                    )
                   eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool, SymBool)"
@@ -458,8 +468,20 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    (SymBool, SymBool, SymBool, SymBool, SymBool, SymBool) ->
-                    (SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
+                    ) ->
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
+                    )
                   eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
@@ -516,21 +538,21 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    ( SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
                     ) ->
-                    ( SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
                     )
                   eval = flip evalSym model
                in testGroup
@@ -593,23 +615,23 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    ( SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
                     ) ->
-                    ( SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool,
-                      SymBool
+                    ( AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool,
+                      AsKey SymBool
                     )
                   eval = flip evalSym model
                in testGroup
@@ -696,8 +718,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    Sum Maybe Maybe SymBool ->
-                    Sum Maybe Maybe SymBool
+                    Sum Maybe Maybe (AsKey SymBool) ->
+                    Sum Maybe Maybe (AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "Sum Maybe Maybe SymBool"
@@ -752,8 +774,8 @@ evalSymTests =
                   let model = buildModel ("a" ::= True)
                       eval ::
                         Bool ->
-                        WriterLazy.WriterT SymBool (Either SymBool) SymBool ->
-                        WriterLazy.WriterT SymBool (Either SymBool) SymBool
+                        WriterLazy.WriterT (AsKey SymBool) (Either (AsKey SymBool)) (AsKey SymBool) ->
+                        WriterLazy.WriterT (AsKey SymBool) (Either (AsKey SymBool)) (AsKey SymBool)
                       eval = flip evalSym model
                    in testGroup
                         "WriterT SymBool (Either SymBool) SymBool"
@@ -807,8 +829,8 @@ evalSymTests =
                   let model = buildModel ("a" ::= True)
                       eval ::
                         Bool ->
-                        WriterStrict.WriterT SymBool (Either SymBool) SymBool ->
-                        WriterStrict.WriterT SymBool (Either SymBool) SymBool
+                        WriterStrict.WriterT (AsKey SymBool) (Either (AsKey SymBool)) (AsKey SymBool) ->
+                        WriterStrict.WriterT (AsKey SymBool) (Either (AsKey SymBool)) (AsKey SymBool)
                       eval = flip evalSym model
                    in testGroup
                         "WriterT SymBool (Either SymBool) SymBool"
@@ -864,7 +886,7 @@ evalSymTests =
                 $ ioProperty
                   . \(x :: Integer) -> concreteEvalSymOkProp $ Identity x,
               let model = buildModel ("a" ::= True)
-                  eval :: Bool -> Identity SymBool -> Identity SymBool
+                  eval :: Bool -> Identity (AsKey SymBool) -> Identity (AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "Identity SymBool"
@@ -898,8 +920,8 @@ evalSymTests =
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
-                    IdentityT (Either SymBool) SymBool ->
-                    IdentityT (Either SymBool) SymBool
+                    IdentityT (Either (AsKey SymBool)) (AsKey SymBool) ->
+                    IdentityT (Either (AsKey SymBool)) (AsKey SymBool)
                   eval = flip evalSym model
                in testGroup
                     "IdentityT (Either SymBool) SymBool"

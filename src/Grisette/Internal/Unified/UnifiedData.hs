@@ -33,6 +33,7 @@ import Control.Monad.Identity (Identity (Identity, runIdentity))
 import Data.Bytes.Serial (Serial)
 import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq, KeyHashable)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
@@ -67,6 +68,8 @@ class
     (ExtractSym v) => ExtractSym u,
     (ITEOp v, Mergeable v) => ITEOp u,
     (PPrint v) => PPrint u,
+    (Eq v) => KeyEq u,
+    (Hashable v) => KeyHashable u,
     (Hashable v) => Hashable u,
     (Lift v) => Lift u,
     (LogicalOp v, Mergeable v) => LogicalOp u,

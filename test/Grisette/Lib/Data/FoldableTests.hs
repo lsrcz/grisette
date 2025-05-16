@@ -9,7 +9,8 @@ import Control.Monad.Except
   )
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette
-  ( ITEOp (symIte),
+  ( AsKey1,
+    ITEOp (symIte),
     LogicalOp ((.&&), (.||)),
     SymBool,
     SymBranching (mrgIfPropagatedStrategy),
@@ -109,7 +110,7 @@ foldableFunctionTests =
                       )
                       10
                       [("a", 2), ("b", 3)] ::
-                      Union Integer
+                      AsKey1 Union Integer
               let expected =
                     mrgIf
                       "b"
@@ -118,7 +119,7 @@ foldableFunctionTests =
               actual @?= expected,
             testCase "merge intermediate" $ do
               let actual = mrgFoldrM (const $ const oneNotMerged) 1 [1 .. 1000]
-              let expected = mrgReturn 1 :: Union Int
+              let expected = mrgReturn 1 :: AsKey1 Union Int
               actual @?= expected
           ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -135,7 +136,7 @@ foldableFunctionTests =
                       )
                       10
                       [("a", 2), ("b", 3)] ::
-                      Union Integer
+                      AsKey1 Union Integer
               let expected =
                     mrgIf
                       "a"
@@ -144,7 +145,7 @@ foldableFunctionTests =
               actual @?= expected,
             testCase "merge intermediate" $ do
               let actual = mrgFoldlM (const $ const oneNotMerged) 1 [1 .. 1000]
-              let expected = mrgReturn 1 :: Union Int
+              let expected = mrgReturn 1 :: AsKey1 Union Int
               actual @?= expected
           ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -169,7 +170,7 @@ foldableFunctionTests =
                                       (return $ Right c)
                               )
                               [("a", 3), ("b", 2)] ::
-                              ExceptT Integer Union ()
+                              ExceptT Integer (AsKey1 Union) ()
                           )
                   let expected = runExceptT $ do
                         _ <- mrgIf "a" (throwError 3) (return ())
@@ -178,7 +179,7 @@ foldableFunctionTests =
                   actual @?= expected,
                 testCase "discard and merge intermediate" $ do
                   let actual = func1 (const noMergeNotMerged) [1 .. 1000]
-                  let expected = mrgReturn () :: Union ()
+                  let expected = mrgReturn () :: AsKey1 Union ()
                   actual @?= expected
               ]
             ],
@@ -202,7 +203,7 @@ foldableFunctionTests =
                                       (return $ Right c)
                               )
                                 <$> [("a", 3), ("b", 2)] ::
-                              ExceptT Integer Union ()
+                              ExceptT Integer (AsKey1 Union) ()
                           )
                   let expected = runExceptT $ do
                         _ <- mrgIf "a" (throwError 3) (return ())
@@ -211,7 +212,7 @@ foldableFunctionTests =
                   actual @?= expected,
                 testCase "discard and merge intermediate" $ do
                   let actual = func1 (replicate 1000 noMergeNotMerged)
-                  let expected = mrgReturn () :: Union ()
+                  let expected = mrgReturn () :: AsKey1 Union ()
                   actual @?= expected
               ]
             ],

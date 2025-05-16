@@ -88,10 +88,10 @@ import Grisette.Lib.Data.List
     (.\\),
   )
 import Grisette.SymPrim (SymInteger)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit ((@?=))
 import Test.QuickCheck (Gen, forAll, ioProperty, listOf, oneof)
 
 aint, bint, cint, dint, eint, fint :: SymInteger
@@ -118,7 +118,7 @@ listTests =
             \(n :: Integer) -> forAll ranilist $ \ranilist -> ioProperty $ do
               let actual = mrgTake n ranilist :: Union [SymInteger]
               let expected = mrgPure $ take (fromInteger n) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual = mrgTake aint [bint, cint, dint] :: Union [SymInteger]
             let expected =
@@ -126,7 +126,7 @@ listTests =
                     mrgIf (aint .== 1) (return [bint]) $
                       mrgIf (aint .== 2) (return [bint, cint]) $
                         return [bint, cint, dint]
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgDrop"
@@ -134,7 +134,7 @@ listTests =
             \(n :: Integer) -> forAll ranilist $ \ranilist -> ioProperty $ do
               let actual = mrgDrop n ranilist :: Union [SymInteger]
               let expected = mrgPure $ drop (fromInteger n) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual = mrgDrop aint [bint, cint, dint] :: Union [SymInteger]
             let expected =
@@ -142,7 +142,7 @@ listTests =
                     mrgIf (aint .== 2) (return [dint]) $
                       mrgIf (aint .== 1) (return [cint, dint]) $
                         return [bint, cint, dint]
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgSplitAt"
@@ -152,7 +152,7 @@ listTests =
                     mrgSplitAt n ranilist ::
                       Union ([SymInteger], [SymInteger])
               let expected = mrgPure $ splitAt (fromInteger n) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgSplitAt aint [bint, cint, dint] ::
@@ -162,7 +162,7 @@ listTests =
                     mrgIf (aint .== 1) (return ([bint], [cint, dint])) $
                       mrgIf (aint .== 2) (return ([bint, cint], [dint])) $
                         return ([bint, cint, dint], [])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgTakeWhile"
@@ -170,7 +170,7 @@ listTests =
             \ranilist -> ioProperty $ do
               let actual = mrgTakeWhile (.== 0) ranilist :: Union [Integer]
               let expected = mrgPure $ takeWhile (== 0) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgTakeWhile (.== 0) [aint, bint, cint] :: Union [SymInteger]
@@ -179,7 +179,7 @@ listTests =
                     mrgIf (bint ./= 0) (return [aint]) $
                       mrgIf (cint ./= 0) (return ([aint, bint])) $
                         return [aint, bint, cint]
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgDropWhile"
@@ -187,7 +187,7 @@ listTests =
             \ranilist -> ioProperty $ do
               let actual = mrgDropWhile (.== 0) ranilist :: Union [Integer]
               let expected = mrgPure $ dropWhile (== 0) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgDropWhile (.== 0) [aint, bint, cint] :: Union [SymInteger]
@@ -198,7 +198,7 @@ listTests =
                     $ mrgIf (aint .== 0 .&& bint .== 0) (return [cint])
                     $ mrgIf (aint .== 0) (return ([bint, cint]))
                     $ return [aint, bint, cint]
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgDropWhileEnd"
@@ -206,7 +206,7 @@ listTests =
             \ranilist -> ioProperty $ do
               let actual = mrgDropWhileEnd (.== 0) ranilist :: Union [Integer]
               let expected = mrgPure $ dropWhileEnd (== 0) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgDropWhileEnd (.== 0) [aint, bint, cint] ::
@@ -218,7 +218,7 @@ listTests =
                     $ mrgIf (cint .== 0 .&& bint .== 0) (return [aint])
                     $ mrgIf (cint .== 0) (return ([aint, bint]))
                     $ return [aint, bint, cint]
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgSpan"
@@ -227,7 +227,7 @@ listTests =
               let actual =
                     mrgSpan (.== 0) ranilist :: Union ([Integer], [Integer])
               let expected = mrgPure $ span (== 0) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgSpan (.== 0) [aint, bint, cint] ::
@@ -237,7 +237,7 @@ listTests =
                     mrgIf (bint ./= 0) (return ([aint], [bint, cint])) $
                       mrgIf (cint ./= 0) (return ([aint, bint], [cint])) $
                         return ([aint, bint, cint], [])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgBreak"
@@ -246,7 +246,7 @@ listTests =
               let actual =
                     mrgBreak (.== 0) ranilist :: Union ([Integer], [Integer])
               let expected = mrgPure $ break (== 0) ranilist
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgBreak (.== 0) [aint, bint, cint] ::
@@ -256,7 +256,7 @@ listTests =
                     mrgIf (bint .== 0) (return ([aint], [bint, cint])) $
                       mrgIf (cint .== 0) (return ([aint, bint], [cint])) $
                         return ([aint, bint, cint], [])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgStripPrefix"
@@ -264,7 +264,7 @@ listTests =
             \l1 l2 -> ioProperty $ do
               let actual = mrgStripPrefix l1 l2 :: Union (Maybe [Integer])
               let expected = mrgPure $ stripPrefix l1 l2
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgStripPrefix [aint, bint] [cint, dint, eint] ::
@@ -274,7 +274,7 @@ listTests =
                     ((aint ./= cint) .|| (bint ./= dint))
                     (return Nothing)
                     (return $ Just [eint])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgGroup"
@@ -282,7 +282,7 @@ listTests =
             \l -> ioProperty $ do
               let actual = mrgGroup l :: Union [[Integer]]
               let expected = mrgPure $ group l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual = mrgGroup [aint, bint, cint] :: Union [[SymInteger]]
             let expected =
@@ -296,7 +296,7 @@ listTests =
                       )
                     $ return [[aint], [bint], [cint]]
 
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "symIsPrefixOf"
@@ -304,13 +304,13 @@ listTests =
             \(l1 :: [Int]) l2 -> ioProperty $ do
               let actual = symIsPrefixOf l1 l2 :: SymBool
               let expected = con $ isPrefixOf l1 l2
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual = symIsPrefixOf [aint, bint] [cint, dint, eint]
-            actual @?= (aint .== cint .&& bint .== dint),
+            actual .@?= (aint .== cint .&& bint .== dint),
           testCase "symbolic int, not long enough" $ do
             let actual = symIsPrefixOf [cint, dint, eint] [aint, bint]
-            actual @?= con False
+            actual .@?= con False
         ],
       testGroup
         "symIsSuffixOf"
@@ -318,13 +318,13 @@ listTests =
             \(l1 :: [Int]) l2 -> ioProperty $ do
               let actual = symIsSuffixOf l1 l2 :: SymBool
               let expected = con $ isSuffixOf l1 l2
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual = symIsSuffixOf [aint, bint] [cint, dint, eint]
-            actual @?= (bint .== eint .&& aint .== dint),
+            actual .@?= (bint .== eint .&& aint .== dint),
           testCase "symbolic int, not long enough" $ do
             let actual = symIsSuffixOf [cint, dint, eint] [aint, bint]
-            actual @?= con False
+            actual .@?= con False
         ],
       testGroup
         "symIsInfixOf"
@@ -332,17 +332,17 @@ listTests =
             \(l1 :: [Int]) l2 -> ioProperty $ do
               let actual = symIsInfixOf l1 l2 :: SymBool
               let expected = con $ isInfixOf l1 l2
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual = symIsInfixOf [aint, bint] [cint, dint, eint, fint]
             actual
-              @?= ( (aint .== cint .&& bint .== dint)
-                      .|| (aint .== dint .&& bint .== eint)
-                  )
+              .@?= ( (aint .== cint .&& bint .== dint)
+                       .|| (aint .== dint .&& bint .== eint)
+                   )
               .|| (aint .== eint .&& bint .== fint),
           testCase "symbolic int, not long enough" $ do
             let actual = symIsInfixOf [cint, dint, eint] [aint, bint]
-            actual @?= con False
+            actual .@?= con False
         ],
       testGroup
         "symIsSubsequenceOf"
@@ -350,12 +350,12 @@ listTests =
             \(l1 :: [Int]) l2 -> ioProperty $ do
               let actual = symIsSubsequenceOf l1 l2 :: SymBool
               let expected = con $ isSubsequenceOf l1 l2
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   symIsSubsequenceOf [aint, bint] [cint, dint, eint, fint]
             actual
-              @?= symIte
+              .@?= symIte
                 (aint .== cint)
                 (bint .== dint .|| (bint .== eint .|| bint .== fint))
                 ( symIte
@@ -365,7 +365,7 @@ listTests =
                 ),
           testCase "symbolic int, not long enough" $ do
             let actual = symIsSubsequenceOf [cint, dint, eint] [aint, bint]
-            actual @?= con False
+            actual .@?= con False
         ],
       testGroup
         "mrgLookup"
@@ -373,7 +373,7 @@ listTests =
             \v l -> ioProperty $ do
               let actual = mrgLookup (v :: Integer) l :: Union (Maybe Integer)
               let expected = mrgPure $ lookup v l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgLookup
@@ -392,7 +392,7 @@ listTests =
                       (aint .== dint)
                       (return $ Just Nothing)
                       (return $ Just $ Just eint)
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgFilter"
@@ -400,7 +400,7 @@ listTests =
             \l -> ioProperty $ do
               let actual = mrgFilter (.== 0) l :: Union [Integer]
               let expected = mrgPure $ filter (== 0) l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgFilter (.== 0) [aint, bint] :: Union [SymInteger]
@@ -410,7 +410,7 @@ listTests =
                       (aint ./= 0 .|| bint ./= 0)
                       (return [symIte (aint .== 0) aint bint])
                       (return [aint, bint])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgPartition"
@@ -420,7 +420,7 @@ listTests =
                     mrgPartition (.== 0) l ::
                       Union ([Integer], [Integer])
               let expected = mrgPure $ partition (== 0) l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgPartition (.== 0) [aint, bint] ::
@@ -437,7 +437,7 @@ listTests =
                           )
                       )
                       (return ([aint, bint], []))
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         ".!?"
@@ -447,7 +447,7 @@ listTests =
               let expected =
                     mrgPure $
                       if i < 0 || i >= length l then Nothing else Just $ l !! i
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   [aint, bint, cint] .!? dint :: Union (Maybe SymInteger)
@@ -460,7 +460,7 @@ listTests =
                           symIte (dint .== 0) aint $
                             symIte (dint .== 1) bint cint
                     )
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgElemIndex"
@@ -468,7 +468,7 @@ listTests =
             \(v :: Integer) l -> ioProperty $ do
               let actual = mrgElemIndex v l :: Union (Maybe Int)
               let expected = mrgPure $ elemIndex v l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgElemIndex aint [bint, cint, dint] ::
@@ -481,7 +481,7 @@ listTests =
                         Just $
                           symIte (aint .== bint) 0 (symIte (aint .== cint) 1 2)
                     )
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgElemIndices"
@@ -489,7 +489,7 @@ listTests =
             \(v :: Integer) l -> ioProperty $ do
               let actual = mrgElemIndices v l :: Union [Int]
               let expected = mrgPure $ elemIndices v l
-              actual @?= expected
+              actual .@?= expected
         ],
       testGroup
         "mrgFindIndex"
@@ -497,7 +497,7 @@ listTests =
             \(l :: [Integer]) -> ioProperty $ do
               let actual = mrgFindIndex (.== 0) l :: Union (Maybe Int)
               let expected = mrgPure $ findIndex (== 0) l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgFindIndex (.== 0) [aint, bint, cint] ::
@@ -510,7 +510,7 @@ listTests =
                         Just $
                           symIte (aint .== 0) 0 (symIte (bint .== 0) 1 2)
                     )
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgFindIndices"
@@ -518,7 +518,7 @@ listTests =
             \(l :: [Integer]) -> ioProperty $ do
               let actual = mrgFindIndices (.== 0) l :: Union [Int]
               let expected = mrgPure $ findIndices (== 0) l
-              actual @?= expected
+              actual .@?= expected
         ],
       testGroup
         "mrgNub"
@@ -526,7 +526,7 @@ listTests =
             \l -> ioProperty $ do
               let actual = mrgNub l :: Union [Integer]
               let expected = mrgPure $ nub l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual = mrgNub [aint, bint, cint] :: Union [SymInteger]
             let expected =
@@ -537,7 +537,7 @@ listTests =
                       (bint .== aint .|| cint .== bint .|| cint .== aint)
                       (return [aint, symIte (bint .== aint) cint bint])
                       (return [aint, bint, cint])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgDelete"
@@ -545,7 +545,7 @@ listTests =
             \i l -> ioProperty $ do
               let actual = mrgDelete i l :: Union [Integer]
               let expected = mrgPure $ delete i l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgDelete aint [bint, cint, dint] :: Union [SymInteger]
@@ -558,7 +558,7 @@ listTests =
                         ]
                     )
                     (return [bint, cint, dint])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         ".\\\\"
@@ -566,7 +566,7 @@ listTests =
             \l1 l2 -> ioProperty $ do
               let actual = l1 .\\ l2 :: Union [Integer]
               let expected = mrgPure $ l1 \\ l2
-              actual @?= expected
+              actual .@?= expected
         ],
       testGroup
         "mrgUnion"
@@ -574,7 +574,7 @@ listTests =
             \l1 l2 -> ioProperty $ do
               let actual = mrgUnion l1 l2 :: Union [Integer]
               let expected = mrgPure $ union l1 l2
-              actual @?= expected
+              actual .@?= expected
         ],
       testGroup
         "mrgIntersect"
@@ -582,7 +582,7 @@ listTests =
             \l1 l2 -> ioProperty $ do
               let actual = mrgIntersect l1 l2 :: Union [Integer]
               let expected = mrgPure $ intersect l1 l2
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgIntersect [aint, bint] [cint, dint] :: Union [SymInteger]
@@ -603,7 +603,7 @@ listTests =
                         )
                         (return [aint, bint])
                     )
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgNubBy"
@@ -611,7 +611,7 @@ listTests =
             \l -> ioProperty $ do
               let actual = mrgNubBy (.==) l :: Union [Integer]
               let expected = mrgPure $ nubBy (==) l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgNubBy (.==) [aint, bint, cint] :: Union [SymInteger]
@@ -623,7 +623,7 @@ listTests =
                       (bint .== aint .|| cint .== bint .|| cint .== aint)
                       (return [aint, symIte (bint .== aint) cint bint])
                       (return [aint, bint, cint])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgDeleteBy"
@@ -631,7 +631,7 @@ listTests =
             \i l -> ioProperty $ do
               let actual = mrgDeleteBy (./=) i l :: Union [Integer]
               let expected = mrgPure $ deleteBy (/=) i l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgDeleteBy (./=) aint [bint, cint, dint] ::
@@ -645,7 +645,7 @@ listTests =
                         ]
                     )
                     (return [bint, cint, dint])
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgDeleteFirstsBy"
@@ -653,7 +653,7 @@ listTests =
             \l1 l2 -> ioProperty $ do
               let actual = mrgDeleteFirstsBy (./=) l1 l2 :: Union [Integer]
               let expected = mrgPure $ deleteFirstsBy (/=) l1 l2
-              actual @?= expected
+              actual .@?= expected
         ],
       testGroup
         "mrgUnionBy"
@@ -661,7 +661,7 @@ listTests =
             \l1 l2 -> ioProperty $ do
               let actual = mrgUnionBy (.==) l1 l2 :: Union [Integer]
               let expected = mrgPure $ unionBy (==) l1 l2
-              actual @?= expected
+              actual .@?= expected
         ],
       testGroup
         "mrgIntersectBy"
@@ -669,7 +669,7 @@ listTests =
             \l1 l2 -> ioProperty $ do
               let actual = mrgIntersectBy (.==) l1 l2 :: Union [Integer]
               let expected = mrgPure $ intersectBy (==) l1 l2
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgIntersectBy (.==) [aint, bint] [cint, dint] ::
@@ -691,7 +691,7 @@ listTests =
                         )
                         (return [aint, bint])
                     )
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgGroupBy"
@@ -699,7 +699,7 @@ listTests =
             \l -> ioProperty $ do
               let actual = mrgGroupBy (.==) l :: Union [[Integer]]
               let expected = mrgPure $ groupBy (==) l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgGroupBy (.==) [aint, bint, cint] :: Union [[SymInteger]]
@@ -714,7 +714,7 @@ listTests =
                       )
                     $ return [[aint], [bint], [cint]]
 
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgInsert"
@@ -722,7 +722,7 @@ listTests =
             \i l -> ioProperty $ do
               let actual = mrgInsert i l :: Union [Integer]
               let expected = mrgPure $ insert i l
-              actual @?= expected,
+              actual .@?= expected,
           testCase "symbolic int" $ do
             let actual =
                   mrgInsert aint [bint, cint, dint] :: Union [SymInteger]
@@ -738,7 +738,7 @@ listTests =
                         dint
                         aint
                     ]
-            actual @?= expected
+            actual .@?= expected
         ],
       testGroup
         "mrgInsertBy"
@@ -746,6 +746,6 @@ listTests =
             \i l -> ioProperty $ do
               let actual = mrgInsertBy symCompare i l :: Union [Integer]
               let expected = mrgPure $ insertBy compare i l
-              actual @?= expected
+              actual .@?= expected
         ]
     ]

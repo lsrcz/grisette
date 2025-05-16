@@ -11,7 +11,8 @@ import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (Identity (Identity))
 import qualified Data.Text as T
 import Grisette
-  ( EvalSym (evalSym),
+  ( AsKey (AsKey),
+    EvalSym (evalSym),
     ExtractSym (extractSym),
     Function ((#)),
     ITEOp (symIte),
@@ -53,6 +54,7 @@ import Grisette.Internal.Core.Control.Monad.Union
     unionSize,
     unionUnaryOp,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey1 (AsKey1, getAsKey1))
 import Grisette.Internal.Core.Data.UnionBase
   ( UnionBase (UnionSingle),
     ifWithLeftMost,
@@ -63,16 +65,16 @@ import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
-union1 :: Union (Either SymBool SymInteger)
-union1 = mrgIfPropagatedStrategy "u1c" (return $ Left "u1a") (return $ Right "u1b")
+union1 :: AsKey1 Union (Either (AsKey SymBool) (AsKey SymInteger))
+union1 = AsKey1 $ mrgIfPropagatedStrategy "u1c" (return $ Left "u1a") (return $ Right "u1b")
 
-union2 :: Union (Either SymBool SymInteger)
-union2 = mrgIfPropagatedStrategy "u2c" (return $ Left "u2a") (return $ Right "u2b")
+union2 :: AsKey1 Union (Either (AsKey SymBool) (AsKey SymInteger))
+union2 = AsKey1 $ mrgIfPropagatedStrategy "u2c" (return $ Left "u2a") (return $ Right "u2b")
 
-union12 :: Union (Either SymBool SymInteger)
+union12 :: AsKey1 Union (Either (AsKey SymBool) (AsKey SymInteger))
 union12 = mrgIfPropagatedStrategy "u12c" union1 union2
 
-unionBase12Merged :: UnionBase (Either SymBool SymInteger)
+unionBase12Merged :: UnionBase (Either (AsKey SymBool) (AsKey SymInteger))
 unionBase12Merged =
   ifWithLeftMost
     True
@@ -80,50 +82,51 @@ unionBase12Merged =
     (UnionSingle (Left (symIte "u12c" "u1a" "u2a")))
     (UnionSingle (Right (symIte "u12c" "u1b" "u2b")))
 
-union12Merged :: Union (Either SymBool SymInteger)
-union12Merged = UMrg rootStrategy unionBase12Merged
+union12Merged :: AsKey1 Union (Either (AsKey SymBool) (AsKey SymInteger))
+union12Merged = AsKey1 $ UMrg rootStrategy unionBase12Merged
 
-unionSimple1 :: Union SymInteger
+unionSimple1 :: AsKey1 Union (AsKey SymInteger)
 unionSimple1 = mrgIfPropagatedStrategy "u1c" (return "u1a") (return "u1b")
 
-unionSimple1Plus1 :: Union SymInteger
+unionSimple1Plus1 :: AsKey1 Union (AsKey SymInteger)
 unionSimple1Plus1 =
   mrgIfPropagatedStrategy
     "u1c"
     (return $ "u1a" + 1)
     (return $ "u1b" + 1)
 
-unionSimple2 :: Union SymInteger
-unionSimple2 = mrgIfPropagatedStrategy "u2c" (return "u2a") (return "u2b")
+unionSimple2 :: AsKey1 Union (AsKey SymInteger)
+unionSimple2 = AsKey1 $ mrgIfPropagatedStrategy "u2c" (return "u2a") (return "u2b")
 
-unionSimple12Merged :: Union SymInteger
+unionSimple12Merged :: AsKey1 Union (AsKey SymInteger)
 unionSimple12Merged =
-  UMrg
-    rootStrategy
-    ( UnionSingle
-        (symIte "u12c" (symIte "u1c" "u1a" "u1b") (symIte "u2c" "u2a" "u2b"))
-    )
+  AsKey1 $
+    UMrg
+      rootStrategy
+      ( UnionSingle
+          (symIte "u12c" (symIte "u1c" "u1a" "u1b") (symIte "u2c" "u2a" "u2b"))
+      )
 
 unionTests :: Test
 unionTests =
   testGroup
     "Union"
     [ testCase "unionBase" $
-        unionBase union12Merged @?= unionBase12Merged,
+        AsKey1 (unionBase (getAsKey1 union12Merged)) @?= AsKey1 unionBase12Merged,
       testCase "isMerged" $ do
-        isMerged union12 @?= False
-        isMerged union12Merged @?= True,
+        isMerged (getAsKey1 union12) @?= False
+        isMerged (getAsKey1 union12Merged) @?= True,
       testCase "liftUnion & liftToMonadUnion" $ do
         let expected =
-              mrgSingle (symIte "u1c" "u1a" "u1b") :: ExceptT () Union SymInteger
-        liftUnion unionSimple1 @?= expected
-        liftToMonadUnion unionSimple1 @?= expected,
+              mrgSingle (symIte "u1c" "u1a" "u1b") :: ExceptT () (AsKey1 Union) (AsKey SymInteger)
+        liftUnion (getAsKey1 unionSimple1) @?= expected
+        liftToMonadUnion (getAsKey1 unionSimple1) @?= expected,
       testCase "unionSize" $
-        unionSize union12Merged @?= 2,
+        unionSize (getAsKey1 union12Merged) @?= 2,
       testCase "unaryOp" $
-        unionUnaryOp (+ 1) unionSimple1 .@?= unionSimple1Plus1,
+        unionUnaryOp (+ 1) (getAsKey1 unionSimple1) .@?= (getAsKey1 unionSimple1Plus1),
       testCase "binOp" $ do
-        let actual = unionBinOp (+) unionSimple1 unionSimple2
+        let actual = unionBinOp (+) (getAsKey1 unionSimple1) (getAsKey1 unionSimple2)
         let expected =
               mrgSingle (symIte "u1c" "u1a" "u1b" + symIte "u2c" "u2a" "u2b")
         actual .@?= expected,
@@ -154,14 +157,21 @@ unionTests =
                 let expected = Nothing
                 actual @?= expected,
               testCase "is not single (unmerged)" $ do
-                let actual = ifView unionSimple1
-                let expected = Just ("u1c", return "u1a", return "u1b")
-                actual @?= expected,
-              testCase "is not single (merged)" $ do
-                let actual = ifView (tryMerge union1)
+                let Just (cond, left, right) = ifView unionSimple1
                 let expected =
-                      Just ("u1c", mrgSingle $ Left "u1a", mrgSingle $ Right "u1b")
-                actual @?= expected
+                      ( "u1c",
+                        return "u1a",
+                        return "u1b"
+                      )
+                (AsKey cond, left, right) @?= expected,
+              testCase "is not single (merged)" $ do
+                let Just (cond, left, right) = ifView (tryMerge union1)
+                let expected =
+                      ( "u1c",
+                        mrgSingle $ Left "u1a",
+                        mrgSingle $ Right "u1b"
+                      )
+                (AsKey cond, left, right) @?= expected
             ]
         ],
       testGroup
@@ -207,14 +217,14 @@ unionTests =
       testGroup
         "Applicative"
         [ testCase "pure should work" $
-            (pure 1 :: Union Int) @?= UAny (UnionSingle 1),
+            (pure 1 :: AsKey1 Union Int) @?= AsKey1 (UAny (UnionSingle 1)),
           testCase "<*> should work" $
             pure (+ 1) <*> unionSimple1 @?= unionSimple1Plus1
         ],
       testGroup
         "Monad"
         [ testCase "return should work" $
-            (return 1 :: Union Int) @?= UAny (UnionSingle 1),
+            (return 1 :: AsKey1 Union Int) @?= AsKey1 (UAny (UnionSingle 1)),
           testCase ">>= should work" $
             (unionSimple1 >>= (\i -> return (i + 1))) @?= unionSimple1Plus1,
           testCase ">>= should propagate merge strategy" $ do
@@ -245,29 +255,29 @@ unionTests =
                 "u1c"
         actual .@?= expected,
       testCase "ToSym a (Union b) should be done with toUnionSym" $ do
-        let actual = toUnionSym True :: Union SymBool
+        let actual = toUnionSym True :: Union (AsKey SymBool)
         let expected = mrgSingle (con True)
-        actual @?= expected,
+        AsKey actual @?= AsKey expected,
       testCase "toUnionSym (Identity a) (Union b)" $ do
-        let actual = toUnionSym $ Identity True :: Union SymBool
+        let actual = toUnionSym $ Identity True :: Union (AsKey SymBool)
         let expected = mrgSingle (con True)
-        actual @?= expected,
+        AsKey actual @?= AsKey expected,
       testCase "toUnionSym (Union a) (Union b)" $ do
-        let actual = toUnionSym (mrgSingle True :: Union Bool) :: Union SymBool
+        let actual = toUnionSym (mrgSingle True :: Union Bool) :: Union (AsKey SymBool)
         let expected = mrgSingle (con True)
-        actual @?= expected,
+        AsKey actual @?= AsKey expected,
       testCase "ToSym (Identity a) (Union b)" $ do
-        let actual = toSym $ Identity True :: Union SymBool
-        let expected = return (con True)
-        actual @?= expected,
+        let actual = toSym $ Identity True :: Union (AsKey SymBool)
+        let expected = return $ con True
+        AsKey actual @?= AsKey expected,
       testCase "ToSym (Union a) (Union b)" $ do
-        let actual = toSym (mrgSingle True :: Union Bool) :: Union SymBool
-        let expected = return (con True)
-        actual @?= expected,
+        let actual = toSym (mrgSingle True :: Union Bool) :: Union (AsKey SymBool)
+        let expected = return $ con True
+        AsKey actual @?= AsKey expected,
       testCase "ToSym (Union Integer) SymInteger" $ do
         let actual = toSym (mrgIf "a" 1 2 :: Union Integer)
         let expected = symIte "a" 1 2 :: SymInteger
-        actual @?= expected,
+        AsKey actual @?= AsKey expected,
       testGroup
         "ToCon (Union a) b should be done with unionToCon"
         [ testCase "Const" $ do
@@ -294,26 +304,26 @@ unionTests =
         "ToCon (Union a) (Union b)"
         [ testCase "Const" $ do
             let actual = mrgSingle (con True) :: Union SymBool
-            let expected = Just (return True) :: Maybe (Union Bool)
+            let expected = Just (return True) :: Maybe (AsKey1 Union Bool)
             toCon actual @?= expected,
           testCase "Not const" $ do
             let actual = mrgSingle "a" :: Union SymBool
             let expected = Nothing :: Maybe (Union Bool)
-            toCon actual @?= expected
+            (AsKey <$> (toCon actual)) @?= (AsKey <$> expected)
         ],
       testGroup "EvalSym" $ do
         let model = buildModel ("a" ::= True, "b" ::= False, "c" ::= True)
         [ testCase "EmptyModel with no fill default" $ do
             let actual = evalSym False emptyModel (mrgSingle "a")
-            let expected = mrgSingle "a" :: Union SymBool
+            let expected = mrgSingle "a" :: AsKey1 Union (AsKey SymBool)
             actual @?= expected,
           testCase "EmptyModel with filling default" $ do
             let actual = evalSym True emptyModel (mrgSingle "a")
-            let expected = mrgSingle $ con False :: Union SymBool
+            let expected = mrgSingle $ con False :: AsKey1 Union (AsKey SymBool)
             actual @?= expected,
           testCase "non-empty model, simple test" $ do
             let actual = evalSym False model (mrgSingle "a")
-            let expected = mrgSingle $ con True :: Union SymBool
+            let expected = mrgSingle $ con True :: AsKey1 Union (AsKey SymBool)
             actual @?= expected,
           testCase "non-empty model, complex test" $ do
             let actual =
@@ -325,7 +335,7 @@ unionTests =
                         (mrgIf "a" (mrgSingle $ Left "b") (mrgSingle $ Right "e"))
                         (mrgSingle $ Right "f")
                     ) ::
-                    Union (Either SymBool SymBool)
+                    AsKey1 Union (Either (AsKey SymBool) (AsKey SymBool))
             let expected =
                   mrgIf "d" (mrgSingle $ Left (con False)) (mrgSingle $ Right "f")
             actual .@?= expected
@@ -336,7 +346,7 @@ unionTests =
                 ("a" :: TypedConstantSymbol Bool)
                 "b"
                 ( mrgIf "a" (return $ Left "a") (return $ Right "c") ::
-                    Union (Either SymBool SymBool)
+                    AsKey1 Union (Either (AsKey SymBool) (AsKey SymBool))
                 )
         let expected = mrgIf "b" (return $ Left "b") (return $ Right "c")
         actual @?= expected,
@@ -351,10 +361,10 @@ unionTests =
         actual @?= expected,
       testGroup
         "Solvable"
-        [ testCase "con" $ (con True :: Union SymBool) @?= mrgSingle (con True),
-          testCase "sym" $ (ssym "a" :: Union SymBool) @?= mrgSingle (ssym "a"),
+        [ testCase "con" $ (con True :: AsKey1 Union (AsKey SymBool)) @?= mrgSingle (con True),
+          testCase "sym" $ (ssym "a" :: AsKey1 Union (AsKey SymBool)) @?= mrgSingle (ssym "a"),
           testCase "isym" $
-            (isym "a" 1 :: Union SymBool) @?= mrgSingle (isym "a" 1),
+            (isym "a" 1 :: AsKey1 Union (AsKey SymBool)) @?= mrgSingle (isym "a" 1),
           testGroup
             "conView"
             [ testCase "is concrete" $ do
@@ -369,6 +379,6 @@ unionTests =
             ]
         ],
       testCase "Function" $ do
-        let f = mrgSingle (+ 1) :: Union (SymInteger -> SymInteger)
+        let f = mrgSingle (+ 1) :: AsKey1 Union (AsKey SymInteger -> AsKey SymInteger)
         f # 1 @?= 2
     ]

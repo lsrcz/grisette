@@ -51,9 +51,9 @@ import Grisette.Internal.TH.Derivation.Common
     EvalModeConfig (EvalModeConstraints),
   )
 import Grisette.TH (makeNamedUnifiedCtor, makePrefixedUnifiedCtor)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
 
 data T mode a
   = T (GetBool mode) a (GetData mode (T mode a))
@@ -98,9 +98,9 @@ makePrefixedUnifiedCtor [] "mk" ''TNoArg
 unifiedConstructorExtraTest :: [Test]
 unifiedConstructorExtraTest =
   [ testCase "mkUnifiedConstructor" $ do
-      f @?= Identity (T True 10 (Identity T1))
+      f .@?= Identity (T True 10 (Identity T1))
       f
-        @?= ( mrgReturn (T (con True) 10 (mrgReturn T1)) ::
+        .@?= ( mrgReturn (T (con True) 10 (mrgReturn T1)) ::
                 Union (T 'S SymInteger)
             )
   ]
@@ -114,10 +114,10 @@ unifiedConstructorTest =
   testGroup "UnifiedConstructor" $
     [ testCase "NoMode" $ do
         tNoMode0 True (10 :: Int) TNoMode1
-          @?= Identity (TNoMode0 True 10 TNoMode1)
-        tNoMode1 @?= (mrgReturn TNoMode1 :: Union (TNoMode Int)),
+          .@?= Identity (TNoMode0 True 10 TNoMode1)
+        tNoMode1 .@?= (mrgReturn TNoMode1 :: Union (TNoMode Int)),
       testCase "NoArg" $ do
-        mkTNoArg @?= Identity TNoArg
-        mkTNoArg @?= (mrgReturn TNoArg :: Union TNoArg)
+        mkTNoArg .@?= Identity TNoArg
+        mkTNoArg .@?= (mrgReturn TNoArg :: Union TNoArg)
     ]
       ++ unifiedConstructorExtraTest

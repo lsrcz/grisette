@@ -8,13 +8,15 @@ import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette
-  ( IntN,
+  ( AsKey (AsKey),
+    IntN,
     Solvable (con),
     SymIntN,
     SymShift (symShift, symShiftNegated),
     SymWordN,
     WordN,
   )
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))
@@ -116,7 +118,8 @@ symbolicTypeSymShiftTests ::
     Typeable s,
     Integral c,
     Solvable c s,
-    Show c
+    Show c,
+    KeyEq s
   ) =>
   proxy s ->
   Test
@@ -129,29 +132,29 @@ symbolicTypeSymShiftTests p =
             forAll (chooseInt (-finiteBitSize x, finiteBitSize x)) $
               \(s :: Int) ->
                 ioProperty $
-                  symShift (con x :: s) (fromIntegral s)
+                  AsKey (symShift (con x :: s) (fromIntegral s))
                     @?= con (symShift x (fromIntegral s)),
           testProperty "concrete/concrete symShiftNegated" $ \(x :: c) ->
             forAll (chooseInt (-finiteBitSize x, finiteBitSize x)) $
               \(s :: Int) ->
                 ioProperty $
-                  symShiftNegated (con x :: s) (fromIntegral s)
+                  AsKey (symShiftNegated (con x :: s) (fromIntegral s))
                     @?= con (symShiftNegated x (fromIntegral s)),
           testProperty "symShift max" $ \(x :: c) ->
             ioProperty $
-              symShift (con x :: s) (con maxBound)
+              AsKey (symShift (con x :: s) (con maxBound))
                 @?= con (symShift x maxBound),
           testProperty "symShiftNegated max" $ \(x :: c) ->
             ioProperty $
-              symShiftNegated (con x :: s) (con maxBound)
+              AsKey (symShiftNegated (con x :: s) (con maxBound))
                 @?= con (symShiftNegated x maxBound),
           testProperty "symShift min" $ \(x :: c) ->
             ioProperty $ do
-              symShift (con x :: s) (con minBound)
+              AsKey (symShift (con x :: s) (con minBound))
                 @?= con (symShift x minBound),
           testProperty "symShiftNegated min" $ \(x :: c) ->
             ioProperty $ do
-              symShiftNegated (con x :: s) (con minBound)
+              AsKey (symShiftNegated (con x :: s) (con minBound))
                 @?= con (symShiftNegated x minBound)
         ]
     ]

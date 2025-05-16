@@ -24,7 +24,8 @@ import qualified Data.SBV.Control as SBV
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack)
 import Grisette
-  ( EvalSym (evalSym),
+  ( AsKey (AsKey),
+    EvalSym (evalSym),
     FP,
     FPRoundingMode,
     Function ((#)),
@@ -51,6 +52,7 @@ import Grisette.Internal.Backend.Solving
 import Grisette.Internal.Backend.SymBiMap
   ( SymBiMap (biMapToSBV),
   )
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.SomeTerm
@@ -351,7 +353,7 @@ modelParseTestBody ::
   ( Solvable t (SymType t),
     SymEq (SymType t),
     EvalSym (SymType t),
-    Eq (SymType t),
+    KeyEq (SymType t),
     Show (SymType t)
   ) =>
   t ->
@@ -361,7 +363,7 @@ modelParseTestBody v = do
   r <- solve z3 $ a .== con v
   case r of
     Left err -> assertFailure $ "Failed to solve: " ++ show err
-    Right m -> evalSym False m a @?= con v
+    Right m -> AsKey (evalSym False m a) @?= AsKey (con v)
 
 testModelParse ::
   forall t.
@@ -370,9 +372,9 @@ testModelParse ::
     Solvable t (SymType t),
     SymEq (SymType t),
     EvalSym (SymType t),
-    Eq (SymType t),
     Show (SymType t),
-    Typeable t
+    Typeable t,
+    KeyEq (SymType t)
   ) =>
   Test
 testModelParse = testProperty ("Model parse(" ++ show (typeRep @t) ++ ")") $
@@ -1054,10 +1056,10 @@ loweringTests =
                   .&& (f # a # d .== a + d)
                   .&& (f # b # d .== b + d)
                   .&& (a .== 10 .&& b .== 20 .&& c .== 30 .&& d .== 40)
-            evalSym False m (f # a # b .== a + b) @?= con True
-            evalSym False m (f # a # c .== a + c) @?= con True
-            evalSym False m (f # a # d .== a + d) @?= con True
-            evalSym False m (f # b # d .== b + d) @?= con True,
+            AsKey (evalSym False m (f # a # b .== a + b)) @?= con True
+            AsKey (evalSym False m (f # a # c .== a + c)) @?= con True
+            AsKey (evalSym False m (f # a # d .== a + d)) @?= con True
+            AsKey (evalSym False m (f # b # d .== b + d)) @?= con True,
           testCase "GeneralFun" $ do
             let f = "f" :: SymInteger -~> SymInteger -~> SymInteger
             let a = "a" :: SymInteger
@@ -1074,10 +1076,10 @@ loweringTests =
             case r of
               Left err -> fail $ show err
               Right m -> do
-                evalSym False m (f # a # b .== a + b) @?= con True
-                evalSym False m (f # a # c .== a + c) @?= con True
-                evalSym False m (f # a # d .== a + d) @?= con True
-                evalSym False m (f # b # d .== b + d) @?= con True,
+                AsKey (evalSym False m (f # a # b .== a + b)) @?= con True
+                AsKey (evalSym False m (f # a # c .== a + c)) @?= con True
+                AsKey (evalSym False m (f # a # d .== a + d)) @?= con True
+                AsKey (evalSym False m (f # b # d .== b + d)) @?= con True,
           sbvVersionCheck $
             testGroup
               "Quantifiers"

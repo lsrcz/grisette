@@ -84,6 +84,7 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey, getAsKey), AsKey1 (AsKey1, getAsKey1))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
@@ -531,3 +532,16 @@ instance Mergeable Ordering where
   rootStrategy =
     let sub = SimpleStrategy $ \_ t _ -> t
      in SortedStrategy id $ const sub
+
+instance (Mergeable a) => Mergeable (AsKey a) where
+  rootStrategy = wrapStrategy (rootStrategy @a) AsKey getAsKey
+  {-# INLINE rootStrategy #-}
+
+instance (Mergeable (f a)) => Mergeable (AsKey1 f a) where
+  rootStrategy = wrapStrategy (rootStrategy @(f a)) AsKey1 getAsKey1
+  {-# INLINE rootStrategy #-}
+
+instance (Mergeable1 f) => Mergeable1 (AsKey1 f) where
+  liftRootStrategy (s :: MergingStrategy a) =
+    wrapStrategy (liftRootStrategy s) AsKey1 getAsKey1
+  {-# INLINE liftRootStrategy #-}

@@ -23,6 +23,7 @@ import Control.Monad.Identity (Identity (Identity))
 import qualified Data.HashSet as HS
 import Data.Proxy (Proxy)
 import GHC.TypeNats (KnownNat, type (<=))
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey))
 import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun
   ( freshArgSymbol,
@@ -117,4 +118,8 @@ instance (ITEOp v) => ITEOp (Identity v) where
 
 instance ITEOp (Proxy a) where
   symIte _ l _ = l
+  {-# INLINE symIte #-}
+
+instance (ITEOp a) => ITEOp (AsKey a) where
+  symIte c (AsKey t) (AsKey f) = AsKey $ symIte c t f
   {-# INLINE symIte #-}

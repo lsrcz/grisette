@@ -43,7 +43,8 @@ import Control.Monad.Identity (Identity (Identity))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette
-  ( BV (bv),
+  ( AsKey (AsKey),
+    BV (bv),
     BitCast (bitCast),
     Default (Default),
     Function ((#)),
@@ -69,6 +70,7 @@ import qualified Grisette
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.SymPrim.FP (NotRepresentableFPError (NaNError))
 import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, ssymBV)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Grisette.Unified
   ( EvalModeBV,
     EvalModeBase,
@@ -462,7 +464,7 @@ evalModeTest =
             let l = "l" :: SymBool
             let r = "r" :: SymBool
             fbool l r
-              @?= Grisette.mrgIte
+              .@?= Grisette.mrgIte
                 (l Grisette..== r)
                 (l Grisette..< r)
                 (Grisette.symIte (l Grisette..&& r) l r)
@@ -474,7 +476,7 @@ evalModeTest =
             let l = "l" :: SymInteger
             let r = "r" :: SymInteger
             finteger l r
-              @?= Grisette.mrgIte
+              .@?= Grisette.mrgIte
                 (l Grisette..== r)
                 (l + r)
                 (Grisette.symIte (l Grisette..< r) l r)
@@ -499,9 +501,9 @@ evalModeTest =
                       ArithException
                       Union
                       (SymIntN 8)
-            fbv l r @?= expected
-            fbv' l r @?= expected
-            fbvEvalMode l r @?= expected
+            fbv l r .@?= expected
+            fbv' l r .@?= expected
+            fbvEvalMode l r .@?= expected
         ],
       testGroup
         "GetSomeIntN"
@@ -523,8 +525,8 @@ evalModeTest =
                       (Either SomeBVException ArithException)
                       Union
                       SomeSymIntN
-            fsomebv l r @?= expected
-            fsomebv' l r @?= expected
+            fsomebv l r .@?= expected
+            fsomebv' l r .@?= expected
         ],
       testGroup
         "GetData"
@@ -534,9 +536,9 @@ evalModeTest =
           testCase "S" $ do
             let a = "a" :: SymIntN 8
             fdata (mrgReturn $ A a)
-              @?= ( Grisette.safeDiv a (a - 1) ::
-                      ExceptT ArithException Union (SymIntN 8)
-                  )
+              .@?= ( Grisette.safeDiv a (a - 1) ::
+                       ExceptT ArithException Union (SymIntN 8)
+                   )
         ],
       testGroup
         "Conversion"
@@ -549,31 +551,31 @@ evalModeTest =
                 safeFPToBVBitCast @'C 0.15625 @?= Right 0x22
                 safeFPToBVBitCast @'C fpNaN @?= Left NaNError,
               testCase "S" $ do
-                bvToFPBitCast @'S 0x22 @?= 0.15625
+                bvToFPBitCast @'S 0x22 .@?= 0.15625
                 let a = "a" :: SymIntN 8
-                bvToFPBitCast @'S a @?= bitCast a
-                fpToBVBitCast @'S 0.15625 @?= 0x22
-                fpToBVBitCast @'S fpNaN @?= 0x7c
+                AsKey (bvToFPBitCast @'S a) @?= bitCast a
+                fpToBVBitCast @'S 0.15625 .@?= 0x22
+                AsKey (fpToBVBitCast @'S fpNaN) @?= 0x7c
                 let b = "b" :: SymFP 4 4
-                fpToBVBitCast @'S b @?= bitCastOrCanonical b
+                AsKey (fpToBVBitCast @'S b) @?= bitCastOrCanonical b
                 safeFPToBVBitCast @'S b
-                  @?= ( Grisette.safeBitCast b ::
-                          ExceptT NotRepresentableFPError Union (SymIntN 8)
-                      )
+                  .@?= ( Grisette.safeBitCast b ::
+                           ExceptT NotRepresentableFPError Union (SymIntN 8)
+                       )
             ],
           testGroup
             "FP/FP"
             [ testCase "C" $ do
                 fpToFPConvert @'C rne 1 @?= 1,
               testCase "S" $ do
-                fpToFPConvert @'S rne 1 @?= 1
+                fpToFPConvert @'S rne 1 .@?= 1
             ],
           testGroup
             "BV/BV"
             [ testCase "C" $ do
                 bvToBVFromIntegral @'C 0xa @?= 0xa,
               testCase "S" $ do
-                bvToBVFromIntegral @'S 0xa @?= 0xa
+                bvToBVFromIntegral @'S 0xa .@?= 0xa
             ]
         ],
       testGroup
@@ -583,6 +585,6 @@ evalModeTest =
             ufuncTest @'C 2 @?= 2,
           testCase "S" $ do
             let a = "a"
-            ufuncTest @'S a @?= symIte (a Grisette..== 1) 0 2
+            ufuncTest @'S a .@?= symIte (a Grisette..== 1) 0 2
         ]
     ]

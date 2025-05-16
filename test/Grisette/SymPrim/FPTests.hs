@@ -51,6 +51,7 @@ import Grisette
         fpSqrt,
         fpSub
       ),
+    KeyEq (keyEq),
     WordN,
     bitCastOrCanonical,
   )
@@ -282,58 +283,58 @@ fpTests =
         ],
       testGroup
         "SymIEEEFPTraits"
-        [ unaryOpComplianceWithFloat "symFpIsNaN" symFpIsNaN symFpIsNaN (==),
+        [ unaryOpComplianceWithFloat "symFpIsNaN" symFpIsNaN symFpIsNaN keyEq,
           unaryOpComplianceWithFloat
             "symFpIsPositive"
             symFpIsPositive
             symFpIsPositive
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsNegative"
             symFpIsNegative
             symFpIsNegative
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsPositiveInfinite"
             symFpIsPositiveInfinite
             symFpIsPositiveInfinite
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsNegativeInfinite"
             symFpIsNegativeInfinite
             symFpIsNegativeInfinite
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsInfinite"
             symFpIsInfinite
             symFpIsInfinite
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsPositiveZero"
             symFpIsPositiveZero
             symFpIsPositiveZero
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsNegativeZero"
             symFpIsNegativeZero
             symFpIsNegativeZero
-            (==),
-          unaryOpComplianceWithFloat "symFpIsZero" symFpIsZero symFpIsZero (==),
+            keyEq,
+          unaryOpComplianceWithFloat "symFpIsZero" symFpIsZero symFpIsZero keyEq,
           unaryOpComplianceWithFloat
             "symFpIsNormal"
             symFpIsNormal
             symFpIsNormal
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsSubnormal"
             symFpIsSubnormal
             symFpIsSubnormal
-            (==),
+            keyEq,
           unaryOpComplianceWithFloat
             "symFpIsPoint"
             symFpIsPoint
             symFpIsPoint
-            (==)
+            keyEq
         ],
       testGroup
         "IEEEFPConstants"

@@ -6,7 +6,8 @@
 module Grisette.SymPrim.QuantifierTests (quantifierTests) where
 
 import Grisette
-  ( Function ((#)),
+  ( AsKey (AsKey),
+    Function ((#)),
     GenSymSimple (simpleFresh),
     LogicalOp (symImplies),
     ModelOps (isEmptyModel),
@@ -73,5 +74,5 @@ quantifierTests =
                 l :: [SymInteger] <- simpleFresh (SimpleListSpec 2 ())
                 r <- simpleFresh (SimpleListSpec 2 ())
                 return $ forallSym l $ existsSym r $ l .== r
-          x @?= r
+          AsKey x @?= AsKey r
       ]

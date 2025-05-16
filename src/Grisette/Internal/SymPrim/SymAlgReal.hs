@@ -23,6 +23,7 @@ import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
+import Grisette.Internal.Core.Data.Class.AsKey (KeyEq (keyEq), KeyHashable (keyHashWithSalt), shouldUseAsKeyError, shouldUseAsKeyHasSymbolicVersionError, shouldUseSymbolicVersionError)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
@@ -92,33 +93,52 @@ instance Apply SymAlgReal where
   type FunType SymAlgReal = SymAlgReal
   apply = id
 
--- | Checks if two formulas are the same. Not building the actual symbolic
--- equality formula.
+-- | This will crash the program.
 --
--- The reason why we choose this behavior is to allow symbolic variables to be
--- used as keys in hash maps, which can be useful for memoization.
+-- 'SymAlgReal' cannot be compared concretely.
 --
--- Use with caution. Usually you should use t'Grisette.Core.SymEq' instead.
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymAlgReal'@ instead.
+--
+-- If you want symbolic version of the equality operator, use
+-- t'Grisette.Core.SymEq' instead.
 instance Eq SymAlgReal where
-  SymAlgReal a == SymAlgReal b = a == b
+  (==) = shouldUseAsKeyHasSymbolicVersionError "SymAlgReal" "(==)" "(.==)"
 
+instance KeyEq SymAlgReal where
+  keyEq (SymAlgReal l) (SymAlgReal r) = l == r
+
+-- | This will crash the program.
+--
+-- 'SymAlgReal' cannot be compared concretely.
+--
+-- If you want symbolic version of the comparison operators, use
+-- t'Grisette.Core.SymOrd' instead.
 instance Ord SymAlgReal where
-  (<) = error "Ord: < isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.<)."
-  (<=) = error "Ord: <= isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.<=)."
-  (>=) = error "Ord: >= isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.>=)."
-  (>) = error "Ord: > isn't supported for SymAlgReal. Consider using the symbolic comparison operators (.>)."
+  (<) = shouldUseSymbolicVersionError "SymAlgReal" "(<)" "(.<)"
+  (<=) = shouldUseSymbolicVersionError "SymAlgReal" "(<=)" "(.<=)"
+  (>=) = shouldUseSymbolicVersionError "SymAlgReal" "(>=)" "(.>=)"
+  (>) = shouldUseSymbolicVersionError "SymAlgReal" "(>)" "(.>)"
   max (SymAlgReal l) (SymAlgReal r) =
     SymAlgReal $ pevalITETerm (pevalLeOrdTerm l r) r l
   min (SymAlgReal l) (SymAlgReal r) =
     SymAlgReal $ pevalITETerm (pevalLeOrdTerm l r) l r
-  compare _ _ =
-    error "compare: compare isn't supported for SymAlgReal. Consider using the symbolic comparison operators (symCompare)."
+  compare = shouldUseSymbolicVersionError "SymAlgReal" "compare" "symCompare"
 
 instance Real SymAlgReal where
   toRational = error "toRational: toRational isn't supported for SymAlgReal"
 
+-- | This will crash the program.
+--
+-- 'SymAlgReal' cannot be hashed concretely.
+--
+-- If you want to use the type as keys in hash maps based on term equality, say
+-- memo table, you should use @'AsKey' 'SymAlgReal'@ instead.
 instance Hashable SymAlgReal where
-  hashWithSalt s (SymAlgReal a) = hashWithSalt s a
+  hashWithSalt = shouldUseAsKeyError "SymAlgReal" "hashWithSalt"
+
+instance KeyHashable SymAlgReal where
+  keyHashWithSalt s (SymAlgReal v) = s `hashWithSalt` v
 
 instance IsString SymAlgReal where
   fromString = ssym . fromString
