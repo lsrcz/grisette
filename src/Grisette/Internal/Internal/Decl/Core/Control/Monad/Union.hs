@@ -24,7 +24,8 @@
 module Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
   ( -- * Union and helpers
     Union (..),
-    unionBase,
+    pattern UAny,
+    pattern UMrg,
   )
 where
 
@@ -63,7 +64,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.UnionBase
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 
--- | 'Union' is the 'UnionBase' container (hidden) enhanced with
+-- | t'Union' is the 'UnionBase' container (hidden) enhanced with
 -- 'MergingStrategy'
 -- [knowledge propagation](https://okmij.org/ftp/Haskell/set-monad.html#PE).
 --
@@ -78,7 +79,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.UnionBase
 -- The 'UnionSingle' constructor is for a single value with the path condition
 -- @true@, and the 'UnionIf' constructor is the if operator in an if-then-else
 -- tree.
--- For clarity, when printing a 'Union' value, we will omit the 'UnionSingle'
+-- For clarity, when printing a t'Union' value, we will omit the 'UnionSingle'
 -- constructor. The following two representations has the same semantics.
 --
 -- > If      c1    (If c11 v11 (If c12 v12 v13))
@@ -104,16 +105,17 @@ import Grisette.Internal.Internal.Decl.Core.Data.UnionBase
 -- This prevents the standard do-notations to merge the results automatically,
 -- and would result in bad performance or very verbose code.
 --
--- To reduce this boilerplate, Grisette provide another monad, 'Union' that
+-- To reduce this boilerplate, Grisette provide another monad, t'Union' that
 -- would try to cache the merging strategy.
--- The 'Union' has two data constructors (hidden intentionally), 'UAny' and
--- 'UMrg'. The 'UAny' data constructor (printed as @<@@...@@>@) wraps an
--- arbitrary (probably unmerged) 'UnionBase'. It is constructed when no
--- 'Mergeable' knowledge is available (for example, when constructed with
--- Haskell\'s 'return'). The 'UMrg' data constructor (printed as @{...}@) wraps
--- a merged 'UnionBase' along with the 'Mergeable' constraint. This constraint
--- can be propagated to the contexts without 'Mergeable' knowledge, and helps
--- the system to merge the resulting 'UnionBase'.
+-- The t'Union' has a data constructor (hidden intentionally) that maintains
+-- an optional 'MergingStrategy' and a 'UnionBase'.
+-- When the optional 'MergingStrategy' presents (printed as @{...}@), the
+-- 'UnionBase' must have already been merged. When the optional
+-- 'MergingStrategy' is absent (printed as @<...>@), the t'UnionBase' does not
+-- guarantee to be merged.
+-- When used in monadic context, Grisette would try to use this cached merging
+-- strategy to merge the result, as the '>>=' operator itself cannot resolve the
+-- 'Mergeable' constraint.
 --
 -- __/Examples:/__
 --
@@ -166,25 +168,26 @@ import Grisette.Internal.Internal.Decl.Core.Data.UnionBase
 -- In "Grisette.Lib.Base", "Grisette.Lib.Mtl", we also provided more @mrg*@
 -- variants of other combinators. You should stick to these combinators to
 -- ensure efficient merging by Grisette.
-data Union a where
-  -- | 'Union' with no 'Mergeable' knowledge.
-  UAny ::
-    -- | Original 'UnionBase'.
-    UnionBase a ->
-    Union a
-  -- | 'Union' with 'Mergeable' knowledge.
-  UMrg ::
-    -- | Cached merging strategy.
-    MergingStrategy a ->
-    -- | Merged 'UnionBase'
-    UnionBase a ->
-    Union a
+data Union a = Union
+  { unionMergingStrategy :: Maybe (MergingStrategy a),
+    unionBase :: UnionBase a
+  }
 
--- | Extract the underlying Union. May be unmerged.
-unionBase :: Union a -> UnionBase a
-unionBase (UAny a) = a
-unionBase (UMrg _ a) = a
-{-# INLINE unionBase #-}
+-- | Pattern synonym for Union with no MergingStrategy (backwards compatibility)
+pattern UAny :: UnionBase a -> Union a
+pattern UAny u <- Union Nothing u
+  where
+    UAny u = Union Nothing u
+
+-- | Pattern synonym for Union with MergingStrategy (backwards compatibility)
+pattern UMrg :: MergingStrategy a -> UnionBase a -> Union a
+pattern UMrg s u <- Union (Just s) u
+  where
+    UMrg s u = Union (Just s) u
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# COMPLETE UAny, UMrg #-}
+#endif
 
 instance Functor Union where
   fmap f fa = fa >>= return . f
@@ -210,8 +213,9 @@ instance Monad Union where
   {-# INLINE (>>=) #-}
 
 instance TryMerge Union where
-  tryMergeWithStrategy _ m@(UMrg _ _) = m
-  tryMergeWithStrategy s (UAny u) = UMrg s $ tryMergeWithStrategy s u
+  tryMergeWithStrategy _ m@(Union Just {} _) = m
+  tryMergeWithStrategy s (Union Nothing u) =
+    Union (Just s) $ tryMergeWithStrategy s u
   {-# INLINE tryMergeWithStrategy #-}
 
 instance (IsString a, Mergeable a) => IsString (Union a) where
@@ -248,26 +252,26 @@ instance SymBranching Union where
   mrgIfWithStrategy s (Con c) l r =
     if c then tryMergeWithStrategy s l else tryMergeWithStrategy s r
   mrgIfWithStrategy s cond l r =
-    UMrg s $
+    Union (Just s) $
       mrgIfWithStrategy
         s
         cond
         (unionBase l)
         (unionBase r)
   {-# INLINE mrgIfWithStrategy #-}
-  mrgIfPropagatedStrategy cond (UAny t) (UAny f) =
-    UAny $ ifWithLeftMost False cond t f
-  mrgIfPropagatedStrategy cond t@(UMrg m _) f = mrgIfWithStrategy m cond t f
-  mrgIfPropagatedStrategy cond t f@(UMrg m _) = mrgIfWithStrategy m cond t f
+  mrgIfPropagatedStrategy cond (Union Nothing t) (Union Nothing f) =
+    Union Nothing $ ifWithLeftMost False cond t f
+  mrgIfPropagatedStrategy cond t@(Union (Just m) _) f = mrgIfWithStrategy m cond t f
+  mrgIfPropagatedStrategy cond t f@(Union (Just m) _) = mrgIfWithStrategy m cond t f
   {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance PlainUnion Union where
   singleView = singleView . unionBase
   {-# INLINE singleView #-}
-  ifView (UAny u) = case ifView u of
-    Just (c, t, f) -> Just (c, UAny t, UAny f)
+  ifView (Union Nothing u) = case ifView u of
+    Just (c, t, f) -> Just (c, Union Nothing t, Union Nothing f)
     Nothing -> Nothing
-  ifView (UMrg m u) = case ifView u of
-    Just (c, t, f) -> Just (c, UMrg m t, UMrg m f)
+  ifView (Union (Just m) u) = case ifView u of
+    Just (c, t, f) -> Just (c, Union (Just m) t, Union (Just m) f)
     Nothing -> Nothing
   {-# INLINE ifView #-}

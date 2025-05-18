@@ -836,11 +836,10 @@ module Grisette.Core
     KeyOrd1 (..),
 
     -- ** Union Monad
-    Union,
+    Union (unionMergingStrategy),
     unionUnaryOp,
     unionBinOp,
     liftUnion,
-    unionMergingStrategy,
     liftToMonadUnion,
     unionSize,
 
@@ -1452,11 +1451,10 @@ import Grisette.Internal.Core.Control.Monad.CBMCExcept
   )
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Control.Monad.Union
-  ( Union,
+  ( Union (unionMergingStrategy),
     liftToMonadUnion,
     liftUnion,
     unionBinOp,
-    unionMergingStrategy,
     unionSize,
     unionUnaryOp,
   )

@@ -17,7 +17,8 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Grisette
-  ( EvalSym,
+  ( AsKey1 (AsKey1),
+    EvalSym,
     ITEOp (symIte),
     Mergeable (rootStrategy),
     SymBranching (mrgIfPropagatedStrategy),
@@ -26,7 +27,7 @@ import Grisette
     mrgSingle,
     tryMerge,
   )
-import Grisette.Internal.Core.Control.Monad.Union (Union (UMrg))
+import Grisette.Internal.Core.Control.Monad.Union (Union (Union))
 import Grisette.Internal.Core.Data.UnionBase (UnionBase (UnionSingle))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
@@ -55,14 +56,14 @@ tryMergeTests =
   testGroup
     "TryMerge"
     [ testCase "mrgSingle" $ do
-        let actual = mrgSingle 1 :: Union Integer
-        actual .@?= (UMrg rootStrategy (UnionSingle 1)),
+        let actual = mrgSingle 1 :: AsKey1 Union Integer
+        actual .@?= AsKey1 (Union (Just rootStrategy) (UnionSingle 1)),
       testCase "mrgSingle" $ do
-        let actual = mrgSingle 1 :: Union Integer
-        actual .@?= (UMrg rootStrategy (UnionSingle 1)),
+        let actual = mrgSingle 1 :: AsKey1 Union Integer
+        actual .@?= AsKey1 (Union (Just rootStrategy) (UnionSingle 1)),
       testCase "tryMerge" $ do
-        let actual = tryMerge $ return 1 :: Union Integer
-        actual .@?= (UMrg rootStrategy (UnionSingle 1)),
+        let actual = tryMerge $ return 1 :: AsKey1 Union Integer
+        actual .@?= AsKey1 (Union (Just rootStrategy) (UnionSingle 1)),
       testGroup "Instances" $ do
         test <-
           [ TryMergeInstanceTest
