@@ -31,7 +31,6 @@ module Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
     unionBinOp,
     liftUnion,
     liftToMonadUnion,
-    unionMergingStrategy,
     isMerged,
     unionSize,
   )
@@ -92,7 +91,6 @@ import Grisette.Internal.Core.Data.Class.LogicalOp
   )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
-    MergingStrategy,
   )
 import Grisette.Internal.Core.Data.Class.PPrint
   ( PPrint (pformatPrec),
@@ -131,8 +129,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
-  ( Union (UAny, UMrg),
-    unionBase,
+  ( Union (Union, unionBase, unionMergingStrategy),
   )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
   ( SymEq ((.==)),
@@ -175,7 +172,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 
 instance (Mergeable a, Serial a) => Serial (Union a) where
   serialize = serialize . unionBase
-  deserialize = UMrg rootStrategy <$> deserialize
+  deserialize = Union (Just rootStrategy) <$> deserialize
 
 instance (Mergeable a, Serial a) => Cereal.Serialize (Union a) where
   put = serialize
@@ -185,21 +182,15 @@ instance (Mergeable a, Serial a) => Binary.Binary (Union a) where
   put = serialize
   get = deserialize
 
--- | Get the (possibly empty) cached merging strategy.
-unionMergingStrategy :: Union a -> Maybe (MergingStrategy a)
-unionMergingStrategy (UMrg s _) = Just s
-unionMergingStrategy _ = Nothing
-
 instance (NFData a) => NFData (Union a) where
   rnf = rnf1
 
 instance NFData1 Union where
-  liftRnf _a (UAny m) = liftRnf _a m
-  liftRnf _a (UMrg _ m) = liftRnf _a m
+  liftRnf _a (Union _ m) = liftRnf _a m
 
 instance (Lift a) => Lift (Union a) where
-  liftTyped (UAny v) = [||UAny v||]
-  liftTyped (UMrg _ v) = [||UAny v||]
+  liftTyped (Union Nothing v) = [||Union Nothing v||]
+  liftTyped (Union (Just _) v) = [||Union Nothing v||]
   lift = unTypeSplice . liftTyped
 
 instance (Show a) => (Show (Union a)) where
@@ -229,11 +220,11 @@ wrapBracket :: Char -> Char -> ShowS -> ShowS
 wrapBracket l r p = showChar l . p . showChar r
 
 instance Show1 Union where
-  liftShowsPrec sp sl _ (UAny a) =
+  liftShowsPrec sp sl _ (Union Nothing a) =
     wrapBracket '<' '>'
       . liftShowsPrecUnion sp sl 0
       $ a
-  liftShowsPrec sp sl _ (UMrg _ a) =
+  liftShowsPrec sp sl _ (Union Just {} a) =
     wrapBracket '{' '}'
       . liftShowsPrecUnion sp sl 0
       $ a
@@ -243,13 +234,13 @@ instance (PPrint a) => PPrint (Union a) where
 
 instance PPrint1 Union where
   liftPFormatPrec fa fl _ = \case
-    (UAny a) -> groupedEnclose "<" ">" $ liftPFormatPrec fa fl 0 a
-    (UMrg _ a) -> groupedEnclose "{" "}" $ liftPFormatPrec fa fl 0 a
+    (Union Nothing a) -> groupedEnclose "<" ">" $ liftPFormatPrec fa fl 0 a
+    (Union (Just _) a) -> groupedEnclose "{" "}" $ liftPFormatPrec fa fl 0 a
 
 -- | Check if a 'Union' is already merged.
 isMerged :: Union a -> Bool
-isMerged UAny {} = False
-isMerged UMrg {} = True
+isMerged (Union Nothing _) = False
+isMerged (Union Just {} _) = True
 {-# INLINE isMerged #-}
 
 -- | Lift a unary operation to 'Union'.
@@ -410,17 +401,17 @@ instance (Eq a, Hashable a) => KeyHashable (Union a) where
   {-# INLINE keyHashWithSalt #-}
 
 instance KeyHashable1 Union where
-  liftKeyHashWithSalt f s (UAny a) =
+  liftKeyHashWithSalt f s (Union Nothing a) =
     liftKeyHashWithSalt f s a `hashWithSalt` (0 :: Int)
-  liftKeyHashWithSalt f s (UMrg _ a) =
+  liftKeyHashWithSalt f s (Union (Just _) a) =
     liftKeyHashWithSalt f s a `hashWithSalt` (1 :: Int)
 
 instance (Eq a) => KeyEq (Union a) where
   keyEq = liftKeyEq (==)
 
 instance KeyEq1 Union where
-  liftKeyEq f (UAny l) (UAny r) = liftKeyEq f l r
-  liftKeyEq f (UMrg _ l) (UMrg _ r) = liftKeyEq f l r
+  liftKeyEq f (Union Nothing l) (Union Nothing r) = liftKeyEq f l r
+  liftKeyEq f (Union (Just _) l) (Union (Just _) r) = liftKeyEq f l r
   liftKeyEq _ _ _ = False
 
 instance (Eq a) => Eq (Union a) where

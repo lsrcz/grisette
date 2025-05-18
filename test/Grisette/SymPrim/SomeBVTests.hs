@@ -50,7 +50,7 @@ import Grisette
     mrgReturn,
     mrgSingle,
   )
-import Grisette.Internal.Core.Control.Monad.Union (Union (UMrg))
+import Grisette.Internal.Core.Control.Monad.Union (Union (Union))
 import Grisette.Internal.Core.Data.UnionBase
   ( UnionBase (UnionSingle),
     ifWithLeftMost,
@@ -490,7 +490,7 @@ someBVTests =
             return $ testCase name $ do
               let actual =
                     mrgIf "cond" (return l) (return r) :: Union SomeIntN
-              let expected = UMrg rootStrategy merged
+              let expected = Union (Just rootStrategy) merged
               AsKey actual @?= AsKey expected,
           testGroup "SomeSymIntN" $ do
             (name, l, r, merged) <-
@@ -525,7 +525,7 @@ someBVTests =
                       (return $ AsKey l)
                       (return $ AsKey r) ::
                       Union (AsKey SomeSymIntN)
-              let expected = UMrg rootStrategy merged
+              let expected = Union (Just rootStrategy) merged
               AsKey1 actual @?= AsKey1 expected
         ],
       testGroup

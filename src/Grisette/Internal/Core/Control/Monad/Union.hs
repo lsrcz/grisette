@@ -15,8 +15,6 @@ module Grisette.Internal.Core.Control.Monad.Union
     unionBinOp,
     liftUnion,
     liftToMonadUnion,
-    unionBase,
-    unionMergingStrategy,
     isMerged,
     unionSize,
   )

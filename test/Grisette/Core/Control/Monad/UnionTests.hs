@@ -45,7 +45,7 @@ import Grisette
     unionToCon,
   )
 import Grisette.Internal.Core.Control.Monad.Union
-  ( Union (UAny, UMrg),
+  ( Union (Union),
     isMerged,
     liftToMonadUnion,
     liftUnion,
@@ -83,7 +83,7 @@ unionBase12Merged =
     (UnionSingle (Right (symIte "u12c" "u1b" "u2b")))
 
 union12Merged :: AsKey1 Union (Either (AsKey SymBool) (AsKey SymInteger))
-union12Merged = AsKey1 $ UMrg rootStrategy unionBase12Merged
+union12Merged = AsKey1 $ Union (Just rootStrategy) unionBase12Merged
 
 unionSimple1 :: AsKey1 Union (AsKey SymInteger)
 unionSimple1 = mrgIfPropagatedStrategy "u1c" (return "u1a") (return "u1b")
@@ -101,8 +101,8 @@ unionSimple2 = AsKey1 $ mrgIfPropagatedStrategy "u2c" (return "u2a") (return "u2
 unionSimple12Merged :: AsKey1 Union (AsKey SymInteger)
 unionSimple12Merged =
   AsKey1 $
-    UMrg
-      rootStrategy
+    Union
+      (Just rootStrategy)
       ( UnionSingle
           (symIte "u12c" (symIte "u1c" "u1a" "u1b") (symIte "u2c" "u2a" "u2b"))
       )
@@ -217,14 +217,14 @@ unionTests =
       testGroup
         "Applicative"
         [ testCase "pure should work" $
-            (pure 1 :: AsKey1 Union Int) @?= AsKey1 (UAny (UnionSingle 1)),
+            (pure 1 :: AsKey1 Union Int) @?= AsKey1 (Union Nothing (UnionSingle 1)),
           testCase "<*> should work" $
             pure (+ 1) <*> unionSimple1 @?= unionSimple1Plus1
         ],
       testGroup
         "Monad"
         [ testCase "return should work" $
-            (return 1 :: AsKey1 Union Int) @?= AsKey1 (UAny (UnionSingle 1)),
+            (return 1 :: AsKey1 Union Int) @?= AsKey1 (Union Nothing (UnionSingle 1)),
           testCase ">>= should work" $
             (unionSimple1 >>= (\i -> return (i + 1))) @?= unionSimple1Plus1,
           testCase ">>= should propagate merge strategy" $ do
