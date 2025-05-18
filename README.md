@@ -345,6 +345,12 @@ to symbolic and concrete evaluations. GHC 9.0 or earlier, without the
 impredicative types, may fail to resolve some constraints. You may need to
 provide additional constraints in your code to help the compiler.
 
+### `AsKey1` wrapper for `Union`
+
+To use term equality based comparison for `Union`, we may use the `AsKey1`
+wrapper. For the same reason as unified interfaces, it cannot be used with GHC
+9.0 or earlier.
+
 ## Citing Grisette
 
 If you use Grisette in your research, please use the following bibtex entry:

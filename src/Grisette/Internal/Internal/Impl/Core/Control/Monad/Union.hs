@@ -37,6 +37,30 @@ module Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
   )
 where
 
+#if MIN_VERSION_base(4,16,0)
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( KeyEq (keyEq),
+    KeyEq1 (liftKeyEq),
+    KeyHashable (keyHashWithSalt),
+    KeyHashable1 (liftKeyHashWithSalt),
+    shouldUseAsKeyHasSymbolicVersionError,
+  )
+import Grisette.Internal.Core.Data.Class.PlainUnion (simpleMerge)
+#else
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( AsKey1 (AsKey1),
+    KeyEq (keyEq),
+    KeyEq1 (liftKeyEq),
+    KeyHashable (keyHashWithSalt),
+    KeyHashable1 (liftKeyHashWithSalt),
+    shouldUseAsKeyHasSymbolicVersionError,
+  )
+import Grisette.Internal.Core.Data.Class.PlainUnion
+  ( PlainUnion (ifView, overestimateUnionValues, singleView, toGuardedList),
+    simpleMerge,
+  )
+#endif
+
 import Control.Applicative (Alternative ((<|>)))
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
 import Control.Monad.Identity (Identity (Identity, runIdentity))
@@ -51,13 +75,6 @@ import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.Serialize as Cereal
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
-import Grisette.Internal.Core.Data.Class.AsKey
-  ( KeyEq (keyEq),
-    KeyEq1 (liftKeyEq),
-    KeyHashable (keyHashWithSalt),
-    KeyHashable1 (liftKeyHashWithSalt),
-    shouldUseAsKeyHasSymbolicVersionError,
-  )
 import Grisette.Internal.Core.Data.Class.EvalSym
   ( EvalSym (evalSym),
     EvalSym1 (liftEvalSym),
@@ -82,9 +99,6 @@ import Grisette.Internal.Core.Data.Class.PPrint
     PPrint1 (liftPFormatPrec),
     groupedEnclose,
     pformatPrec1,
-  )
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( simpleMerge,
   )
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
@@ -391,7 +405,7 @@ instance ExtractSym1 Union where
       go (UnionSingle x) = e x
       go (UnionIf _ _ cond t f) = extractSymMaybe cond <> go t <> go f
 
-instance (Hashable a) => KeyHashable (Union a) where
+instance (Eq a, Hashable a) => KeyHashable (Union a) where
   keyHashWithSalt = liftKeyHashWithSalt hashWithSalt
   {-# INLINE keyHashWithSalt #-}
 
@@ -468,3 +482,21 @@ unionSize = unionSize' . unionBase
   where
     unionSize' (UnionSingle _) = 1
     unionSize' (UnionIf _ _ _ l r) = unionSize' l + unionSize' r
+
+#if !MIN_VERSION_base(4,16,0)
+instance SymBranching (AsKey1 Union) where
+  mrgIfWithStrategy strategy cond (AsKey1 t) (AsKey1 f) =
+    AsKey1 $ mrgIfWithStrategy strategy cond t f
+  mrgIfPropagatedStrategy cond (AsKey1 t) (AsKey1 f) =
+    AsKey1 $ mrgIfPropagatedStrategy cond t f
+  {-# INLINE mrgIfWithStrategy #-}
+  {-# INLINE mrgIfPropagatedStrategy #-}
+
+instance PlainUnion (AsKey1 Union) where
+  singleView (AsKey1 u) = singleView u
+  ifView (AsKey1 u) = case ifView u of
+    Just (c, l, r) -> Just (c, AsKey1 l, AsKey1 r)
+    Nothing -> Nothing
+  toGuardedList (AsKey1 u) = toGuardedList u
+  overestimateUnionValues (AsKey1 u) = overestimateUnionValues u
+#endif
