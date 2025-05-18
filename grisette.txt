@@ -8083,16 +8083,15 @@ module Grisette.Internal.Core.Control.Monad.Union
 --   
 --   To reduce this boilerplate, Grisette provide another monad,
 --   <a>Union</a> that would try to cache the merging strategy. The
---   <a>Union</a> has two data constructors (hidden intentionally),
---   <a>UAny</a> and <a>UMrg</a>. The <a>UAny</a> data constructor (printed
---   as <tt>&lt;</tt><tt>...</tt><tt>&gt;</tt>) wraps an arbitrary
---   (probably unmerged) <a>UnionBase</a>. It is constructed when no
---   <a>Mergeable</a> knowledge is available (for example, when constructed
---   with Haskell's <a>return</a>). The <a>UMrg</a> data constructor
---   (printed as <tt>{...}</tt>) wraps a merged <a>UnionBase</a> along with
---   the <a>Mergeable</a> constraint. This constraint can be propagated to
---   the contexts without <a>Mergeable</a> knowledge, and helps the system
---   to merge the resulting <a>UnionBase</a>.
+--   <a>Union</a> has a data constructor (hidden intentionally) that
+--   maintains an optional <a>MergingStrategy</a> and a <a>UnionBase</a>.
+--   When the optional <a>MergingStrategy</a> presents (printed as
+--   <tt>{...}</tt>), the <a>UnionBase</a> must have already been merged.
+--   When the optional <a>MergingStrategy</a> is absent (printed as
+--   <tt><a>...</a></tt>), the <a>UnionBase</a> does not guarantee to be
+--   merged. When used in monadic context, Grisette would try to use this
+--   cached merging strategy to merge the result, as the <a>&gt;&gt;=</a>
+--   operator itself cannot resolve the <a>Mergeable</a> constraint.
 --   
 --   <b><i>Examples:</i></b>
 --   
@@ -8161,12 +8160,9 @@ module Grisette.Internal.Core.Control.Monad.Union
 --   more <tt>mrg*</tt> variants of other combinators. You should stick to
 --   these combinators to ensure efficient merging by Grisette.
 data Union a
-
--- | <a>Union</a> with no <a>Mergeable</a> knowledge.
-[UAny] :: forall a. UnionBase a -> Union a
-
--- | <a>Union</a> with <a>Mergeable</a> knowledge.
-[UMrg] :: forall a. MergingStrategy a -> UnionBase a -> Union a
+Union :: Maybe (MergingStrategy a) -> UnionBase a -> Union a
+[unionMergingStrategy] :: Union a -> Maybe (MergingStrategy a)
+[unionBase] :: Union a -> UnionBase a
 
 -- | Lift a unary operation to <a>Union</a>.
 unionUnaryOp :: (a -> a) -> Union a -> Union a
@@ -8179,12 +8175,6 @@ liftUnion :: forall u a. (Mergeable a, SymBranching u, Applicative u) => Union a
 
 -- | Alias for <a>liftUnion</a>, but for monads.
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
-
--- | Extract the underlying Union. May be unmerged.
-unionBase :: Union a -> UnionBase a
-
--- | Get the (possibly empty) cached merging strategy.
-unionMergingStrategy :: Union a -> Maybe (MergingStrategy a)
 
 -- | Check if a <a>Union</a> is already merged.
 isMerged :: Union a -> Bool
@@ -16993,16 +16983,15 @@ liftKeyCompare :: KeyOrd1 f => (a -> b -> Ordering) -> f a -> f b -> Ordering
 --   
 --   To reduce this boilerplate, Grisette provide another monad,
 --   <a>Union</a> that would try to cache the merging strategy. The
---   <a>Union</a> has two data constructors (hidden intentionally),
---   <a>UAny</a> and <a>UMrg</a>. The <a>UAny</a> data constructor (printed
---   as <tt>&lt;</tt><tt>...</tt><tt>&gt;</tt>) wraps an arbitrary
---   (probably unmerged) <a>UnionBase</a>. It is constructed when no
---   <a>Mergeable</a> knowledge is available (for example, when constructed
---   with Haskell's <a>return</a>). The <a>UMrg</a> data constructor
---   (printed as <tt>{...}</tt>) wraps a merged <a>UnionBase</a> along with
---   the <a>Mergeable</a> constraint. This constraint can be propagated to
---   the contexts without <a>Mergeable</a> knowledge, and helps the system
---   to merge the resulting <a>UnionBase</a>.
+--   <a>Union</a> has a data constructor (hidden intentionally) that
+--   maintains an optional <a>MergingStrategy</a> and a <a>UnionBase</a>.
+--   When the optional <a>MergingStrategy</a> presents (printed as
+--   <tt>{...}</tt>), the <a>UnionBase</a> must have already been merged.
+--   When the optional <a>MergingStrategy</a> is absent (printed as
+--   <tt><a>...</a></tt>), the <a>UnionBase</a> does not guarantee to be
+--   merged. When used in monadic context, Grisette would try to use this
+--   cached merging strategy to merge the result, as the <a>&gt;&gt;=</a>
+--   operator itself cannot resolve the <a>Mergeable</a> constraint.
 --   
 --   <b><i>Examples:</i></b>
 --   
@@ -17080,9 +17069,6 @@ unionBinOp :: (a -> a -> a) -> Union a -> Union a -> Union a
 
 -- | Lift the <a>Union</a> to any Applicative <a>SymBranching</a>.
 liftUnion :: forall u a. (Mergeable a, SymBranching u, Applicative u) => Union a -> u a
-
--- | Get the (possibly empty) cached merging strategy.
-unionMergingStrategy :: Union a -> Maybe (MergingStrategy a)
 
 -- | Alias for <a>liftUnion</a>, but for monads.
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
