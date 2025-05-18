@@ -69,7 +69,7 @@ class
     (ITEOp v, Mergeable v) => ITEOp u,
     (PPrint v) => PPrint u,
     (Eq v) => KeyEq u,
-    (Hashable v) => KeyHashable u,
+    (Eq v, Hashable v) => KeyHashable u,
     (Lift v) => Lift u,
     (LogicalOp v, Mergeable v) => LogicalOp u,
     (NFData v) => NFData u,

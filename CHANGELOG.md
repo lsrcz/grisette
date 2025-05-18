@@ -28,6 +28,9 @@ and this project adheres to
 
 - Removed `Show` constraints for merging indices.
   ([#294](https://github.com/lsrcz/grisette/pull/294))
+- \[Breaking\] Removed `Hashable` instances for `SymBool`, and also, `Eq` now
+  errors when called. Added `AsKey` wrapper to recover the original behavior.
+  ([#299](https://github.com/lsrcz/grisette/pull/299))
 
 ## [0.12.0.0] -- 2025-04-12
 

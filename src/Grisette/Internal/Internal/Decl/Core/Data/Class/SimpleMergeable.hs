@@ -325,6 +325,7 @@ instance
   liftMrgIte m c (AsKey1 t) (AsKey1 f) = AsKey1 $ liftMrgIte m c t f
   {-# INLINE liftMrgIte #-}
 
+#if MIN_VERSION_base(4,16,0)
 instance (SymBranching f) => SymBranching (AsKey1 f) where
   mrgIfWithStrategy strategy cond (AsKey1 t) (AsKey1 f) =
     AsKey1 $ mrgIfWithStrategy strategy cond t f
@@ -332,3 +333,4 @@ instance (SymBranching f) => SymBranching (AsKey1 f) where
     AsKey1 $ mrgIfPropagatedStrategy cond t f
   {-# INLINE mrgIfWithStrategy #-}
   {-# INLINE mrgIfPropagatedStrategy #-}
+#endif

@@ -137,7 +137,7 @@ instance PPrint1 UnionBase where
                 liftPFormatPrec fa fl 11 f
               ]
 
-instance (Hashable a) => KeyHashable (UnionBase a) where
+instance (Eq a, Hashable a) => KeyHashable (UnionBase a) where
   keyHashWithSalt = liftKeyHashWithSalt hashWithSalt
   {-# INLINE keyHashWithSalt #-}
 

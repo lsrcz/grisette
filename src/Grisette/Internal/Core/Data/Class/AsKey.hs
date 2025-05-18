@@ -152,7 +152,7 @@ instance KeyHashable AlgReal where
 instance (ValidFP a b) => KeyHashable (FP a b) where
   keyHashWithSalt = hashWithSalt
 
-instance (Hashable a) => KeyHashable (Identity a) where
+instance (Eq a, Hashable a) => KeyHashable (Identity a) where
   keyHashWithSalt = hashWithSalt
 
 class KeyEq1 f where

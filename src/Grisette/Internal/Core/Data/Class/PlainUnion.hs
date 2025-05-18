@@ -247,6 +247,7 @@ unionToCon u =
     _ -> Nothing
 {-# INLINE unionToCon #-}
 
+#if MIN_VERSION_base(4,16,0)
 instance (PlainUnion u) => PlainUnion (AsKey1 u) where
   singleView (AsKey1 u) = singleView u
   ifView (AsKey1 u) = case ifView u of
@@ -254,3 +255,4 @@ instance (PlainUnion u) => PlainUnion (AsKey1 u) where
     Nothing -> Nothing
   toGuardedList (AsKey1 u) = toGuardedList u
   overestimateUnionValues (AsKey1 u) = overestimateUnionValues u
+#endif
