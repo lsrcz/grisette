@@ -45,7 +45,6 @@ import Data.Foldable (Foldable (foldl'))
 import Control.DeepSeq (NFData)
 import Data.Binary (Binary)
 import Data.Bytes.Serial (Serial)
-import Data.Hashable (Hashable)
 import qualified Data.Kind
 import Data.Serialize (Serialize)
 import Data.Typeable (Typeable)
@@ -182,7 +181,6 @@ type UnifiedFunConstraint mode a b ca cb sa sb =
     Mergeable (GetFun mode a b),
     PPrint (GetFun mode a b),
     SubstSym (GetFun mode a b),
-    Hashable (GetFun mode a b),
     Lift (GetFun mode a b),
     Typeable (GetFun mode a b),
     ToCon (GetFun mode a b) (ca =-> cb),

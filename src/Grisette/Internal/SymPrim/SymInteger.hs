@@ -22,7 +22,12 @@ import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
-import Grisette.Internal.Core.Data.Class.AsKey (KeyEq (keyEq), KeyHashable (keyHashWithSalt), shouldUseAsKeyError, shouldUseAsKeyHasSymbolicVersionError, shouldUseSymbolicVersionError)
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( KeyEq (keyEq),
+    KeyHashable (keyHashWithSalt),
+    shouldUseAsKeyHasSymbolicVersionError,
+    shouldUseSymbolicVersionError,
+  )
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
@@ -165,15 +170,6 @@ instance Eq SymInteger where
 
 instance KeyEq SymInteger where
   keyEq (SymInteger l) (SymInteger r) = l == r
-
--- | This will crash the program.
---
--- 'SymInteger' cannot be hashed concretely.
---
--- If you want to use the type as keys in hash maps based on term equality, say
--- memo table, you should use @'AsKey' 'SymInteger'@ instead.
-instance Hashable SymInteger where
-  hashWithSalt = shouldUseAsKeyError "SymInteger" "hashWithSalt"
 
 instance KeyHashable SymInteger where
   keyHashWithSalt s (SymInteger v) = s `hashWithSalt` v

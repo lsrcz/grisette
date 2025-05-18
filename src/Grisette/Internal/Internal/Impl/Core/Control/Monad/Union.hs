@@ -48,7 +48,6 @@ import Data.Functor.Classes
     showsPrec1,
   )
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt))
 import qualified Data.Serialize as Cereal
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
@@ -57,7 +56,6 @@ import Grisette.Internal.Core.Data.Class.AsKey
     KeyEq1 (liftKeyEq),
     KeyHashable (keyHashWithSalt),
     KeyHashable1 (liftKeyHashWithSalt),
-    shouldUseAsKeyError,
     shouldUseAsKeyHasSymbolicVersionError,
   )
 import Grisette.Internal.Core.Data.Class.EvalSym
@@ -402,12 +400,6 @@ instance KeyHashable1 Union where
     liftKeyHashWithSalt f s a `hashWithSalt` (0 :: Int)
   liftKeyHashWithSalt f s (UMrg _ a) =
     liftKeyHashWithSalt f s a `hashWithSalt` (1 :: Int)
-
-instance (Hashable a) => Hashable (Union a) where
-  hashWithSalt = shouldUseAsKeyError "Union" "hashWithSalt"
-
-instance Hashable1 Union where
-  liftHashWithSalt = shouldUseAsKeyError "Union" "liftHashWithSalt"
 
 instance (Eq a) => KeyEq (Union a) where
   keyEq = liftKeyEq (==)

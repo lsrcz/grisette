@@ -25,7 +25,6 @@ import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.AsKey
   ( KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
-    shouldUseAsKeyError,
     shouldUseAsKeyHasSymbolicVersionError,
   )
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
@@ -95,15 +94,6 @@ instance Eq SymBool where
 
 instance KeyEq SymBool where
   keyEq (SymBool l) (SymBool r) = l == r
-
--- | This will crash the program.
---
--- 'SymBool' cannot be hashed concretely.
---
--- If you want to use the type as keys in hash maps based on term equality, say
--- memo table, you should use @'AsKey' 'SymBool'@ instead.
-instance Hashable SymBool where
-  hashWithSalt = shouldUseAsKeyError "SymBool" "hashWithSalt"
 
 instance KeyHashable SymBool where
   keyHashWithSalt s (SymBool v) = s `hashWithSalt` v

@@ -17,7 +17,6 @@ module Grisette.Internal.SymPrim.SymPrim (Prim, SymPrim, BasicSymPrim) where
 import Control.DeepSeq (NFData)
 import Data.Binary (Binary)
 import Data.Bytes.Serial (Serial)
-import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
 import Grisette.Internal.Core.Data.Class.AsKey (KeyEq, KeyHashable)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
@@ -60,7 +59,6 @@ type Prim a =
     SymEq a,
     SymOrd a,
     AllSyms a,
-    Hashable a,
     KeyEq a,
     KeyHashable a,
     Lift a,
