@@ -70,7 +70,6 @@ class
     (PPrint v) => PPrint u,
     (Eq v) => KeyEq u,
     (Hashable v) => KeyHashable u,
-    (Hashable v) => Hashable u,
     (Lift v) => Lift u,
     (LogicalOp v, Mergeable v) => LogicalOp u,
     (NFData v) => NFData u,

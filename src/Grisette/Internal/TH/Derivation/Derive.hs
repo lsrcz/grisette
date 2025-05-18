@@ -25,10 +25,13 @@ module Grisette.Internal.TH.Derivation.Derive
     basicClasses012,
     noExistentialClasses0,
     concreteOrdClasses0,
+    hashableClasses0,
     noExistentialClasses1,
     concreteOrdClasses1,
+    hashableClasses1,
     noExistentialClasses2,
     concreteOrdClasses2,
+    hashableClasses2,
     showClasses,
     pprintClasses,
     evalSymClasses,
@@ -348,7 +351,8 @@ deriveSingle deriveConfig typName className = do
                 needExtraMergeableUnderEvalMode = False,
                 needExtraMergeableWithConcretizedEvalMode = False
               }
-        | className `elem` [''Ord, ''Ord1, ''Ord2] =
+        | className
+            `elem` [''Ord, ''Ord1, ''Ord2, ''Hashable, ''Hashable1, ''Hashable2] =
             deriveConfig
               { evalModeConfig =
                   second
@@ -410,9 +414,9 @@ deriveWith' deriveConfig typName classNameList = do
 -- * 'NFData'
 -- * 'NFData1'
 -- * 'NFData2'
--- * 'Hashable'
--- * 'Hashable1'
--- * 'Hashable2'
+-- * 'Hashable' (will fail to derive if the type contains any symbolic variables)
+-- * 'Hashable1' (will fail to derive if the type contains any symbolic variables)
+-- * 'Hashable2' (will fail to derive if the type contains any symbolic variables)
 -- * 'Show'
 -- * 'Show1'
 -- * 'Show2'
@@ -425,9 +429,9 @@ deriveWith' deriveConfig typName classNameList = do
 -- * 'Eq'
 -- * 'Eq1'
 -- * 'Eq2'
--- * 'Ord'
--- * 'Ord1'
--- * 'Ord2'
+-- * 'Ord' (will fail to derive if the type contains any symbolic variables)
+-- * 'Ord1' (will fail to derive if the type contains any symbolic variables)
+-- * 'Ord2' (will fail to derive if the type contains any symbolic variables)
 -- * 'SymOrd'
 -- * 'SymOrd1'
 -- * 'SymOrd2'
@@ -492,7 +496,7 @@ derive = deriveWith mempty
 -- * 'ExtractSym'
 -- * 'SubstSym'
 -- * 'NFData'
--- * 'Hashable'
+-- * 'Hashable' (will fail to derive if the type contains any symbolic variables)
 -- * 'Show'
 -- * 'PPrint'
 -- * 'AllSyms'
@@ -500,13 +504,13 @@ derive = deriveWith mempty
 -- * 'SymEq'
 -- * 'SymOrd'
 -- * 'UnifiedSymEq'
--- * 'Ord'
+-- * 'Ord' (will fail to derive if the type contains any symbolic variables)
 -- * 'UnifiedSymOrd'
 -- * 'Serial'
 -- * 'ToCon'
 -- * 'ToSym'
 allClasses0 :: [Name]
-allClasses0 = basicClasses0 ++ concreteOrdClasses0 ++ noExistentialClasses0
+allClasses0 = basicClasses0 ++ concreteOrdClasses0 ++ noExistentialClasses0 ++ hashableClasses0
 
 -- | All the @*1@ classes that can be derived for GADT functors.
 --
@@ -517,7 +521,7 @@ allClasses0 = basicClasses0 ++ concreteOrdClasses0 ++ noExistentialClasses0
 -- * 'ExtractSym1'
 -- * 'SubstSym1'
 -- * 'NFData1'
--- * 'Hashable1'
+-- * 'Hashable1' (will fail to derive if the type contains any symbolic variables)
 -- * 'Show1'
 -- * 'PPrint1'
 -- * 'AllSyms1'
@@ -525,13 +529,13 @@ allClasses0 = basicClasses0 ++ concreteOrdClasses0 ++ noExistentialClasses0
 -- * 'SymEq1'
 -- * 'SymOrd1'
 -- * 'UnifiedSymEq1'
--- * 'Ord1'
+-- * 'Ord1' (will fail to derive if the type contains any symbolic variables)
 -- * 'UnifiedSymOrd1'
 -- * 'Serial1'
 -- * 'ToCon1'
 -- * 'ToSym1'
 allClasses1 :: [Name]
-allClasses1 = basicClasses1 ++ concreteOrdClasses1 ++ noExistentialClasses1
+allClasses1 = basicClasses1 ++ concreteOrdClasses1 ++ noExistentialClasses1 ++ hashableClasses1
 
 -- | All the classes that can be derived for GADT functors.
 --
@@ -548,7 +552,7 @@ allClasses01 = allClasses0 ++ allClasses1
 -- * 'ExtractSym2'
 -- * 'SubstSym2'
 -- * 'NFData2'
--- * 'Hashable2'
+-- * 'Hashable2' (will fail to derive if the type contains any symbolic variables)
 -- * 'Show2'
 -- * 'PPrint2'
 -- * 'AllSyms2'
@@ -556,13 +560,13 @@ allClasses01 = allClasses0 ++ allClasses1
 -- * 'SymEq2'
 -- * 'SymOrd2'
 -- * 'UnifiedSymEq2'
--- * 'Ord2'
+-- * 'Ord2' (will fail to derive if the type contains any symbolic variables)
 -- * 'UnifiedSymOrd2'
 -- * 'Serial2'
 -- * 'ToCon2'
 -- * 'ToSym2'
 allClasses2 :: [Name]
-allClasses2 = basicClasses2 ++ concreteOrdClasses2 ++ noExistentialClasses2
+allClasses2 = basicClasses2 ++ concreteOrdClasses2 ++ noExistentialClasses2 ++ hashableClasses2
 
 -- | All the classes that can be derived for GADT functors.
 --
@@ -580,7 +584,6 @@ allClasses012 = allClasses0 ++ allClasses1 ++ allClasses2
 -- * 'ExtractSym'
 -- * 'SubstSym'
 -- * 'NFData'
--- * 'Hashable'
 -- * 'Show'
 -- * 'PPrint'
 -- * 'AllSyms'
@@ -597,7 +600,6 @@ basicClasses0 =
     ''ExtractSym,
     ''SubstSym,
     ''NFData,
-    ''Hashable,
     ''Show,
     ''PPrint,
     ''AllSyms,
@@ -627,10 +629,18 @@ noExistentialClasses0 = [''Serial, ''ToCon, ''ToSym, ''Serialize, ''Binary]
 --
 -- This includes:
 --
--- * 'Ord'
+-- * 'Ord' (will fail to derive if the type contains any symbolic variables)
 -- * 'UnifiedSymOrd'
 concreteOrdClasses0 :: [Name]
 concreteOrdClasses0 = [''Ord, ''UnifiedSymOrd]
+
+-- | Hashable classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Hashable' (will fail to derive if the type contains any symbolic variables)
+hashableClasses0 :: [Name]
+hashableClasses0 = [''Hashable]
 
 -- | Basic classes for GADT functors.
 --
@@ -641,7 +651,6 @@ concreteOrdClasses0 = [''Ord, ''UnifiedSymOrd]
 -- * 'ExtractSym1'
 -- * 'SubstSym1'
 -- * 'NFData1'
--- * 'Hashable1'
 -- * 'Show1'
 -- * 'PPrint1'
 -- * 'AllSyms1'
@@ -656,7 +665,6 @@ basicClasses1 =
     ''ExtractSym1,
     ''SubstSym1,
     ''NFData1,
-    ''Hashable1,
     ''Show1,
     ''PPrint1,
     ''AllSyms1,
@@ -690,10 +698,18 @@ noExistentialClasses1 = [''Serial1, ''ToCon1, ''ToSym1]
 --
 -- This includes:
 --
--- * 'Ord1'
+-- * 'Ord1' (will fail to derive if the type contains any symbolic variables)
 -- * 'UnifiedSymOrd1'
 concreteOrdClasses1 :: [Name]
 concreteOrdClasses1 = [''Ord1, ''UnifiedSymOrd1]
+
+-- | Hashable classes that can be derived for GADT functors.
+--
+-- This includes:
+--
+-- * 'Hashable1' (will fail to derive if the type contains any symbolic variables)
+hashableClasses1 :: [Name]
+hashableClasses1 = [''Hashable1]
 
 -- | Basic classes for GADT functors.
 --
@@ -704,7 +720,6 @@ concreteOrdClasses1 = [''Ord1, ''UnifiedSymOrd1]
 -- * 'ExtractSym2'
 -- * 'SubstSym2'
 -- * 'NFData2'
--- * 'Hashable2'
 -- * 'Show2'
 -- * 'PPrint2'
 -- * 'AllSyms2'
@@ -719,7 +734,6 @@ basicClasses2 =
     ''ExtractSym2,
     ''SubstSym2,
     ''NFData2,
-    ''Hashable2,
     ''Show2,
     ''PPrint2,
     ''AllSyms2,
@@ -754,10 +768,18 @@ noExistentialClasses2 = [''Serial2, ''ToCon2, ''ToSym2]
 --
 -- This includes:
 --
--- * 'Ord2'
+-- * 'Ord2' (will fail to derive if the type contains any symbolic variables)
 -- * 'UnifiedSymOrd2'
 concreteOrdClasses2 :: [Name]
 concreteOrdClasses2 = [''Ord2, ''UnifiedSymOrd2]
+
+-- | Hashable classes that can be derived for GADT functors.
+--
+-- This includes:
+--
+-- * 'Hashable2' (will fail to derive if the type contains any symbolic variables)
+hashableClasses2 :: [Name]
+hashableClasses2 = [''Hashable2]
 
 -- | 'Show' classes that can be derived for GADTs.
 --
@@ -853,9 +875,9 @@ unifiedSymEqClasses = [''UnifiedSymEq, ''UnifiedSymEq1, ''UnifiedSymEq2]
 --
 -- This includes:
 --
--- * 'Ord'
--- * 'Ord1'
--- * 'Ord2'
+-- * 'Ord' (will fail to derive if the type contains any symbolic variables)
+-- * 'Ord1' (will fail to derive if the type contains any symbolic variables)
+-- * 'Ord2' (will fail to derive if the type contains any symbolic variables)
 ordClasses :: [Name]
 ordClasses = [''Ord, ''Ord1, ''Ord2]
 
@@ -904,9 +926,9 @@ nfDataClasses = [''NFData, ''NFData1, ''NFData2]
 --
 -- This includes:
 --
--- * 'Hashable'
--- * 'Hashable1'
--- * 'Hashable2'
+-- * 'Hashable' (will fail to derive if the type contains any symbolic variables)
+-- * 'Hashable1' (will fail to derive if the type contains any symbolic variables)
+-- * 'Hashable2' (will fail to derive if the type contains any symbolic variables)
 hashableClasses :: [Name]
 hashableClasses = [''Hashable, ''Hashable1, ''Hashable2]
 

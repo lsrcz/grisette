@@ -287,8 +287,6 @@ derive
 instance (Eq1 f) => Eq1 (Expr f) where
   liftEq = undefined
 
-derive [''Expr] [''Hashable, ''Hashable1]
-
 data P a b = P a | Q Int
 
 derive

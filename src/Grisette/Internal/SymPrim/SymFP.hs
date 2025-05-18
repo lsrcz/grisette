@@ -38,7 +38,12 @@ import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
-import Grisette.Internal.Core.Data.Class.AsKey (KeyEq (keyEq), KeyHashable (keyHashWithSalt), shouldUseAsKeyError, shouldUseAsKeyHasSymbolicVersionError)
+import Grisette.Internal.Core.Data.Class.AsKey
+  ( KeyEq (keyEq),
+    KeyHashable (keyHashWithSalt),
+    shouldUseAsKeyError,
+    shouldUseAsKeyHasSymbolicVersionError,
+  )
 import Grisette.Internal.Core.Data.Class.BitCast
   ( BitCast (bitCast),
     BitCastCanonical (bitCastCanonicalValue),
@@ -315,15 +320,6 @@ instance Eq SymFPRoundingMode where
 
 instance KeyEq SymFPRoundingMode where
   keyEq (SymFPRoundingMode l) (SymFPRoundingMode r) = l == r
-
--- | This will crash the program.
---
--- 'SymFPRoundingMode' cannot be hashed concretely.
---
--- If you want to use the type as keys in hash maps based on term equality, say
--- memo table, you should use @'AsKey' 'SymFPRoundingMode'@ instead.
-instance Hashable SymFPRoundingMode where
-  hashWithSalt = shouldUseAsKeyError "SymFPRoundingMode" "hashWithSalt"
 
 instance KeyHashable SymFPRoundingMode where
   keyHashWithSalt s (SymFPRoundingMode a) = hashWithSalt s a

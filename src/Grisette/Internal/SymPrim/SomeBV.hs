@@ -123,6 +123,7 @@ import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.AsKey
   ( KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
+    shouldUseAsKeyError,
   )
 import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
@@ -392,8 +393,13 @@ data SomeBVLit where
   SomeBVIntLit :: Integer -> SomeBVLit
   SomeBVCondLit :: Union Integer -> SomeBVLit
   deriving (Eq, Generic, Lift)
-  deriving anyclass (Hashable, NFData)
+  deriving anyclass (NFData)
   deriving (Mergeable, ExtractSym, AllSyms) via (Default SomeBVLit)
+
+instance Hashable SomeBVLit where
+  hashWithSalt s (SomeBVIntLit i) = s `hashWithSalt` (0 :: Int) `hashWithSalt` i
+  hashWithSalt _ (SomeBVCondLit _) =
+    shouldUseAsKeyError "SomeBVLit (with SomeBVCondLit)" "hashWithSalt"
 
 instance KeyEq SomeBVLit where
   keyEq (SomeBVIntLit l) (SomeBVIntLit r) = l == r

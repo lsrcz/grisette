@@ -38,12 +38,10 @@ import Data.Functor.Classes
     showsUnaryWith,
   )
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt))
 import qualified Data.Serialize as Cereal
 import Grisette.Internal.Core.Data.Class.AsKey
   ( KeyHashable (keyHashWithSalt),
     KeyHashable1 (liftKeyHashWithSalt),
-    shouldUseAsKeyError,
   )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
@@ -153,12 +151,6 @@ instance KeyHashable1 UnionBase where
         )
           `g` l
           `g` r
-
-instance (Hashable a) => Hashable (UnionBase a) where
-  hashWithSalt = shouldUseAsKeyError "UnionBase" "hashWithSalt"
-
-instance Hashable1 UnionBase where
-  liftHashWithSalt = shouldUseAsKeyError "UnionBase" "liftHashWithSalt"
 
 instance (AllSyms a) => AllSyms (UnionBase a) where
   allSymsS (UnionSingle v) = allSymsS v
