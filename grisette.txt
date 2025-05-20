@@ -6853,13 +6853,21 @@ module Grisette.Internal.TH.ADT
 
 -- | Make an ADT compatible with Grisette.
 --   
+--   This will generate instances for the ADT with the given classes, and
+--   smart constructors for each constructor.
+--   
+--   The derivation is done with the given configuration.
+makeGrisetteADTWithClasses :: DeriveConfig -> Name -> [Name] -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
 --   This will generate most useful instances for the ADT, and smart
 --   constructors for each constructor.
 --   
 --   This does not include <a>Ord</a> instances.
 --   
---   See <a>derive</a>, <a>basicClasses0</a>, and <a>makeSmartCtor</a> for
---   more details.
+--   See <tt>derive</tt>, <a>basicClasses0</a>, and <a>makeSmartCtor</a>
+--   for more details.
 makeGrisetteBasicADT :: Name -> Q [Dec]
 
 -- | Make an ADT compatible with Grisette.
@@ -6869,8 +6877,8 @@ makeGrisetteBasicADT :: Name -> Q [Dec]
 --   
 --   This does not include <a>Ord</a> instances.
 --   
---   See <a>derive</a>, <a>basicClasses01</a>, and <a>makeSmartCtor</a> for
---   more details.
+--   See <tt>derive</tt>, <a>basicClasses01</a>, and <a>makeSmartCtor</a>
+--   for more details.
 makeGrisetteBasicADT1 :: Name -> Q [Dec]
 
 -- | Make an ADT compatible with Grisette.
@@ -6880,9 +6888,48 @@ makeGrisetteBasicADT1 :: Name -> Q [Dec]
 --   
 --   This does not include <a>Ord</a> instances.
 --   
---   See <a>derive</a>, <a>basicClasses012</a>, and <a>makeSmartCtor</a>
+--   See <tt>derive</tt>, <a>basicClasses012</a>, and <a>makeSmartCtor</a>
 --   for more details.
 makeGrisetteBasicADT2 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>basicClasses0</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADTWith :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>basicClasses01</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADT1With :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>basicClasses012</a>, and
+--   <a>makeSmartCtor</a> for more details.
+makeGrisetteBasicADT2With :: DeriveConfig -> Name -> Q [Dec]
 
 -- | Make an ADT compatible with Grisette.
 --   
@@ -6891,7 +6938,7 @@ makeGrisetteBasicADT2 :: Name -> Q [Dec]
 --   
 --   This cannot be used for ADTs with existential type variables.
 --   
---   See <a>derive</a>, <a>allClasses0</a>, and <a>makeSmartCtor</a> for
+--   See <tt>derive</tt>, <a>allClasses0</a>, and <a>makeSmartCtor</a> for
 --   more details.
 makeGrisetteADT :: Name -> Q [Dec]
 
@@ -6902,7 +6949,7 @@ makeGrisetteADT :: Name -> Q [Dec]
 --   
 --   This cannot be used for ADTs with existential type variables.
 --   
---   See <a>derive</a>, <a>allClasses01</a>, and <a>makeSmartCtor</a> for
+--   See <tt>derive</tt>, <a>allClasses01</a>, and <a>makeSmartCtor</a> for
 --   more details.
 makeGrisetteADT1 :: Name -> Q [Dec]
 
@@ -6913,9 +6960,48 @@ makeGrisetteADT1 :: Name -> Q [Dec]
 --   
 --   This cannot be used for ADTs with existential type variables.
 --   
---   See <a>derive</a>, <a>allClasses012</a>, and <a>makeSmartCtor</a> for
---   more details.
+--   See <tt>derive</tt>, <a>allClasses012</a>, and <a>makeSmartCtor</a>
+--   for more details.
 makeGrisetteADT2 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>allClasses0</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteADTWith :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>allClasses01</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteADT1With :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>allClasses012</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteADT2With :: DeriveConfig -> Name -> Q [Dec]
 
 
 module Grisette.Internal.Core.Data.Class.SimpleMergeable
@@ -12073,12 +12159,92 @@ module Grisette.TH
 
 -- | Make an ADT compatible with Grisette.
 --   
+--   This will generate instances for the ADT with the given classes, and
+--   smart constructors for each constructor.
+--   
+--   The derivation is done with the given configuration.
+makeGrisetteADTWithClasses :: DeriveConfig -> Name -> [Name] -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <tt>derive</tt>, <a>basicClasses0</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADT :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <tt>derive</tt>, <a>basicClasses01</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADT1 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   See <tt>derive</tt>, <a>basicClasses012</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADT2 :: Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>basicClasses0</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADTWith :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>basicClasses01</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteBasicADT1With :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate most useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This does not include <a>Ord</a> instances.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>basicClasses012</a>, and
+--   <a>makeSmartCtor</a> for more details.
+makeGrisetteBasicADT2With :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
 --   This will generate almost all useful instances for the ADT, and smart
 --   constructors for each constructor.
 --   
 --   This cannot be used for ADTs with existential type variables.
 --   
---   See <a>derive</a>, <a>allClasses0</a>, and <a>makeSmartCtor</a> for
+--   See <tt>derive</tt>, <a>allClasses0</a>, and <a>makeSmartCtor</a> for
 --   more details.
 makeGrisetteADT :: Name -> Q [Dec]
 
@@ -12089,7 +12255,7 @@ makeGrisetteADT :: Name -> Q [Dec]
 --   
 --   This cannot be used for ADTs with existential type variables.
 --   
---   See <a>derive</a>, <a>allClasses01</a>, and <a>makeSmartCtor</a> for
+--   See <tt>derive</tt>, <a>allClasses01</a>, and <a>makeSmartCtor</a> for
 --   more details.
 makeGrisetteADT1 :: Name -> Q [Dec]
 
@@ -12100,42 +12266,48 @@ makeGrisetteADT1 :: Name -> Q [Dec]
 --   
 --   This cannot be used for ADTs with existential type variables.
 --   
---   See <a>derive</a>, <a>allClasses012</a>, and <a>makeSmartCtor</a> for
---   more details.
+--   See <tt>derive</tt>, <a>allClasses012</a>, and <a>makeSmartCtor</a>
+--   for more details.
 makeGrisetteADT2 :: Name -> Q [Dec]
 
 -- | Make an ADT compatible with Grisette.
 --   
---   This will generate most useful instances for the ADT, and smart
+--   This will generate almost all useful instances for the ADT, and smart
 --   constructors for each constructor.
 --   
---   This does not include <a>Ord</a> instances.
+--   This cannot be used for ADTs with existential type variables.
 --   
---   See <a>derive</a>, <a>basicClasses0</a>, and <a>makeSmartCtor</a> for
---   more details.
-makeGrisetteBasicADT :: Name -> Q [Dec]
-
--- | Make an ADT compatible with Grisette.
+--   The derivation is done with the given configuration.
 --   
---   This will generate most useful instances for the ADT, and smart
---   constructors for each constructor.
---   
---   This does not include <a>Ord</a> instances.
---   
---   See <a>derive</a>, <a>basicClasses01</a>, and <a>makeSmartCtor</a> for
---   more details.
-makeGrisetteBasicADT1 :: Name -> Q [Dec]
-
--- | Make an ADT compatible with Grisette.
---   
---   This will generate most useful instances for the ADT, and smart
---   constructors for each constructor.
---   
---   This does not include <a>Ord</a> instances.
---   
---   See <a>derive</a>, <a>basicClasses012</a>, and <a>makeSmartCtor</a>
+--   See <a>deriveWith</a>, <a>allClasses0</a>, and <a>makeSmartCtor</a>
 --   for more details.
-makeGrisetteBasicADT2 :: Name -> Q [Dec]
+makeGrisetteADTWith :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>allClasses01</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteADT1With :: DeriveConfig -> Name -> Q [Dec]
+
+-- | Make an ADT compatible with Grisette.
+--   
+--   This will generate almost all useful instances for the ADT, and smart
+--   constructors for each constructor.
+--   
+--   This cannot be used for ADTs with existential type variables.
+--   
+--   The derivation is done with the given configuration.
+--   
+--   See <a>deriveWith</a>, <a>allClasses012</a>, and <a>makeSmartCtor</a>
+--   for more details.
+makeGrisetteADT2With :: DeriveConfig -> Name -> Q [Dec]
 
 -- | Configuration for constraints for evaluation modes tag.
 --   
