@@ -24,6 +24,9 @@ and this project adheres to
   [#303](https://github.com/lsrcz/grisette/pull/303))
 - Added `Concrete` type class to tag the types guaranteed to be fully concrete.
   ([#296](https://github.com/lsrcz/grisette/pull/296))
+- Added `SymBoolKey`/`UnionKey` types that is an alias for `AsKey SymBool` and
+  `AsKey1 Union`, respectively.
+  ([#301](https://github.com/lsrcz/grisette/pull/301))
 
 ### Changed
 
@@ -32,6 +35,16 @@ and this project adheres to
 - \[Breaking\] Removed `Hashable` instances for `SymBool`, and also, `Eq` now
   errors when called. Added `AsKey` wrapper to recover the original behavior.
   ([#299](https://github.com/lsrcz/grisette/pull/299))
+- Make `GetData` now accept one parameter instead of two so that `GetData mode`
+  can be used as a type in a context where we want a monad. The `BaseMonad` is
+  now a type alias of `GetData`.
+  ([#302](https://github.com/lsrcz/grisette/pull/302))
+- \[Breaking\] Renamed `PlainUnion` to `UnionView`.
+  ([#302](https://github.com/lsrcz/grisette/pull/302))
+- Implemented `UnionView` for `Identity`.
+  ([#302](https://github.com/lsrcz/grisette/pull/302))
+- Added unified versions of `simpleMerge` and `onUnion` that uses `UnionView`.
+  ([#302](https://github.com/lsrcz/grisette/pull/302))
 
 ## [0.12.0.0] -- 2025-04-12
 
