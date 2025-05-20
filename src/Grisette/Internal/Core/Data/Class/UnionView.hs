@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -9,15 +10,16 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- |
--- Module      :   Grisette.Internal.Core.Data.Class.PlainUnion
+-- Module      :   Grisette.Internal.Core.Data.Class.UnionView
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion (..),
+module Grisette.Internal.Core.Data.Class.UnionView
+  ( UnionView (..),
+    IfViewResult (..),
     pattern Single,
     pattern If,
     simpleMerge,
@@ -31,6 +33,7 @@ module Grisette.Internal.Core.Data.Class.PlainUnion
   )
 where
 
+import Control.Monad.Identity (Identity (runIdentity))
 import Data.Bifunctor (Bifunctor (first))
 import Data.Kind (Type)
 import Grisette.Internal.Core.Data.Class.AsKey (AsKey1 (AsKey1))
@@ -50,7 +53,8 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
-  ( mrgSingle,
+  ( TryMerge,
+    mrgSingle,
     tryMerge,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
@@ -59,9 +63,14 @@ import Grisette.Internal.SymPrim.SymBool (SymBool)
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 
--- | Plain union containers that can be projected back into single value or
--- if-guarded values.
-class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
+-- | The result of 'ifView'.
+data IfViewResult u a where
+  IfViewResult :: (SymBranching u) => SymBool -> u a -> u a -> IfViewResult u a
+
+-- | Containers that can be projected back into single value or if-guarded
+-- values. 'Identity' is implements this class as we can always project to
+-- single value.
+class (Applicative u, TryMerge u) => UnionView (u :: Type -> Type) where
   -- | Pattern match to extract single values.
   --
   -- >>> singleView (return 1 :: Union Integer)
@@ -78,7 +87,7 @@ class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
   -- Just (a,<1>,<2>)
   -- >>> ifView (mrgIf "a" (return 1) (return 2) :: Union Integer)
   -- Just (a,{1},{2})
-  ifView :: u a -> Maybe (SymBool, u a, u a)
+  ifView :: u a -> Maybe (IfViewResult u a)
 
   -- | Convert the union to a guarded list.
   --
@@ -88,7 +97,7 @@ class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
   toGuardedList u =
     case (singleView u, ifView u) of
       (Just x, _) -> [(con True, x)]
-      (_, Just (c, l, r)) ->
+      (_, Just (IfViewResult c l r)) ->
         fmap (first (.&& c)) (toGuardedList l)
           ++ fmap (first (.&& symNot c)) (toGuardedList r)
       _ -> error "Should not happen"
@@ -105,11 +114,15 @@ class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
   overestimateUnionValues (If _ l r) =
     overestimateUnionValues l ++ overestimateUnionValues r
 
+instance UnionView Identity where
+  singleView = Just . runIdentity
+  ifView _ = Nothing
+
 -- | Pattern match to extract single values with 'singleView'.
 --
 -- >>> case (return 1 :: Union Integer) of Single v -> v
 -- 1
-pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
+pattern Single :: (UnionView u, Mergeable a) => a -> u a
 pattern Single x <-
   (singleView -> Just x)
   where
@@ -119,9 +132,9 @@ pattern Single x <-
 --
 -- >>> case (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer) of If c t f -> (c,t,f)
 -- (a,<1>,<2>)
-pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
+pattern If :: (UnionView u, Mergeable a) => (SymBranching u) => SymBool -> u a -> u a -> u a
 pattern If c t f <-
-  (ifView -> Just (c, t, f))
+  (ifView -> Just (IfViewResult c t f))
   where
     If c t f = mrgIf c t f
 
@@ -140,7 +153,7 @@ pattern If c t f <-
 -- <If a b c>
 -- >>> simpleMerge $ (mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: Union SymBool)
 -- (ite a b c)
-simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
+simpleMerge :: forall u a. (SimpleMergeable a, UnionView u) => u a -> a
 simpleMerge u = case tryMerge u of
   Single x -> x
   _ -> error "Should not happen"
@@ -152,18 +165,18 @@ simpleMerge u = case tryMerge u of
 -- The reason why we provide this class is that for some types, we only have
 -- `ITEOp` (which may throw an error), and we don't have a `SimpleMergeable`
 -- instance. In this case, we can use `symIteMerge` to merge the values.
-symIteMerge :: (ITEOp a, Mergeable a, PlainUnion u) => u a -> a
+symIteMerge :: (ITEOp a, Mergeable a, UnionView u) => u a -> a
 symIteMerge (Single x) = x
 symIteMerge (If cond l r) = symIte cond (symIteMerge l) (symIteMerge r)
 {-# INLINE symIteMerge #-}
 
--- | Helper for applying functions on 'PlainUnion' and 'SimpleMergeable'.
+-- | Helper for applying functions on 'UnionView' and 'SimpleMergeable'.
 --
 -- >>> let f :: Integer -> Union Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
 -- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: Union Integer)
 -- {If (&& b a) 1 (If b 2 (If a 3 4))}
 (.#) ::
-  (Function f a r, SimpleMergeable r, PlainUnion u) =>
+  (Function f a r, SimpleMergeable r, UnionView u) =>
   f ->
   u a ->
   r
@@ -179,7 +192,7 @@ infixl 9 .#
 -- (ite cond a (+ b c))
 onUnion ::
   forall u a r.
-  (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a) =>
+  (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a) =>
   (a -> r) ->
   (u a -> r)
 onUnion f = simpleMerge . fmap f . tryMerge
@@ -189,7 +202,7 @@ onUnion2 ::
   forall u a b r.
   ( SimpleMergeable r,
     SymBranching u,
-    PlainUnion u,
+    UnionView u,
     Mergeable a,
     Mergeable b
   ) =>
@@ -202,7 +215,7 @@ onUnion3 ::
   forall u a b c r.
   ( SimpleMergeable r,
     SymBranching u,
-    PlainUnion u,
+    UnionView u,
     Mergeable a,
     Mergeable b,
     Mergeable c
@@ -217,7 +230,7 @@ onUnion4 ::
   forall u a b c d r.
   ( SimpleMergeable r,
     SymBranching u,
-    PlainUnion u,
+    UnionView u,
     Mergeable a,
     Mergeable b,
     Mergeable c,
@@ -237,21 +250,21 @@ onUnion4 f ua ub uc ud =
 -- Nothing
 -- >>> unionToCon (return "a" :: Union SymInteger) :: Maybe Integer
 -- Nothing
-unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
+unionToCon :: (ToCon a b, UnionView u) => u a -> Maybe b
 unionToCon u =
   case (singleView u, ifView u) of
     (Just x, _) -> toCon x
-    (_, Just (c, l, r)) -> do
+    (_, Just (IfViewResult c l r)) -> do
       cl <- toCon c
       if cl then unionToCon l else unionToCon r
     _ -> Nothing
 {-# INLINE unionToCon #-}
 
 #if MIN_VERSION_base(4,16,0)
-instance (PlainUnion u) => PlainUnion (AsKey1 u) where
+instance (UnionView u) => UnionView (AsKey1 u) where
   singleView (AsKey1 u) = singleView u
   ifView (AsKey1 u) = case ifView u of
-    Just (c, l, r) -> Just (c, AsKey1 l, AsKey1 r)
+    Just (IfViewResult c l r) -> Just (IfViewResult c (AsKey1 l) (AsKey1 r))
     Nothing -> Nothing
   toGuardedList (AsKey1 u) = toGuardedList u
   overestimateUnionValues (AsKey1 u) = overestimateUnionValues u

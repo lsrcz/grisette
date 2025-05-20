@@ -63,10 +63,10 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp, symIte)
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot),
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion
+import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.UnionView
   ( simpleMerge,
   )
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Internal.Decl.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable,

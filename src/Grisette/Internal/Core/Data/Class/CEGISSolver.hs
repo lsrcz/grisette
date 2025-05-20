@@ -97,10 +97,6 @@ import Grisette.Internal.Core.Data.Class.ModelOps
     SymbolSetOps (isEmptySet),
   )
 import Grisette.Internal.Core.Data.Class.PPrint (PPrint (pformat), (<+>))
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion,
-    simpleMerge,
-  )
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
   )
@@ -114,6 +110,10 @@ import Grisette.Internal.Core.Data.Class.Solver
     withSolver,
   )
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( UnionView,
+    simpleMerge,
+  )
 import Grisette.Internal.SymPrim.Prim.Model (Model)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Language.Haskell.TH.Syntax (Lift)
@@ -468,7 +468,7 @@ solverCegisExceptMultiInputs ::
     EvalSym inputs,
     ExtractSym inputs,
     UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u
   ) =>
   handle ->
@@ -505,7 +505,7 @@ solverCegisExceptVCMultiInputs ::
     EvalSym inputs,
     ExtractSym inputs,
     UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u
   ) =>
   handle ->
@@ -551,7 +551,7 @@ solverCegisExceptStdVCMultiInputs ::
     EvalSym inputs,
     ExtractSym inputs,
     UnionWithExcept t u VerificationConditions (),
-    PlainUnion u,
+    UnionView u,
     Monad u
   ) =>
   handle ->
@@ -573,7 +573,7 @@ solverCegisExceptStdVCMultiInputs synthesizerSolver verifierSolver cexes =
 -- be reset after each iteration.
 solverCegisExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -603,7 +603,7 @@ solverCegisExcept synthesizerSolver verifierSolver inputs f v =
 -- be reset after each iteration.
 solverCegisExceptVC ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -637,7 +637,7 @@ solverCegisExceptVC synthesizerSolver verifierSolver inputs f v = do
 -- be reset after each iteration.
 solverCegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -717,7 +717,7 @@ solverCegisForAll
 -- be reset after each iteration.
 solverCegisForAllExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -747,7 +747,7 @@ solverCegisForAllExcept synthesizerSolver verifierSolver inputs f v =
 -- be reset after each iteration.
 solverCegisForAllExceptVC ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -782,7 +782,7 @@ solverCegisForAllExceptVC synthesizerSolver verifierSolver inputs f v = do
 -- be reset after each iteration.
 solverCegisForAllExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -879,7 +879,7 @@ cegisExceptMultiInputs ::
     EvalSym inputs,
     ExtractSym inputs,
     UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u
   ) =>
   config ->
@@ -907,7 +907,7 @@ cegisExceptVCMultiInputs ::
     EvalSym inputs,
     ExtractSym inputs,
     UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u
   ) =>
   config ->
@@ -939,7 +939,7 @@ cegisExceptStdVCMultiInputs ::
     EvalSym inputs,
     ExtractSym inputs,
     UnionWithExcept t u VerificationConditions (),
-    PlainUnion u,
+    UnionView u,
     Monad u
   ) =>
   config ->
@@ -984,7 +984,7 @@ cegisExceptStdVCMultiInputs config cexes f =
 -- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -1008,7 +1008,7 @@ cegisExcept config inputs f v =
 -- The errors should be translated to assertion or assumption violations.
 cegisExceptVC ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -1053,7 +1053,7 @@ cegisExceptVC config inputs f v =
 -- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -1106,7 +1106,7 @@ cegisForAll config input (CEGISCondition pre post) =
 -- See 'cegisForAll' and 'cegisExcept'.
 cegisForAllExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -1129,7 +1129,7 @@ cegisForAllExcept config inputs f v =
 -- See 'cegisForAll' and 'cegisExceptVC'.
 cegisForAllExceptVC ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,
@@ -1152,7 +1152,7 @@ cegisForAllExceptVC config inputs f v =
 -- See 'cegisForAll' and 'cegisExceptStdVC'.
 cegisForAllExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
-    PlainUnion u,
+    UnionView u,
     Monad u,
     EvalSym inputs,
     ExtractSym inputs,

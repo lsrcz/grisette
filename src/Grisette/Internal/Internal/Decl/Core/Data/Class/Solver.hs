@@ -66,11 +66,11 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSym),
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion,
+import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( UnionView,
     simpleMerge,
   )
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.Prim.Model
   ( AnySymbolSet,
     Model,
@@ -240,7 +240,7 @@ solverSolveMulti solver numOfModelRequested formula = do
 -- Solver procedure for programs with error handling.
 solverSolveExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     Solver handle
   ) =>
@@ -260,7 +260,7 @@ solverSolveExcept solver f v =
 -- models if possible.
 solverSolveMultiExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     Solver handle
   ) =>
@@ -374,7 +374,7 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 -- Right (Model {x -> 1 :: Integer})
 solveExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     ConfigurableSolver config handle
   ) =>
@@ -395,7 +395,7 @@ solveExcept config f v =
 -- models if possible.
 solveMultiExcept ::
   ( UnionWithExcept t u e v,
-    PlainUnion u,
+    UnionView u,
     Functor u,
     ConfigurableSolver config handle
   ) =>

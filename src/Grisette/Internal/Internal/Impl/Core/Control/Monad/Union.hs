@@ -44,7 +44,7 @@ import Grisette.Internal.Core.Data.Class.AsKey
     KeyHashable1 (liftKeyHashWithSalt),
     shouldUseAsKeyHasSymbolicVersionError,
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion (simpleMerge)
+import Grisette.Internal.Core.Data.Class.UnionView (simpleMerge)
 #else
 import Grisette.Internal.Core.Data.Class.AsKey
   ( AsKey1 (AsKey1),
@@ -54,8 +54,8 @@ import Grisette.Internal.Core.Data.Class.AsKey
     KeyHashable1 (liftKeyHashWithSalt),
     shouldUseAsKeyHasSymbolicVersionError,
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion (ifView, overestimateUnionValues, singleView, toGuardedList),
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( UnionView (ifView, overestimateUnionValues, singleView, toGuardedList),
     simpleMerge,
   )
 #endif
@@ -483,7 +483,7 @@ instance SymBranching (AsKey1 Union) where
   {-# INLINE mrgIfWithStrategy #-}
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance PlainUnion (AsKey1 Union) where
+instance UnionView (AsKey1 Union) where
   singleView (AsKey1 u) = singleView u
   ifView (AsKey1 u) = case ifView u of
     Just (c, l, r) -> Just (c, AsKey1 l, AsKey1 r)

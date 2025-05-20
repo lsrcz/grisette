@@ -37,8 +37,8 @@ import Grisette.Internal.Core.Data.Class.GenSym
     liftFresh,
   )
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.PlainUnion (simpleMerge)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle)
+import Grisette.Internal.Core.Data.Class.UnionView (simpleMerge)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
     existsTerm,

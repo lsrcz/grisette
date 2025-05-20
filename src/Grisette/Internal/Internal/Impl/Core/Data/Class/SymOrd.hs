@@ -63,9 +63,6 @@ import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1 (AsKey1))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( simpleMerge,
-  )
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
@@ -76,6 +73,9 @@ import Grisette.Internal.Core.Data.Class.SymEq
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
+  )
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( simpleMerge,
   )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
   ( SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),

@@ -161,7 +161,6 @@ import Grisette.Internal.Core.Data.Class.Mergeable
 import Grisette.Internal.Core.Data.Class.PPrint
   ( PPrint (pformat),
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion (simpleMerge)
 import Grisette.Internal.Core.Data.Class.SafeDiv
   ( DivOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
     SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
@@ -205,6 +204,7 @@ import Grisette.Internal.Core.Data.Class.SymShift
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle, tryMerge)
+import Grisette.Internal.Core.Data.Class.UnionView (simpleMerge)
 import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSyms, allSymsS))
 import Grisette.Internal.SymPrim.BV

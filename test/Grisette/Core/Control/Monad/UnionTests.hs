@@ -9,6 +9,7 @@ module Grisette.Core.Control.Monad.UnionTests (unionTests) where
 
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (Identity (Identity))
+import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Grisette
   ( AsKey (AsKey),
@@ -16,13 +17,13 @@ import Grisette
     ExtractSym (extractSym),
     Function ((#)),
     ITEOp (symIte),
+    IfViewResult (IfViewResult),
     LogicalOp ((.&&)),
     Mergeable (rootStrategy),
     ModelOps (emptyModel),
     ModelRep (buildModel),
     ModelValuePair ((::=)),
     PPrint (pformat),
-    PlainUnion (ifView, singleView),
     SimpleMergeable (mrgIte),
     Solvable (con, conView, isym, ssym),
     SubstSym (substSym),
@@ -37,6 +38,7 @@ import Grisette
     TryMerge (tryMergeWithStrategy),
     TypedAnySymbol,
     TypedConstantSymbol,
+    UnionView (ifView, singleView),
     mrgIf,
     mrgIte1,
     mrgSingle,
@@ -63,7 +65,7 @@ import Grisette.TestUtil.PrettyPrint (compactRenderedAs, renderedAs)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
+import Test.HUnit (assertBool, (@?=))
 
 union1 :: AsKey1 Union (Either (AsKey SymBool) (AsKey SymInteger))
 union1 = AsKey1 $ mrgIfPropagatedStrategy "u1c" (return $ Left "u1a") (return $ Right "u1b")
@@ -140,7 +142,7 @@ unionTests =
       testCase "SimpleMergeable1" $
         mrgIte1 "u12c" unionSimple1 unionSimple2 @?= unionSimple12Merged,
       testGroup
-        "PlainUnion"
+        "UnionView"
         [ testGroup
             "SingleView"
             [ testCase "is single" $ do
@@ -154,10 +156,9 @@ unionTests =
             "IfView"
             [ testCase "is single" $ do
                 let actual = ifView (tryMerge unionSimple1)
-                let expected = Nothing
-                actual @?= expected,
+                assertBool "ifView should return Nothing" (isNothing actual),
               testCase "is not single (unmerged)" $ do
-                let Just (cond, left, right) = ifView unionSimple1
+                let Just (IfViewResult cond left right) = ifView unionSimple1
                 let expected =
                       ( "u1c",
                         return "u1a",
@@ -165,7 +166,7 @@ unionTests =
                       )
                 (AsKey cond, left, right) @?= expected,
               testCase "is not single (merged)" $ do
-                let Just (cond, left, right) = ifView (tryMerge union1)
+                let Just (IfViewResult cond left right) = ifView (tryMerge union1)
                 let expected =
                       ( "u1c",
                         mrgSingle $ Left "u1a",

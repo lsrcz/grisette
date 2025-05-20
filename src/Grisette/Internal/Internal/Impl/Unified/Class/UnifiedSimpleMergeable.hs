@@ -50,7 +50,6 @@ import Grisette.Internal.Core.Control.Exception (AssertionError)
 import Grisette.Internal.Core.Control.Monad.Union (liftUnion)
 import Grisette.Internal.Core.Data.Class.GenSym (FreshT)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
-import qualified Grisette.Internal.Core.Data.Class.PlainUnion as Grisette
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
     SimpleMergeable1,
@@ -63,6 +62,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
+import qualified Grisette.Internal.Core.Data.Class.UnionView as Grisette
 import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
     UnifiedSimpleMergeable (withBaseSimpleMergeable),

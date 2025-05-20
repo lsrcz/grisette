@@ -16,7 +16,6 @@ import Grisette.Core.Data.Class.ExtractSymTests (extractSymTests)
 import Grisette.Core.Data.Class.GenSymTests (genSymTests)
 import Grisette.Core.Data.Class.MergeableTests (mergeableTests)
 import Grisette.Core.Data.Class.PPrintTests (pprintTests)
-import Grisette.Core.Data.Class.PlainUnionTests (plainUnionTests)
 import Grisette.Core.Data.Class.SafeDivTests (safeDivTests)
 import Grisette.Core.Data.Class.SafeLinearArithTests (safeLinearArithTests)
 import Grisette.Core.Data.Class.SafeSymRotateTests (safeSymRotateTests)
@@ -31,6 +30,7 @@ import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
+import Grisette.Core.Data.Class.UnionViewTests (unionViewTests)
 import Grisette.Core.Data.UnionBaseTests (unionBaseTests)
 import Grisette.Core.TH.DerivationTest (derivationTest)
 import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
@@ -112,7 +112,7 @@ coreTests =
               genSymTests,
               pprintTests,
               mergeableTests,
-              plainUnionTests,
+              unionViewTests,
               safeDivTests,
               safeLinearArithTests,
               safeSymShiftTests,

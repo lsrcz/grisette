@@ -881,6 +881,7 @@ module Grisette.Core
     mrgIf,
     mergeWithStrategy,
     merge,
+    MonadUnion,
 
     -- ** TryMerge operations
     MonadTryMerge,
@@ -889,8 +890,9 @@ module Grisette.Core
     mrgSingleWithStrategy,
     tryMerge,
 
-    -- ** PlainUnion operations
-    PlainUnion (..),
+    -- ** UnionView operations
+    UnionView (..),
+    IfViewResult (..),
     pattern Single,
     pattern If,
     simpleMerge,
@@ -899,7 +901,6 @@ module Grisette.Core
     onUnion2,
     onUnion3,
     onUnion4,
-    MonadUnion,
 
     -- * Pretty printing
     PPrint (..),
@@ -1663,18 +1664,6 @@ import Grisette.Internal.Core.Data.Class.PPrint
     pprint,
     viaShowsPrec,
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion (..),
-    onUnion,
-    onUnion2,
-    onUnion3,
-    onUnion4,
-    simpleMerge,
-    unionToCon,
-    (.#),
-    pattern If,
-    pattern Single,
-  )
 import Grisette.Internal.Core.Data.Class.SafeBitCast (SafeBitCast (..))
 import Grisette.Internal.Core.Data.Class.SafeDiv
   ( DivOr (..),
@@ -1830,6 +1819,19 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     mrgToSym,
     toUnionSym,
     tryMerge,
+  )
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( IfViewResult (..),
+    UnionView (..),
+    onUnion,
+    onUnion2,
+    onUnion3,
+    onUnion4,
+    simpleMerge,
+    unionToCon,
+    (.#),
+    pattern If,
+    pattern Single,
   )
 import Grisette.Internal.Core.Data.MemoUtils
   ( htmemo,

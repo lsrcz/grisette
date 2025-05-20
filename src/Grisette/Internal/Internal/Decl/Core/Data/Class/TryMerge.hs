@@ -20,6 +20,7 @@ module Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
   )
 where
 
+import Control.Monad.Identity (Identity)
 import Grisette.Internal.Core.Data.Class.AsKey (AsKey1 (AsKey1))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
@@ -109,4 +110,8 @@ toUnionSym = tryMerge . pure . toSym
 instance (TryMerge m) => TryMerge (AsKey1 m) where
   tryMergeWithStrategy strategy (AsKey1 t) =
     AsKey1 $ tryMergeWithStrategy strategy t
+  {-# INLINE tryMergeWithStrategy #-}
+
+instance TryMerge Identity where
+  tryMergeWithStrategy _ = id
   {-# INLINE tryMergeWithStrategy #-}
