@@ -13,7 +13,7 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.SymPrim.SymBool (SymBool (SymBool)) where
+module Grisette.Internal.SymPrim.SymBool (SymBool (SymBool), SymBoolKey) where
 
 import Control.DeepSeq (NFData)
 import qualified Data.Binary as Binary
@@ -23,7 +23,8 @@ import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.AsKey
-  ( KeyEq (keyEq),
+  ( AsKey,
+    KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
     shouldUseAsKeyHasSymbolicVersionError,
   )
@@ -65,6 +66,9 @@ import Language.Haskell.TH.Syntax (Lift)
 -- more information.
 newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
   deriving (Lift, NFData, Generic)
+
+-- | t'SymBool' type with identity equality.
+type SymBoolKey = AsKey SymBool
 
 instance ConRep SymBool where
   type ConType SymBool = Bool

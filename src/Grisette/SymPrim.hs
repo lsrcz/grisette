@@ -71,6 +71,7 @@ module Grisette.SymPrim
 
     -- ** Runtime-sized bit-vector types
     SomeBV (..),
+    SomeBVKey,
     SomeBVException (..),
     pattern SomeIntN,
     type SomeIntN,
@@ -123,33 +124,55 @@ module Grisette.SymPrim
 
     -- ** Symbolic bool and integer types
     SymBool (..),
+    SymBoolKey,
     SymInteger (..),
+    SymIntegerKey,
 
     -- ** Symbolic bit-vector types
     SymWordN (..),
+    SymWordNKey,
     SymWordN8,
+    SymWordN8Key,
     SymWordN16,
+    SymWordN16Key,
     SymWordN32,
+    SymWordN32Key,
     SymWordN64,
+    SymWordN64Key,
     SymIntN (..),
+    SymIntNKey,
     SymIntN8,
+    SymIntN8Key,
     SymIntN16,
+    SymIntN16Key,
     SymIntN32,
+    SymIntN32Key,
     SymIntN64,
+    SymIntN64Key,
     SomeSymIntN,
+    SomeSymIntNKey,
     SomeSymWordN,
+    SomeSymWordNKey,
     pattern SomeSymIntN,
     pattern SomeSymWordN,
+    pattern SomeSymIntNKey,
+    pattern SomeSymWordNKey,
 
     -- ** Symbolic floating point
     SymFP (..),
+    SymFPKey,
     SymFPRoundingMode (..),
+    SymFPRoundingModeKey,
     SymFP16,
+    SymFP16Key,
     SymFP32,
+    SymFP32Key,
     SymFP64,
+    SymFP64Key,
 
     -- ** Symbolic algebraic real numbers
     SymAlgReal (..),
+    SymAlgRealKey,
 
     -- ** Symbolic function, possibly uninterpreted
     type (=~>) (..),
@@ -412,6 +435,9 @@ import Grisette.Internal.SymPrim.Quantifier
 import Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (..),
     SomeBVException (..),
+    SomeBVKey,
+    SomeSymIntNKey,
+    SomeSymWordNKey,
     arbitraryBV,
     binSomeBV,
     binSomeBVR1,
@@ -430,39 +456,58 @@ import Grisette.Internal.SymPrim.SomeBV
     pattern ConBV,
     pattern SomeIntN,
     pattern SomeSymIntN,
+    pattern SomeSymIntNKey,
     pattern SomeSymWordN,
+    pattern SomeSymWordNKey,
     pattern SomeWordN,
     type SomeIntN,
     type SomeSymIntN,
     type SomeSymWordN,
     type SomeWordN,
   )
-import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (..))
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (..), SymAlgRealKey)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (..),
     SymIntN16,
+    SymIntN16Key,
     SymIntN32,
+    SymIntN32Key,
     SymIntN64,
+    SymIntN64Key,
     SymIntN8,
+    SymIntN8Key,
+    SymIntNKey,
     SymWordN (..),
     SymWordN16,
+    SymWordN16Key,
     SymWordN32,
+    SymWordN32Key,
     SymWordN64,
+    SymWordN64Key,
     SymWordN8,
+    SymWordN8Key,
+    SymWordNKey,
   )
 import Grisette.Internal.SymPrim.SymBool
   ( SymBool (..),
+    SymBoolKey,
   )
 import Grisette.Internal.SymPrim.SymFP
   ( SymFP (..),
     SymFP16,
+    SymFP16Key,
     SymFP32,
+    SymFP32Key,
     SymFP64,
+    SymFP64Key,
+    SymFPKey,
     SymFPRoundingMode (..),
+    SymFPRoundingModeKey,
   )
 import Grisette.Internal.SymPrim.SymGeneralFun ((-->), type (-~>) (..))
 import Grisette.Internal.SymPrim.SymInteger
   ( SymInteger (..),
+    SymIntegerKey,
   )
 import Grisette.Internal.SymPrim.SymPrim
   ( BasicSymPrim,

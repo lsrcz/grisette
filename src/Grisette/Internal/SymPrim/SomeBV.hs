@@ -31,6 +31,7 @@
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (..),
+    SomeBVKey,
     SomeBVException (..),
 
     -- * Constructing and pattern matching on SomeBV
@@ -50,8 +51,12 @@ module Grisette.Internal.SymPrim.SomeBV
     type SomeWordN,
     pattern SomeSymIntN,
     type SomeSymIntN,
+    pattern SomeSymIntNKey,
+    type SomeSymIntNKey,
     pattern SomeSymWordN,
     type SomeSymWordN,
+    pattern SomeSymWordNKey,
+    type SomeSymWordNKey,
 
     -- * Helpers for manipulating SomeBV
     unarySomeBV,
@@ -121,7 +126,8 @@ import GHC.TypeNats
 import Generics.Deriving (Default (Default))
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.AsKey
-  ( KeyEq (keyEq),
+  ( AsKey (AsKey),
+    KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
     shouldUseAsKeyError,
   )
@@ -388,6 +394,9 @@ instance
 data SomeBV bv where
   SomeBV :: (KnownNat n, 1 <= n) => bv n -> SomeBV bv
   SomeBVLit :: SomeBVLit -> SomeBV bv
+
+-- | @t'SomeBV' bv@ type with identity equality.
+type SomeBVKey bv = AsKey (SomeBV bv)
 
 data SomeBVLit where
   SomeBVIntLit :: Integer -> SomeBVLit
@@ -1384,16 +1393,28 @@ pattern SomeWordN a = SomeBV a
 -- | Type synonym for t'SomeBV' for symbolic signed bitvectors.
 type SomeSymIntN = SomeBV SymIntN
 
+-- | 'SomeSymIntN' with identity equality.
+type SomeSymIntNKey = SomeBVKey SymIntN
+
 -- | Pattern synonym for t'SomeBV' for symbolic signed bitvectors.
 pattern SomeSymIntN :: () => (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
 pattern SomeSymIntN a = SomeBV a
 
+pattern SomeSymIntNKey :: () => (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntNKey
+pattern SomeSymIntNKey a = AsKey (SomeBV a)
+
 -- | Type synonym for t'SomeBV' for symbolic unsigned bitvectors.
 type SomeSymWordN = SomeBV SymWordN
+
+-- | 'SomeSymWordN' with identity equality.
+type SomeSymWordNKey = SomeBVKey SymWordN
 
 -- | Pattern synonym for t'SomeBV' for symbolic unsigned bitvectors.
 pattern SomeSymWordN :: () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
 pattern SomeSymWordN a = SomeBV a
+
+pattern SomeSymWordNKey :: () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordNKey
+pattern SomeSymWordNKey a = AsKey (SomeBV a)
 
 -- Construction
 

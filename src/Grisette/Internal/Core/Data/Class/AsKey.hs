@@ -100,6 +100,7 @@ import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term (ConRep (ConType))
 import Language.Haskell.TH.Syntax (Lift)
 
+-- | Type class for identity equality for terms.
 class KeyEq a where
   keyEq :: a -> a -> Bool
 
@@ -126,11 +127,13 @@ instance (ValidFP a b) => KeyEq (FP a b) where
 instance (Eq a) => KeyEq (Identity a) where
   keyEq = (==)
 
+-- | Type class for comparing terms based on their identity.
 class (KeyEq a) => KeyOrd a where
   keyCompare :: a -> a -> Ordering
 
 infix 4 `keyCompare`
 
+-- | Type class for hashing terms based on their identity.
 class (KeyEq a) => KeyHashable a where
   keyHashWithSalt :: Int -> a -> Int
 
@@ -166,6 +169,10 @@ class (KeyEq1 f) => KeyHashable1 f where
 
 infixl 0 `keyHashWithSalt`
 
+-- | Use a term as a key with identity equality.
+--
+-- For example, @t'AsKey' t'Grisette.SymPrim.SymBool'@ uses the term identity
+-- for t'Grisette.SymPrim.SymBool'.
 newtype AsKey a = AsKey {getAsKey :: a}
   deriving newtype
     ( Binary.Binary,
@@ -183,6 +190,10 @@ newtype AsKey a = AsKey {getAsKey :: a}
     )
   deriving stock (Functor, Lift)
 
+-- | Use a union as a key with identity equality.
+--
+-- For example, @t'AsKey1' t'Grisette.Core.Union'@ uses the term identity
+-- for t'Grisette.Core.Union'.
 newtype AsKey1 f a = AsKey1 {getAsKey1 :: f a}
   deriving newtype
     ( Binary.Binary,
@@ -203,20 +214,24 @@ instance (Serial.Serial a) => Serial.Serial (AsKey a) where
   serialize = Serial.serialize . getAsKey
   deserialize = AsKey <$> Serial.deserialize
 
+instance (Serial.Serial a, Serial.Serial1 f) => Serial.Serial (AsKey1 f a) where
+  serialize = Serial.serialize1 . getAsKey1
+  deserialize = AsKey1 <$> Serial.deserialize1
+
 instance (KeyEq a) => Eq (AsKey a) where
   (AsKey a) == (AsKey b) = keyEq a b
-
-instance (KeyOrd a) => Ord (AsKey a) where
-  compare (AsKey a) (AsKey b) = keyCompare a b
-
-instance (KeyHashable a) => Hashable (AsKey a) where
-  hashWithSalt salt = keyHashWithSalt salt . getAsKey
 
 instance (KeyEq1 f, Eq a) => Eq (AsKey1 f a) where
   (==) = eq1
 
 instance (KeyEq1 f) => Eq1 (AsKey1 f) where
   liftEq f (AsKey1 a) (AsKey1 b) = liftKeyEq f a b
+
+instance (KeyOrd a) => Ord (AsKey a) where
+  compare (AsKey a) (AsKey b) = keyCompare a b
+
+instance (KeyHashable a) => Hashable (AsKey a) where
+  hashWithSalt salt = keyHashWithSalt salt . getAsKey
 
 instance (KeyOrd1 f, Ord a) => Ord (AsKey1 f a) where
   compare = compare1

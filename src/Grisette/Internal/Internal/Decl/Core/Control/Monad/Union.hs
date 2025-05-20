@@ -24,12 +24,14 @@
 module Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
   ( -- * Union and helpers
     Union (..),
+    UnionKey,
     pattern UAny,
     pattern UMrg,
   )
 where
 
 import Data.String (IsString (fromString))
+import Grisette.Internal.Core.Data.Class.AsKey (AsKey1)
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion (ifView, singleView, toGuardedList),
   )
@@ -172,6 +174,9 @@ data Union a = Union
   { unionMergingStrategy :: Maybe (MergingStrategy a),
     unionBase :: UnionBase a
   }
+
+-- | 'Union' with identity equality.
+type UnionKey = AsKey1 Union
 
 -- | Pattern synonym for Union with no MergingStrategy (backwards compatibility)
 pattern UAny :: UnionBase a -> Union a
