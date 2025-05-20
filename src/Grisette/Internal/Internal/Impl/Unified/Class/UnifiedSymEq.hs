@@ -89,6 +89,9 @@ import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
   withMode @mode
     (withBaseSymEq @mode @a $ a == b)
     (withBaseSymEq @mode @a $ a SymEq..== b)
+{-# INLINE (.==) #-}
+
+infix 4 .==
 
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymEq../=)`.
 --
@@ -105,6 +108,9 @@ import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
   withMode @mode
     (withBaseSymEq @mode @a $ a /= b)
     (withBaseSymEq @mode @a $ a SymEq../= b)
+{-# INLINE (./=) #-}
+
+infix 4 ./=
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymEq.symDistinct`.
 --

@@ -103,6 +103,8 @@ import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
     (withBaseSymOrd @mode @a $ a SymOrd..<= b)
 {-# INLINE (.<=) #-}
 
+infix 4 .<=
+
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymOrd..<)`.
 (.<) ::
   forall mode a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
@@ -111,6 +113,8 @@ import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
     (withBaseSymOrd @mode @a $ a < b)
     (withBaseSymOrd @mode @a $ a SymOrd..< b)
 {-# INLINE (.<) #-}
+
+infix 4 .<
 
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymOrd..>=)`.
 (.>=) ::
@@ -121,6 +125,8 @@ import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
     (withBaseSymOrd @mode @a $ a SymOrd..>= b)
 {-# INLINE (.>=) #-}
 
+infix 4 .>=
+
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymOrd..>)`.
 (.>) ::
   forall mode a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
@@ -129,6 +135,8 @@ import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
     (withBaseSymOrd @mode @a $ a > b)
     (withBaseSymOrd @mode @a $ a SymOrd..> b)
 {-# INLINE (.>) #-}
+
+infix 4 .>
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symMax`.
 symMax ::
