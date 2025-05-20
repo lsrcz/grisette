@@ -11,6 +11,7 @@
 module Grisette.Internal.Core.Control.Monad.Union
   ( -- * Union and helpers
     Union (..),
+    UnionKey,
     unionUnaryOp,
     unionBinOp,
     liftUnion,

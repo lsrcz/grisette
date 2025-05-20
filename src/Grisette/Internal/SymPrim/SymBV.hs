@@ -32,11 +32,21 @@ module Grisette.Internal.SymPrim.SymBV
     SymWordN16,
     SymWordN32,
     SymWordN64,
+    SymWordNKey,
+    SymWordN8Key,
+    SymWordN16Key,
+    SymWordN32Key,
+    SymWordN64Key,
     SymIntN (SymIntN),
     SymIntN8,
     SymIntN16,
     SymIntN32,
     SymIntN64,
+    SymIntNKey,
+    SymIntN8Key,
+    SymIntN16Key,
+    SymIntN32Key,
+    SymIntN64Key,
   )
 where
 
@@ -73,7 +83,8 @@ import GHC.TypeNats
     type (<=),
   )
 import Grisette.Internal.Core.Data.Class.AsKey
-  ( KeyEq (keyEq),
+  ( AsKey,
+    KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
     shouldUseAsKeyHasSymbolicVersionError,
   )
@@ -186,6 +197,9 @@ import Language.Haskell.TH.Syntax (Lift)
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
 
+-- | t'SymIntN' type with identity equality.
+type SymIntNKey n = AsKey (SymIntN n)
+
 -- | Symbolic 8-bit signed bit-vector.
 type SymIntN8 = SymIntN 8
 
@@ -197,6 +211,18 @@ type SymIntN32 = SymIntN 32
 
 -- | Symbolic 64-bit signed bit-vector.
 type SymIntN64 = SymIntN 64
+
+-- | @t'SymIntN' 8@ type with identity equality.
+type SymIntN8Key = SymIntNKey 8
+
+-- | @t'SymIntN' 16@ type with identity equality.
+type SymIntN16Key = SymIntNKey 16
+
+-- | @t'SymIntN' 32@ type with identity equality.
+type SymIntN32Key = SymIntNKey 32
+
+-- | @t'SymIntN' 64@ type with identity equality.
+type SymIntN64Key = SymIntNKey 64
 
 -- | Symbolic unsigned bit vector type. Indexed with the bit width.
 -- Signedness affects the semantics of the operations, including
@@ -216,6 +242,9 @@ type SymIntN64 = SymIntN 64
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
 
+-- | t'SymWordN' type with identity equality.
+type SymWordNKey n = AsKey (SymWordN n)
+
 -- | Symbolic 8-bit unsigned bit-vector.
 type SymWordN8 = SymWordN 8
 
@@ -227,6 +256,18 @@ type SymWordN32 = SymWordN 32
 
 -- | Symbolic 64-bit unsigned bit-vector.
 type SymWordN64 = SymWordN 64
+
+-- | t'SymWordN' 8@ type with identity equality.
+type SymWordN8Key = SymWordNKey 8
+
+-- | t'SymWordN' 16@ type with identity equality.
+type SymWordN16Key = SymWordNKey 16
+
+-- | t'SymWordN' 32@ type with identity equality.
+type SymWordN32Key = SymWordNKey 32
+
+-- | t'SymWordN' 64@ type with identity equality.
+type SymWordN64Key = SymWordNKey 64
 
 instance (KnownNat n, 1 <= n) => ConRep (SymIntN n) where
   type ConType (SymIntN n) = IntN n

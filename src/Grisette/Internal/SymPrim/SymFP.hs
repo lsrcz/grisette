@@ -25,7 +25,12 @@ module Grisette.Internal.SymPrim.SymFP
     SymFP16,
     SymFP32,
     SymFP64,
+    SymFPKey,
+    SymFP16Key,
+    SymFP32Key,
+    SymFP64Key,
     SymFPRoundingMode (SymFPRoundingMode),
+    SymFPRoundingModeKey,
   )
 where
 
@@ -39,7 +44,8 @@ import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.AsKey
-  ( KeyEq (keyEq),
+  ( AsKey,
+    KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
     shouldUseAsKeyError,
     shouldUseAsKeyHasSymbolicVersionError,
@@ -192,6 +198,9 @@ newtype SymFP eb sb = SymFP {underlyingFPTerm :: Term (FP eb sb)}
   deriving (Lift, Generic)
   deriving anyclass (NFData)
 
+-- | t'SymFP' type with identity equality.
+type SymFPKey eb sb = AsKey (SymFP eb sb)
+
 -- | Symbolic IEEE 754 half-precision floating-point number.
 type SymFP16 = SymFP 5 11
 
@@ -200,6 +209,15 @@ type SymFP32 = SymFP 8 24
 
 -- | Symbolic IEEE 754 double-precision floating-point number.
 type SymFP64 = SymFP 11 53
+
+-- | @t'SymFP' 16@ type with identity equality.
+type SymFP16Key = SymFPKey 5 11
+
+-- | @t'SymFP' 32@ type with identity equality.
+type SymFP32Key = SymFPKey 8 24
+
+-- | @t'SymFP' 64@ type with identity equality.
+type SymFP64Key = SymFPKey 11 53
 
 instance ConRep (SymFP eb sb) where
   type ConType (SymFP eb sb) = FP eb sb
@@ -293,6 +311,9 @@ instance (ValidFP eb sb) => Floating (SymFP eb sb) where
 newtype SymFPRoundingMode = SymFPRoundingMode (Term FPRoundingMode)
   deriving (Lift, Generic)
   deriving anyclass (NFData)
+
+-- | t'SymFPRoundingMode' type with identity equality.
+type SymFPRoundingModeKey = AsKey SymFPRoundingMode
 
 instance ConRep SymFPRoundingMode where
   type ConType SymFPRoundingMode = FPRoundingMode

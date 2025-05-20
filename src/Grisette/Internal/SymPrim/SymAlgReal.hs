@@ -14,7 +14,11 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal)) where
+module Grisette.Internal.SymPrim.SymAlgReal
+  ( SymAlgReal (SymAlgReal),
+    SymAlgRealKey,
+  )
+where
 
 import Control.DeepSeq (NFData)
 import qualified Data.Binary as Binary
@@ -24,7 +28,8 @@ import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.AsKey
-  ( KeyEq (keyEq),
+  ( AsKey,
+    KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
     shouldUseAsKeyHasSymbolicVersionError,
     shouldUseSymbolicVersionError,
@@ -83,6 +88,9 @@ import Language.Haskell.TH.Syntax (Lift)
 newtype SymAlgReal = SymAlgReal {underlyingAlgRealTerm :: Term AlgReal}
   deriving (Lift, Generic)
   deriving anyclass (NFData)
+
+-- | t'SymAlgReal' type with identity equality.
+type SymAlgRealKey = AsKey SymAlgReal
 
 instance ConRep SymAlgReal where
   type ConType SymAlgReal = AlgReal

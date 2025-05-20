@@ -13,7 +13,11 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger)) where
+module Grisette.Internal.SymPrim.SymInteger
+  ( SymInteger (SymInteger),
+    SymIntegerKey,
+  )
+where
 
 import Control.DeepSeq (NFData)
 import qualified Data.Binary as Binary
@@ -23,7 +27,8 @@ import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.AsKey
-  ( KeyEq (keyEq),
+  ( AsKey,
+    KeyEq (keyEq),
     KeyHashable (keyHashWithSalt),
     shouldUseAsKeyHasSymbolicVersionError,
     shouldUseSymbolicVersionError,
@@ -78,6 +83,9 @@ import Language.Haskell.TH.Syntax (Lift)
 -- more information.
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
   deriving (Lift, NFData, Generic)
+
+-- | t'SymInteger' type with identity equality.
+type SymIntegerKey = AsKey SymInteger
 
 instance ConRep SymInteger where
   type ConType SymInteger = Integer

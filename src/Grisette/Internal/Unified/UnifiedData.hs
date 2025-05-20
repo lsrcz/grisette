@@ -80,8 +80,7 @@ class
     (SubstSym v) => SubstSym u,
     (Serial v, Mergeable v) => Serial u,
     (UnifiedITEOp mode v, Mergeable v) => UnifiedITEOp mode u,
-    (UnifiedSimpleMergeable mode v, Mergeable v) =>
-    UnifiedSimpleMergeable mode u,
+    (Mergeable v) => UnifiedSimpleMergeable mode u,
     (UnifiedSymEq mode v) => UnifiedSymEq mode u,
     (UnifiedSymOrd mode v) => UnifiedSymOrd mode u,
     forall a. (ToSym a v) => ToSym (Identity a) u,
