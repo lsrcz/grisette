@@ -3599,12 +3599,18 @@ attachNextQuantifiedSymbolInfo :: SymBiMap -> TypedConstantSymbol a -> (SymBiMap
 instance GHC.Internal.Show.Show Grisette.Internal.Backend.SymBiMap.SymBiMap
 
 module Grisette.Internal.Core.Data.Class.AsKey
+
+-- | Type class for identity equality for terms.
 class KeyEq a
 keyEq :: KeyEq a => a -> a -> Bool
 infix 4 `keyEq`
+
+-- | Type class for comparing terms based on their identity.
 class KeyEq a => KeyOrd a
 keyCompare :: KeyOrd a => a -> a -> Ordering
 infix 4 `keyCompare`
+
+-- | Type class for hashing terms based on their identity.
 class KeyEq a => KeyHashable a
 keyHashWithSalt :: KeyHashable a => Int -> a -> Int
 infixl 0 `keyHashWithSalt`
@@ -3614,9 +3620,19 @@ class KeyEq1 f => KeyOrd1 (f :: Type -> Type)
 liftKeyCompare :: KeyOrd1 f => (a -> b -> Ordering) -> f a -> f b -> Ordering
 class KeyEq1 f => KeyHashable1 (f :: Type -> Type)
 liftKeyHashWithSalt :: KeyHashable1 f => (Int -> a -> Int) -> Int -> f a -> Int
+
+-- | Use a term as a key with identity equality.
+--   
+--   For example, <tt><a>AsKey</a> <a>SymBool</a></tt> uses the term
+--   identity for <a>SymBool</a>.
 newtype AsKey a
 AsKey :: a -> AsKey a
 [getAsKey] :: AsKey a -> a
+
+-- | Use a union as a key with identity equality.
+--   
+--   For example, <tt><a>AsKey1</a> <a>Union</a></tt> uses the term
+--   identity for <a>Union</a>.
 newtype AsKey1 (f :: Type -> Type) a
 AsKey1 :: f a -> AsKey1 (f :: Type -> Type) a
 [getAsKey1] :: AsKey1 (f :: Type -> Type) a -> f a
@@ -3690,6 +3706,7 @@ instance Grisette.Internal.Core.Data.Class.AsKey.KeyOrd1 f => Data.Functor.Class
 instance Grisette.Internal.Core.Data.Class.AsKey.KeyOrd a => GHC.Classes.Ord (Grisette.Internal.Core.Data.Class.AsKey.AsKey a)
 instance (Grisette.Internal.Core.Data.Class.AsKey.KeyOrd1 f, GHC.Classes.Ord a) => GHC.Classes.Ord (Grisette.Internal.Core.Data.Class.AsKey.AsKey1 f a)
 instance Data.Bytes.Serial.Serial a => Data.Bytes.Serial.Serial (Grisette.Internal.Core.Data.Class.AsKey.AsKey a)
+instance (Data.Bytes.Serial.Serial a, Data.Bytes.Serial.Serial1 f) => Data.Bytes.Serial.Serial (Grisette.Internal.Core.Data.Class.AsKey.AsKey1 f a)
 instance Data.Serialize.Serialize a => Data.Serialize.Serialize (Grisette.Internal.Core.Data.Class.AsKey.AsKey a)
 instance Data.Serialize.Serialize (f a) => Data.Serialize.Serialize (Grisette.Internal.Core.Data.Class.AsKey.AsKey1 f a)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Grisette.Internal.Core.Data.Class.AsKey.AsKey1 f)
@@ -3904,6 +3921,9 @@ module Grisette.Internal.SymPrim.SymInteger
 --   <a>Grisette.Core#g:symops</a> for more information.
 newtype SymInteger
 SymInteger :: Term Integer -> SymInteger
+
+-- | <a>SymInteger</a> type with identity equality.
+type SymIntegerKey = AsKey SymInteger
 instance Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Grisette.Internal.Core.Data.Class.Function.Apply Grisette.Internal.SymPrim.SymInteger.SymInteger
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.SymInteger.SymInteger
@@ -4027,6 +4047,9 @@ module Grisette.Internal.SymPrim.SymBool
 --   <a>Grisette.Core#g:symops</a> for more information.
 newtype SymBool
 SymBool :: Term Bool -> SymBool
+
+-- | <a>SymBool</a> type with identity equality.
+type SymBoolKey = AsKey SymBool
 instance Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms Grisette.Internal.SymPrim.SymBool.SymBool
 instance Grisette.Internal.Core.Data.Class.Function.Apply Grisette.Internal.SymPrim.SymBool.SymBool
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.SymBool.SymBool
@@ -4083,6 +4106,21 @@ type SymWordN32 = SymWordN 32
 -- | Symbolic 64-bit unsigned bit-vector.
 type SymWordN64 = SymWordN 64
 
+-- | <a>SymWordN</a> type with identity equality.
+type SymWordNKey (n :: Nat) = AsKey SymWordN n
+
+-- | <a>SymWordN</a> 8@ type with identity equality.
+type SymWordN8Key = SymWordNKey 8
+
+-- | <a>SymWordN</a> 16@ type with identity equality.
+type SymWordN16Key = SymWordNKey 16
+
+-- | <a>SymWordN</a> 32@ type with identity equality.
+type SymWordN32Key = SymWordNKey 32
+
+-- | <a>SymWordN</a> 64@ type with identity equality.
+type SymWordN64Key = SymWordNKey 64
+
 -- | Symbolic signed bit vector type. Indexed with the bit width.
 --   Signedness affects the semantics of the operations, including
 --   comparison/extension, etc.
@@ -4117,6 +4155,21 @@ type SymIntN32 = SymIntN 32
 
 -- | Symbolic 64-bit signed bit-vector.
 type SymIntN64 = SymIntN 64
+
+-- | <a>SymIntN</a> type with identity equality.
+type SymIntNKey (n :: Nat) = AsKey SymIntN n
+
+-- | <tt><a>SymIntN</a> 8</tt> type with identity equality.
+type SymIntN8Key = SymIntNKey 8
+
+-- | <tt><a>SymIntN</a> 16</tt> type with identity equality.
+type SymIntN16Key = SymIntNKey 16
+
+-- | <tt><a>SymIntN</a> 32</tt> type with identity equality.
+type SymIntN32Key = SymIntNKey 32
+
+-- | <tt><a>SymIntN</a> 64</tt> type with identity equality.
+type SymIntN64Key = SymIntNKey 64
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms (Grisette.Internal.SymPrim.SymBV.SymIntN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms (Grisette.Internal.SymPrim.SymBV.SymWordN n)
 instance (GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.Function.Apply (Grisette.Internal.SymPrim.SymBV.SymIntN n)
@@ -4186,6 +4239,9 @@ module Grisette.Internal.SymPrim.SymAlgReal
 -- | Symbolic representation of algebraic real numbers.
 newtype SymAlgReal
 SymAlgReal :: Term AlgReal -> SymAlgReal
+
+-- | <a>SymAlgReal</a> type with identity equality.
+type SymAlgRealKey = AsKey SymAlgReal
 instance Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance Grisette.Internal.Core.Data.Class.Function.Apply Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
 instance Data.Binary.Class.Binary Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
@@ -4289,9 +4345,24 @@ type SymFP32 = SymFP 8 24
 -- | Symbolic IEEE 754 double-precision floating-point number.
 type SymFP64 = SymFP 11 53
 
+-- | <a>SymFP</a> type with identity equality.
+type SymFPKey (eb :: Nat) (sb :: Nat) = AsKey SymFP eb sb
+
+-- | <tt><a>SymFP</a> 16</tt> type with identity equality.
+type SymFP16Key = SymFPKey 5 11
+
+-- | <tt><a>SymFP</a> 32</tt> type with identity equality.
+type SymFP32Key = SymFPKey 8 24
+
+-- | <tt><a>SymFP</a> 64</tt> type with identity equality.
+type SymFP64Key = SymFPKey 11 53
+
 -- | Symbolic floating-point rounding mode.
 newtype SymFPRoundingMode
 SymFPRoundingMode :: Term FPRoundingMode -> SymFPRoundingMode
+
+-- | <a>SymFPRoundingMode</a> type with identity equality.
+type SymFPRoundingModeKey = AsKey SymFPRoundingMode
 instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms (Grisette.Internal.SymPrim.SymFP.SymFP eb sb)
 instance Grisette.Internal.Internal.Decl.SymPrim.AllSyms.AllSyms Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode
 instance Grisette.Internal.SymPrim.FP.ValidFP eb sb => Grisette.Internal.Core.Data.Class.Function.Apply (Grisette.Internal.SymPrim.SymFP.SymFP eb sb)
@@ -8164,6 +8235,9 @@ Union :: Maybe (MergingStrategy a) -> UnionBase a -> Union a
 [unionMergingStrategy] :: Union a -> Maybe (MergingStrategy a)
 [unionBase] :: Union a -> UnionBase a
 
+-- | <a>Union</a> with identity equality.
+type UnionKey = AsKey1 Union
+
 -- | Lift a unary operation to <a>Union</a>.
 unionUnaryOp :: (a -> a) -> Union a -> Union a
 
@@ -10145,6 +10219,9 @@ data SomeBV (bv :: Nat -> Type)
 [SomeBV] :: forall (n :: Nat) (bv :: Nat -> Type). (KnownNat n, 1 <= n) => bv n -> SomeBV bv
 [SomeBVLit] :: forall (bv :: Nat -> Type). SomeBVLit -> SomeBV bv
 
+-- | <tt><a>SomeBV</a> bv</tt> type with identity equality.
+type SomeBVKey (bv :: Nat -> Type) = AsKey SomeBV bv
+
 -- | An exception that would be thrown when operations are performed on
 --   incompatible bit widths.
 data SomeBVException
@@ -10236,12 +10313,20 @@ pattern SomeSymIntN :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymIntN 
 
 -- | Type synonym for <a>SomeBV</a> for symbolic signed bitvectors.
 type SomeSymIntN = SomeBV SymIntN
+pattern SomeSymIntNKey :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntNKey
+
+-- | <a>SomeSymIntN</a> with identity equality.
+type SomeSymIntNKey = SomeBVKey SymIntN
 
 -- | Pattern synonym for <a>SomeBV</a> for symbolic unsigned bitvectors.
 pattern SomeSymWordN :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
 
 -- | Type synonym for <a>SomeBV</a> for symbolic unsigned bitvectors.
 type SomeSymWordN = SomeBV SymWordN
+pattern SomeSymWordNKey :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordNKey
+
+-- | <a>SomeSymWordN</a> with identity equality.
+type SomeSymWordNKey = SomeBVKey SymWordN
 
 -- | Lift a unary operation on sized bitvectors that returns anything to
 --   <a>SomeBV</a>.
@@ -10726,6 +10811,9 @@ data SomeBV (bv :: Nat -> Type)
 [SomeBV] :: forall (n :: Nat) (bv :: Nat -> Type). (KnownNat n, 1 <= n) => bv n -> SomeBV bv
 [SomeBVLit] :: forall (bv :: Nat -> Type). SomeBVLit -> SomeBV bv
 
+-- | <tt><a>SomeBV</a> bv</tt> type with identity equality.
+type SomeBVKey (bv :: Nat -> Type) = AsKey SomeBV bv
+
 -- | An exception that would be thrown when operations are performed on
 --   incompatible bit widths.
 data SomeBVException
@@ -11020,6 +11108,9 @@ infixr 0 -->
 newtype SymBool
 SymBool :: Term Bool -> SymBool
 
+-- | <a>SymBool</a> type with identity equality.
+type SymBoolKey = AsKey SymBool
+
 -- | Symbolic (unbounded, mathematical) integer type.
 --   
 --   <pre>
@@ -11031,6 +11122,9 @@ SymBool :: Term Bool -> SymBool
 --   <a>Grisette.Core#g:symops</a> for more information.
 newtype SymInteger
 SymInteger :: Term Integer -> SymInteger
+
+-- | <a>SymInteger</a> type with identity equality.
+type SymIntegerKey = AsKey SymInteger
 
 -- | Symbolic unsigned bit vector type. Indexed with the bit width.
 --   Signedness affects the semantics of the operations, including
@@ -11055,17 +11149,32 @@ SymInteger :: Term Integer -> SymInteger
 newtype SymWordN (n :: Nat)
 SymWordN :: Term (WordN n) -> SymWordN (n :: Nat)
 
+-- | <a>SymWordN</a> type with identity equality.
+type SymWordNKey (n :: Nat) = AsKey SymWordN n
+
 -- | Symbolic 8-bit unsigned bit-vector.
 type SymWordN8 = SymWordN 8
+
+-- | <a>SymWordN</a> 8@ type with identity equality.
+type SymWordN8Key = SymWordNKey 8
 
 -- | Symbolic 16-bit unsigned bit-vector.
 type SymWordN16 = SymWordN 16
 
+-- | <a>SymWordN</a> 16@ type with identity equality.
+type SymWordN16Key = SymWordNKey 16
+
 -- | Symbolic 32-bit unsigned bit-vector.
 type SymWordN32 = SymWordN 32
 
+-- | <a>SymWordN</a> 32@ type with identity equality.
+type SymWordN32Key = SymWordNKey 32
+
 -- | Symbolic 64-bit unsigned bit-vector.
 type SymWordN64 = SymWordN 64
+
+-- | <a>SymWordN</a> 64@ type with identity equality.
+type SymWordN64Key = SymWordNKey 64
 
 -- | Symbolic signed bit vector type. Indexed with the bit width.
 --   Signedness affects the semantics of the operations, including
@@ -11090,29 +11199,52 @@ type SymWordN64 = SymWordN 64
 newtype SymIntN (n :: Nat)
 SymIntN :: Term (IntN n) -> SymIntN (n :: Nat)
 
+-- | <a>SymIntN</a> type with identity equality.
+type SymIntNKey (n :: Nat) = AsKey SymIntN n
+
 -- | Symbolic 8-bit signed bit-vector.
 type SymIntN8 = SymIntN 8
+
+-- | <tt><a>SymIntN</a> 8</tt> type with identity equality.
+type SymIntN8Key = SymIntNKey 8
 
 -- | Symbolic 16-bit signed bit-vector.
 type SymIntN16 = SymIntN 16
 
+-- | <tt><a>SymIntN</a> 16</tt> type with identity equality.
+type SymIntN16Key = SymIntNKey 16
+
 -- | Symbolic 32-bit signed bit-vector.
 type SymIntN32 = SymIntN 32
+
+-- | <tt><a>SymIntN</a> 32</tt> type with identity equality.
+type SymIntN32Key = SymIntNKey 32
 
 -- | Symbolic 64-bit signed bit-vector.
 type SymIntN64 = SymIntN 64
 
+-- | <tt><a>SymIntN</a> 64</tt> type with identity equality.
+type SymIntN64Key = SymIntNKey 64
+
 -- | Type synonym for <a>SomeBV</a> for symbolic signed bitvectors.
 type SomeSymIntN = SomeBV SymIntN
 
+-- | <a>SomeSymIntN</a> with identity equality.
+type SomeSymIntNKey = SomeBVKey SymIntN
+
 -- | Type synonym for <a>SomeBV</a> for symbolic unsigned bitvectors.
 type SomeSymWordN = SomeBV SymWordN
+
+-- | <a>SomeSymWordN</a> with identity equality.
+type SomeSymWordNKey = SomeBVKey SymWordN
 
 -- | Pattern synonym for <a>SomeBV</a> for symbolic signed bitvectors.
 pattern SomeSymIntN :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
 
 -- | Pattern synonym for <a>SomeBV</a> for symbolic unsigned bitvectors.
 pattern SomeSymWordN :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
+pattern SomeSymIntNKey :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntNKey
+pattern SomeSymWordNKey :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordNKey
 
 -- | Symbolic IEEE 754 floating-point number with <tt>eb</tt> exponent bits
 --   and <tt>sb</tt> significand bits.
@@ -11130,22 +11262,40 @@ pattern SomeSymWordN :: forall (n :: Nat). () => (KnownNat n, 1 <= n) => SymWord
 newtype SymFP (eb :: Nat) (sb :: Nat)
 SymFP :: Term (FP eb sb) -> SymFP (eb :: Nat) (sb :: Nat)
 
+-- | <a>SymFP</a> type with identity equality.
+type SymFPKey (eb :: Nat) (sb :: Nat) = AsKey SymFP eb sb
+
 -- | Symbolic floating-point rounding mode.
 newtype SymFPRoundingMode
 SymFPRoundingMode :: Term FPRoundingMode -> SymFPRoundingMode
 
+-- | <a>SymFPRoundingMode</a> type with identity equality.
+type SymFPRoundingModeKey = AsKey SymFPRoundingMode
+
 -- | Symbolic IEEE 754 half-precision floating-point number.
 type SymFP16 = SymFP 5 11
+
+-- | <tt><a>SymFP</a> 16</tt> type with identity equality.
+type SymFP16Key = SymFPKey 5 11
 
 -- | Symbolic IEEE 754 single-precision floating-point number.
 type SymFP32 = SymFP 8 24
 
+-- | <tt><a>SymFP</a> 32</tt> type with identity equality.
+type SymFP32Key = SymFPKey 8 24
+
 -- | Symbolic IEEE 754 double-precision floating-point number.
 type SymFP64 = SymFP 11 53
+
+-- | <tt><a>SymFP</a> 64</tt> type with identity equality.
+type SymFP64Key = SymFPKey 11 53
 
 -- | Symbolic representation of algebraic real numbers.
 newtype SymAlgReal
 SymAlgReal :: Term AlgReal -> SymAlgReal
+
+-- | <a>SymAlgReal</a> type with identity equality.
+type SymAlgRealKey = AsKey SymAlgReal
 
 -- | Symbolic tabular function type.
 --   
@@ -16918,22 +17068,38 @@ safeBitCast :: SafeBitCast e a b m => a -> m b
 -- | Conversion from a symbolic integral type.
 class SymFromIntegral from to
 symFromIntegral :: SymFromIntegral from to => from -> to
+
+-- | Use a term as a key with identity equality.
+--   
+--   For example, <tt><a>AsKey</a> <a>SymBool</a></tt> uses the term
+--   identity for <a>SymBool</a>.
 newtype AsKey a
 AsKey :: a -> AsKey a
 [getAsKey] :: AsKey a -> a
+
+-- | Use a union as a key with identity equality.
+--   
+--   For example, <tt><a>AsKey1</a> <a>Union</a></tt> uses the term
+--   identity for <a>Union</a>.
 newtype AsKey1 (f :: Type -> Type) a
 AsKey1 :: f a -> AsKey1 (f :: Type -> Type) a
 [getAsKey1] :: AsKey1 (f :: Type -> Type) a -> f a
+
+-- | Type class for identity equality for terms.
 class KeyEq a
 keyEq :: KeyEq a => a -> a -> Bool
 infix 4 `keyEq`
 class KeyEq1 (f :: Type -> Type)
 liftKeyEq :: KeyEq1 f => (a -> b -> Bool) -> f a -> f b -> Bool
+
+-- | Type class for hashing terms based on their identity.
 class KeyEq a => KeyHashable a
 keyHashWithSalt :: KeyHashable a => Int -> a -> Int
 infixl 0 `keyHashWithSalt`
 class KeyEq1 f => KeyHashable1 (f :: Type -> Type)
 liftKeyHashWithSalt :: KeyHashable1 f => (Int -> a -> Int) -> Int -> f a -> Int
+
+-- | Type class for comparing terms based on their identity.
 class KeyEq a => KeyOrd a
 keyCompare :: KeyOrd a => a -> a -> Ordering
 infix 4 `keyCompare`
@@ -17060,6 +17226,9 @@ liftKeyCompare :: KeyOrd1 f => (a -> b -> Ordering) -> f a -> f b -> Ordering
 --   more <tt>mrg*</tt> variants of other combinators. You should stick to
 --   these combinators to ensure efficient merging by Grisette.
 data Union a
+
+-- | <a>Union</a> with identity equality.
+type UnionKey = AsKey1 Union
 
 -- | Lift a unary operation to <a>Union</a>.
 unionUnaryOp :: (a -> a) -> Union a -> Union a
