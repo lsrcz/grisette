@@ -20,7 +20,8 @@ and this project adheres to
 - Added `MergingIndex` type class for types that can be used as indices in a
   'SortedStrategy'. ([#294](https://github.com/lsrcz/grisette/pull/294))
 - Added `makeGrisetteADT` and `makeGrisetteBasicADT` for easier use of ADTs with
-  Grisette. ([#295](https://github.com/lsrcz/grisette/pull/295))
+  Grisette. ([#295](https://github.com/lsrcz/grisette/pull/295),
+  [#303](https://github.com/lsrcz/grisette/pull/303))
 - Added `Concrete` type class to tag the types guaranteed to be fully concrete.
   ([#296](https://github.com/lsrcz/grisette/pull/296))
 
