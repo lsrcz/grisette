@@ -32,29 +32,64 @@ import Control.DeepSeq (NFData)
 import Control.Monad.Identity (Identity (Identity, runIdentity))
 import Data.Bytes.Serial (Serial)
 import Data.Hashable (Hashable)
-import Grisette.Internal.Core.Control.Monad.Union (Union)
+import Data.Kind (Type)
 import Grisette.Internal.Core.Data.Class.AsKey (KeyEq, KeyHashable)
-import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
-import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp)
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.PPrint (PPrint)
-import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
-import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
-import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd)
-import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
-import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
-import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Internal.SymPrim.AllSyms (AllSyms)
-import Grisette.Internal.Unified.Class.UnifiedITEOp (UnifiedITEOp)
-import Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
+import Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
+  ( Union,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
+  ( EvalSym,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
+  ( ExtractSym,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
+  ( Mergeable,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
+  ( PPrint,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
+  ( SubstSym,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
+  ( SymEq,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+  ( SymOrd,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
+  ( ToCon,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
+  ( ToSym,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
+  ( mrgSingle,
+  )
+import Grisette.Internal.Internal.Decl.SymPrim.AllSyms (AllSyms)
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
+  ( UnifiedITEOp,
+  )
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
     UnifiedSimpleMergeable,
-    liftBaseMonad,
+    UnifiedSimpleMergeable1,
   )
-import Grisette.Internal.Unified.Class.UnifiedSymEq (UnifiedSymEq)
-import Grisette.Internal.Unified.Class.UnifiedSymOrd (UnifiedSymOrd)
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
+  ( UnifiedSymEq,
+  )
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
+  ( UnifiedSymOrd,
+  )
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp ()
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
+  ( liftBaseMonad,
+  )
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq ()
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd ()
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift)
@@ -81,6 +116,8 @@ class
     (Serial v, Mergeable v) => Serial u,
     (UnifiedITEOp mode v, Mergeable v) => UnifiedITEOp mode u,
     (Mergeable v) => UnifiedSimpleMergeable mode u,
+    UnifiedSimpleMergeable1 mode (GetData mode),
+    UnifiedBranching mode (GetData mode),
     (UnifiedSymEq mode v) => UnifiedSymEq mode u,
     (UnifiedSymOrd mode v) => UnifiedSymOrd mode u,
     forall a. (ToSym a v) => ToSym (Identity a) u,
@@ -91,9 +128,9 @@ class
   UnifiedDataImpl (mode :: EvalModeTag) v u
     | u -> mode v
   where
-  -- | Get a unified data type. Resolves to @v@ in 'C' mode, and @'Union' v@
+  -- | Get a unified data type. Resolves to 'Identity' in 'C' mode, and 'Union'
   -- in 'S' mode.
-  type GetData mode v = r | r -> mode v
+  type GetData mode = (r :: Type -> Type) | r -> mode
 
   -- | Wraps a value into the unified data type.
   wrapData :: (Mergeable v) => v -> u
@@ -102,14 +139,14 @@ class
   extractData :: (Mergeable v, Monad m, UnifiedBranching mode m) => u -> m v
 
 instance UnifiedDataImpl 'C v (Identity v) where
-  type GetData 'C v = Identity v
+  type GetData 'C = Identity
   wrapData = Identity
   extractData ::
     forall m. (Mergeable v, Monad m, UnifiedBranching C m) => Identity v -> m v
   extractData = withBaseBranching @'C @m $ return . runIdentity
 
 instance UnifiedDataImpl 'S v (Union v) where
-  type GetData 'S v = Union v
+  type GetData 'S = Union
   wrapData = mrgSingle
   extractData ::
     forall m. (Mergeable v, Monad m, UnifiedBranching S m) => Union v -> m v

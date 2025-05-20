@@ -74,6 +74,7 @@ import Grisette.SymPrim.SymGeneralFunTests (symGeneralFunTests)
 import Grisette.SymPrim.SymPrimTests (symPrimTests)
 import qualified Grisette.SymPrim.TabularFunTests
 import Grisette.Unified.EvalModeTest (evalModeTest)
+import Grisette.Unified.GetDataTest (getDataTest)
 import Grisette.Unified.UnifiedClassesTest (unifiedClassesTest)
 import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
@@ -209,6 +210,7 @@ unifiedTests =
   testGroup
     "Grisette.Unified"
     [ evalModeTest,
+      getDataTest,
       unifiedConstructorTest,
       unifiedClassesTest
     ]
