@@ -470,6 +470,7 @@ test-suite spec
       Grisette.TestUtil.PrettyPrint
       Grisette.TestUtil.SymbolicAssertion
       Grisette.Unified.EvalModeTest
+      Grisette.Unified.GetDataTest
       Grisette.Unified.UnifiedClassesTest
       Grisette.Unified.UnifiedConstructorTest
       Paths_grisette
