@@ -69,8 +69,18 @@ import Grisette.Internal.SymPrim.SymBool (SymBool)
 data IfViewResult u a where
   IfViewResult :: (SymBranching u) => SymBool -> u a -> u a -> IfViewResult u a
 
+instance (Show (u a)) => Show (IfViewResult u a) where
+  showsPrec d (IfViewResult c l r) =
+    showParen (d > 10) $
+      showString "IfViewResult "
+        . showsPrec 11 c
+        . showString " "
+        . showsPrec 11 l
+        . showString " "
+        . showsPrec 11 r
+
 -- | Containers that can be projected back into single value or if-guarded
--- values. 'Identity' is implements this class as we can always project to
+-- values. 'Identity' is an instance of this class as we can always project to
 -- single value.
 class (Applicative u, TryMerge u) => UnionView (u :: Type -> Type) where
   -- | Pattern match to extract single values.
@@ -86,9 +96,9 @@ class (Applicative u, TryMerge u) => UnionView (u :: Type -> Type) where
   -- >>> ifView (return 1 :: Union Integer)
   -- Nothing
   -- >>> ifView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer)
-  -- Just (a,<1>,<2>)
+  -- Just (IfViewResult a <1> <2>)
   -- >>> ifView (mrgIf "a" (return 1) (return 2) :: Union Integer)
-  -- Just (a,{1},{2})
+  -- Just (IfViewResult a {1} {2})
   ifView :: u a -> Maybe (IfViewResult u a)
 
   -- | Convert the union to a guarded list.
