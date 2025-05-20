@@ -10,12 +10,19 @@
 -- Portability :   GHC only
 module Grisette.TH
   ( -- * Convenient TH procedures for ADTs
-    makeGrisetteADT,
-    makeGrisetteADT1,
-    makeGrisetteADT2,
+    makeGrisetteADTWithClasses,
     makeGrisetteBasicADT,
     makeGrisetteBasicADT1,
     makeGrisetteBasicADT2,
+    makeGrisetteBasicADTWith,
+    makeGrisetteBasicADT1With,
+    makeGrisetteBasicADT2With,
+    makeGrisetteADT,
+    makeGrisetteADT1,
+    makeGrisetteADT2,
+    makeGrisetteADTWith,
+    makeGrisetteADT1With,
+    makeGrisetteADT2With,
 
     -- * Convenient derivation of all instances relating to Grisette
     EvalModeConfig (..),
@@ -76,10 +83,17 @@ where
 import Grisette.Internal.TH.ADT
   ( makeGrisetteADT,
     makeGrisetteADT1,
+    makeGrisetteADT1With,
     makeGrisetteADT2,
+    makeGrisetteADT2With,
+    makeGrisetteADTWith,
+    makeGrisetteADTWithClasses,
     makeGrisetteBasicADT,
     makeGrisetteBasicADT1,
+    makeGrisetteBasicADT1With,
     makeGrisetteBasicADT2,
+    makeGrisetteBasicADT2With,
+    makeGrisetteBasicADTWith,
   )
 import Grisette.Internal.TH.Ctor.SmartConstructor
   ( makeNamedSmartCtor,
