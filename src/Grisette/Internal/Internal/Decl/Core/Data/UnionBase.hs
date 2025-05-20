@@ -36,10 +36,11 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion (ifView, singleView),
-  )
 import Grisette.Internal.Core.Data.Class.Solvable (pattern Con)
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( IfViewResult (IfViewResult),
+    UnionView (ifView, singleView),
+  )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -277,10 +278,11 @@ instance SymBranching UnionBase where
   mrgIfPropagatedStrategy = ifWithLeftMost False
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance PlainUnion UnionBase where
+instance UnionView UnionBase where
   singleView (UnionSingle a) = Just a
   singleView _ = Nothing
   {-# INLINE singleView #-}
-  ifView (UnionIf _ _ cond ifTrue ifFalse) = Just (cond, ifTrue, ifFalse)
+  ifView (UnionIf _ _ cond ifTrue ifFalse) =
+    Just (IfViewResult cond ifTrue ifFalse)
   ifView _ = Nothing
   {-# INLINE ifView #-}

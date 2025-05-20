@@ -85,7 +85,6 @@ library
       Grisette.Internal.Core.Data.Class.LogicalOp
       Grisette.Internal.Core.Data.Class.Mergeable
       Grisette.Internal.Core.Data.Class.ModelOps
-      Grisette.Internal.Core.Data.Class.PlainUnion
       Grisette.Internal.Core.Data.Class.PPrint
       Grisette.Internal.Core.Data.Class.SafeBitCast
       Grisette.Internal.Core.Data.Class.SafeDiv
@@ -110,6 +109,7 @@ library
       Grisette.Internal.Core.Data.Class.ToCon
       Grisette.Internal.Core.Data.Class.ToSym
       Grisette.Internal.Core.Data.Class.TryMerge
+      Grisette.Internal.Core.Data.Class.UnionView
       Grisette.Internal.Core.Data.MemoUtils
       Grisette.Internal.Core.Data.SExpr
       Grisette.Internal.Core.Data.Symbol
@@ -413,7 +413,6 @@ test-suite spec
       Grisette.Core.Data.Class.ExtractSymTests
       Grisette.Core.Data.Class.GenSymTests
       Grisette.Core.Data.Class.MergeableTests
-      Grisette.Core.Data.Class.PlainUnionTests
       Grisette.Core.Data.Class.PPrintTests
       Grisette.Core.Data.Class.SafeDivTests
       Grisette.Core.Data.Class.SafeLinearArithTests
@@ -430,6 +429,7 @@ test-suite spec
       Grisette.Core.Data.Class.ToConTests
       Grisette.Core.Data.Class.ToSymTests
       Grisette.Core.Data.Class.TryMergeTests
+      Grisette.Core.Data.Class.UnionViewTests
       Grisette.Core.Data.UnionBaseTests
       Grisette.Core.TH.DerivationData
       Grisette.Core.TH.DerivationTest

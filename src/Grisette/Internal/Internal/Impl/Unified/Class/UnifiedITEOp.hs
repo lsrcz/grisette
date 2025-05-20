@@ -34,7 +34,7 @@ import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import qualified Grisette.Internal.Core.Data.Class.PlainUnion
+import qualified Grisette.Internal.Core.Data.Class.UnionView
 import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
   ( UnifiedITEOp (withBaseITEOp),
   )
@@ -82,7 +82,7 @@ symIteMerge m =
   withMode @mode
     (withBaseITEOp @mode @v $ runIdentity m)
     ( withBaseITEOp @mode @v $
-        Grisette.Internal.Core.Data.Class.PlainUnion.symIteMerge m
+        Grisette.Internal.Core.Data.Class.UnionView.symIteMerge m
     )
 
 instance

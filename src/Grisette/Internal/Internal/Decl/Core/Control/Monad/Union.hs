@@ -32,12 +32,13 @@ where
 
 import Data.String (IsString (fromString))
 import Grisette.Internal.Core.Data.Class.AsKey (AsKey1)
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion (ifView, singleView, toGuardedList),
-  )
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, sym),
     pattern Con,
+  )
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( IfViewResult (IfViewResult),
+    UnionView (ifView, singleView, toGuardedList),
   )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy, sortIndices),
@@ -270,13 +271,15 @@ instance SymBranching Union where
   mrgIfPropagatedStrategy cond t f@(Union (Just m) _) = mrgIfWithStrategy m cond t f
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance PlainUnion Union where
+instance UnionView Union where
   singleView = singleView . unionBase
   {-# INLINE singleView #-}
   ifView (Union Nothing u) = case ifView u of
-    Just (c, t, f) -> Just (c, Union Nothing t, Union Nothing f)
+    Just (IfViewResult c t f) ->
+      Just (IfViewResult c (Union Nothing t) (Union Nothing f))
     Nothing -> Nothing
   ifView (Union (Just m) u) = case ifView u of
-    Just (c, t, f) -> Just (c, Union (Just m) t, Union (Just m) f)
+    Just (IfViewResult c t f) ->
+      Just (IfViewResult c (Union (Just m) t) (Union (Just m) f))
     Nothing -> Nothing
   {-# INLINE ifView #-}

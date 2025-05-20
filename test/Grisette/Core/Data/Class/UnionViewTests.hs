@@ -2,7 +2,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Grisette.Core.Data.Class.PlainUnionTests (plainUnionTests) where
+module Grisette.Core.Data.Class.UnionViewTests (unionViewTests) where
 
 import Grisette
   ( ITEOp (symIte),
@@ -20,17 +20,17 @@ import Grisette
     pattern Single,
   )
 import Grisette.Internal.Core.Data.Class.AsKey (AsKey (AsKey), AsKey1)
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion (overestimateUnionValues),
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( UnionView (overestimateUnionValues),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
-plainUnionTests :: Test
-plainUnionTests =
+unionViewTests :: Test
+unionViewTests =
   testGroup
-    "PlainUnion"
+    "UnionView"
     [ testCase "simpleMerge" $ do
         simpleMerge
           ( mrgIfPropagatedStrategy "a" (return "b") (return "c") ::

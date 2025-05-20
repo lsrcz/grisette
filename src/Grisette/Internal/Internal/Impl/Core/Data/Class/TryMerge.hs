@@ -14,8 +14,7 @@ module Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge () where
 import Control.Monad.Cont (ContT (ContT))
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
-  ( Identity,
-    IdentityT (IdentityT),
+  ( IdentityT (IdentityT),
   )
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
@@ -128,7 +127,6 @@ instance (TryMerge m, Mergeable r) => TryMerge (ContT r m) where
 #if 1
 TRYMERGE_ID(Either a)
 TRYMERGE_ID(Maybe)
-TRYMERGE_ID(Identity)
 TRYMERGE_ID([])
 TRYMERGE_ID((,) a)
 TRYMERGE_ID((,,) a b)
