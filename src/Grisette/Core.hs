@@ -840,8 +840,6 @@ module Grisette.Core
     UnionKey,
     unionUnaryOp,
     unionBinOp,
-    -- liftUnion,
-    -- liftToMonadUnion,
     unionSize,
 
     -- ** Tag for concrete types
@@ -901,6 +899,8 @@ module Grisette.Core
     onUnion2,
     onUnion3,
     onUnion4,
+    liftUnion,
+    liftToMonadUnion,
 
     -- * Pretty printing
     PPrint (..),
@@ -1821,6 +1821,8 @@ import Grisette.Internal.Core.Data.Class.TryMerge
 import Grisette.Internal.Core.Data.Class.UnionView
   ( IfViewResult (..),
     UnionView (..),
+    liftToMonadUnion,
+    liftUnion,
     onUnion,
     onUnion2,
     onUnion3,

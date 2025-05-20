@@ -43,6 +43,11 @@ module Grisette.Unified
     mrgIte2,
     liftMrgIte2,
     simpleMerge,
+    (.#),
+    onUnion,
+    onUnion2,
+    onUnion3,
+    onUnion4,
 
     -- ** Unified ITE operator
     UnifiedITEOp (..),
@@ -182,6 +187,7 @@ module Grisette.Unified
   )
 where
 
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable (onUnion, onUnion2, onUnion3, onUnion4, (.#))
 import Grisette.Internal.Unified.BVBVConversion
   ( UnifiedBVBVConversion,
   )

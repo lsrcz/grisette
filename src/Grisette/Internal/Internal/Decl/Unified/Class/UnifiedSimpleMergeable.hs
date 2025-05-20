@@ -46,7 +46,7 @@ import Grisette.Internal.Unified.Util (DecideEvalMode)
 -- | A class that provides a unified simple merging.
 --
 -- We use this type class to help resolve the constraints for `SimpleMergeable`.
-class (Mergeable a) => UnifiedSimpleMergeable mode a where
+class (DecideEvalMode mode, Mergeable a) => UnifiedSimpleMergeable mode a where
   withBaseSimpleMergeable ::
     ((If (IsConMode mode) (() :: Constraint) (SimpleMergeable a)) => r) -> r
 
@@ -54,7 +54,7 @@ class (Mergeable a) => UnifiedSimpleMergeable mode a where
 --
 -- We use this type class to help resolve the constraints for
 -- `SimpleMergeable1`.
-class UnifiedSimpleMergeable1 mode f where
+class (DecideEvalMode mode) => UnifiedSimpleMergeable1 mode f where
   withBaseSimpleMergeable1 ::
     ((If (IsConMode mode) (() :: Constraint) (SimpleMergeable1 f)) => r) -> r
 
@@ -62,7 +62,7 @@ class UnifiedSimpleMergeable1 mode f where
 --
 -- We use this type class to help resolve the constraints for
 -- `SimpleMergeable2`.
-class UnifiedSimpleMergeable2 mode f where
+class (DecideEvalMode mode) => UnifiedSimpleMergeable2 mode f where
   withBaseSimpleMergeable2 ::
     ((If (IsConMode mode) (() :: Constraint) (SimpleMergeable2 f)) => r) -> r
 
