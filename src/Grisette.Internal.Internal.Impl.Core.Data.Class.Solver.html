@@ -44,7 +44,7 @@
 </span><span id="line-44"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.SymPrim</span><span>
 </span><span id="line-45"></span><span class="hs-comment">-- &gt;&gt;&gt; import Grisette.Backend</span><span>
 </span><span id="line-46"></span><span>
-</span><span id="line-47"></span><span id="local-6989586621682619564"><span id="local-6989586621682619568"><span id="local-6989586621682619572"><span id="local-6989586621682619576"><span id="local-6989586621682619586"><span id="local-6989586621682619589"><span id="local-6989586621682619599"><span id="local-6989586621682619602"><span id="local-6989586621682619610"><span id="local-6989586621682619614"><span id="local-6989586621682619617"><span id="local-6989586621682619621"><span id="local-6989586621682619646"><span class="hs-identifier">derive</span><span>
+</span><span id="line-47"></span><span id="local-6989586621682629335"><span id="local-6989586621682629339"><span id="local-6989586621682629343"><span id="local-6989586621682629347"><span id="local-6989586621682629357"><span id="local-6989586621682629360"><span id="local-6989586621682629370"><span id="local-6989586621682629373"><span id="local-6989586621682629381"><span id="local-6989586621682629385"><span id="local-6989586621682629388"><span id="local-6989586621682629392"><span id="local-6989586621682629417"><span class="hs-identifier">derive</span><span>
 </span><span id="line-48"></span><span>  </span><span class="hs-special">[</span><span class="hs-special">''</span><span class="hs-identifier">SolvingFailure</span><span class="hs-special">]</span><span>
 </span><span id="line-49"></span><span>  </span><span class="hs-special">[</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Show</span><span class="hs-special">,</span><span>
 </span><span id="line-50"></span><span>    </span><span class="hs-special">''</span><span class="hs-identifier">Eq</span><span class="hs-special">,</span><span>
@@ -55,25 +55,25 @@
 </span><span id="line-55"></span><span>  </span><span class="hs-special">]</span></span></span></span></span></span></span></span></span></span></span></span></span></span><span>
 </span><span id="line-56"></span><span>
 </span><span id="line-57"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Cereal.Serialize</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Solver.html#SolvingFailure"><span class="hs-identifier hs-type">SolvingFailure</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-58"></span><span>  </span><span id="local-6989586621682619727"><span class="annot"><span class="annottext">put :: Putter SolvingFailure
-</span><a href="#local-6989586621682619727"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter SolvingFailure
+</span><span id="line-58"></span><span>  </span><span id="local-6989586621682629498"><span class="annot"><span class="annottext">put :: Putter SolvingFailure
+</span><a href="#local-6989586621682629498"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Putter SolvingFailure
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; SolvingFailure -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span>
-</span><span id="line-59"></span><span>  </span><span id="local-6989586621682619732"><span class="annot"><span class="annottext">get :: Get SolvingFailure
-</span><a href="#local-6989586621682619732"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SolvingFailure
+</span><span id="line-59"></span><span>  </span><span id="local-6989586621682629503"><span class="annot"><span class="annottext">get :: Get SolvingFailure
+</span><a href="#local-6989586621682629503"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SolvingFailure
 forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
 forall (m :: * -&gt; *). MonadGet m =&gt; m SolvingFailure
 </span><span class="hs-identifier hs-var">deserialize</span></span><span>
 </span><span id="line-60"></span><span>
-</span><span id="line-61"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682619737"><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Solver.html#SolvingFailure"><span class="hs-identifier hs-type">SolvingFailure</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-62"></span><span>  </span><span id="local-6989586621682619744"><span class="annot"><span class="annottext">put :: SolvingFailure -&gt; Put
-</span><a href="#local-6989586621682619744"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SolvingFailure -&gt; Put
+</span><span id="line-61"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621682629508"><span class="annot"><span class="hs-identifier hs-type">Binary.Binary</span></span><span> </span><span class="annot"><a href="Grisette.Internal.Internal.Decl.Core.Data.Class.Solver.html#SolvingFailure"><span class="hs-identifier hs-type">SolvingFailure</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-62"></span><span>  </span><span id="local-6989586621682629515"><span class="annot"><span class="annottext">put :: SolvingFailure -&gt; Put
+</span><a href="#local-6989586621682629515"><span class="hs-identifier hs-var hs-var hs-var">put</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SolvingFailure -&gt; Put
 forall a (m :: * -&gt; *). (Serial a, MonadPut m) =&gt; a -&gt; m ()
 forall (m :: * -&gt; *). MonadPut m =&gt; SolvingFailure -&gt; m ()
 </span><span class="hs-identifier hs-var">serialize</span></span><span>
-</span><span id="line-63"></span><span>  </span><span id="local-6989586621682619749"><span class="annot"><span class="annottext">get :: Get SolvingFailure
-</span><a href="#local-6989586621682619749"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SolvingFailure
+</span><span id="line-63"></span><span>  </span><span id="local-6989586621682629520"><span class="annot"><span class="annottext">get :: Get SolvingFailure
+</span><a href="#local-6989586621682629520"><span class="hs-identifier hs-var hs-var hs-var">get</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Get SolvingFailure
 forall a (m :: * -&gt; *). (Serial a, MonadGet m) =&gt; m a
 forall (m :: * -&gt; *). MonadGet m =&gt; m SolvingFailure
 </span><span class="hs-identifier hs-var">deserialize</span></span><span>

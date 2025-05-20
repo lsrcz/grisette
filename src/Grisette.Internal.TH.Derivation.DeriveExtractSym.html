@@ -90,13 +90,13 @@ forall a b. a -&gt; b -&gt; a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">ConstructorVariant
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682565536"><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682565536"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621682575670"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621682575670"><span class="hs-identifier hs-var">exp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-68"></span><span>                  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; Bool
 forall a. [a] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682565536"><span class="hs-identifier hs-var">exp</span></a></span><span>
+</span><a href="#local-6989586621682575670"><span class="hs-identifier hs-var">exp</span></a></span><span>
 </span><span id="line-69"></span><span>                    </span><span class="hs-keyword">then</span><span> </span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; (Exp, [Bool])) -&gt; Q Exp -&gt; Q (Exp, [Bool])
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">[|</span><span class="annot"><span class="hs-identifier hs-type">return</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">mempty</span></span><span class="hs-special">|]</span><span>
@@ -109,12 +109,12 @@ forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; Exp
 </span><span class="hs-identifier hs-var">ListE</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682565536"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621682575670"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; [Exp] -&gt; [Bool]
 forall a b. a -&gt; [b] -&gt; [a]
 forall (f :: * -&gt; *) a b. Functor f =&gt; a -&gt; f b -&gt; f a
 </span><span class="hs-operator hs-var">&lt;$</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
-</span><a href="#local-6989586621682565536"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><a href="#local-6989586621682575670"><span class="hs-identifier hs-var">exp</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
 </span><span id="line-71"></span><span>                </span><span class="annot"><span class="annottext">fieldFunExp :: FieldFunExp
 </span><a href="Grisette.Internal.TH.Derivation.UnaryOpCommon.html#fieldFunExp"><span class="hs-identifier hs-var">fieldFunExp</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-72"></span><span>                  </span><span class="annot"><span class="annottext">[Name] -&gt; FieldFunExp
@@ -157,30 +157,30 @@ forall a. Maybe a
 </span><span id="line-91"></span><span class="annot"><span class="hs-comment">-- | Derive 'ExtractSym' instance for a data type.</span></span><span>
 </span><span id="line-92"></span><span class="annot"><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym"><span class="hs-identifier hs-type">deriveExtractSym</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.Derivation.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-93"></span><span id="deriveExtractSym"><span class="annot"><span class="annottext">deriveExtractSym :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym"><span class="hs-identifier hs-var hs-var">deriveExtractSym</span></a></span></span><span> </span><span id="local-6989586621682565540"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682565540"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym"><span class="hs-identifier hs-var hs-var">deriveExtractSym</span></a></span></span><span> </span><span id="local-6989586621682575674"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682575674"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.Derivation.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682565540"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="#local-6989586621682575674"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
 </span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#extractSymConfig"><span class="hs-identifier hs-var">extractSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-94"></span><span>
 </span><span id="line-95"></span><span class="annot"><span class="hs-comment">-- | Derive 'ExtractSym1' instance for a data type.</span></span><span>
 </span><span id="line-96"></span><span class="annot"><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym1"><span class="hs-identifier hs-type">deriveExtractSym1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.Derivation.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-97"></span><span id="deriveExtractSym1"><span class="annot"><span class="annottext">deriveExtractSym1 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym1"><span class="hs-identifier hs-var hs-var">deriveExtractSym1</span></a></span></span><span> </span><span id="local-6989586621682565541"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682565541"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym1"><span class="hs-identifier hs-var hs-var">deriveExtractSym1</span></a></span></span><span> </span><span id="local-6989586621682575675"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682575675"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.Derivation.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682565541"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="#local-6989586621682575675"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
 </span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#extractSymConfig"><span class="hs-identifier hs-var">extractSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span>
 </span><span id="line-98"></span><span>
 </span><span id="line-99"></span><span class="annot"><span class="hs-comment">-- | Derive 'ExtractSym2' instance for a data type.</span></span><span>
 </span><span id="line-100"></span><span class="annot"><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym2"><span class="hs-identifier hs-type">deriveExtractSym2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Grisette.Internal.TH.Derivation.Common.html#DeriveConfig"><span class="hs-identifier hs-type">DeriveConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Name</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Dec</span></span><span class="hs-special">]</span><span>
 </span><span id="line-101"></span><span id="deriveExtractSym2"><span class="annot"><span class="annottext">deriveExtractSym2 :: DeriveConfig -&gt; Name -&gt; Q [Dec]
-</span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym2"><span class="hs-identifier hs-var hs-var">deriveExtractSym2</span></a></span></span><span> </span><span id="local-6989586621682565542"><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682565542"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
+</span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#deriveExtractSym2"><span class="hs-identifier hs-var hs-var">deriveExtractSym2</span></a></span></span><span> </span><span id="local-6989586621682575676"><span class="annot"><span class="annottext">DeriveConfig
+</span><a href="#local-6989586621682575676"><span class="hs-identifier hs-var">deriveConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeriveConfig -&gt; UnaryOpClassConfig -&gt; Int -&gt; Name -&gt; Q [Dec]
 </span><a href="Grisette.Internal.TH.Derivation.UnaryOpCommon.html#genUnaryOpClass"><span class="hs-identifier hs-var">genUnaryOpClass</span></a></span><span> </span><span class="annot"><span class="annottext">DeriveConfig
-</span><a href="#local-6989586621682565542"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
+</span><a href="#local-6989586621682575676"><span class="hs-identifier hs-var">deriveConfig</span></a></span><span> </span><span class="annot"><span class="annottext">UnaryOpClassConfig
 </span><a href="Grisette.Internal.TH.Derivation.DeriveExtractSym.html#extractSymConfig"><span class="hs-identifier hs-var">extractSymConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">2</span></span><span>
 </span><span id="line-102"></span></pre></body></html>

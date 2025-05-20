@@ -5141,11 +5141,12 @@ deriveUnifiedSimpleMergeable1 :: DeriveConfig -> Name -> Q [Dec]
 deriveUnifiedSimpleMergeable2 :: DeriveConfig -> Name -> Q [Dec]
 
 
-module Grisette.Internal.Core.Data.Class.PlainUnion
+module Grisette.Internal.Core.Data.Class.UnionView
 
--- | Plain union containers that can be projected back into single value or
---   if-guarded values.
-class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type)
+-- | Containers that can be projected back into single value or if-guarded
+--   values. <a>Identity</a> is an instance of this class as we can always
+--   project to single value.
+class (Applicative u, TryMerge u) => UnionView (u :: Type -> Type)
 
 -- | Pattern match to extract single values.
 --   
@@ -5156,7 +5157,7 @@ class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type)
 --   &gt;&gt;&gt; singleView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer)
 --   Nothing
 --   </pre>
-singleView :: PlainUnion u => u a -> Maybe a
+singleView :: UnionView u => u a -> Maybe a
 
 -- | Pattern match to extract if values.
 --   
@@ -5165,12 +5166,12 @@ singleView :: PlainUnion u => u a -> Maybe a
 --   Nothing
 --   
 --   &gt;&gt;&gt; ifView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer)
---   Just (a,&lt;1&gt;,&lt;2&gt;)
+--   Just (IfViewResult a &lt;1&gt; &lt;2&gt;)
 --   
 --   &gt;&gt;&gt; ifView (mrgIf "a" (return 1) (return 2) :: Union Integer)
---   Just (a,{1},{2})
+--   Just (IfViewResult a {1} {2})
 --   </pre>
-ifView :: PlainUnion u => u a -> Maybe (SymBool, u a, u a)
+ifView :: UnionView u => u a -> Maybe (IfViewResult u a)
 
 -- | Convert the union to a guarded list.
 --   
@@ -5178,7 +5179,7 @@ ifView :: PlainUnion u => u a -> Maybe (SymBool, u a, u a)
 --   &gt;&gt;&gt; toGuardedList (mrgIf "a" (return 1) (mrgIf "b" (return 2) (return 3)) :: Union Integer)
 --   [(a,1),((&amp;&amp; b (! a)),2),((! (|| b a)),3)]
 --   </pre>
-toGuardedList :: PlainUnion u => u a -> [(SymBool, a)]
+toGuardedList :: UnionView u => u a -> [(SymBool, a)]
 
 -- | Return all possible values in the union. Drop the path conditions.
 --   
@@ -5191,7 +5192,11 @@ toGuardedList :: PlainUnion u => u a -> [(SymBool, a)]
 --   &gt;&gt;&gt; overestimateUnionValues (mrgIf "a" (return 1) (return 2) :: Union Integer)
 --   [1,2]
 --   </pre>
-overestimateUnionValues :: (PlainUnion u, Mergeable a) => u a -> [a]
+overestimateUnionValues :: (UnionView u, Mergeable a) => u a -> [a]
+
+-- | The result of <a>ifView</a>.
+data IfViewResult (u :: Type -> Type) a
+[IfViewResult] :: forall (u :: Type -> Type) a. SymBranching u => SymBool -> u a -> u a -> IfViewResult u a
 
 -- | Pattern match to extract single values with <a>singleView</a>.
 --   
@@ -5199,7 +5204,7 @@ overestimateUnionValues :: (PlainUnion u, Mergeable a) => u a -> [a]
 --   &gt;&gt;&gt; case (return 1 :: Union Integer) of Single v -&gt; v
 --   1
 --   </pre>
-pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
+pattern Single :: (UnionView u, Mergeable a) => a -> u a
 
 -- | Pattern match to extract guard values with <a>ifView</a>
 --   
@@ -5207,7 +5212,7 @@ pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
 --   &gt;&gt;&gt; case (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer) of If c t f -&gt; (c,t,f)
 --   (a,&lt;1&gt;,&lt;2&gt;)
 --   </pre>
-pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
+pattern If :: (UnionView u, Mergeable a) => SymBranching u => SymBool -> u a -> u a -> u a
 
 -- | Merge the simply mergeable values in a union, and extract the merged
 --   value.
@@ -5223,7 +5228,7 @@ pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
 --   &gt;&gt;&gt; simpleMerge $ (mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: Union SymBool)
 --   (ite a b c)
 --   </pre>
-simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
+simpleMerge :: forall u a. (SimpleMergeable a, UnionView u) => u a -> a
 
 -- | Merge the mergeable values in a union, using <a>symIte</a>, and
 --   extract the merged value.
@@ -5232,9 +5237,9 @@ simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
 --   have <a>ITEOp</a> (which may throw an error), and we don't have a
 --   <a>SimpleMergeable</a> instance. In this case, we can use
 --   <a>symIteMerge</a> to merge the values.
-symIteMerge :: (ITEOp a, Mergeable a, PlainUnion u) => u a -> a
+symIteMerge :: (ITEOp a, Mergeable a, UnionView u) => u a -> a
 
--- | Helper for applying functions on <a>PlainUnion</a> and
+-- | Helper for applying functions on <a>UnionView</a> and
 --   <a>SimpleMergeable</a>.
 --   
 --   <pre>
@@ -5243,7 +5248,7 @@ symIteMerge :: (ITEOp a, Mergeable a, PlainUnion u) => u a -> a
 --   &gt;&gt;&gt; f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: Union Integer)
 --   {If (&amp;&amp; b a) 1 (If b 2 (If a 3 4))}
 --   </pre>
-(.#) :: (Function f a r, SimpleMergeable r, PlainUnion u) => f -> u a -> r
+(.#) :: (Function f a r, SimpleMergeable r, UnionView u) => f -> u a -> r
 infixl 9 .#
 
 -- | Lift a function to work on union values.
@@ -5254,16 +5259,16 @@ infixl 9 .#
 --   &gt;&gt;&gt; sumU (mrgIfPropagatedStrategy "cond" (return ["a"]) (return ["b","c"]) :: Union [SymInteger])
 --   (ite cond a (+ b c))
 --   </pre>
-onUnion :: forall u a r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a) => (a -> r) -> u a -> r
+onUnion :: forall u a r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a) => (a -> r) -> u a -> r
 
 -- | Lift a function to work on union values.
-onUnion2 :: forall u a b r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a, Mergeable b) => (a -> b -> r) -> u a -> u b -> r
+onUnion2 :: forall u a b r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a, Mergeable b) => (a -> b -> r) -> u a -> u b -> r
 
 -- | Lift a function to work on union values.
-onUnion3 :: forall u a b c r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a, Mergeable b, Mergeable c) => (a -> b -> c -> r) -> u a -> u b -> u c -> r
+onUnion3 :: forall u a b c r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a, Mergeable b, Mergeable c) => (a -> b -> c -> r) -> u a -> u b -> u c -> r
 
 -- | Lift a function to work on union values.
-onUnion4 :: forall u a b c d r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a, Mergeable b, Mergeable c, Mergeable d) => (a -> b -> c -> d -> r) -> u a -> u b -> u c -> u d -> r
+onUnion4 :: forall u a b c d r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a, Mergeable b, Mergeable c, Mergeable d) => (a -> b -> c -> d -> r) -> u a -> u b -> u c -> u d -> r
 
 -- | Convert a plain union to concrete values.
 --   
@@ -5277,8 +5282,31 @@ onUnion4 :: forall u a b c d r. (SimpleMergeable r, SymBranching u, PlainUnion u
 --   &gt;&gt;&gt; unionToCon (return "a" :: Union SymInteger) :: Maybe Integer
 --   Nothing
 --   </pre>
-unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
-instance Grisette.Internal.Core.Data.Class.PlainUnion.PlainUnion u => Grisette.Internal.Core.Data.Class.PlainUnion.PlainUnion (Grisette.Internal.Core.Data.Class.AsKey.AsKey1 u)
+unionToCon :: (ToCon a b, UnionView u) => u a -> Maybe b
+
+-- | Lift the <a>UnionView</a> value to any Applicative
+--   <a>SymBranching</a>.
+liftUnion :: (Mergeable a, UnionView u, Applicative m, SymBranching m) => u a -> m a
+
+-- | Alias for <a>liftUnion</a>, but for monads.
+liftToMonadUnion :: (Mergeable a, UnionView u, Monad m, SymBranching m) => u a -> m a
+instance GHC.Internal.Show.Show (u a) => GHC.Internal.Show.Show (Grisette.Internal.Core.Data.Class.UnionView.IfViewResult u a)
+instance Grisette.Internal.Core.Data.Class.UnionView.UnionView u => Grisette.Internal.Core.Data.Class.UnionView.UnionView (Grisette.Internal.Core.Data.Class.AsKey.AsKey1 u)
+instance Grisette.Internal.Core.Data.Class.UnionView.UnionView GHC.Internal.Data.Functor.Identity.Identity
+
+module Grisette.Internal.Unified.Class.UnionViewMode
+
+-- | This class is used to determine the type of the Boolean used in the
+--   <a>UnionView</a> class.
+--   
+--   For <a>Identity</a>, we use <a>Bool</a> as the Boolean type, and this
+--   ensures that the <a>ifView</a> function will return <a>Nothing</a>.
+--   
+--   For <a>Union</a>, we use <tt>SymBool</tt> as the Boolean type, and
+--   <a>ifView</a> function can return <a>Nothing</a> or <a>Just</a>.
+class UnionViewMode (mode :: EvalModeTag) (u :: Type -> Type) | u -> mode
+instance Grisette.Internal.Unified.Class.UnionViewMode.UnionViewMode 'Grisette.Internal.Unified.EvalModeTag.C GHC.Internal.Data.Functor.Identity.Identity
+instance Grisette.Internal.Unified.Class.UnionViewMode.UnionViewMode 'Grisette.Internal.Unified.EvalModeTag.S Grisette.Internal.Internal.Decl.Core.Control.Monad.Union.Union
 
 
 module Grisette.Internal.TH.Derivation.ConvertOpCommon
@@ -7138,100 +7166,6 @@ module Grisette.Internal.Core.Control.Monad.Class.Union
 type MonadUnion (u :: Type -> Type) = (SymBranching u, Monad u)
 
 
-module Grisette.Internal.Core.Data.Class.SafeLogBase
-
--- | Safe <a>logBase</a> with monadic error handling in multi-path
---   execution. These procedures throw an exception when the base is 1. The
---   result should be able to handle errors with <a>MonadError</a>.
-class (MonadError e m, TryMerge m, Mergeable a) => SafeLogBase e a (m :: Type -> Type)
-
--- | Safe <a>logBase</a> with monadic error handling in multi-path
---   execution.
---   
---   <pre>
---   &gt;&gt;&gt; safeLogBase (ssym "base") (ssym "val") :: ExceptT ArithException Union SymAlgReal
---   ExceptT {If (= base 1.0) (Left Ratio has zero denominator) (Right (fdiv (log val) (log base)))}
---   </pre>
-safeLogBase :: SafeLogBase e a m => a -> a -> m a
-
--- | Safe <a>logBase</a> with default values returned on exception.
-class LogBaseOr a
-
--- | Safe <a>logBase</a> with default values returned on exception.
---   
---   <pre>
---   &gt;&gt;&gt; logBaseOr "d" "base" "val" :: SymAlgReal
---   (ite (= base 1.0) d (fdiv (log val) (log base)))
---   </pre>
-logBaseOr :: LogBaseOr a => a -> a -> a -> a
-
--- | Safe <a>logBase</a> with 0 returned on exception.
-logBaseOrZero :: (LogBaseOr a, Num a) => a -> a -> a
-instance Grisette.Internal.Core.Data.Class.SafeLogBase.LogBaseOr a => Grisette.Internal.Core.Data.Class.SafeLogBase.LogBaseOr (Grisette.Internal.Core.Data.Class.AsKey.AsKey a)
-instance Grisette.Internal.Core.Data.Class.SafeLogBase.LogBaseOr Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
-instance (Control.Monad.Error.Class.MonadError GHC.Internal.Exception.Type.ArithException m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m) => Grisette.Internal.Core.Data.Class.SafeLogBase.SafeLogBase GHC.Internal.Exception.Type.ArithException Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal m
-instance Grisette.Internal.Core.Data.Class.SafeLogBase.SafeLogBase e a m => Grisette.Internal.Core.Data.Class.SafeLogBase.SafeLogBase e (Grisette.Internal.Core.Data.Class.AsKey.AsKey a) m
-
-
-module Grisette.Internal.Core.Data.Class.SafeFdiv
-
--- | Safe fractional division with monadic error handling in multi-path
---   execution. These procedures throw an exception when the denominator is
---   zero. The result should be able to handle errors with
---   <a>MonadError</a>.
-class (MonadError e m, TryMerge m, Mergeable a) => SafeFdiv e a (m :: Type -> Type)
-
--- | Safe fractional division with monadic error handling in multi-path
---   execution.
---   
---   <pre>
---   &gt;&gt;&gt; safeFdiv "a" "b" :: ExceptT ArithException Union SymAlgReal
---   ExceptT {If (= b 0.0) (Left Ratio has zero denominator) (Right (fdiv a b))}
---   </pre>
-safeFdiv :: SafeFdiv e a m => a -> a -> m a
-
--- | Safe fractional reciprocal with monadic error handling in multi-path
---   execution.
---   
---   <pre>
---   &gt;&gt;&gt; safeRecip "a" :: ExceptT ArithException Union SymAlgReal
---   ExceptT {If (= a 0.0) (Left Ratio has zero denominator) (Right (recip a))}
---   </pre>
-safeRecip :: SafeFdiv e a m => a -> m a
-($dmsafeRecip) :: (SafeFdiv e a m, Fractional a) => a -> m a
-
--- | Safe fractional with default values returned on exception.
-class FdivOr a
-
--- | Safe <a>/</a> with default values returned on exception.
---   
---   <pre>
---   &gt;&gt;&gt; fdivOr "d" "a" "b" :: SymAlgReal
---   (ite (= b 0.0) d (fdiv a b))
---   </pre>
-fdivOr :: FdivOr a => a -> a -> a -> a
-
--- | Safe <a>recip</a> with default values returned on exception.
---   
---   <pre>
---   &gt;&gt;&gt; recipOr "d" "a" :: SymAlgReal
---   (ite (= a 0.0) d (recip a))
---   </pre>
-recipOr :: FdivOr a => a -> a -> a
-
--- | Safe <a>/</a> with 0 returned on exception.
-fdivOrZero :: (FdivOr a, Num a) => a -> a -> a
-
--- | Safe <a>recip</a> with 0 returned on exception.
-recipOrZero :: (FdivOr a, Num a) => a -> a
-instance Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr Grisette.Internal.SymPrim.AlgReal.AlgReal
-instance Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr a => Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr (Grisette.Internal.Core.Data.Class.AsKey.AsKey a)
-instance Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
-instance (Control.Monad.Error.Class.MonadError GHC.Internal.Exception.Type.ArithException m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m) => Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv GHC.Internal.Exception.Type.ArithException Grisette.Internal.SymPrim.AlgReal.AlgReal m
-instance (Control.Monad.Error.Class.MonadError GHC.Internal.Exception.Type.ArithException m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m) => Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv GHC.Internal.Exception.Type.ArithException Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal m
-instance Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv e a m => Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv e (Grisette.Internal.Core.Data.Class.AsKey.AsKey a) m
-
-
 module Grisette.Internal.Core.Data.Class.SafeBitCast
 
 -- | Bitcasting a value. If the value cannot be precisely bitcast, throw an
@@ -7611,7 +7545,7 @@ class UnionWithExcept t (u :: Type -> Type) e v | t -> u e v
 extractUnionExcept :: UnionWithExcept t u e v => t -> u (Either e v)
 
 -- | Solver procedure for programs with error handling.
-solverSolveExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, Solver handle) => handle -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
+solverSolveExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, UnionView u, Functor u, Solver handle) => handle -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
 
 -- | Solver procedure for programs with error handling.
 --   
@@ -7639,15 +7573,15 @@ solverSolveExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t
 --   &gt;&gt;&gt; solveExcept z3 translate res
 --   Right (Model {x -&gt; 1 :: Integer})
 --   </pre>
-solveExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, ConfigurableSolver config handle) => config -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
+solveExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, UnionView u, Functor u, ConfigurableSolver config handle) => config -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
 
 -- | Solver procedure for programs with error handling. Would return
 --   multiple models if possible.
-solverSolveMultiExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, Solver handle) => handle -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
+solverSolveMultiExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, UnionView u, Functor u, Solver handle) => handle -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
 
 -- | Solver procedure for programs with error handling. Would return
 --   multiple models if possible.
-solveMultiExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, ConfigurableSolver config handle) => config -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
+solveMultiExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, UnionView u, Functor u, ConfigurableSolver config handle) => config -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
 
 
 module Grisette.Internal.Backend.Solving
@@ -8330,12 +8264,6 @@ unionUnaryOp :: (a -> a) -> Union a -> Union a
 -- | Lift a binary operation to <a>Union</a>.
 unionBinOp :: (a -> a -> a) -> Union a -> Union a -> Union a
 
--- | Lift the <a>Union</a> to any Applicative <a>SymBranching</a>.
-liftUnion :: forall u a. (Mergeable a, SymBranching u, Applicative u) => Union a -> u a
-
--- | Alias for <a>liftUnion</a>, but for monads.
-liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
-
 -- | Check if a <a>Union</a> is already merged.
 isMerged :: Union a -> Bool
 
@@ -8352,15 +8280,6 @@ isMerged :: Union a -> Bool
 --   7
 --   </pre>
 unionSize :: Union a -> Int
-
-
-module Grisette.Internal.Unified.BaseMonad
-
--- | A type family that specifies the base monad for the evaluation mode.
---   
---   Resolves to <a>Identity</a> for <a>C</a> mode, and <a>Union</a> for
---   <a>S</a> mode.
-type family BaseMonad (mode :: EvalModeTag) = (r :: Type -> Type) | r -> mode
 
 
 module Grisette.Internal.Core.Data.Class.SymOrd
@@ -8628,22 +8547,6 @@ instance (Control.Monad.Error.Class.MonadError GHC.Internal.Exception.Type.Arith
 instance Grisette.Internal.Core.Data.Class.SafeLinearArith.SafeLinearArith e a m => Grisette.Internal.Core.Data.Class.SafeLinearArith.SafeLinearArith e (Grisette.Internal.Core.Data.Class.AsKey.AsKey a) m
 
 
-module Grisette.Internal.Core.Data.Class.SafeFromFP
-
--- | Safe conversion from floating point numbers that throws exceptions
---   when the result isn't representable by the type.
-class (MonadError e m, TryMerge m, IEEEFPConvertible a fp fprd) => SafeFromFP e a fp fprd (m :: Type -> Type)
-safeFromFP :: SafeFromFP e a fp fprd m => fprd -> fp -> m a
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError Grisette.Internal.SymPrim.AlgReal.AlgReal (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.BV.IntN n) (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError GHC.Num.Integer.Integer (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.SymBV.SymIntN n) (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError Grisette.Internal.SymPrim.SymInteger.SymInteger (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.SymBV.SymWordN n) (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
-instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.BV.WordN n) (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
-
-
 module Grisette.Experimental.MonadParallelUnion
 
 -- | Parallel union monad.
@@ -8797,7 +8700,7 @@ solverCegis :: (Solver handle, EvalSym inputs, ExtractSym inputs, SymEq inputs) 
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs. See
@@ -8809,7 +8712,7 @@ solverCegisExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithE
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs.
@@ -8821,7 +8724,7 @@ solverCegisExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWith
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
@@ -8832,7 +8735,7 @@ solverCegisExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym 
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptMultiInputs :: forall handle inputs t (u :: Type -> Type) e v. (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptMultiInputs :: forall handle inputs t (u :: Type -> Type) e v. (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs. See
@@ -8844,7 +8747,7 @@ solverCegisExceptMultiInputs :: forall handle inputs t (u :: Type -> Type) e v. 
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptStdVCMultiInputs :: forall handle inputs t (u :: Type -> Type). (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u) => handle -> handle -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptStdVCMultiInputs :: forall handle inputs t (u :: Type -> Type). (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), UnionView u, Monad u) => handle -> handle -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
@@ -8857,7 +8760,7 @@ solverCegisExceptStdVCMultiInputs :: forall handle inputs t (u :: Type -> Type).
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptVCMultiInputs :: (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptVCMultiInputs :: (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS with a single symbolic input to represent a set of inputs. See
 --   <a>cegisForAll</a> for more details.
@@ -8881,7 +8784,7 @@ solverCegisForAll :: (ExtractSym forallInput, Solver handle) => handle -> handle
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisForAllExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
@@ -8895,7 +8798,7 @@ solverCegisForAllExcept :: forall t (u :: Type -> Type) e v inputs handle. (Unio
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
@@ -8909,7 +8812,7 @@ solverCegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (Uni
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisForAllExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS with multiple (possibly symbolic) inputs. Solves the following
 --   formula (see <a>CEGISCondition</a> for details).
@@ -8973,7 +8876,7 @@ cegis :: (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, S
 --   &gt;&gt;&gt; cegisExcept z3 x translation res
 --   ([...],CEGISSuccess (Model {c -&gt; -1 :: Integer}))
 --   </pre>
-cegisExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs. This function saves the
@@ -9007,17 +8910,17 @@ cegisExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWith
 --   &gt;&gt;&gt; cegisExceptStdVC z3 x res
 --   ([...],CEGISSuccess (Model {c -&gt; -1 :: Integer}))
 --   </pre>
-cegisExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs.
 --   
 --   The errors should be translated to assertion or assumption violations.
-cegisExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
-cegisExceptMultiInputs :: forall config handle inputs t (u :: Type -> Type) e v. (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => config -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptMultiInputs :: forall config handle inputs t (u :: Type -> Type) e v. (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => config -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs. This function
@@ -9028,13 +8931,13 @@ cegisExceptMultiInputs :: forall config handle inputs t (u :: Type -> Type) e v.
 --   This function translates assumption violations to failed
 --   pre-conditions, and translates assertion violations to failed
 --   post-conditions. The <tt>()</tt> result will not fail any conditions.
-cegisExceptStdVCMultiInputs :: forall config handle inputs t (u :: Type -> Type). (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u) => config -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptStdVCMultiInputs :: forall config handle inputs t (u :: Type -> Type). (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), UnionView u, Monad u) => config -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
 --   
 --   The errors should be translated to assertion or assumption violations.
-cegisExceptVCMultiInputs :: (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => config -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptVCMultiInputs :: (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => config -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS with a single symbolic input to represent a set of inputs.
 --   
@@ -9054,19 +8957,19 @@ cegisForAll :: (ExtractSym forallInput, ConfigurableSolver config handle) => con
 --   variable.
 --   
 --   See <a>cegisForAll</a> and <a>cegisExcept</a>.
-cegisForAllExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
 --   
 --   See <a>cegisForAll</a> and <a>cegisExceptStdVC</a>.
-cegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
 --   
 --   See <a>cegisForAll</a> and <a>cegisExceptVC</a>.
-cegisForAllExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
 instance Data.Bytes.Serial.Serial exception => Data.Binary.Class.Binary (Grisette.Internal.Core.Data.Class.CEGISSolver.CEGISResult exception)
 instance GHC.Classes.Eq exception => GHC.Classes.Eq (Grisette.Internal.Core.Data.Class.CEGISSolver.CEGISResult exception)
 instance (GHC.Classes.Eq cex, GHC.Classes.Eq exception) => GHC.Classes.Eq (Grisette.Internal.Core.Data.Class.CEGISSolver.VerifierResult cex exception)
@@ -9087,6 +8990,116 @@ instance Data.Bytes.Serial.Serial exception => Data.Serialize.Serialize (Grisett
 instance GHC.Internal.Show.Show exception => GHC.Internal.Show.Show (Grisette.Internal.Core.Data.Class.CEGISSolver.CEGISResult exception)
 instance (GHC.Internal.Show.Show cex, GHC.Internal.Show.Show exception) => GHC.Internal.Show.Show (Grisette.Internal.Core.Data.Class.CEGISSolver.VerifierResult cex exception)
 instance Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable.SimpleMergeable Grisette.Internal.Core.Data.Class.CEGISSolver.CEGISCondition
+
+
+module Grisette.Internal.Core.Data.Class.SafeLogBase
+
+-- | Safe <a>logBase</a> with monadic error handling in multi-path
+--   execution. These procedures throw an exception when the base is 1. The
+--   result should be able to handle errors with <a>MonadError</a>.
+class (MonadError e m, TryMerge m, Mergeable a) => SafeLogBase e a (m :: Type -> Type)
+
+-- | Safe <a>logBase</a> with monadic error handling in multi-path
+--   execution.
+--   
+--   <pre>
+--   &gt;&gt;&gt; safeLogBase (ssym "base") (ssym "val") :: ExceptT ArithException Union SymAlgReal
+--   ExceptT {If (= base 1.0) (Left Ratio has zero denominator) (Right (fdiv (log val) (log base)))}
+--   </pre>
+safeLogBase :: SafeLogBase e a m => a -> a -> m a
+
+-- | Safe <a>logBase</a> with default values returned on exception.
+class LogBaseOr a
+
+-- | Safe <a>logBase</a> with default values returned on exception.
+--   
+--   <pre>
+--   &gt;&gt;&gt; logBaseOr "d" "base" "val" :: SymAlgReal
+--   (ite (= base 1.0) d (fdiv (log val) (log base)))
+--   </pre>
+logBaseOr :: LogBaseOr a => a -> a -> a -> a
+
+-- | Safe <a>logBase</a> with 0 returned on exception.
+logBaseOrZero :: (LogBaseOr a, Num a) => a -> a -> a
+instance Grisette.Internal.Core.Data.Class.SafeLogBase.LogBaseOr a => Grisette.Internal.Core.Data.Class.SafeLogBase.LogBaseOr (Grisette.Internal.Core.Data.Class.AsKey.AsKey a)
+instance Grisette.Internal.Core.Data.Class.SafeLogBase.LogBaseOr Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
+instance (Control.Monad.Error.Class.MonadError GHC.Internal.Exception.Type.ArithException m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m) => Grisette.Internal.Core.Data.Class.SafeLogBase.SafeLogBase GHC.Internal.Exception.Type.ArithException Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal m
+instance Grisette.Internal.Core.Data.Class.SafeLogBase.SafeLogBase e a m => Grisette.Internal.Core.Data.Class.SafeLogBase.SafeLogBase e (Grisette.Internal.Core.Data.Class.AsKey.AsKey a) m
+
+
+module Grisette.Internal.Core.Data.Class.SafeFromFP
+
+-- | Safe conversion from floating point numbers that throws exceptions
+--   when the result isn't representable by the type.
+class (MonadError e m, TryMerge m, IEEEFPConvertible a fp fprd) => SafeFromFP e a fp fprd (m :: Type -> Type)
+safeFromFP :: SafeFromFP e a fp fprd m => fprd -> fp -> m a
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError Grisette.Internal.SymPrim.AlgReal.AlgReal (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.BV.IntN n) (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError GHC.Num.Integer.Integer (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.SymBV.SymIntN n) (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError Grisette.Internal.SymPrim.SymInteger.SymInteger (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.SymBV.SymWordN n) (Grisette.Internal.SymPrim.SymFP.SymFP eb sb) Grisette.Internal.SymPrim.SymFP.SymFPRoundingMode m
+instance (Control.Monad.Error.Class.MonadError Grisette.Internal.SymPrim.FP.NotRepresentableFPError m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m, Grisette.Internal.SymPrim.FP.ValidFP eb sb, GHC.Internal.TypeNats.KnownNat n, 1 GHC.Internal.Data.Type.Ord.<= n) => Grisette.Internal.Core.Data.Class.SafeFromFP.SafeFromFP Grisette.Internal.SymPrim.FP.NotRepresentableFPError (Grisette.Internal.SymPrim.BV.WordN n) (Grisette.Internal.SymPrim.FP.FP eb sb) Grisette.Internal.SymPrim.FP.FPRoundingMode m
+
+
+module Grisette.Internal.Core.Data.Class.SafeFdiv
+
+-- | Safe fractional division with monadic error handling in multi-path
+--   execution. These procedures throw an exception when the denominator is
+--   zero. The result should be able to handle errors with
+--   <a>MonadError</a>.
+class (MonadError e m, TryMerge m, Mergeable a) => SafeFdiv e a (m :: Type -> Type)
+
+-- | Safe fractional division with monadic error handling in multi-path
+--   execution.
+--   
+--   <pre>
+--   &gt;&gt;&gt; safeFdiv "a" "b" :: ExceptT ArithException Union SymAlgReal
+--   ExceptT {If (= b 0.0) (Left Ratio has zero denominator) (Right (fdiv a b))}
+--   </pre>
+safeFdiv :: SafeFdiv e a m => a -> a -> m a
+
+-- | Safe fractional reciprocal with monadic error handling in multi-path
+--   execution.
+--   
+--   <pre>
+--   &gt;&gt;&gt; safeRecip "a" :: ExceptT ArithException Union SymAlgReal
+--   ExceptT {If (= a 0.0) (Left Ratio has zero denominator) (Right (recip a))}
+--   </pre>
+safeRecip :: SafeFdiv e a m => a -> m a
+($dmsafeRecip) :: (SafeFdiv e a m, Fractional a) => a -> m a
+
+-- | Safe fractional with default values returned on exception.
+class FdivOr a
+
+-- | Safe <a>/</a> with default values returned on exception.
+--   
+--   <pre>
+--   &gt;&gt;&gt; fdivOr "d" "a" "b" :: SymAlgReal
+--   (ite (= b 0.0) d (fdiv a b))
+--   </pre>
+fdivOr :: FdivOr a => a -> a -> a -> a
+
+-- | Safe <a>recip</a> with default values returned on exception.
+--   
+--   <pre>
+--   &gt;&gt;&gt; recipOr "d" "a" :: SymAlgReal
+--   (ite (= a 0.0) d (recip a))
+--   </pre>
+recipOr :: FdivOr a => a -> a -> a
+
+-- | Safe <a>/</a> with 0 returned on exception.
+fdivOrZero :: (FdivOr a, Num a) => a -> a -> a
+
+-- | Safe <a>recip</a> with 0 returned on exception.
+recipOrZero :: (FdivOr a, Num a) => a -> a
+instance Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr Grisette.Internal.SymPrim.AlgReal.AlgReal
+instance Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr a => Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr (Grisette.Internal.Core.Data.Class.AsKey.AsKey a)
+instance Grisette.Internal.Core.Data.Class.SafeFdiv.FdivOr Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal
+instance (Control.Monad.Error.Class.MonadError GHC.Internal.Exception.Type.ArithException m, Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge.TryMerge m) => Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv GHC.Internal.Exception.Type.ArithException Grisette.Internal.SymPrim.AlgReal.AlgReal m
+instance (Control.Monad.Error.Class.MonadError GHC.Internal.Exception.Type.ArithException m, Grisette.Internal.Core.Control.Monad.Class.Union.MonadUnion m) => Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv GHC.Internal.Exception.Type.ArithException Grisette.Internal.SymPrim.SymAlgReal.SymAlgReal m
+instance Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv e a m => Grisette.Internal.Core.Data.Class.SafeFdiv.SafeFdiv e (Grisette.Internal.Core.Data.Class.AsKey.AsKey a) m
 
 
 module Grisette.Lib.Control.Monad.Trans.Class
@@ -10101,30 +10114,19 @@ withBaseSymOrd2 :: UnifiedSymOrd2 mode f => (If (IsConMode mode) (Ord2 f) (SymOr
 --   One example when it isn't clear is when this is used in unified
 --   <a>mrgIf</a>.
 (.<=) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+infix 4 .<=
 
 -- | Unified <a>(.&lt;)</a>.
 (.<) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+infix 4 .<
 
 -- | Unified <a>(.&gt;=)</a>.
 (.>=) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+infix 4 .>=
 
 -- | Unified <a>(.&gt;)</a>.
 (.>) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
-
--- | Unified <a>symCompare</a>.
-symCompare :: forall (mode :: EvalModeTag) a (ctx :: Type -> Type). (DecideEvalMode mode, UnifiedSymOrd mode a, Monad ctx) => a -> a -> BaseMonad mode Ordering
-
--- | Unified <a>liftSymCompare</a>.
-liftSymCompare :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd1 mode f) => (a -> b -> BaseMonad mode Ordering) -> f a -> f b -> BaseMonad mode Ordering
-
--- | Unified <a>symCompare1</a>.
-symCompare1 :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd1 mode f) => f a -> f a -> BaseMonad mode Ordering
-
--- | Unified <a>liftSymCompare2</a>.
-liftSymCompare2 :: forall (mode :: EvalModeTag) f a b c d. (DecideEvalMode mode, UnifiedSymOrd2 mode f) => (a -> b -> BaseMonad mode Ordering) -> (c -> d -> BaseMonad mode Ordering) -> f a c -> f b d -> BaseMonad mode Ordering
-
--- | Unified <a>symCompare2</a>.
-symCompare2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd mode b, UnifiedSymOrd2 mode f) => f a b -> f a b -> BaseMonad mode Ordering
+infix 4 .>
 
 -- | Unified <a>symMax</a>.
 symMax :: forall (mode :: EvalModeTag) a. (UnifiedSymOrd mode a, UnifiedITEOp mode a, DecideEvalMode mode) => a -> a -> a
@@ -10174,6 +10176,7 @@ withBaseSymEq2 :: UnifiedSymEq2 mode f => (If (IsConMode mode) (Eq2 f) (SymEq2 f
 --   One example when it isn't clear is when this is used in unified
 --   <a>mrgIf</a>.
 (.==) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
+infix 4 .==
 
 -- | Unified <a>(./=)</a>.
 --   
@@ -10187,6 +10190,7 @@ withBaseSymEq2 :: UnifiedSymEq2 mode f => (If (IsConMode mode) (Eq2 f) (SymEq2 f
 --   One example when it isn't clear is when this is used in unified
 --   <a>mrgIf</a>.
 (./=) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
+infix 4 ./=
 
 -- | Unified <a>symDistinct</a>.
 --   
@@ -10235,9 +10239,9 @@ symIte :: forall (mode :: EvalModeTag) v. (DecideEvalMode mode, UnifiedITEOp mod
 --   
 --   <pre>
 --   symIteMerge @mode ...
---   symIteMerge (... :: BaseMonad mode v) ...
+--   symIteMerge (... :: GetData mode v) ...
 --   </pre>
-symIteMerge :: forall (mode :: EvalModeTag) v. (DecideEvalMode mode, UnifiedITEOp mode v, Mergeable v) => BaseMonad mode v -> v
+symIteMerge :: forall (mode :: EvalModeTag) u v. (DecideEvalMode mode, UnifiedITEOp mode v, Mergeable v, UnionViewMode mode u, UnionView u) => u v -> v
 
 -- | A class that provides unified equality comparison.
 --   
@@ -12006,89 +12010,18 @@ pattern ToFPTerm :: forall ret (eb :: Nat) (sb :: Nat) a. () => (PEvalIEEEFPConv
 pattern SubTerms :: [SomeTerm] -> Term a
 
 
-module Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
-
--- | A class that provides a unified branching operation.
---   
---   We use this type class to help resolve the constraints for
---   <a>SymBranching</a>.
-class (DecideEvalMode mode, TryMerge m) => UnifiedBranching (mode :: EvalModeTag) (m :: Type -> Type)
-withBaseBranching :: UnifiedBranching mode m => (If (IsConMode mode) (TryMerge m) (SymBranching m) => r) -> r
-
--- | A class that provides a unified simple merging.
---   
---   We use this type class to help resolve the constraints for
---   <a>SimpleMergeable</a>.
-class Mergeable a => UnifiedSimpleMergeable (mode :: EvalModeTag) a
-withBaseSimpleMergeable :: UnifiedSimpleMergeable mode a => (If (IsConMode mode) () (SimpleMergeable a) => r) -> r
-
--- | A class that provides lifting of unified simple merging.
---   
---   We use this type class to help resolve the constraints for
---   <a>SimpleMergeable1</a>.
-class UnifiedSimpleMergeable1 (mode :: EvalModeTag) (f :: Type -> Type)
-withBaseSimpleMergeable1 :: UnifiedSimpleMergeable1 mode f => (If (IsConMode mode) () (SimpleMergeable1 f) => r) -> r
-
--- | A class that provides lifting of unified simple merging.
---   
---   We use this type class to help resolve the constraints for
---   <a>SimpleMergeable2</a>.
-class UnifiedSimpleMergeable2 (mode :: EvalModeTag) (f :: Type -> Type -> Type)
-withBaseSimpleMergeable2 :: UnifiedSimpleMergeable2 mode f => (If (IsConMode mode) () (SimpleMergeable2 f) => r) -> r
-
--- | Unified <a>mrgIf</a>.
---   
---   This function isn't able to infer the mode of the boolean variable, so
---   you need to provide the mode explicitly. For example:
---   
---   <pre>
---   mrgIf @mode (a .== b) ...
---   mrgIf (a .== b :: SymBool) ...
---   mrgIf (a .== b :: GetBool mode) ...
---   </pre>
-mrgIf :: forall (mode :: EvalModeTag) a m. (DecideEvalMode mode, Mergeable a, UnifiedBranching mode m) => GetBool mode -> m a -> m a -> m a
-
--- | Unified lifting of a base monad.
-liftBaseMonad :: forall (mode :: EvalModeTag) a m. (Applicative m, UnifiedBranching mode m, Mergeable a) => BaseMonad mode a -> m a
-
--- | Unified <a>mrgIte</a>.
-mrgIte :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSimpleMergeable mode a) => GetBool mode -> a -> a -> a
-
--- | Unified <a>mrgIte1</a>.
-mrgIte1 :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSimpleMergeable1 mode f, UnifiedSimpleMergeable mode a) => GetBool mode -> f a -> f a -> f a
-
--- | Unified <a>liftMrgIte</a>.
-liftMrgIte :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSimpleMergeable1 mode f) => (GetBool mode -> a -> a -> a) -> GetBool mode -> f a -> f a -> f a
-
--- | Unified <a>mrgIte2</a>.
-mrgIte2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSimpleMergeable2 mode f, UnifiedSimpleMergeable mode a, UnifiedSimpleMergeable mode b) => GetBool mode -> f a b -> f a b -> f a b
-
--- | Unified <a>liftMrgIte2</a>.
-liftMrgIte2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSimpleMergeable2 mode f) => (GetBool mode -> a -> a -> a) -> (GetBool mode -> b -> b -> b) -> GetBool mode -> f a b -> f a b -> f a b
-
--- | Unified merge of simply mergeable values in the base monad.
-simpleMerge :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSimpleMergeable mode a) => BaseMonad mode a -> a
-
-
-module Grisette.Internal.Unified.UnifiedPrim
-
--- | A type that is used as a constraint for all the (unified) primitive
---   types in Grisette.
-type UnifiedPrim (mode :: EvalModeTag) a = (Prim a, UnifiedITEOp mode a, UnifiedSymEq mode a, UnifiedSymOrd mode a)
-
--- | A type that is used as a constraint for all the basic (unified)
---   primitive types in Grisette.
---   
---   <a>GetSomeWordN</a> is not considered as a basic (unified) primitive
---   type.
-type UnifiedBasicPrim (mode :: EvalModeTag) a = (UnifiedPrim mode a, UnifiedSimpleMergeable mode a, UnifiedConRep a, UnifiedSymRep a, UnifiedSolvable mode a ConType a, ConSymConversion ConType a SymType a a)
-
-
 module Grisette.Internal.Unified.UnifiedData
+class (UnifiedSimpleMergeable1 mode GetData mode, UnifiedBranching mode GetData mode, UnionView GetData mode, UnionViewMode mode GetData mode, Monad GetData mode, TryMerge GetData mode) => UnifiedDataBase (mode :: EvalModeTag)
 
--- | Get a unified data type. Resolves to <tt>v</tt> in <a>C</a> mode, and
---   <tt><a>Union</a> v</tt> in <a>S</a> mode.
-type family GetData (mode :: EvalModeTag) v = (r :: Type) | r -> mode v
+-- | Get a unified data type. Resolves to <a>Identity</a> in <a>C</a> mode,
+--   and <a>Union</a> in <a>S</a> mode.
+type family GetData (mode :: EvalModeTag) = (r :: Type -> Type) | r -> mode
+
+-- | A type family that specifies the base monad for the evaluation mode.
+--   
+--   Resolves to <a>Identity</a> for <a>C</a> mode, and <a>Union</a> for
+--   <a>S</a> mode.
+type BaseMonad (mode :: EvalModeTag) = GetData mode
 
 -- | Wraps a value into the unified data type.
 wrapData :: UnifiedDataImpl mode v u => v -> u
@@ -12102,7 +12035,24 @@ class UnifiedDataImpl mode v GetData mode v => UnifiedData (mode :: EvalModeTag)
 
 -- | Evaluation mode with unified data types.
 class (forall v. () => UnifiedData bool v, forall v. Mergeable v => UnifiedDataSimpleMergeable v) => AllUnifiedData (bool :: EvalModeTag)
+
+-- | Unified <a>symCompare</a>.
+symCompare :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetData mode Ordering
+
+-- | Unified <a>liftSymCompare</a>.
+liftSymCompare :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd1 mode f) => (a -> b -> GetData mode Ordering) -> f a -> f b -> GetData mode Ordering
+
+-- | Unified <a>symCompare1</a>.
+symCompare1 :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd1 mode f) => f a -> f a -> GetData mode Ordering
+
+-- | Unified <a>liftSymCompare2</a>.
+liftSymCompare2 :: forall (mode :: EvalModeTag) f a b c d. (DecideEvalMode mode, UnifiedSymOrd2 mode f) => (a -> b -> GetData mode Ordering) -> (c -> d -> GetData mode Ordering) -> f a c -> f b d -> GetData mode Ordering
+
+-- | Unified <a>symCompare2</a>.
+symCompare2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd mode b, UnifiedSymOrd2 mode f) => f a b -> f a b -> GetData mode Ordering
 instance (forall v. Grisette.Internal.Unified.UnifiedData.UnifiedData bool v, forall v. Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.Mergeable v => Grisette.Internal.Unified.UnifiedData.UnifiedDataSimpleMergeable v) => Grisette.Internal.Unified.UnifiedData.AllUnifiedData bool
+instance Grisette.Internal.Unified.UnifiedData.UnifiedDataBase 'Grisette.Internal.Unified.EvalModeTag.C
+instance Grisette.Internal.Unified.UnifiedData.UnifiedDataBase 'Grisette.Internal.Unified.EvalModeTag.S
 instance Grisette.Internal.Unified.UnifiedData.UnifiedDataImpl 'Grisette.Internal.Unified.EvalModeTag.C v (GHC.Internal.Data.Functor.Identity.Identity v)
 instance Grisette.Internal.Unified.UnifiedData.UnifiedDataImpl 'Grisette.Internal.Unified.EvalModeTag.S v (Grisette.Internal.Internal.Decl.Core.Control.Monad.Union.Union v)
 instance Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable.Mergeable v => Grisette.Internal.Unified.UnifiedData.UnifiedDataSimpleMergeable v
@@ -12977,6 +12927,84 @@ makeUnifiedCtor :: [Name] -> Name -> Q [Dec]
 makeUnifiedCtorWith :: [Name] -> (String -> String) -> Name -> Q [Dec]
 
 
+module Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
+
+-- | A class that provides a unified branching operation.
+--   
+--   We use this type class to help resolve the constraints for
+--   <a>SymBranching</a>.
+class (DecideEvalMode mode, TryMerge m) => UnifiedBranching (mode :: EvalModeTag) (m :: Type -> Type)
+withBaseBranching :: UnifiedBranching mode m => (If (IsConMode mode) (TryMerge m) (SymBranching m) => r) -> r
+
+-- | A class that provides a unified simple merging.
+--   
+--   We use this type class to help resolve the constraints for
+--   <a>SimpleMergeable</a>.
+class (DecideEvalMode mode, Mergeable a) => UnifiedSimpleMergeable (mode :: EvalModeTag) a
+withBaseSimpleMergeable :: UnifiedSimpleMergeable mode a => (If (IsConMode mode) () (SimpleMergeable a) => r) -> r
+
+-- | A class that provides lifting of unified simple merging.
+--   
+--   We use this type class to help resolve the constraints for
+--   <a>SimpleMergeable1</a>.
+class DecideEvalMode mode => UnifiedSimpleMergeable1 (mode :: EvalModeTag) (f :: Type -> Type)
+withBaseSimpleMergeable1 :: UnifiedSimpleMergeable1 mode f => (If (IsConMode mode) () (SimpleMergeable1 f) => r) -> r
+
+-- | A class that provides lifting of unified simple merging.
+--   
+--   We use this type class to help resolve the constraints for
+--   <a>SimpleMergeable2</a>.
+class DecideEvalMode mode => UnifiedSimpleMergeable2 (mode :: EvalModeTag) (f :: Type -> Type -> Type)
+withBaseSimpleMergeable2 :: UnifiedSimpleMergeable2 mode f => (If (IsConMode mode) () (SimpleMergeable2 f) => r) -> r
+
+-- | Unified <a>mrgIf</a>.
+--   
+--   This function isn't able to infer the mode of the boolean variable, so
+--   you need to provide the mode explicitly. For example:
+--   
+--   <pre>
+--   mrgIf @mode (a .== b) ...
+--   mrgIf (a .== b :: SymBool) ...
+--   mrgIf (a .== b :: GetBool mode) ...
+--   </pre>
+mrgIf :: forall (mode :: EvalModeTag) a m. (DecideEvalMode mode, Mergeable a, UnifiedBranching mode m) => GetBool mode -> m a -> m a -> m a
+
+-- | Unified lifting of a base monad.
+liftUnion :: forall (mode :: EvalModeTag) a m u. (Applicative m, UnifiedBranching mode m, Mergeable a, UnionView u, UnionViewMode mode u) => u a -> m a
+
+-- | Unified <a>mrgIte</a>.
+mrgIte :: forall (mode :: EvalModeTag) a. UnifiedSimpleMergeable mode a => GetBool mode -> a -> a -> a
+
+-- | Unified <a>mrgIte1</a>.
+mrgIte1 :: forall (mode :: EvalModeTag) f a. (UnifiedSimpleMergeable1 mode f, UnifiedSimpleMergeable mode a) => GetBool mode -> f a -> f a -> f a
+
+-- | Unified <a>liftMrgIte</a>.
+liftMrgIte :: forall (mode :: EvalModeTag) f a. UnifiedSimpleMergeable1 mode f => (GetBool mode -> a -> a -> a) -> GetBool mode -> f a -> f a -> f a
+
+-- | Unified <a>mrgIte2</a>.
+mrgIte2 :: forall (mode :: EvalModeTag) f a b. (UnifiedSimpleMergeable2 mode f, UnifiedSimpleMergeable mode a, UnifiedSimpleMergeable mode b) => GetBool mode -> f a b -> f a b -> f a b
+
+-- | Unified <a>liftMrgIte2</a>.
+liftMrgIte2 :: forall (mode :: EvalModeTag) f a b. UnifiedSimpleMergeable2 mode f => (GetBool mode -> a -> a -> a) -> (GetBool mode -> b -> b -> b) -> GetBool mode -> f a b -> f a b -> f a b
+
+-- | Unified merge of simply mergeable values in the base monad.
+simpleMerge :: forall (mode :: EvalModeTag) a u. (UnifiedSimpleMergeable mode a, UnionView u, UnionViewMode mode u) => u a -> a
+
+
+module Grisette.Internal.Unified.UnifiedPrim
+
+-- | A type that is used as a constraint for all the (unified) primitive
+--   types in Grisette.
+type UnifiedPrim (mode :: EvalModeTag) a = (Prim a, UnifiedITEOp mode a, UnifiedSymEq mode a, UnifiedSymOrd mode a)
+
+-- | A type that is used as a constraint for all the basic (unified)
+--   primitive types in Grisette.
+--   
+--   <a>GetSomeWordN</a> is not considered as a basic (unified) primitive
+--   type.
+type UnifiedBasicPrim (mode :: EvalModeTag) a = (UnifiedPrim mode a, UnifiedSimpleMergeable mode a, UnifiedConRep a, UnifiedSymRep a, UnifiedSolvable mode a ConType a, ConSymConversion ConType a SymType a a)
+
+
 module Grisette.Internal.Unified.Class.UnifiedSafeSymShift
 
 -- | Unified <a>safeSymShiftL</a> operation.
@@ -13481,7 +13509,7 @@ module Grisette.Internal.Unified.EvalMode
 --   
 --   For compilers prior to GHC 9.2.1, see the notes for
 --   <a>EvalModeAll</a>.
-class (DecideEvalMode mode, UnifiedBool mode, UnifiedBasicPrim mode GetBool mode, Monad BaseMonad mode, TryMerge BaseMonad mode, UnifiedBranching mode BaseMonad mode, AllUnifiedData mode) => EvalModeBase (mode :: EvalModeTag)
+class (DecideEvalMode mode, UnifiedBool mode, UnifiedBasicPrim mode GetBool mode, AllUnifiedData mode, UnifiedDataBase mode) => EvalModeBase (mode :: EvalModeTag)
 
 -- | Provide the support for <a>GetInteger</a>.
 --   
@@ -13649,7 +13677,7 @@ type family IsConMode (mode :: EvalModeTag) = (r :: Bool) | r -> mode
 --   
 --   Resolves to <a>Identity</a> for <a>C</a> mode, and <a>Union</a> for
 --   <a>S</a> mode.
-type family BaseMonad (mode :: EvalModeTag) = (r :: Type -> Type) | r -> mode
+type BaseMonad (mode :: EvalModeTag) = GetData mode
 
 -- | This template haskell function generates an EvalMode constraint on
 --   demand.
@@ -13742,7 +13770,7 @@ UFun :: [TheoryToUnify] -> TheoryToUnify
 --   
 --   For compilers prior to GHC 9.2.1, see the notes for
 --   <a>EvalModeAll</a>.
-class (DecideEvalMode mode, UnifiedBool mode, UnifiedBasicPrim mode GetBool mode, Monad BaseMonad mode, TryMerge BaseMonad mode, UnifiedBranching mode BaseMonad mode, AllUnifiedData mode) => EvalModeBase (mode :: EvalModeTag)
+class (DecideEvalMode mode, UnifiedBool mode, UnifiedBasicPrim mode GetBool mode, AllUnifiedData mode, UnifiedDataBase mode) => EvalModeBase (mode :: EvalModeTag)
 
 -- | Provide the support for <a>GetInteger</a>.
 --   
@@ -13856,21 +13884,21 @@ withBaseBranching :: UnifiedBranching mode m => (If (IsConMode mode) (TryMerge m
 --   
 --   We use this type class to help resolve the constraints for
 --   <a>SimpleMergeable</a>.
-class Mergeable a => UnifiedSimpleMergeable (mode :: EvalModeTag) a
+class (DecideEvalMode mode, Mergeable a) => UnifiedSimpleMergeable (mode :: EvalModeTag) a
 withBaseSimpleMergeable :: UnifiedSimpleMergeable mode a => (If (IsConMode mode) () (SimpleMergeable a) => r) -> r
 
 -- | A class that provides lifting of unified simple merging.
 --   
 --   We use this type class to help resolve the constraints for
 --   <a>SimpleMergeable1</a>.
-class UnifiedSimpleMergeable1 (mode :: EvalModeTag) (f :: Type -> Type)
+class DecideEvalMode mode => UnifiedSimpleMergeable1 (mode :: EvalModeTag) (f :: Type -> Type)
 withBaseSimpleMergeable1 :: UnifiedSimpleMergeable1 mode f => (If (IsConMode mode) () (SimpleMergeable1 f) => r) -> r
 
 -- | A class that provides lifting of unified simple merging.
 --   
 --   We use this type class to help resolve the constraints for
 --   <a>SimpleMergeable2</a>.
-class UnifiedSimpleMergeable2 (mode :: EvalModeTag) (f :: Type -> Type -> Type)
+class DecideEvalMode mode => UnifiedSimpleMergeable2 (mode :: EvalModeTag) (f :: Type -> Type -> Type)
 withBaseSimpleMergeable2 :: UnifiedSimpleMergeable2 mode f => (If (IsConMode mode) () (SimpleMergeable2 f) => r) -> r
 
 -- | Unified <a>mrgIf</a>.
@@ -13886,25 +13914,31 @@ withBaseSimpleMergeable2 :: UnifiedSimpleMergeable2 mode f => (If (IsConMode mod
 mrgIf :: forall (mode :: EvalModeTag) a m. (DecideEvalMode mode, Mergeable a, UnifiedBranching mode m) => GetBool mode -> m a -> m a -> m a
 
 -- | Unified lifting of a base monad.
-liftBaseMonad :: forall (mode :: EvalModeTag) a m. (Applicative m, UnifiedBranching mode m, Mergeable a) => BaseMonad mode a -> m a
+liftUnion :: forall (mode :: EvalModeTag) a m u. (Applicative m, UnifiedBranching mode m, Mergeable a, UnionView u, UnionViewMode mode u) => u a -> m a
 
 -- | Unified <a>mrgIte</a>.
-mrgIte :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSimpleMergeable mode a) => GetBool mode -> a -> a -> a
+mrgIte :: forall (mode :: EvalModeTag) a. UnifiedSimpleMergeable mode a => GetBool mode -> a -> a -> a
 
 -- | Unified <a>mrgIte1</a>.
-mrgIte1 :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSimpleMergeable1 mode f, UnifiedSimpleMergeable mode a) => GetBool mode -> f a -> f a -> f a
+mrgIte1 :: forall (mode :: EvalModeTag) f a. (UnifiedSimpleMergeable1 mode f, UnifiedSimpleMergeable mode a) => GetBool mode -> f a -> f a -> f a
 
 -- | Unified <a>liftMrgIte</a>.
-liftMrgIte :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSimpleMergeable1 mode f) => (GetBool mode -> a -> a -> a) -> GetBool mode -> f a -> f a -> f a
+liftMrgIte :: forall (mode :: EvalModeTag) f a. UnifiedSimpleMergeable1 mode f => (GetBool mode -> a -> a -> a) -> GetBool mode -> f a -> f a -> f a
 
 -- | Unified <a>mrgIte2</a>.
-mrgIte2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSimpleMergeable2 mode f, UnifiedSimpleMergeable mode a, UnifiedSimpleMergeable mode b) => GetBool mode -> f a b -> f a b -> f a b
+mrgIte2 :: forall (mode :: EvalModeTag) f a b. (UnifiedSimpleMergeable2 mode f, UnifiedSimpleMergeable mode a, UnifiedSimpleMergeable mode b) => GetBool mode -> f a b -> f a b -> f a b
 
 -- | Unified <a>liftMrgIte2</a>.
-liftMrgIte2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSimpleMergeable2 mode f) => (GetBool mode -> a -> a -> a) -> (GetBool mode -> b -> b -> b) -> GetBool mode -> f a b -> f a b -> f a b
+liftMrgIte2 :: forall (mode :: EvalModeTag) f a b. UnifiedSimpleMergeable2 mode f => (GetBool mode -> a -> a -> a) -> (GetBool mode -> b -> b -> b) -> GetBool mode -> f a b -> f a b -> f a b
 
 -- | Unified merge of simply mergeable values in the base monad.
-simpleMerge :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSimpleMergeable mode a) => BaseMonad mode a -> a
+simpleMerge :: forall (mode :: EvalModeTag) a u. (UnifiedSimpleMergeable mode a, UnionView u, UnionViewMode mode u) => u a -> a
+(.#) :: forall f a r (mode :: EvalModeTag) u. (Function f a r, UnifiedSimpleMergeable mode r, UnionView u, UnionViewMode mode u) => f -> u a -> r
+infixl 9 .#
+onUnion :: forall (mode :: EvalModeTag) r u a. (UnifiedSimpleMergeable mode r, UnifiedBranching mode u, Mergeable a, UnionView u, UnionViewMode mode u) => (a -> r) -> u a -> r
+onUnion2 :: forall (mode :: EvalModeTag) r u a b. (UnifiedSimpleMergeable mode r, UnifiedBranching mode u, Mergeable a, Mergeable b, UnionView u, UnionViewMode mode u) => (a -> b -> r) -> u a -> u b -> r
+onUnion3 :: forall (mode :: EvalModeTag) r u a b c. (UnifiedSimpleMergeable mode r, UnifiedBranching mode u, Mergeable a, Mergeable b, Mergeable c, UnionView u, UnionViewMode mode u) => (a -> b -> c -> r) -> u a -> u b -> u c -> r
+onUnion4 :: forall (mode :: EvalModeTag) r u a b c d. (UnifiedSimpleMergeable mode r, UnifiedBranching mode u, Mergeable a, Mergeable b, Mergeable c, Mergeable d, UnionView u, UnionViewMode mode u) => (a -> b -> c -> d -> r) -> u a -> u b -> u c -> u d -> r
 
 -- | A class that provides unified equality comparison.
 --   
@@ -13932,9 +13966,9 @@ symIte :: forall (mode :: EvalModeTag) v. (DecideEvalMode mode, UnifiedITEOp mod
 --   
 --   <pre>
 --   symIteMerge @mode ...
---   symIteMerge (... :: BaseMonad mode v) ...
+--   symIteMerge (... :: GetData mode v) ...
 --   </pre>
-symIteMerge :: forall (mode :: EvalModeTag) v. (DecideEvalMode mode, UnifiedITEOp mode v, Mergeable v) => BaseMonad mode v -> v
+symIteMerge :: forall (mode :: EvalModeTag) u v. (DecideEvalMode mode, UnifiedITEOp mode v, Mergeable v, UnionViewMode mode u, UnionView u) => u v -> v
 
 -- | A class that provides unified equality comparison.
 --   
@@ -13969,6 +14003,7 @@ withBaseSymEq2 :: UnifiedSymEq2 mode f => (If (IsConMode mode) (Eq2 f) (SymEq2 f
 --   One example when it isn't clear is when this is used in unified
 --   <a>mrgIf</a>.
 (.==) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
+infix 4 .==
 
 -- | Unified <a>(./=)</a>.
 --   
@@ -13982,6 +14017,7 @@ withBaseSymEq2 :: UnifiedSymEq2 mode f => (If (IsConMode mode) (Eq2 f) (SymEq2 f
 --   One example when it isn't clear is when this is used in unified
 --   <a>mrgIf</a>.
 (./=) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
+infix 4 ./=
 
 -- | Unified <a>symDistinct</a>.
 --   
@@ -14041,30 +14077,34 @@ withBaseSymOrd2 :: UnifiedSymOrd2 mode f => (If (IsConMode mode) (Ord2 f) (SymOr
 --   One example when it isn't clear is when this is used in unified
 --   <a>mrgIf</a>.
 (.<=) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+infix 4 .<=
 
 -- | Unified <a>(.&lt;)</a>.
 (.<) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+infix 4 .<
 
 -- | Unified <a>(.&gt;=)</a>.
 (.>=) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+infix 4 .>=
 
 -- | Unified <a>(.&gt;)</a>.
 (.>) :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+infix 4 .>
 
 -- | Unified <a>symCompare</a>.
-symCompare :: forall (mode :: EvalModeTag) a (ctx :: Type -> Type). (DecideEvalMode mode, UnifiedSymOrd mode a, Monad ctx) => a -> a -> BaseMonad mode Ordering
+symCompare :: forall (mode :: EvalModeTag) a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetData mode Ordering
 
 -- | Unified <a>liftSymCompare</a>.
-liftSymCompare :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd1 mode f) => (a -> b -> BaseMonad mode Ordering) -> f a -> f b -> BaseMonad mode Ordering
+liftSymCompare :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd1 mode f) => (a -> b -> GetData mode Ordering) -> f a -> f b -> GetData mode Ordering
 
 -- | Unified <a>symCompare1</a>.
-symCompare1 :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd1 mode f) => f a -> f a -> BaseMonad mode Ordering
+symCompare1 :: forall (mode :: EvalModeTag) f a. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd1 mode f) => f a -> f a -> GetData mode Ordering
 
 -- | Unified <a>liftSymCompare2</a>.
-liftSymCompare2 :: forall (mode :: EvalModeTag) f a b c d. (DecideEvalMode mode, UnifiedSymOrd2 mode f) => (a -> b -> BaseMonad mode Ordering) -> (c -> d -> BaseMonad mode Ordering) -> f a c -> f b d -> BaseMonad mode Ordering
+liftSymCompare2 :: forall (mode :: EvalModeTag) f a b c d. (DecideEvalMode mode, UnifiedSymOrd2 mode f) => (a -> b -> GetData mode Ordering) -> (c -> d -> GetData mode Ordering) -> f a c -> f b d -> GetData mode Ordering
 
 -- | Unified <a>symCompare2</a>.
-symCompare2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd mode b, UnifiedSymOrd2 mode f) => f a b -> f a b -> BaseMonad mode Ordering
+symCompare2 :: forall (mode :: EvalModeTag) f a b. (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd mode b, UnifiedSymOrd2 mode f) => f a b -> f a b -> GetData mode Ordering
 
 -- | Unified <a>symMax</a>.
 symMax :: forall (mode :: EvalModeTag) a. (UnifiedSymOrd mode a, UnifiedITEOp mode a, DecideEvalMode mode) => a -> a -> a
@@ -14437,9 +14477,9 @@ type family GetAlgReal (mode :: EvalModeTag) = (real :: Type) | real -> mode
 -- | Evaluation mode with unified <a>AlgReal</a> type.
 class UnifiedAlgRealImpl mode GetAlgReal mode => UnifiedAlgReal (mode :: EvalModeTag)
 
--- | Get a unified data type. Resolves to <tt>v</tt> in <a>C</a> mode, and
---   <tt><a>Union</a> v</tt> in <a>S</a> mode.
-type family GetData (mode :: EvalModeTag) v = (r :: Type) | r -> mode v
+-- | Get a unified data type. Resolves to <a>Identity</a> in <a>C</a> mode,
+--   and <a>Union</a> in <a>S</a> mode.
+type family GetData (mode :: EvalModeTag) = (r :: Type -> Type) | r -> mode
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.
 --   See the notes in <a>IsMode</a>.
@@ -14564,16 +14604,16 @@ symAny :: forall (mode :: EvalModeTag) t a. (EvalModeBase mode, Foldable t) => (
 symAll :: forall (mode :: EvalModeTag) t a. (EvalModeBase mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
 
 -- | <a>maximumBy</a> with result merged with <a>ITEOp</a>.
-symMaximumBy :: forall (mode :: EvalModeTag) t a. (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) => (a -> a -> BaseMonad mode Ordering) -> t a -> a
+symMaximumBy :: forall (mode :: EvalModeTag) t a. (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) => (a -> a -> GetData mode Ordering) -> t a -> a
 
 -- | <a>maximumBy</a> with <a>MergingStrategy</a> knowledge propagation.
-mrgMaximumBy :: forall (mode :: EvalModeTag) t a m. (Foldable t, Mergeable a, EvalModeBase mode, MonadTryMerge m, UnifiedBranching mode m) => (a -> a -> BaseMonad mode Ordering) -> t a -> m a
+mrgMaximumBy :: forall (mode :: EvalModeTag) t a m. (Foldable t, Mergeable a, EvalModeBase mode, MonadTryMerge m, UnifiedBranching mode m) => (a -> a -> GetData mode Ordering) -> t a -> m a
 
 -- | <a>minimumBy</a> with result merged with <a>ITEOp</a>.
-symMinimumBy :: forall (mode :: EvalModeTag) t a. (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) => (a -> a -> BaseMonad mode Ordering) -> t a -> a
+symMinimumBy :: forall (mode :: EvalModeTag) t a. (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) => (a -> a -> GetData mode Ordering) -> t a -> a
 
 -- | <a>minimumBy</a> with <a>MergingStrategy</a> knowledge propagation.
-mrgMinimumBy :: forall (mode :: EvalModeTag) t a m. (Foldable t, Mergeable a, EvalModeBase mode, MonadTryMerge m, UnifiedBranching mode m) => (a -> a -> BaseMonad mode Ordering) -> t a -> m a
+mrgMinimumBy :: forall (mode :: EvalModeTag) t a m. (Foldable t, Mergeable a, EvalModeBase mode, MonadTryMerge m, UnifiedBranching mode m) => (a -> a -> GetData mode Ordering) -> t a -> m a
 
 -- | <a>elem</a> with symbolic equality.
 symNotElem :: forall t (mode :: EvalModeTag) a. (Foldable t, UnifiedSymEq mode a, EvalModeBase mode) => a -> t a -> GetBool mode
@@ -17408,12 +17448,6 @@ unionUnaryOp :: (a -> a) -> Union a -> Union a
 -- | Lift a binary operation to <a>Union</a>.
 unionBinOp :: (a -> a -> a) -> Union a -> Union a -> Union a
 
--- | Lift the <a>Union</a> to any Applicative <a>SymBranching</a>.
-liftUnion :: forall u a. (Mergeable a, SymBranching u, Applicative u) => Union a -> u a
-
--- | Alias for <a>liftUnion</a>, but for monads.
-liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
-
 -- | The size of a union is defined as the number of branches. For example,
 --   
 --   <pre>
@@ -17749,6 +17783,10 @@ mergeWithStrategy :: SymBranching m => MergingStrategy a -> m a -> m a
 -- | Try to merge the container with the root strategy.
 merge :: (SymBranching m, Mergeable a) => m a -> m a
 
+-- | Class for monads that support union-like operations and
+--   <a>Mergeable</a> knowledge propagation.
+type MonadUnion (u :: Type -> Type) = (SymBranching u, Monad u)
+
 -- | Alias for a monad type that has <a>TryMerge</a>.
 type MonadTryMerge (f :: Type -> Type) = (TryMerge f, Monad f)
 
@@ -17801,9 +17839,10 @@ mrgSingleWithStrategy :: (TryMerge m, Applicative m) => MergingStrategy a -> a -
 -- | Try to merge the container with the root strategy.
 tryMerge :: (TryMerge m, Mergeable a) => m a -> m a
 
--- | Plain union containers that can be projected back into single value or
---   if-guarded values.
-class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type)
+-- | Containers that can be projected back into single value or if-guarded
+--   values. <a>Identity</a> is an instance of this class as we can always
+--   project to single value.
+class (Applicative u, TryMerge u) => UnionView (u :: Type -> Type)
 
 -- | Pattern match to extract single values.
 --   
@@ -17814,7 +17853,7 @@ class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type)
 --   &gt;&gt;&gt; singleView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer)
 --   Nothing
 --   </pre>
-singleView :: PlainUnion u => u a -> Maybe a
+singleView :: UnionView u => u a -> Maybe a
 
 -- | Pattern match to extract if values.
 --   
@@ -17823,12 +17862,12 @@ singleView :: PlainUnion u => u a -> Maybe a
 --   Nothing
 --   
 --   &gt;&gt;&gt; ifView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer)
---   Just (a,&lt;1&gt;,&lt;2&gt;)
+--   Just (IfViewResult a &lt;1&gt; &lt;2&gt;)
 --   
 --   &gt;&gt;&gt; ifView (mrgIf "a" (return 1) (return 2) :: Union Integer)
---   Just (a,{1},{2})
+--   Just (IfViewResult a {1} {2})
 --   </pre>
-ifView :: PlainUnion u => u a -> Maybe (SymBool, u a, u a)
+ifView :: UnionView u => u a -> Maybe (IfViewResult u a)
 
 -- | Convert the union to a guarded list.
 --   
@@ -17836,7 +17875,7 @@ ifView :: PlainUnion u => u a -> Maybe (SymBool, u a, u a)
 --   &gt;&gt;&gt; toGuardedList (mrgIf "a" (return 1) (mrgIf "b" (return 2) (return 3)) :: Union Integer)
 --   [(a,1),((&amp;&amp; b (! a)),2),((! (|| b a)),3)]
 --   </pre>
-toGuardedList :: PlainUnion u => u a -> [(SymBool, a)]
+toGuardedList :: UnionView u => u a -> [(SymBool, a)]
 
 -- | Return all possible values in the union. Drop the path conditions.
 --   
@@ -17849,7 +17888,11 @@ toGuardedList :: PlainUnion u => u a -> [(SymBool, a)]
 --   &gt;&gt;&gt; overestimateUnionValues (mrgIf "a" (return 1) (return 2) :: Union Integer)
 --   [1,2]
 --   </pre>
-overestimateUnionValues :: (PlainUnion u, Mergeable a) => u a -> [a]
+overestimateUnionValues :: (UnionView u, Mergeable a) => u a -> [a]
+
+-- | The result of <a>ifView</a>.
+data IfViewResult (u :: Type -> Type) a
+[IfViewResult] :: forall (u :: Type -> Type) a. SymBranching u => SymBool -> u a -> u a -> IfViewResult u a
 
 -- | Pattern match to extract single values with <a>singleView</a>.
 --   
@@ -17857,7 +17900,7 @@ overestimateUnionValues :: (PlainUnion u, Mergeable a) => u a -> [a]
 --   &gt;&gt;&gt; case (return 1 :: Union Integer) of Single v -&gt; v
 --   1
 --   </pre>
-pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
+pattern Single :: (UnionView u, Mergeable a) => a -> u a
 
 -- | Pattern match to extract guard values with <a>ifView</a>
 --   
@@ -17865,7 +17908,7 @@ pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
 --   &gt;&gt;&gt; case (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer) of If c t f -&gt; (c,t,f)
 --   (a,&lt;1&gt;,&lt;2&gt;)
 --   </pre>
-pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
+pattern If :: (UnionView u, Mergeable a) => SymBranching u => SymBool -> u a -> u a -> u a
 
 -- | Merge the simply mergeable values in a union, and extract the merged
 --   value.
@@ -17881,9 +17924,9 @@ pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
 --   &gt;&gt;&gt; simpleMerge $ (mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: Union SymBool)
 --   (ite a b c)
 --   </pre>
-simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
+simpleMerge :: forall u a. (SimpleMergeable a, UnionView u) => u a -> a
 
--- | Helper for applying functions on <a>PlainUnion</a> and
+-- | Helper for applying functions on <a>UnionView</a> and
 --   <a>SimpleMergeable</a>.
 --   
 --   <pre>
@@ -17892,7 +17935,7 @@ simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
 --   &gt;&gt;&gt; f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: Union Integer)
 --   {If (&amp;&amp; b a) 1 (If b 2 (If a 3 4))}
 --   </pre>
-(.#) :: (Function f a r, SimpleMergeable r, PlainUnion u) => f -> u a -> r
+(.#) :: (Function f a r, SimpleMergeable r, UnionView u) => f -> u a -> r
 infixl 9 .#
 
 -- | Lift a function to work on union values.
@@ -17903,20 +17946,23 @@ infixl 9 .#
 --   &gt;&gt;&gt; sumU (mrgIfPropagatedStrategy "cond" (return ["a"]) (return ["b","c"]) :: Union [SymInteger])
 --   (ite cond a (+ b c))
 --   </pre>
-onUnion :: forall u a r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a) => (a -> r) -> u a -> r
+onUnion :: forall u a r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a) => (a -> r) -> u a -> r
 
 -- | Lift a function to work on union values.
-onUnion2 :: forall u a b r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a, Mergeable b) => (a -> b -> r) -> u a -> u b -> r
+onUnion2 :: forall u a b r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a, Mergeable b) => (a -> b -> r) -> u a -> u b -> r
 
 -- | Lift a function to work on union values.
-onUnion3 :: forall u a b c r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a, Mergeable b, Mergeable c) => (a -> b -> c -> r) -> u a -> u b -> u c -> r
+onUnion3 :: forall u a b c r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a, Mergeable b, Mergeable c) => (a -> b -> c -> r) -> u a -> u b -> u c -> r
 
 -- | Lift a function to work on union values.
-onUnion4 :: forall u a b c d r. (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a, Mergeable b, Mergeable c, Mergeable d) => (a -> b -> c -> d -> r) -> u a -> u b -> u c -> u d -> r
+onUnion4 :: forall u a b c d r. (SimpleMergeable r, SymBranching u, UnionView u, Mergeable a, Mergeable b, Mergeable c, Mergeable d) => (a -> b -> c -> d -> r) -> u a -> u b -> u c -> u d -> r
 
--- | Class for monads that support union-like operations and
---   <a>Mergeable</a> knowledge propagation.
-type MonadUnion (u :: Type -> Type) = (SymBranching u, Monad u)
+-- | Lift the <a>UnionView</a> value to any Applicative
+--   <a>SymBranching</a>.
+liftUnion :: (Mergeable a, UnionView u, Applicative m, SymBranching m) => u a -> m a
+
+-- | Alias for <a>liftUnion</a>, but for monads.
+liftToMonadUnion :: (Mergeable a, UnionView u, Monad m, SymBranching m) => u a -> m a
 
 -- | Pretty printing of values.
 --   
@@ -18670,7 +18716,7 @@ class UnionWithExcept t (u :: Type -> Type) e v | t -> u e v
 extractUnionExcept :: UnionWithExcept t u e v => t -> u (Either e v)
 
 -- | Solver procedure for programs with error handling.
-solverSolveExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, Solver handle) => handle -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
+solverSolveExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, UnionView u, Functor u, Solver handle) => handle -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
 
 -- | Solver procedure for programs with error handling.
 --   
@@ -18698,15 +18744,15 @@ solverSolveExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t
 --   &gt;&gt;&gt; solveExcept z3 translate res
 --   Right (Model {x -&gt; 1 :: Integer})
 --   </pre>
-solveExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, ConfigurableSolver config handle) => config -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
+solveExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, UnionView u, Functor u, ConfigurableSolver config handle) => config -> (Either e v -> SymBool) -> t -> IO (Either SolvingFailure Model)
 
 -- | Solver procedure for programs with error handling. Would return
 --   multiple models if possible.
-solverSolveMultiExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, Solver handle) => handle -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
+solverSolveMultiExcept :: forall t (u :: Type -> Type) e v handle. (UnionWithExcept t u e v, UnionView u, Functor u, Solver handle) => handle -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
 
 -- | Solver procedure for programs with error handling. Would return
 --   multiple models if possible.
-solveMultiExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, ConfigurableSolver config handle) => config -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
+solveMultiExcept :: forall t (u :: Type -> Type) e v config handle. (UnionWithExcept t u e v, UnionView u, Functor u, ConfigurableSolver config handle) => config -> Int -> (Either e v -> SymBool) -> t -> IO ([Model], SolvingFailure)
 
 -- | The response from a verifier.
 data VerifierResult cex exception
@@ -18810,7 +18856,7 @@ solverCegis :: (Solver handle, EvalSym inputs, ExtractSym inputs, SymEq inputs) 
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs. See
@@ -18822,7 +18868,7 @@ solverCegisExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithE
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs.
@@ -18834,7 +18880,7 @@ solverCegisExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWith
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
@@ -18845,7 +18891,7 @@ solverCegisExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym 
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptMultiInputs :: forall handle inputs t (u :: Type -> Type) e v. (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptMultiInputs :: forall handle inputs t (u :: Type -> Type) e v. (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs. See
@@ -18857,7 +18903,7 @@ solverCegisExceptMultiInputs :: forall handle inputs t (u :: Type -> Type) e v. 
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptStdVCMultiInputs :: forall handle inputs t (u :: Type -> Type). (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u) => handle -> handle -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptStdVCMultiInputs :: forall handle inputs t (u :: Type -> Type). (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), UnionView u, Monad u) => handle -> handle -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
@@ -18870,7 +18916,7 @@ solverCegisExceptStdVCMultiInputs :: forall handle inputs t (u :: Type -> Type).
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisExceptVCMultiInputs :: (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptVCMultiInputs :: (Solver handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => handle -> handle -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS with a single symbolic input to represent a set of inputs. See
 --   <a>cegisForAll</a> for more details.
@@ -18894,7 +18940,7 @@ solverCegisForAll :: (ExtractSym forallInput, Solver handle) => handle -> handle
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisForAllExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExcept :: forall t (u :: Type -> Type) e v inputs handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
@@ -18908,7 +18954,7 @@ solverCegisForAllExcept :: forall t (u :: Type -> Type) e v inputs handle. (Unio
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
@@ -18922,7 +18968,7 @@ solverCegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs handle. (Uni
 --   
 --   The synthesizer solver will **not** be reset, while the verifier
 --   solver will be reset after each iteration.
-solverCegisForAllExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, Solver handle, SymEq inputs) => handle -> handle -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | Construct a CEGIS condition with only a post-condition. The
 --   pre-condition would be set to true, meaning that all programs in the
@@ -18994,7 +19040,7 @@ cegis :: (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, S
 --   &gt;&gt;&gt; cegisExcept z3 x translation res
 --   ([...],CEGISSuccess (Model {c -&gt; -1 :: Integer}))
 --   </pre>
-cegisExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs. This function saves the
@@ -19028,17 +19074,17 @@ cegisExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWith
 --   &gt;&gt;&gt; cegisExceptStdVC z3 x res
 --   ([...],CEGISSuccess (Model {c -&gt; -1 :: Integer}))
 --   </pre>
-cegisExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using a single
 --   symbolic input to represent a set of inputs.
 --   
 --   The errors should be translated to assertion or assumption violations.
-cegisExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
-cegisExceptMultiInputs :: forall config handle inputs t (u :: Type -> Type) e v. (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => config -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptMultiInputs :: forall config handle inputs t (u :: Type -> Type) e v. (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => config -> [inputs] -> (Either e v -> CEGISCondition) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs. This function
@@ -19049,13 +19095,13 @@ cegisExceptMultiInputs :: forall config handle inputs t (u :: Type -> Type) e v.
 --   This function translates assumption violations to failed
 --   pre-conditions, and translates assertion violations to failed
 --   post-conditions. The <tt>()</tt> result will not fail any conditions.
-cegisExceptStdVCMultiInputs :: forall config handle inputs t (u :: Type -> Type). (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u) => config -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptStdVCMultiInputs :: forall config handle inputs t (u :: Type -> Type). (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u VerificationConditions (), UnionView u, Monad u) => config -> [inputs] -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, using multiple
 --   (possibly symbolic) inputs to represent a set of inputs.
 --   
 --   The errors should be translated to assertion or assumption violations.
-cegisExceptVCMultiInputs :: (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, PlainUnion u, Monad u) => config -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptVCMultiInputs :: (ConfigurableSolver config handle, EvalSym inputs, ExtractSym inputs, UnionWithExcept t u e v, UnionView u, Monad u) => config -> [inputs] -> (Either e v -> u (Either VerificationConditions ())) -> (inputs -> t) -> IO ([inputs], CEGISResult SolvingFailure)
 
 -- | CEGIS with a single symbolic input to represent a set of inputs.
 --   
@@ -19075,19 +19121,19 @@ cegisForAll :: (ExtractSym forallInput, ConfigurableSolver config handle) => con
 --   variable.
 --   
 --   See <a>cegisForAll</a> and <a>cegisExcept</a>.
-cegisForAllExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, PlainUnion u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExcept :: forall t (u :: Type -> Type) e v inputs config handle. (UnionWithExcept t u e v, UnionView u, Functor u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> CEGISCondition) -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
 --   
 --   See <a>cegisForAll</a> and <a>cegisExceptStdVC</a>.
-cegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExceptStdVC :: forall t (u :: Type -> Type) inputs config handle. (UnionWithExcept t u VerificationConditions (), UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | CEGIS for symbolic programs with error handling, with a forall
 --   variable.
 --   
 --   See <a>cegisForAll</a> and <a>cegisExceptVC</a>.
-cegisForAllExceptVC :: (UnionWithExcept t u e v, PlainUnion u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExceptVC :: (UnionWithExcept t u e v, UnionView u, Monad u, EvalSym inputs, ExtractSym inputs, ConfigurableSolver config handle, SymEq inputs) => config -> inputs -> (Either e v -> u (Either VerificationConditions ())) -> t -> IO ([Model], CEGISResult SolvingFailure)
 
 -- | The operations on symbolic constant sets
 --   
@@ -19554,7 +19600,7 @@ genericLiftToCon :: (Generic1 f1, Generic1 f2, GToCon Arity1 (Rep1 f1) (Rep1 f2)
 --   &gt;&gt;&gt; unionToCon (return "a" :: Union SymInteger) :: Maybe Integer
 --   Nothing
 --   </pre>
-unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
+unionToCon :: (ToCon a b, UnionView u) => u a -> Maybe b
 
 -- | The arguments to the generic <a>toSym</a> function.
 data family ToSymArgs arity a b
