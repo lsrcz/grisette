@@ -49,7 +49,6 @@ import GHC.Generics
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Control.Monad.Union
   ( Union,
-    liftToMonadUnion,
   )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( GenSym (fresh),
@@ -71,6 +70,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
+import Grisette.Internal.Core.Data.Class.UnionView (liftUnion)
 import Grisette.Internal.Core.Data.Symbol (Identifier)
 
 -- $setup
@@ -147,7 +147,7 @@ data SymOrdUpperBound a spec = SymOrdUpperBound a spec
 instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SymOrdUpperBound a spec) a where
   freshConstrained e (SymOrdUpperBound u spec) = do
     s <- fresh spec
-    v <- liftToMonadUnion s
+    v <- liftUnion s
     mrgIf (v .>= u) (throwError e) (return ())
     mrgSingle $ mrgSingle v
 
@@ -164,7 +164,7 @@ data SymOrdLowerBound a spec = SymOrdLowerBound a spec
 instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SymOrdLowerBound a spec) a where
   freshConstrained e (SymOrdLowerBound l spec) = do
     s <- fresh spec
-    v <- liftToMonadUnion s
+    v <- liftUnion s
     mrgIf (v .< l) (throwError e) (return ())
     mrgSingle $ mrgSingle v
 
@@ -181,7 +181,7 @@ data SymOrdBound a spec = SymOrdBound a a spec
 instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SymOrdBound a spec) a where
   freshConstrained e (SymOrdBound l u spec) = do
     s <- fresh spec
-    v <- liftToMonadUnion s
+    v <- liftUnion s
     mrgIf (v .< l .|| v .>= u) (throwError e) (return ())
     mrgSingle $ mrgSingle v
 

@@ -4,7 +4,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -23,7 +25,7 @@
 -- Portability :   GHC only
 module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
   ( mrgIf,
-    liftBaseMonad,
+    liftUnion,
     mrgIte,
     mrgIte1,
     liftMrgIte,
@@ -35,7 +37,7 @@ where
 
 import Control.Monad.Cont (ContT)
 import Control.Monad.Except (ExceptT)
-import Control.Monad.Identity (Identity (runIdentity), IdentityT)
+import Control.Monad.Identity (Identity, IdentityT)
 import Control.Monad.Trans.Maybe (MaybeT)
 import qualified Control.Monad.Trans.RWS.Lazy as RWSLazy
 import qualified Control.Monad.Trans.RWS.Strict as RWSStrict
@@ -47,7 +49,6 @@ import qualified Control.Monad.Trans.Writer.Strict as WriterStrict
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
 import Grisette.Internal.Core.Control.Exception (AssertionError)
-import Grisette.Internal.Core.Control.Monad.Union (liftUnion)
 import Grisette.Internal.Core.Data.Class.GenSym (FreshT)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
@@ -62,6 +63,11 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( UnionView,
+    pattern If,
+    pattern Single,
+  )
 import qualified Grisette.Internal.Core.Data.Class.UnionView as Grisette
 import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
@@ -70,7 +76,7 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
     UnifiedSimpleMergeable2 (withBaseSimpleMergeable2),
   )
 import Grisette.Internal.TH.Derivation.Derive (derive)
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
+import Grisette.Internal.Unified.Class.UnionViewMode (UnionViewMode)
 import Grisette.Internal.Unified.EvalModeTag (IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
@@ -97,29 +103,43 @@ mrgIf c t e =
 {-# INLINE mrgIf #-}
 
 -- | Unified lifting of a base monad.
-liftBaseMonad ::
-  forall mode a m.
+liftUnion ::
+  forall mode a m u.
   ( Applicative m,
     UnifiedBranching mode m,
-    Mergeable a
+    Mergeable a,
+    UnionView u,
+    UnionViewMode mode u
   ) =>
-  BaseMonad mode a ->
+  u a ->
   m a
-liftBaseMonad b =
+liftUnion b =
   withMode @mode
-    (withBaseBranching @mode @m $ mrgSingle . runIdentity $ b)
-    (withBaseBranching @mode @m $ liftUnion b)
-{-# INLINE liftBaseMonad #-}
+    ( withBaseBranching @mode @m $ case b of
+        Single x -> mrgSingle x
+        If {} ->
+          error "liftUnion: If case should not happen under concrete mode"
+    )
+    (withBaseBranching @mode @m $ Grisette.liftUnion b)
+{-# INLINE liftUnion #-}
 
 -- | Unified merge of simply mergeable values in the base monad.
 simpleMerge ::
-  forall mode a.
-  (DecideEvalMode mode, UnifiedSimpleMergeable mode a) =>
-  BaseMonad mode a ->
+  forall mode a u.
+  ( DecideEvalMode mode,
+    UnifiedSimpleMergeable mode a,
+    UnionView u,
+    UnionViewMode mode u
+  ) =>
+  u a ->
   a
 simpleMerge =
   withMode @mode
-    runIdentity
+    ( \case
+        Single x -> x
+        If {} ->
+          error "simpleMerge: If case should not happen under concrete mode"
+    )
     (withBaseSimpleMergeable @mode @a Grisette.simpleMerge)
 
 -- | Unified `Grisette.mrgIte`.

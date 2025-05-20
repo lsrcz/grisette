@@ -25,7 +25,7 @@ import Data.Bifunctor (Bifunctor (first))
 import qualified Data.HashSet as HS
 import Data.List (sort)
 import GHC.Stack (HasCallStack)
-import Grisette.Internal.Core.Control.Monad.Union (Union, liftUnion)
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSymMaybe),
   )
@@ -38,7 +38,7 @@ import Grisette.Internal.Core.Data.Class.GenSym
   )
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle)
-import Grisette.Internal.Core.Data.Class.UnionView (simpleMerge)
+import Grisette.Internal.Core.Data.Class.UnionView (liftUnion, simpleMerge)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
     existsTerm,

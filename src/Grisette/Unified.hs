@@ -36,7 +36,7 @@ module Grisette.Unified
     UnifiedSimpleMergeable1 (..),
     UnifiedSimpleMergeable2 (..),
     mrgIf,
-    liftBaseMonad,
+    liftUnion,
     mrgIte,
     mrgIte1,
     liftMrgIte,
@@ -189,7 +189,6 @@ import Grisette.Internal.Unified.BVFPConversion
   ( SafeUnifiedBVFPConversion,
     UnifiedBVFPConversion,
   )
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.Class.UnifiedFiniteBits
   ( UnifiedFiniteBits (..),
     symBitBlast,
@@ -255,9 +254,9 @@ import Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
     UnifiedSimpleMergeable (..),
     UnifiedSimpleMergeable1 (..),
     UnifiedSimpleMergeable2 (..),
-    liftBaseMonad,
     liftMrgIte,
     liftMrgIte2,
+    liftUnion,
     mrgIf,
     mrgIte,
     mrgIte1,
@@ -280,13 +279,8 @@ import Grisette.Internal.Unified.Class.UnifiedSymOrd
   ( UnifiedSymOrd (..),
     UnifiedSymOrd1 (..),
     UnifiedSymOrd2 (..),
-    liftSymCompare,
-    liftSymCompare2,
     mrgMax,
     mrgMin,
-    symCompare,
-    symCompare1,
-    symCompare2,
     symMax,
     symMin,
     (.<),
@@ -327,9 +321,15 @@ import Grisette.Internal.Unified.UnifiedBV
   )
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (..))
 import Grisette.Internal.Unified.UnifiedData
-  ( GetData,
+  ( BaseMonad,
+    GetData,
     UnifiedData,
     extractData,
+    liftSymCompare,
+    liftSymCompare2,
+    symCompare,
+    symCompare1,
+    symCompare2,
     wrapData,
   )
 import Grisette.Internal.Unified.UnifiedFP

@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -27,18 +28,22 @@ module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
   )
 where
 
-import Control.Monad.Identity (Identity (runIdentity))
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.UnionView
+  ( UnionView,
+    pattern If,
+    pattern Single,
+  )
 import qualified Grisette.Internal.Core.Data.Class.UnionView
 import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
   ( UnifiedITEOp (withBaseITEOp),
   )
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
+import Grisette.Internal.Unified.Class.UnionViewMode (UnionViewMode)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
@@ -72,15 +77,24 @@ symIte c a b =
 -- so you need to provide the mode explicitly. For example:
 --
 -- > symIteMerge @mode ...
--- > symIteMerge (... :: BaseMonad mode v) ...
+-- > symIteMerge (... :: GetData mode v) ...
 symIteMerge ::
-  forall mode v.
-  (DecideEvalMode mode, UnifiedITEOp mode v, Mergeable v) =>
-  BaseMonad mode v ->
+  forall mode u v.
+  ( DecideEvalMode mode,
+    UnifiedITEOp mode v,
+    Mergeable v,
+    UnionViewMode mode u,
+    UnionView u
+  ) =>
+  u v ->
   v
 symIteMerge m =
   withMode @mode
-    (withBaseITEOp @mode @v $ runIdentity m)
+    ( withBaseITEOp @mode @v $ case m of
+        Single x -> x
+        If {} ->
+          error "symIteMerge: If case should not happen under concrete mode"
+    )
     ( withBaseITEOp @mode @v $
         Grisette.Internal.Core.Data.Class.UnionView.symIteMerge m
     )
