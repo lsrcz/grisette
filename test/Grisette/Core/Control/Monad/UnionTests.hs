@@ -49,14 +49,13 @@ import Grisette
 import Grisette.Internal.Core.Control.Monad.Union
   ( Union (Union),
     isMerged,
-    liftToMonadUnion,
-    liftUnion,
     unionBase,
     unionBinOp,
     unionSize,
     unionUnaryOp,
   )
 import Grisette.Internal.Core.Data.Class.AsKey (AsKey1 (AsKey1, getAsKey1))
+import Grisette.Internal.Core.Data.Class.UnionView (liftToMonadUnion, liftUnion)
 import Grisette.Internal.Core.Data.UnionBase
   ( UnionBase (UnionSingle),
     ifWithLeftMost,

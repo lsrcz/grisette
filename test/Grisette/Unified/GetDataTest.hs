@@ -1,10 +1,14 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+
+{- HLINT ignore "Unused LANGUAGE pragma" -}
 
 module Grisette.Unified.GetDataTest (getDataTest) where
 
@@ -23,6 +27,7 @@ import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
+#if MIN_VERSION_base(4,16,0)
 data A mode = A (GetData mode Integer) (GetInteger mode)
 
 deriveWith
@@ -59,3 +64,6 @@ getDataTest =
                 (mrgIte @'S "x" "a" "b")
             )
     ]
+#else
+getDataTest = testGroup "GetData" []
+#endif

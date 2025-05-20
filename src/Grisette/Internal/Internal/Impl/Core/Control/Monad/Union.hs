@@ -29,8 +29,6 @@ module Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
   ( -- * Union and helpers
     unionUnaryOp,
     unionBinOp,
-    liftUnion,
-    liftToMonadUnion,
     isMerged,
     unionSize,
   )
@@ -56,6 +54,7 @@ import Grisette.Internal.Core.Data.Class.AsKey
   )
 import Grisette.Internal.Core.Data.Class.UnionView
   ( UnionView (ifView, overestimateUnionValues, singleView, toGuardedList),
+    IfViewResult (IfViewResult),
     simpleMerge,
   )
 #endif
@@ -73,7 +72,6 @@ import Data.Functor.Classes
 import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.Serialize as Cereal
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.EvalSym
   ( EvalSym (evalSym),
     EvalSym1 (liftEvalSym),
@@ -274,19 +272,6 @@ instance SymEq1 Union where
   liftSymEq f x y = simpleMerge $ f <$> x <*> y
   {-# INLINE liftSymEq #-}
 
--- | Lift the 'Union' to any Applicative 'SymBranching'.
-liftUnion ::
-  forall u a. (Mergeable a, SymBranching u, Applicative u) => Union a -> u a
-liftUnion u = go (unionBase u)
-  where
-    go :: UnionBase a -> u a
-    go (UnionSingle v) = mrgSingle v
-    go (UnionIf _ _ c t f) = mrgIf c (go t) (go f)
-
--- | Alias for `liftUnion`, but for monads.
-liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
-liftToMonadUnion = liftUnion
-
 instance (ToSym a b) => ToSym (Union a) (Union b) where
   toSym = toSym1
 
@@ -486,7 +471,7 @@ instance SymBranching (AsKey1 Union) where
 instance UnionView (AsKey1 Union) where
   singleView (AsKey1 u) = singleView u
   ifView (AsKey1 u) = case ifView u of
-    Just (c, l, r) -> Just (c, AsKey1 l, AsKey1 r)
+    Just (IfViewResult c l r) -> Just (IfViewResult c (AsKey1 l) (AsKey1 r))
     Nothing -> Nothing
   toGuardedList (AsKey1 u) = toGuardedList u
   overestimateUnionValues (AsKey1 u) = overestimateUnionValues u

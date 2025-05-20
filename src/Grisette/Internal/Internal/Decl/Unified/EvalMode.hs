@@ -46,7 +46,6 @@ import Grisette.Internal.Internal.Decl.Unified.UnifiedBool
   )
 import Grisette.Internal.Internal.Decl.Unified.UnifiedFP (AllUnifiedFP)
 import Grisette.Internal.Unified.BVBVConversion (AllUnifiedBVBVConversion)
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Internal.Unified.Theories
@@ -54,7 +53,7 @@ import Grisette.Internal.Unified.Theories
     isUFun,
   )
 import Grisette.Internal.Unified.UnifiedAlgReal (UnifiedAlgReal)
-import Grisette.Internal.Unified.UnifiedData (AllUnifiedData)
+import Grisette.Internal.Unified.UnifiedData (AllUnifiedData, UnifiedDataBase)
 import Grisette.Internal.Unified.UnifiedFun
   ( genUnifiedFunInstance,
     unifiedFunInstanceName,
@@ -85,10 +84,8 @@ class
   ( DecideEvalMode mode,
     UnifiedBool mode,
     UnifiedBasicPrim mode (GetBool mode),
-    Monad (BaseMonad mode),
-    TryMerge (BaseMonad mode),
-    UnifiedBranching mode (BaseMonad mode),
-    AllUnifiedData mode
+    AllUnifiedData mode,
+    UnifiedDataBase mode
   ) =>
   EvalModeBase mode
 

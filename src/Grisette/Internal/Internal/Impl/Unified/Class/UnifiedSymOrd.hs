@@ -29,11 +29,6 @@ module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
     (.<),
     (.>=),
     (.>),
-    symCompare,
-    liftSymCompare,
-    symCompare1,
-    liftSymCompare2,
-    symCompare2,
     symMax,
     symMin,
     mrgMax,
@@ -42,17 +37,12 @@ module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
 where
 
 import Control.Monad.Except (ExceptT)
-import Control.Monad.Identity (Identity (runIdentity), IdentityT)
+import Control.Monad.Identity (Identity, IdentityT)
 import Control.Monad.Trans.Maybe (MaybeT)
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Classes
-  ( Ord1 (liftCompare),
-    Ord2 (liftCompare2),
-    compare1,
-    compare2,
-  )
+import Data.Functor.Classes (Ord1, Ord2)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Ratio (Ratio)
@@ -89,7 +79,6 @@ import Grisette.Internal.TH.Derivation.Common
   ( DeriveConfig (bitSizePositions, fpBitSizePositions),
   )
 import Grisette.Internal.TH.Derivation.Derive (derive, deriveWith)
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.EvalModeTag
   ( EvalModeTag (S),
     IsConMode,
@@ -140,106 +129,6 @@ import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
     (withBaseSymOrd @mode @a $ a > b)
     (withBaseSymOrd @mode @a $ a SymOrd..> b)
 {-# INLINE (.>) #-}
-
--- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symCompare`.
-symCompare ::
-  forall mode a ctx.
-  (DecideEvalMode mode, UnifiedSymOrd mode a, Monad ctx) =>
-  a ->
-  a ->
-  BaseMonad mode Ordering
-symCompare x y =
-  withMode @mode
-    (withBaseSymOrd @mode @a $ return $ compare x y)
-    ( withBaseSymOrd @mode @a $
-        SymOrd.symCompare x y
-    )
-{-# INLINE symCompare #-}
-
--- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.liftSymCompare`.
-liftSymCompare ::
-  forall mode f a b.
-  (DecideEvalMode mode, UnifiedSymOrd1 mode f) =>
-  (a -> b -> BaseMonad mode Ordering) ->
-  f a ->
-  f b ->
-  BaseMonad mode Ordering
-liftSymCompare f a b =
-  withMode @mode
-    ( withBaseSymOrd1 @mode @f $
-        return $
-          liftCompare (\x y -> runIdentity $ f x y) a b
-    )
-    ( withBaseSymOrd1 @mode @f $
-        SymOrd.liftSymCompare f a b
-    )
-{-# INLINE liftSymCompare #-}
-
--- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symCompare1`.
-symCompare1 ::
-  forall mode f a.
-  (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd1 mode f) =>
-  f a ->
-  f a ->
-  BaseMonad mode Ordering
-symCompare1 a b =
-  withMode @mode
-    (withBaseSymOrd1 @mode @f $ withBaseSymOrd @mode @a $ return $ compare1 a b)
-    ( withBaseSymOrd1 @mode @f $
-        withBaseSymOrd @mode @a $
-          SymOrd.symCompare1 a b
-    )
-{-# INLINE symCompare1 #-}
-
--- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.liftSymCompare2`.
-liftSymCompare2 ::
-  forall mode f a b c d.
-  (DecideEvalMode mode, UnifiedSymOrd2 mode f) =>
-  (a -> b -> BaseMonad mode Ordering) ->
-  (c -> d -> BaseMonad mode Ordering) ->
-  f a c ->
-  f b d ->
-  BaseMonad mode Ordering
-liftSymCompare2 f g a b =
-  withMode @mode
-    ( withBaseSymOrd2 @mode @f $
-        return $
-          liftCompare2
-            (\x y -> runIdentity $ f x y)
-            (\x y -> runIdentity $ g x y)
-            a
-            b
-    )
-    ( withBaseSymOrd2 @mode @f $
-        SymOrd.liftSymCompare2 f g a b
-    )
-{-# INLINE liftSymCompare2 #-}
-
--- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symCompare2`.
-symCompare2 ::
-  forall mode f a b.
-  ( DecideEvalMode mode,
-    UnifiedSymOrd mode a,
-    UnifiedSymOrd mode b,
-    UnifiedSymOrd2 mode f
-  ) =>
-  f a b ->
-  f a b ->
-  BaseMonad mode Ordering
-symCompare2 a b =
-  withMode @mode
-    ( withBaseSymOrd2 @mode @f $
-        withBaseSymOrd @mode @a $
-          withBaseSymOrd @mode @b $
-            return $
-              compare2 a b
-    )
-    ( withBaseSymOrd2 @mode @f $
-        withBaseSymOrd @mode @a $
-          withBaseSymOrd @mode @b $
-            SymOrd.symCompare2 a b
-    )
-{-# INLINE symCompare2 #-}
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symMax`.
 symMax ::

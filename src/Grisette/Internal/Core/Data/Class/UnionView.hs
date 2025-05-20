@@ -30,6 +30,8 @@ module Grisette.Internal.Core.Data.Class.UnionView
     onUnion3,
     onUnion4,
     unionToCon,
+    liftUnion,
+    liftToMonadUnion,
   )
 where
 
@@ -259,6 +261,18 @@ unionToCon u =
       if cl then unionToCon l else unionToCon r
     _ -> Nothing
 {-# INLINE unionToCon #-}
+
+-- | Lift the 'UnionView' value to any Applicative 'SymBranching'.
+liftUnion ::
+  (Mergeable a, UnionView u, Applicative m, SymBranching m) => u a -> m a
+liftUnion u = case u of
+  Single x -> mrgSingle x
+  If c l r -> mrgIf c (liftUnion l) (liftUnion r)
+
+-- | Alias for 'liftUnion', but for monads.
+liftToMonadUnion ::
+  (Mergeable a, UnionView u, Monad m, SymBranching m) => u a -> m a
+liftToMonadUnion = liftUnion
 
 #if MIN_VERSION_base(4,16,0)
 instance (UnionView u) => UnionView (AsKey1 u) where

@@ -72,10 +72,10 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     mrgSingle,
     tryMerge,
   )
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.Class.UnifiedSymEq (UnifiedSymEq, (.==))
 import Grisette.Internal.Unified.Class.UnifiedSymOrd (mrgMax, mrgMin)
 import Grisette.Internal.Unified.UnifiedBool (GetBool)
+import Grisette.Internal.Unified.UnifiedData (GetData)
 import Grisette.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
 import {-# SOURCE #-} Grisette.Lib.Control.Monad
   ( mrgMplus,
@@ -88,7 +88,7 @@ import Grisette.Unified
     UnifiedBranching,
     UnifiedITEOp,
     UnifiedSymOrd,
-    liftBaseMonad,
+    liftUnion,
     mrgIf,
     symIteMerge,
   )
@@ -139,7 +139,7 @@ symMaximum ::
   ) =>
   t a ->
   a
-symMaximum l = symIteMerge (mrgMaximum @mode l :: BaseMonad mode a)
+symMaximum l = symIteMerge @mode (mrgMaximum @mode l :: GetData mode a)
 {-# INLINE symMaximum #-}
 
 -- | 'Data.Foldable.minimum' with 'Grisette.Core.MergingStrategy' knowledge
@@ -178,7 +178,7 @@ symMinimum ::
   ) =>
   t a ->
   a
-symMinimum l = symIteMerge (mrgMinimum @mode l :: BaseMonad mode a)
+symMinimum l = symIteMerge @mode (mrgMinimum @mode l :: GetData mode a)
 {-# INLINE symMinimum #-}
 
 -- | 'Data.Foldable.foldrM' with 'Grisette.Core.MergingStrategy' knowledge
@@ -291,7 +291,7 @@ mrgMaximumBy ::
     MonadTryMerge m,
     UnifiedBranching mode m
   ) =>
-  (a -> a -> BaseMonad mode Ordering) ->
+  (a -> a -> GetData mode Ordering) ->
   t a ->
   m a
 mrgMaximumBy cmp l = do
@@ -305,7 +305,7 @@ mrgMaximumBy cmp l = do
       case mx of
         Nothing -> mrgSingle $ Just y
         Just x -> do
-          cmpRes <- liftBaseMonad $ cmp x y
+          cmpRes <- liftUnion @mode $ cmp x y
           case cmpRes of
             GT -> mrgSingle $ Just x
             _ -> mrgSingle $ Just y
@@ -314,10 +314,10 @@ mrgMaximumBy cmp l = do
 symMaximumBy ::
   forall mode t a.
   (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) =>
-  (a -> a -> BaseMonad mode Ordering) ->
+  (a -> a -> GetData mode Ordering) ->
   t a ->
   a
-symMaximumBy cmp l = symIteMerge (mrgMaximumBy cmp l :: BaseMonad mode a)
+symMaximumBy cmp l = symIteMerge @mode (mrgMaximumBy cmp l :: GetData mode a)
 {-# INLINE symMaximumBy #-}
 
 -- | 'Data.Foldable.minimumBy' with 'Grisette.Core.MergingStrategy' knowledge
@@ -330,7 +330,7 @@ mrgMinimumBy ::
     MonadTryMerge m,
     UnifiedBranching mode m
   ) =>
-  (a -> a -> BaseMonad mode Ordering) ->
+  (a -> a -> GetData mode Ordering) ->
   t a ->
   m a
 mrgMinimumBy cmp l = do
@@ -344,7 +344,7 @@ mrgMinimumBy cmp l = do
       case mx of
         Nothing -> mrgSingle $ Just y
         Just x -> do
-          cmpRes <- liftBaseMonad $ cmp x y
+          cmpRes <- liftUnion @mode $ cmp x y
           case cmpRes of
             GT -> mrgSingle $ Just y
             _ -> mrgSingle $ Just x
@@ -353,10 +353,10 @@ mrgMinimumBy cmp l = do
 symMinimumBy ::
   forall mode t a.
   (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) =>
-  (a -> a -> BaseMonad mode Ordering) ->
+  (a -> a -> GetData mode Ordering) ->
   t a ->
   a
-symMinimumBy cmp l = symIteMerge (mrgMinimumBy cmp l :: BaseMonad mode a)
+symMinimumBy cmp l = symIteMerge @mode (mrgMinimumBy cmp l :: GetData mode a)
 {-# INLINE symMinimumBy #-}
 
 -- | 'Data.Foldable.elem' with symbolic equality.

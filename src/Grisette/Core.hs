@@ -840,8 +840,8 @@ module Grisette.Core
     UnionKey,
     unionUnaryOp,
     unionBinOp,
-    liftUnion,
-    liftToMonadUnion,
+    -- liftUnion,
+    -- liftToMonadUnion,
     unionSize,
 
     -- ** Tag for concrete types
@@ -1455,8 +1455,6 @@ import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Control.Monad.Union
   ( Union (unionMergingStrategy),
     UnionKey,
-    liftToMonadUnion,
-    liftUnion,
     unionBinOp,
     unionSize,
     unionUnaryOp,

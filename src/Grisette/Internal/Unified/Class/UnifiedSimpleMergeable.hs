@@ -14,7 +14,7 @@ module Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
     UnifiedSimpleMergeable1 (..),
     UnifiedSimpleMergeable2 (..),
     mrgIf,
-    liftBaseMonad,
+    liftUnion,
     mrgIte,
     mrgIte1,
     liftMrgIte,
