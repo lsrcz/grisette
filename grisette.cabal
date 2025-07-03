@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:               grisette
-version:            0.12.0.0
+version:            0.13.0.0
 synopsis:           Symbolic evaluation as a library
 description:        Grisette is a reusable symbolic evaluation library for Haskell. By
                     translating programs into constraints, Grisette can help the development of
@@ -39,8 +39,8 @@ tested-with:
   , GHC == 9.4.8
   , GHC == 9.6.6
   , GHC == 9.8.4
-  , GHC == 9.10.1
-  , GHC == 9.12.1
+  , GHC == 9.10.2
+  , GHC == 9.12.2
 extra-source-files:
     CHANGELOG.md
     README.md
@@ -310,7 +310,7 @@ library
       src
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags
   build-depends:
-      QuickCheck >=2.14 && <2.16
+      QuickCheck >=2.14 && <2.17
     , array >=0.5.4 && <0.6
     , async >=2.2.2 && <2.3
     , atomic-primops >=0.8.3 && <0.9
@@ -357,7 +357,7 @@ test-suite doctest
       doctest
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      QuickCheck >=2.14 && <2.16
+      QuickCheck >=2.14 && <2.17
     , array >=0.5.4 && <0.6
     , async >=2.2.2 && <2.3
     , atomic-primops >=0.8.3 && <0.9
@@ -479,7 +479,7 @@ test-suite spec
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts -with-rtsopts=-N -Wredundant-constraints
   build-depends:
       HUnit ==1.6.*
-    , QuickCheck >=2.14 && <2.16
+    , QuickCheck >=2.14 && <2.17
     , array >=0.5.4 && <0.6
     , async >=2.2.2 && <2.3
     , atomic-primops >=0.8.3 && <0.9

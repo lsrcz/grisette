@@ -1,5 +1,5 @@
 name: grisette
-version: 0.12.0.0
+version: 0.13.0.0
 synopsis: Symbolic evaluation as a library
 description: "Grisette is a reusable symbolic evaluation library for Haskell. By\ntranslating programs into constraints, Grisette can help the development of\nprogram reasoning tools, including verification, synthesis, and more.\n.\nThe \"Grisette\" module exports all the core APIs for building a symbolic\nevaluation tool. A high-level overview of the module structures are available\nthere.\n.\nA detailed introduction to Grisette is available at \"Grisette.Core\". More\nlifted libraries are provided in @Grisette.Lib.*@ modules.\n.\nThe \"Grisette.Unified\" module offers an experimental unified interface for\nsymbolic and concrete evaluation. This module should be imported qualified.\n.\nFor more details, please checkout the README and \n[tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials).\n"
 category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
@@ -19,8 +19,8 @@ tested-with:
   - GHC == 9.4.8
   - GHC == 9.6.6
   - GHC == 9.8.4
-  - GHC == 9.10.1
-  - GHC == 9.12.1
+  - GHC == 9.10.2
+  - GHC == 9.12.2
 dependencies:
   - base >= 4.14 && < 5
   - hashable >= 1.3 && < 1.6
@@ -39,7 +39,7 @@ dependencies:
   - sbv >= 8.17 && < 12
   - parallel >= 3.2.2 && < 3.3
   - text >= 1.2.4.1 && < 2.2
-  - QuickCheck >= 2.14 && < 2.16
+  - QuickCheck >= 2.14 && < 2.17
   - prettyprinter >= 1.5.0 && < 1.8
   - async >= 2.2.2 && < 2.3
   - stm >= 2.5 && < 2.6

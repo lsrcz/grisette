@@ -1,5 +1,5 @@
 name: grisette-examples
-version: 0.12.0.0
+version: 0.13.0.0
 synopsis: Examples for Grisette
 description: |
   More examples are available in the
@@ -14,7 +14,9 @@ extra-source-files:
   - README.md
 dependencies:
   - base >= 4.14 && < 5
-  - grisette >= 0.12 && < 0.13
+  - grisette >= 0.13 && < 0.14
+  - mtl
+  - text
 executables:
   basic:
     source-dirs: basic

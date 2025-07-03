@@ -234,7 +234,7 @@ import Unsafe.Coerce (unsafeCoerce)
 -- | An exception that would be thrown when operations are performed on
 -- incompatible bit widths.
 data SomeBVException = BitwidthMismatch | UndeterminedBitwidth T.Text
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Generic)
   deriving anyclass (Hashable, NFData)
   deriving
     ( Mergeable,
@@ -249,10 +249,13 @@ data SomeBVException = BitwidthMismatch | UndeterminedBitwidth T.Text
     )
     via (Default (SomeBVException))
 
-instance Exception SomeBVException where
-  displayException BitwidthMismatch = "Bit width does not match"
-  displayException (UndeterminedBitwidth msg) =
+instance Show SomeBVException where
+  show BitwidthMismatch = "Bit width does not match"
+  show (UndeterminedBitwidth msg) =
     "Cannot determine bit-width for literals: " <> T.unpack msg
+
+instance Exception SomeBVException where
+  displayException = show
 
 class MaySomeBV bv where
   assignLitBitWidth :: (KnownNat n, 1 <= n) => SomeBVLit -> bv n
@@ -359,7 +362,8 @@ instance
 -- >>> bv 4 0x3 + bv 4 0x3 :: SomeBV IntN
 -- 0x6
 -- >>> bv 4 0x3 + bv 8 0x3 :: SomeBV IntN
--- *** Exception: BitwidthMismatch
+-- *** Exception: Bit width does not match
+-- ...
 --
 -- One exception is that the equality testing (both concrete and symbolic via
 -- 'SymEq') does not require the bitwidths to be the same. Different bitwidths
@@ -382,7 +386,8 @@ instance
 -- >>> 3 * bv 4 0x1  :: SomeBV IntN
 -- 0x3
 -- >>> 3 * 3 :: SomeBV IntN
--- *** Exception: UndeterminedBitwidth "(*)"
+-- *** Exception: Cannot determine bit-width for literals: (*)
+-- ...
 --
 -- Some operations allows the literals to be used without the bit-width, such as
 -- '(+)', '(-)', 'negate', 'toUnsigned', 'toSigned', '.&.', '.|.', 'xor',

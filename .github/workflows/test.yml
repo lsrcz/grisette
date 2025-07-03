@@ -23,11 +23,11 @@ jobs:
           - {build: nix, arg: "", ismain: false, experimental: false, ghc: "948", cachekey: "nix-948"}
           - {build: nix, arg: "", ismain: false, experimental: false, ghc: "966", cachekey: "nix-966"}
           - {build: nix, arg: "", ismain: false, experimental: false, ghc: "984", cachekey: "nix-984"}
-          - {build: nix, arg: "", ismain: true, experimental: false, ghc: "9101", cachekey: "nix-9101"}
-          - {build: cabal, arg: "", ismain: false, experimental: false, ghc: "9121", cachekey: "cabal-9121"}
+          - {build: nix, arg: "", ismain: true, experimental: false, ghc: "9102", cachekey: "nix-9102"}
+          - {build: nix, arg: "", ismain: false, experimental: false, ghc: "9122", cachekey: "nix-9122"}
         include:
           - os: macOS-latest
-            plan: {build: nix, arg: "", ismain: true, experimental: false, ghc: "9101", cachekey: "nix-9101"}
+            plan: {build: nix, arg: "", ismain: true, experimental: false, ghc: "9102", cachekey: "nix-9102"}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.experimental }}
     steps:

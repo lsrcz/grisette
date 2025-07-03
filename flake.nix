@@ -66,22 +66,22 @@
         pname = "grisette";
         extraOutputs = pkgs: haskellPackages: devShellWithVersion: {
           devShells = {
-            "9101" = devShellWithVersion {
-              ghcVersion = "9101";
+            "9102" = devShellWithVersion {
+              ghcVersion = "9102";
               config = {
                 isDevelopmentEnvironment = true;
                 bitwuzla = true;
               };
             };
             default = devShellWithVersion {
-              ghcVersion = "9101";
+              ghcVersion = "9102";
               config = {
                 isDevelopmentEnvironment = true;
                 bitwuzla = true;
               };
             };
-            "9121" = devShellWithVersion {
-              ghcVersion = "9121";
+            "9122" = devShellWithVersion {
+              ghcVersion = "9122";
               config = {
                 isDevelopmentEnvironment = false;
                 bitwuzla = true;

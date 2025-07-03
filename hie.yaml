@@ -10,7 +10,3 @@ cradle:
       component: "grisette-examples:exe:basic"
     - path: "examples/basic/Paths_grisette_examples.hs"
       component: "grisette-examples:exe:basic"
-    - path: "examples/exception/Main.hs"
-      component: "grisette-examples:exe:exception"
-    - path: "examples/exception/Paths_grisette_examples.hs"
-      component: "grisette-examples:exe:exception"
