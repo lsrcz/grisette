@@ -23,7 +23,7 @@
 --   
 --   For more details, please checkout the README and <a>tutorials</a>.
 @package grisette
-@version 0.12.0.0
+@version 0.13.0.0
 
 
 module Grisette.Internal.Core.Control.Exception
@@ -7768,7 +7768,7 @@ clearTimeout :: GrisetteSMTConfig -> GrisetteSMTConfig
 --   is particularly useful with floating-point numbers, as it shows you
 --   how they are laid out in memory following the IEEE754 rules.
 data SMTConfig
-SMTConfig :: Bool -> Timing -> Int -> Int -> Bool -> [(String, Integer)] -> String -> Maybe Int -> Bool -> Bool -> (String -> Bool) -> Bool -> Bool -> Maybe FilePath -> SMTLibVersion -> Maybe Double -> SMTSolver -> [String] -> RoundingMode -> [SMTOption] -> Bool -> Maybe FilePath -> Int -> SMTConfig
+SMTConfig :: Bool -> Timing -> Int -> Int -> Bool -> [(String, Integer)] -> String -> Maybe Int -> Bool -> Bool -> (String -> Bool) -> Bool -> Bool -> Maybe FilePath -> SMTLibVersion -> Maybe Double -> SMTSolver -> [String] -> RoundingMode -> [SMTOption] -> Bool -> Maybe FilePath -> Bool -> KDOptions -> SMTConfig
 
 -- | Debug mode
 [verbose] :: SMTConfig -> Bool
@@ -7847,8 +7847,14 @@ SMTConfig :: Bool -> Timing -> Int -> Int -> Bool -> [(String, Integer)] -> Stri
 --   is implied.
 [redirectVerbose] :: SMTConfig -> Maybe FilePath
 
--- | Line length for KD proofs
-[kdRibbonLength] :: SMTConfig -> Int
+-- | Should SBV generate function-level equivalences for firstified
+--   functions? The default is False, but in certain cases this can lead
+--   the solver to loop-forever, especially in KnuckleDragger proofs. In
+--   such cases, set this to True to see if it helps.
+[generateHOEquivs] :: SMTConfig -> Bool
+
+-- | KnuckleDragger specific options
+[kdOptions] :: SMTConfig -> KDOptions
 
 -- | SMT-Lib logics. If left unspecified SBV will pick the logic based on
 --   what it determines is needed. However, the user can override this
@@ -8014,6 +8020,7 @@ SMTVerbosity :: Integer -> SMTOption
 OptionKeyword :: String -> [String] -> SMTOption
 SetLogic :: Logic -> SMTOption
 SetInfo :: String -> [String] -> SMTOption
+SetTimeOut :: Integer -> SMTOption
 
 -- | Specify how to save timing information, if at all.
 data Timing
@@ -10272,7 +10279,8 @@ module Grisette.Internal.SymPrim.SomeBV
 --   0x6
 --   
 --   &gt;&gt;&gt; bv 4 0x3 + bv 8 0x3 :: SomeBV IntN
---   *** Exception: BitwidthMismatch
+--   *** Exception: Bit width does not match
+--   ...
 --   </pre>
 --   
 --   One exception is that the equality testing (both concrete and symbolic
@@ -10293,7 +10301,8 @@ module Grisette.Internal.SymPrim.SomeBV
 --   
 --   3 :: SomeBV IntN bvlit(3) &gt;&gt;&gt; bv 4 0x1 + 3 :: SomeBV IntN 0x4
 --   &gt;&gt;&gt; 3 * bv 4 0x1 :: SomeBV IntN 0x3 &gt;&gt;&gt; 3 * 3 ::
---   SomeBV IntN *** Exception: UndeterminedBitwidth "(*)"
+--   SomeBV IntN *** Exception: Cannot determine bit-width for literals:
+--   (*) ...
 --   
 --   Some operations allows the literals to be used without the bit-width,
 --   such as <a>(+)</a>, <a>(-)</a>, <a>negate</a>, <a>toUnsigned</a>,
@@ -10864,7 +10873,8 @@ type WordN64 = WordN 64
 --   0x6
 --   
 --   &gt;&gt;&gt; bv 4 0x3 + bv 8 0x3 :: SomeBV IntN
---   *** Exception: BitwidthMismatch
+--   *** Exception: Bit width does not match
+--   ...
 --   </pre>
 --   
 --   One exception is that the equality testing (both concrete and symbolic
@@ -10885,7 +10895,8 @@ type WordN64 = WordN 64
 --   
 --   3 :: SomeBV IntN bvlit(3) &gt;&gt;&gt; bv 4 0x1 + 3 :: SomeBV IntN 0x4
 --   &gt;&gt;&gt; 3 * bv 4 0x1 :: SomeBV IntN 0x3 &gt;&gt;&gt; 3 * 3 ::
---   SomeBV IntN *** Exception: UndeterminedBitwidth "(*)"
+--   SomeBV IntN *** Exception: Cannot determine bit-width for literals:
+--   (*) ...
 --   
 --   Some operations allows the literals to be used without the bit-width,
 --   such as <a>(+)</a>, <a>(-)</a>, <a>negate</a>, <a>toUnsigned</a>,
