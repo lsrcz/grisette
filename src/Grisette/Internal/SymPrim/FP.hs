@@ -219,6 +219,28 @@ invalidFPMessage =
     <> "        sb `elem` [2 .. 4611686018427387902]\n\n"
     <> "  Given type falls outside of this range, or the sizes are not known naturals."
 
+#if MIN_VERSION_sbv(12,0,0)
+-- | Provide an (unsafe) type-level proof that the given floating-point type is
+-- valid.
+withUnsafeValidFP ::
+  forall eb sb r. (KnownNat eb, KnownNat sb) => ((ValidFP eb sb) => r) -> r
+withUnsafeValidFP r =
+  let eb = natVal (Proxy @eb)
+      sb = natVal (Proxy @sb)
+   in if checkDynamicValidFP eb sb
+        then case unsafeAxiom @True
+          @( ((CmpNat eb 2 == 'EQ) || (CmpNat eb 2 == 'GT))
+               && ( ((CmpNat eb 29 == 'EQ) || (CmpNat eb 29 == 'LT))
+                      && ( ((CmpNat sb 2 == 'EQ) || (CmpNat sb 2 == 'GT))
+                             && ( (CmpNat sb 1073741822 == 'EQ)
+                                    || (CmpNat sb 1073741822 == 'LT)
+                                )
+                         )
+                  )
+           ) of
+          Refl -> r
+        else error invalidFPMessage
+#else
 -- | Provide an (unsafe) type-level proof that the given floating-point type is
 -- valid.
 withUnsafeValidFP ::
@@ -239,6 +261,7 @@ withUnsafeValidFP r =
            ) of
           Refl -> r
         else error invalidFPMessage
+#endif
 
 -- | IEEE 754 floating-point number with @eb@ exponent bits and @sb@ significand
 -- bits.
