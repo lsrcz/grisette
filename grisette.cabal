@@ -1,37 +1,37 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
-name:               grisette
-version:            0.13.0.0
-synopsis:           Symbolic evaluation as a library
-description:        Grisette is a reusable symbolic evaluation library for Haskell. By
-                    translating programs into constraints, Grisette can help the development of
-                    program reasoning tools, including verification, synthesis, and more.
-                    .
-                    The "Grisette" module exports all the core APIs for building a symbolic
-                    evaluation tool. A high-level overview of the module structures are available
-                    there.
-                    .
-                    A detailed introduction to Grisette is available at "Grisette.Core". More
-                    lifted libraries are provided in @Grisette.Lib.*@ modules.
-                    .
-                    The "Grisette.Unified" module offers an experimental unified interface for
-                    symbolic and concrete evaluation. This module should be imported qualified.
-                    .
-                    For more details, please checkout the README and 
-                    [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials).
-category:           Formal Methods, Theorem Provers, Symbolic Computation, SMT
-homepage:           https://github.com/lsrcz/grisette#readme
-bug-reports:        https://github.com/lsrcz/grisette/issues
-author:             Sirui Lu, Rastislav Bodík
-maintainer:         Sirui Lu (siruilu@cs.washington.edu)
-copyright:          2021-2024 Sirui Lu
-license:            BSD3
-license-file:       LICENSE
-build-type:         Simple
+name:           grisette
+version:        0.13.0.1
+synopsis:       Symbolic evaluation as a library
+description:    Grisette is a reusable symbolic evaluation library for Haskell. By
+                translating programs into constraints, Grisette can help the development of
+                program reasoning tools, including verification, synthesis, and more.
+                .
+                The "Grisette" module exports all the core APIs for building a symbolic
+                evaluation tool. A high-level overview of the module structures are available
+                there.
+                .
+                A detailed introduction to Grisette is available at "Grisette.Core". More
+                lifted libraries are provided in @Grisette.Lib.*@ modules.
+                .
+                The "Grisette.Unified" module offers an experimental unified interface for
+                symbolic and concrete evaluation. This module should be imported qualified.
+                .
+                For more details, please checkout the README and 
+                [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials).
+category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
+homepage:       https://github.com/lsrcz/grisette#readme
+bug-reports:    https://github.com/lsrcz/grisette/issues
+author:         Sirui Lu, Rastislav Bodík
+maintainer:     Sirui Lu (siruilu@cs.washington.edu)
+copyright:      2021-2024 Sirui Lu
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
 tested-with:
     GHC == 8.10.7
   , GHC == 9.0.2
@@ -329,7 +329,7 @@ library
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2 && <3.3
     , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <12
+    , sbv >=8.17 && <13
     , stm ==2.5.*
     , template-haskell >=2.16 && <2.24
     , text >=1.2.4.1 && <2.2
@@ -378,7 +378,7 @@ test-suite doctest
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2 && <3.3
     , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <12
+    , sbv >=8.17 && <13
     , stm ==2.5.*
     , template-haskell >=2.16 && <2.24
     , text >=1.2.4.1 && <2.2
@@ -499,7 +499,7 @@ test-suite spec
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2 && <3.3
     , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <12
+    , sbv >=8.17 && <13
     , stm ==2.5.*
     , template-haskell >=2.16 && <2.24
     , test-framework >=0.8.2 && <0.9
