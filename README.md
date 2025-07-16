@@ -59,14 +59,14 @@ Note: Grisette on Stackage is currently outdated. Please make sure to use
 
 ```yaml
 extra-deps:
-  - grisette-0.13.0.0
+  - grisette-0.13.0.1
 ```
 
 and in your `package.yaml` file:
 
 ```yaml
 dependencies:
-  - grisette >= 0.13 < 0.14
+  - grisette >= 0.13.0.1 < 0.14
 ```
 
 #### Quick start template with `stack new`
