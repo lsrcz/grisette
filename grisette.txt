@@ -23,7 +23,7 @@
 --   
 --   For more details, please checkout the README and <a>tutorials</a>.
 @package grisette
-@version 0.13.0.0
+@version 0.13.0.1
 
 
 module Grisette.Internal.Core.Control.Exception
