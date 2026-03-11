@@ -75,6 +75,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
     evalSym1,
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
+import Grisette.Internal.SymPrim.Array (Array)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP,
@@ -86,9 +87,12 @@ import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Model (evalTerm)
 import Grisette.Internal.SymPrim.Prim.Term
   ( SymRep (SymType),
+    SupportedNonFuncPrim,
+    LinkedRep,
     someTypedSymbol,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
+import Grisette.Internal.SymPrim.SymArray (SymArray (SymArray))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -137,6 +141,7 @@ CONCRETE_EVALUATESYM(Ordering)
 CONCRETE_EVALUATESYM_BV(IntN)
 CONCRETE_EVALUATESYM_BV(WordN)
 CONCRETE_EVALUATESYM(AlgReal)
+CONCRETE_EVALUATESYM((Array k v))
 #endif
 
 instance EvalSym (Proxy a) where
@@ -185,6 +190,15 @@ EVALUATE_SYM_FUN((-->), (-~>), SymGeneralFun)
 instance (ValidFP eb sb) => EvalSym (SymFP eb sb) where
   evalSym fillDefault model (SymFP t) =
     SymFP $ evalTerm fillDefault model HS.empty t
+
+instance
+  ( SupportedNonFuncPrim ck,
+    SupportedNonFuncPrim cv,
+    LinkedRep ck sk,
+    LinkedRep cv sv
+  ) =>
+  EvalSym (SymArray sk sv) where
+  evalSym fill model (SymArray t) = SymArray $ evalTerm fill model HS.empty t
 
 derive
   [ ''(),

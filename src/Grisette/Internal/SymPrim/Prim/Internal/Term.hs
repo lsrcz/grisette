@@ -69,6 +69,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalFloatingTerm (..),
     PEvalFromIntegralTerm (..),
     PEvalIEEEFPConvertibleTerm (..),
+    pevalSelectTerm,
+    pevalStoreTerm,
+    pevalConstArrayTerm,
 
     -- * Typed symbols
     SymbolKind (..),
@@ -165,6 +168,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     fromIntegralTerm,
     fromFPOrTerm,
     toFPTerm,
+    selectTerm,
+    storeTerm,
+    constArrayTerm,
 
     -- * Patterns
     pattern SupportedTerm,
@@ -220,6 +226,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     pattern FromIntegralTerm,
     pattern FromFPOrTerm,
     pattern ToFPTerm,
+    pattern SelectTerm,
+    pattern StoreTerm,
+    pattern ConstArrayTerm,
 
     -- * Support for boolean type
     trueTerm,
@@ -329,6 +338,7 @@ import qualified Control.Monad.Writer.Lazy as Lazy
 import qualified Control.Monad.Writer.Strict as Strict
 import Data.Atomics (atomicModifyIORefCAS_)
 import qualified Data.Binary as Binary
+import Data.Bifunctor (Bifunctor(bimap))
 import Data.Bits
   ( Bits (complement, isSigned, xor, zeroBits, (.&.), (.|.)),
     FiniteBits (countLeadingZeros),
@@ -377,6 +387,7 @@ import Grisette.Internal.Core.Data.Symbol
     Symbol (IndexedSymbol, SimpleSymbol),
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal, fromSBVAlgReal, toSBVAlgReal)
+import Grisette.Internal.SymPrim.Array (Array (Array))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP (FP),
@@ -495,7 +506,8 @@ class
     Eq a,
     Show a,
     Hashable a,
-    Typeable a
+    Typeable a,
+    SBVType a ~ SBV.SBV (NonFuncSBVBaseType a)
   ) =>
   NonFuncSBVRep a
   where
@@ -509,7 +521,7 @@ type NonFuncPrimConstraint a =
     SBV.Mergeable (SBVType a),
     SBV.SMTDefinable (SBVType a),
     SBV.Mergeable (SBVType a),
-    SBVType a ~ SBV.SBV (NonFuncSBVBaseType a),
+    SBVT.SatModel (NonFuncSBVBaseType a),
     PrimConstraint a
   )
 
@@ -520,6 +532,7 @@ class (NonFuncSBVRep a) => SupportedNonFuncPrim a where
   symNonFuncSBVTerm ::
     (SBVFreshMonad m) => String -> m (SBV.SBV (NonFuncSBVBaseType a))
   withNonFuncPrim :: ((NonFuncPrimConstraint a) => r) -> r
+  sbvToCon :: NonFuncSBVBaseType a -> a
 
 -- | Partition the list of CVs for models for functions.
 partitionCVArg ::
@@ -644,6 +657,13 @@ class
     (SBVT.EqSymbolic (SBVType t)) => NonEmpty (SBVType t) -> SBV.SBV Bool
   sbvDistinct = SBV.distinct . toList
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
+  default parseSMTModelResult ::
+    SupportedNonFuncPrim t =>
+    Int ->
+    ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
+    t
+  parseSMTModelResult _ = withNonFuncPrim @t $ do
+    parseScalarSMTModelResult sbvToCon
   castTypedSymbol ::
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
   funcDummyConstraint :: SBVType t -> SBV.SBV Bool
@@ -1734,6 +1754,25 @@ data Term t where
     Proxy eb ->
     Proxy sb ->
     Term (FP eb sb)
+  SelectTerm' ::
+    SupportedPrim (Array k v) =>
+    {-# UNPACK #-} !CachedInfo ->
+    !(Term (Array k v)) ->
+    !(Term k) ->
+    Term v
+  StoreTerm' ::
+    SupportedPrim (Array k v) =>
+    {-# UNPACK #-} !CachedInfo ->
+    !(Term (Array k v)) ->
+    !(Term k) ->
+    !(Term v) ->
+    Term (Array k v)
+  ConstArrayTerm' ::
+    SupportedPrim (Array k v) =>
+    {-# UNPACK #-} !CachedInfo ->
+    Proxy k ->
+    !(Term v) ->
+    Term (Array k v)
 
 data SupportedPrimEvidence t where
   SupportedPrimEvidence :: (SupportedPrim t) => SupportedPrimEvidence t
@@ -2699,6 +2738,67 @@ pattern ToFPTerm rm t eb sb <- (ToFPTerm' _ rm t@SupportedTerm eb sb)
 {-# INLINE ToFPTerm #-}
 #endif
 
+-- | Pattern synonym for 'SelectTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
+pattern SelectTerm ::
+  forall ret.
+  () =>
+  forall k v.
+  ( SupportedPrim (Array k v),
+    ret ~ v
+  ) =>
+  Term (Array k v) ->
+  Term k ->
+  Term ret
+pattern SelectTerm arr key <- SelectTerm' _ arr key
+  where
+    SelectTerm arr key = pevalSelectTerm arr key
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE SelectTerm #-}
+#endif
+
+-- | Pattern synonym for 'StoreTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
+pattern StoreTerm ::
+  forall ret.
+  () =>
+  forall k v.
+  ( SupportedPrim (Array k v),
+    ret ~ Array k v
+  ) =>
+  Term (Array k v) ->
+  Term k ->
+  Term v ->
+  Term ret
+pattern StoreTerm arr key val <- StoreTerm' _ arr key val
+  where
+    StoreTerm arr key = pevalStoreTerm arr key
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE StoreTerm #-}
+#endif
+
+-- | Pattern synonym for 'StoreTerm''. Note that using this pattern to
+-- construct a 'Term' will do term simplification.
+pattern ConstArrayTerm ::
+  forall ret.
+  () =>
+  forall k v.
+  ( SupportedPrim (Array k v),
+    ret ~ Array k v
+  ) =>
+  Proxy k ->
+  Term v ->
+  Term ret
+pattern ConstArrayTerm pkey val <- ConstArrayTerm' _ pkey val
+  where
+    ConstArrayTerm pkey val = pevalConstArrayTerm pkey val
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# INLINE ConstArrayTerm #-}
+#endif
+
 #if MIN_VERSION_base(4, 16, 4)
 {-# COMPLETE
   ConTerm,
@@ -2748,7 +2848,10 @@ pattern ToFPTerm rm t eb sb <- (ToFPTerm' _ rm t@SupportedTerm eb sb)
   FPFMATerm,
   FromIntegralTerm,
   FromFPOrTerm,
-  ToFPTerm
+  ToFPTerm,
+  SelectTerm,
+  StoreTerm,
+  ConstArrayTerm
   #-}
 #endif
 
@@ -2802,6 +2905,9 @@ termInfo (FPFMATerm' i _ _ _ _) = i
 termInfo (FromIntegralTerm' i _) = i
 termInfo (FromFPOrTerm' i _ _ _) = i
 termInfo (ToFPTerm' i _ _ _ _) = i
+termInfo (SelectTerm' i _ _) = i
+termInfo (StoreTerm' i _ _ _) = i
+termInfo (ConstArrayTerm' i _ _) = i
 
 -- | Get the thread ID for a term.
 {-# INLINE termThreadId #-}
@@ -2923,6 +3029,10 @@ introSupportedPrimConstraint0 FPFMATerm' {} x = x
 introSupportedPrimConstraint0 FromIntegralTerm' {} x = x
 introSupportedPrimConstraint0 FromFPOrTerm' {} x = x
 introSupportedPrimConstraint0 ToFPTerm' {} x = x
+introSupportedPrimConstraint0 (SelectTerm' _ (_ :: Term arr) _) x = do
+  withPrim @arr x
+introSupportedPrimConstraint0 StoreTerm' {} x = x
+introSupportedPrimConstraint0 ConstArrayTerm' {} x = x
 
 -- | Introduce the 'SupportedPrim' constraint from a term.
 introSupportedPrimConstraint ::
@@ -2984,6 +3094,9 @@ pformatTerm (FPFMATerm mode arg1 arg2 arg3) =
 pformatTerm (FromIntegralTerm arg) = "(from_integral " ++ pformatTerm arg ++ ")"
 pformatTerm (FromFPOrTerm d r arg) = "(from_fp_or " ++ pformatTerm d ++ " " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (ToFPTerm r arg _ _) = "(to_fp " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (SelectTerm arr key) = "(select " ++ pformatTerm arr ++ " " ++ pformatTerm key ++ ")"
+pformatTerm (StoreTerm arr key val) = "(store " ++ pformatTerm arr ++ " " ++ pformatTerm key ++ " " ++ pformatTerm val ++ ")"
+pformatTerm (ConstArrayTerm _ val) = "(const_array " ++ pformatTerm val ++ ")"
 
 -- {-# INLINE pformatTerm #-}
 
@@ -3054,6 +3167,11 @@ instance Lift (Term t) where
   liftTyped (FromFPOrTerm t1 t2 t3) = [||fromFPOrTerm t1 t2 t3||]
   liftTyped (ToFPTerm t1 t2 _ _) =
     [||toFPTerm t1 t2||]
+  liftTyped (SelectTerm t1 t2) = [||selectTerm t1 t2||]
+  liftTyped (StoreTerm t1 t2 t3) = [||storeTerm t1 t2 t3||]
+  liftTyped (ConstArrayTerm (_ :: p k) t2) = do
+    let pkey = [||Proxy||] :: CODE (Proxy k)
+    [||constArrayTerm $$pkey t2||]
 
 instance Show (Term ty) where
   show t@(ConTerm v) =
@@ -3530,6 +3648,38 @@ instance Show (Term ty) where
       ++ ", arg="
       ++ show arg
       ++ "}"
+  show t@(SelectTerm arr key) =
+    "SelectTerm{tid="
+      ++ show (termThreadId t)
+      ++ ", id="
+      ++ show (termId t)
+      ++ ", array="
+      ++ show arr
+      ++ ", key="
+      ++ show key
+      ++ "}"
+  show t@(StoreTerm arr key val) =
+    "StoreTerm{tid="
+      ++ show (termThreadId t)
+      ++ ", id="
+      ++ show (termId t)
+      ++ ", array="
+      ++ show arr
+      ++ ", key="
+      ++ show key
+      ++ ", val="
+      ++ show val
+      ++ "}"
+  show t@(ConstArrayTerm (_ :: p k) val) =
+    "ConstArrayTerm{tid="
+      ++ show (termThreadId t)
+      ++ ", id="
+      ++ show (termId t)
+      ++ ", key="
+      ++ withPrim @ty (show $ typeRep @k)
+      ++ ", val="
+      ++ show val
+      ++ "}"
 
 -- {-# INLINE show #-}
 
@@ -3751,6 +3901,22 @@ data UTerm t where
     Proxy eb ->
     Proxy sb ->
     UTerm (FP eb sb)
+  USelectTerm ::
+    SupportedPrim (Array k v) =>
+    !(Term (Array k v)) ->
+    !(Term k) ->
+    UTerm v
+  UStoreTerm ::
+    SupportedPrim (Array k v) =>
+    !(Term (Array k v)) ->
+    !(Term k) ->
+    !(Term v) ->
+    UTerm (Array k v)
+  UConstArrayTerm ::
+    SupportedPrim (Array k v) =>
+    Proxy k ->
+    !(Term v) ->
+    UTerm (Array k v)
 
 -- | Compare two t'TypedSymbol's for equality.
 eqHeteroSymbol :: forall ta a tb b. TypedSymbol ta a -> TypedSymbol tb b -> Bool
@@ -4017,6 +4183,20 @@ preHashToFPTermDescription h1 h2 =
   fromIntegral (50 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashToFPTermDescription #-}
 
+preHashSelectDescription :: HashId -> HashId -> Digest
+preHashSelectDescription h1 h2 =
+  fromIntegral (51 `hashWithSalt` h1 `hashWithSalt` h2)
+{-# INLINE preHashSelectDescription #-}
+
+preHashStoreDescription :: HashId -> HashId -> HashId -> Digest
+preHashStoreDescription h1 h2 h3 =
+  fromIntegral (52 `hashWithSalt` h1 `hashWithSalt` h2 `hashWithSalt` h3)
+{-# INLINE preHashStoreDescription #-}
+
+preHashConstArrayDescription :: HashId -> Digest
+preHashConstArrayDescription h1 = fromIntegral (53 `hashWithSalt` h1)
+{-# INLINE preHashConstArrayDescription #-}
+
 instance Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
@@ -4265,6 +4445,22 @@ instance Interned (Term t) where
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !TypeHashId ->
       Description (Term (FP eb sb))
+    DSelectTerm ::
+      {-# UNPACK #-} !Digest ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term v)
+    DStoreTerm ::
+      {-# UNPACK #-} !Digest ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term v)
+    DConstArrayTerm ::
+      {-# UNPACK #-} !Digest ->
+      {-# UNPACK #-} !Fingerprint ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term v)
 
   describe (UConTerm v) = DConTerm sameCon (preHashConDescription v) v
   describe ((USymTerm name) :: UTerm t) =
@@ -4576,6 +4772,22 @@ instance Interned (Term t) where
           (preHashToFPTermDescription modeHashId argHashId)
           modeHashId
           argHashId
+  describe (USelectTerm arr key) = do
+    let arrHashId = termHashId arr
+    let keyHashId = termHashId key
+    let digest = preHashSelectDescription arrHashId keyHashId
+    DSelectTerm digest arrHashId keyHashId
+  describe (UStoreTerm arr key val) = do
+    let arrHashId = termHashId arr
+    let keyHashId = termHashId key
+    let valHashId = termHashId val
+    let digest = preHashStoreDescription arrHashId keyHashId valHashId
+    DStoreTerm digest arrHashId keyHashId valHashId
+  describe (UConstArrayTerm pkey val) = withPrim @t $ do
+    let keyFingerprint = typeRepFingerprint $ someTypeRep pkey
+    let valHashId = termHashId val
+    let digest = preHashConstArrayDescription valHashId
+    DConstArrayTerm digest keyFingerprint valHashId
 
   -- {-# INLINE describe #-}
 
@@ -4640,6 +4852,9 @@ instance Interned (Term t) where
       go (UFromFPOrTerm d mode arg) = FromFPOrTerm' info d mode arg
       go (UToFPTerm mode (arg :: Term a) _ _) =
         goPhantomToFP info getPhantomDict mode arg
+      go (USelectTerm arr key) = SelectTerm' info arr key
+      go (UStoreTerm arr key val) = StoreTerm' info arr key val
+      go (UConstArrayTerm proxy val) = ConstArrayTerm' info proxy val
       {-# INLINE go #-}
 
   -- {-# INLINE identify #-}
@@ -4694,6 +4909,9 @@ instance Interned (Term t) where
   descriptionDigest (DFromIntegralTerm h _) = h
   descriptionDigest (DFromFPOrTerm h _ _ _) = h
   descriptionDigest (DToFPTerm h _ _) = h
+  descriptionDigest (DSelectTerm h _ _) = h
+  descriptionDigest (DStoreTerm h _ _ _) = h
+  descriptionDigest (DConstArrayTerm h _ _) = h
 
 -- {-# INLINE descriptionDigest #-}
 {-# NOINLINE goPhantomCon #-}
@@ -5087,6 +5305,18 @@ fullReconstructTerm (FromFPOrTerm d r arg) =
   fullReconstructTerm3 curThreadFromFPOrTerm d r arg
 fullReconstructTerm (ToFPTerm r arg _ _) =
   fullReconstructTerm2 curThreadToFPTerm r arg
+fullReconstructTerm (SelectTerm (arr :: Term arr) key) = withPrim @arr $ do
+  arr' <- fullReconstructTerm arr
+  key' <- fullReconstructTerm key
+  intern $ USelectTerm arr' key'
+fullReconstructTerm (StoreTerm arr key val) = do
+  arr' <- fullReconstructTerm arr
+  key' <- fullReconstructTerm key
+  val' <- fullReconstructTerm val
+  intern $ UStoreTerm arr' key' val'
+fullReconstructTerm (ConstArrayTerm pkey val) = do
+  val' <- fullReconstructTerm val
+  intern $ UConstArrayTerm pkey val'
 
 toCurThreadImpl :: forall t. WeakThreadId -> Term t -> IO (Term t)
 toCurThreadImpl tid t | termThreadId t == tid = return t
@@ -5504,6 +5734,36 @@ curThreadToFPTerm ::
   IO (Term (FP eb sb))
 curThreadToFPTerm r f = intern $ UToFPTerm r f (Proxy @eb) (Proxy @sb)
 {-# INLINE curThreadToFPTerm #-}
+
+-- | Construct and internalizing a 'SelectTerm'.
+curThreadSelectTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Term (Array k v) ->
+  Term k ->
+  IO (Term v)
+curThreadSelectTerm arr key = withPrim @(Array k v) $ do
+  intern $ USelectTerm arr key
+{-# INLINE curThreadSelectTerm #-}
+
+curThreadStoreTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Term (Array k v) ->
+  Term k ->
+  Term v ->
+  IO (Term (Array k v))
+curThreadStoreTerm arr key val = intern $ UStoreTerm arr key val
+{-# INLINE curThreadStoreTerm #-}
+
+curThreadConstArrayTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Proxy k ->
+  Term v ->
+  IO (Term (Array k v))
+curThreadConstArrayTerm pkey val = intern $ UConstArrayTerm pkey val
+{-# INLINE curThreadConstArrayTerm #-}
 
 inCurThread1 ::
   forall a b.
@@ -6044,6 +6304,37 @@ toFPTerm ::
   Term (FP eb sb)
 toFPTerm = unsafeInCurThread2 curThreadToFPTerm
 {-# NOINLINE toFPTerm #-}
+
+-- | Construct and internalizing a 'SelectTerm'.
+selectTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Term (Array k v) ->
+  Term k ->
+  Term v
+selectTerm = unsafeInCurThread2 curThreadSelectTerm
+{-# NOINLINE selectTerm #-}
+
+-- | Construct and internalizing a 'StoreTerm'.
+storeTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Term (Array k v) ->
+  Term k ->
+  Term v ->
+  Term (Array k v)
+storeTerm = unsafeInCurThread3 curThreadStoreTerm
+{-# NOINLINE storeTerm #-}
+
+-- | Construct and internalizing a 'ConstArrayTerm'.
+constArrayTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Proxy k ->
+  Term v ->
+  Term (Array k v)
+constArrayTerm pkey = unsafeInCurThread1 $ curThreadConstArrayTerm pkey
+{-# NOINLINE constArrayTerm #-}
 
 -- Support for boolean type
 defaultValueForBool :: Bool
@@ -6692,7 +6983,6 @@ instance SupportedPrim Bool where
   symSBVName symbol _ = show symbol
   symSBVTerm = sbvFresh
   withPrim r = r
-  parseSMTModelResult _ = parseScalarSMTModelResult id
   castTypedSymbol ::
     forall knd knd'.
     (IsSymbolKind knd') =>
@@ -6711,6 +7001,7 @@ instance SupportedNonFuncPrim Bool where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @Bool
   withNonFuncPrim r = r
+  sbvToCon = id
 
 data PhantomDict a where
   PhantomDict :: (SupportedPrim a) => PhantomDict a
@@ -6807,7 +7098,6 @@ instance SupportedPrim Integer where
   conSBVTerm n = fromInteger n
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  parseSMTModelResult _ = parseScalarSMTModelResult id
   castTypedSymbol ::
     forall knd knd'.
     (IsSymbolKind knd') =>
@@ -6826,6 +7116,7 @@ instance SupportedNonFuncPrim Integer where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @Integer
   withNonFuncPrim r = r
+  sbvToCon = id
 
 pevalITEBVTerm ::
   forall bv n.
@@ -6955,9 +7246,6 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   symSBVTerm name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
   {-# INLINE withPrim #-}
-  parseSMTModelResult _ cv =
-    withPrim @(IntN w) $
-      parseScalarSMTModelResult (\(x :: SBV.IntN w) -> fromIntegral x) cv
   castTypedSymbol ::
     forall knd knd'.
     (IsSymbolKind knd') =>
@@ -6988,6 +7276,7 @@ instance (KnownNat w, 1 <= w) => SupportedNonFuncPrim (IntN w) where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @(IntN w)
   withNonFuncPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
+  sbvToCon = withPrim @(IntN w) fromIntegral
 
 -- Unsigned BV
 instance (KnownNat w, 1 <= w) => SupportedPrimConstraint (WordN w) where
@@ -7014,9 +7303,6 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   symSBVTerm name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
   {-# INLINE withPrim #-}
-  parseSMTModelResult _ cv =
-    withPrim @(WordN w) $
-      parseScalarSMTModelResult (\(x :: SBV.WordN w) -> fromIntegral x) cv
   castTypedSymbol ::
     forall knd knd'.
     (IsSymbolKind knd') =>
@@ -7035,6 +7321,7 @@ instance (KnownNat w, 1 <= w) => SupportedNonFuncPrim (WordN w) where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @(WordN w)
   withNonFuncPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
+  sbvToCon = withPrim @(WordN w) fromIntegral
 
 -- FP
 instance (ValidFP eb sb) => SupportedPrimConstraint (FP eb sb) where
@@ -7067,9 +7354,6 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   conSBVTerm (FP fp) = SBV.literal fp
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  parseSMTModelResult _ cv =
-    withPrim @(FP eb sb) $
-      parseScalarSMTModelResult (\(x :: SBV.FloatingPoint eb sb) -> coerce x) cv
   funcDummyConstraint _ = SBV.sTrue
 
   -- Workaround for sbv#702.
@@ -7101,6 +7385,7 @@ instance (ValidFP eb sb) => SupportedNonFuncPrim (FP eb sb) where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @(FP eb sb)
   withNonFuncPrim r = r
+  sbvToCon = coerce
 
 -- FPRoundingMode
 instance SupportedPrimConstraint FPRoundingMode
@@ -7122,17 +7407,6 @@ instance SupportedPrim FPRoundingMode where
   conSBVTerm RTZ = SBV.sRTZ
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  parseSMTModelResult _ cv =
-    withPrim @(FPRoundingMode) $
-      parseScalarSMTModelResult
-        ( \(x :: SBV.RoundingMode) -> case x of
-            SBV.RoundNearestTiesToEven -> RNE
-            SBV.RoundNearestTiesToAway -> RNA
-            SBV.RoundTowardPositive -> RTP
-            SBV.RoundTowardNegative -> RTN
-            SBV.RoundTowardZero -> RTZ
-        )
-        cv
   castTypedSymbol ::
     forall knd knd'.
     (IsSymbolKind knd') =>
@@ -7151,6 +7425,12 @@ instance SupportedNonFuncPrim FPRoundingMode where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @FPRoundingMode
   withNonFuncPrim r = r
+  sbvToCon mode = case mode of
+    SBV.RoundNearestTiesToEven -> RNE
+    SBV.RoundNearestTiesToAway -> RNA
+    SBV.RoundTowardPositive -> RTP
+    SBV.RoundTowardNegative -> RTN
+    SBV.RoundTowardZero -> RTZ
 
 -- AlgReal
 
@@ -7169,9 +7449,6 @@ instance SupportedPrim AlgReal where
   conSBVTerm = SBV.literal . toSBVAlgReal
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  parseSMTModelResult _ cv =
-    withPrim @AlgReal $
-      parseScalarSMTModelResult fromSBVAlgReal cv
   castTypedSymbol ::
     forall knd knd'.
     (IsSymbolKind knd') =>
@@ -7190,6 +7467,92 @@ instance SupportedNonFuncPrim AlgReal where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @AlgReal
   withNonFuncPrim r = r
+  sbvToCon = fromSBVAlgReal
+
+-- Array
+
+pevalSelectTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Term (Array k v) ->
+  Term k ->
+  Term v
+pevalSelectTerm = selectTerm -- TODO: perform optimisation
+
+pevalStoreTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Term (Array k v) ->
+  Term k ->
+  Term v ->
+  Term (Array k v)
+pevalStoreTerm = storeTerm -- TODO: perform optimisation
+
+pevalConstArrayTerm ::
+  forall k v.
+  SupportedPrim (Array k v) =>
+  Proxy k ->
+  Term v ->
+  Term (Array k v)
+pevalConstArrayTerm = constArrayTerm -- TODO: perform optimisation
+
+instance SupportedPrimConstraint (Array k v) where
+  type PrimConstraint (Array k v) =
+    ( SupportedNonFuncPrim k
+    , SupportedNonFuncPrim v
+    , SBVT.SymVal (NonFuncSBVBaseType k)
+    , SBVT.SymVal (NonFuncSBVBaseType v)
+    )
+
+instance SBVRep (Array k v) where
+  type SBVType (Array k v) = SBV.SArray (NonFuncSBVBaseType k) (NonFuncSBVBaseType v)
+
+instance
+  ( SupportedNonFuncPrim k
+  , SupportedNonFuncPrim v
+  ) => SupportedPrim (Array k v) where
+  defaultValue = Array mempty defaultValue
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  pevalDistinctTerm = pevalGeneralDistinct
+  conSBVTerm (Array entries def) = withNonFuncPrim @(Array k v) $ do
+    let root = SBV.constArray $ conSBVTerm def
+    let foldlWithKeyBy acc xs f = HM.foldlWithKey' f acc xs
+    foldlWithKeyBy root entries $ \acc key val -> do
+      SBV.writeArray acc (conSBVTerm key) (conSBVTerm val)
+  symSBVName x _ = show x
+  symSBVTerm = withNonFuncPrim @(Array k v) $ sbvFresh
+  withPrim = withNonFuncPrim @(Array k v)
+  sbvEq = withPrim @(Array k v) (SBV..==)
+  sbvDistinct = withPrim @(Array k v) $ SBV.distinct . toList
+  castTypedSymbol ::
+    forall knd' knd.
+    IsSymbolKind knd' =>
+    TypedSymbol knd (Array k v) ->
+    Maybe (TypedSymbol knd' (Array k v))
+  castTypedSymbol = pure . case decideSymbolKind @knd' of
+    Left HRefl -> TypedSymbol . unTypedSymbol
+    Right HRefl -> TypedSymbol . unTypedSymbol
+  funcDummyConstraint _ = SBV.sTrue
+
+instance
+  ( SupportedNonFuncPrim k, Ord k, Typeable k, Hashable k, Show k
+  , SupportedNonFuncPrim v, Ord v, Typeable v, Hashable v, Show v
+  ) => NonFuncSBVRep (Array k v) where
+  type NonFuncSBVBaseType (Array k v) = SBV.ArrayModel (NonFuncSBVBaseType k) (NonFuncSBVBaseType v)
+
+instance
+  ( SupportedNonFuncPrim k
+  , SupportedNonFuncPrim v
+  ) => SupportedNonFuncPrim (Array k v) where
+  conNonFuncSBVTerm = conSBVTerm
+  symNonFuncSBVTerm = withNonFuncPrim @(Array k v) sbvFresh
+  withNonFuncPrim = withNonFuncPrim @k $ withNonFuncPrim @v $ id
+  sbvToCon (SBV.ArrayModel tbl def) = do
+    -- NOTE: We reverse the list as later elements should take precedence.
+    let tbl' = HM.fromList . reverse . fmap (bimap sbvToCon sbvToCon) $ tbl
+    let def' = sbvToCon def
+    Array tbl' def'
 
 -- Bitwise
 

@@ -33,10 +33,13 @@ import Grisette.Internal.SymPrim.GeneralFun
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.Internal.SymPrim.Prim.Term
   ( SupportedPrim (pevalITETerm),
+    SupportedNonFuncPrim,
+    LinkedRep,
     TypedConstantSymbol,
     symTerm,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
+import Grisette.Internal.SymPrim.SymArray (SymArray (SymArray))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -92,6 +95,15 @@ ITEOP_BV(SymWordN)
 ITEOP_FUN((=->), (=~>), SymTabularFun)
 ITEOP_FUN((-->), (-~>), SymGeneralFun)
 #endif
+
+instance
+  ( SupportedNonFuncPrim ck,
+    SupportedNonFuncPrim cv,
+    LinkedRep ck sk,
+    LinkedRep cv sv
+  ) =>
+  ITEOp (SymArray sk sv) where
+  symIte (SymBool c) (SymArray t) (SymArray f) = SymArray $ pevalITETerm c t f
 
 instance ITEOp (a --> b) where
   symIte

@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
 -- |
@@ -19,6 +21,7 @@ where
 import Data.Foldable (Foldable (toList))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( Term,
+    SupportedPrim (withPrim),
     pattern AbsNumTerm,
     pattern AddNumTerm,
     pattern AndBitsTerm,
@@ -67,10 +70,13 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pattern SymTerm,
     pattern ToFPTerm,
     pattern XorBitsTerm,
+    pattern SelectTerm,
+    pattern StoreTerm,
+    pattern ConstArrayTerm,
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 
-subTermsViewPattern :: Term a -> Maybe [SomeTerm]
+subTermsViewPattern :: forall a. Term a -> Maybe [SomeTerm]
 subTermsViewPattern (ConTerm _) = return []
 subTermsViewPattern (SymTerm _) = return []
 subTermsViewPattern (ForallTerm _ t) = return [SomeTerm t]
@@ -121,6 +127,9 @@ subTermsViewPattern (FPFMATerm rd t1 t2 t3) =
 subTermsViewPattern (FromIntegralTerm t) = return [SomeTerm t]
 subTermsViewPattern (FromFPOrTerm t1 rd t2) = return [SomeTerm t1, SomeTerm rd, SomeTerm t2]
 subTermsViewPattern (ToFPTerm rd t1 _ _) = return [SomeTerm rd, SomeTerm t1]
+subTermsViewPattern (SelectTerm (t1 :: Term arr) t2) = withPrim @arr $ return [SomeTerm t1, SomeTerm t2]
+subTermsViewPattern (StoreTerm t1 t2 t3) = withPrim @a $ return [SomeTerm t1, SomeTerm t2, SomeTerm t3]
+subTermsViewPattern (ConstArrayTerm _ t1) = withPrim @a $ return [SomeTerm t1]
 
 -- | Extract all the subterms of a term.
 pattern SubTerms :: [SomeTerm] -> Term a

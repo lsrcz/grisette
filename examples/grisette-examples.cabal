@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:               grisette-examples
-version:            0.13.0.0
+version:            0.13.0.1
 synopsis:           Examples for Grisette
 description:        More examples are available in the
                     [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials) of

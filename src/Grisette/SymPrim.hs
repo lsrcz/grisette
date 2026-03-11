@@ -290,6 +290,9 @@ module Grisette.SymPrim
     pattern FromIntegralTerm,
     pattern FromFPOrTerm,
     pattern ToFPTerm,
+    pattern SelectTerm,
+    pattern StoreTerm,
+    pattern ConstArrayTerm,
     pattern SubTerms,
   )
 where
@@ -416,6 +419,9 @@ import Grisette.Internal.SymPrim.Prim.Term
     pattern SupportedTypedSymbol,
     pattern SymTerm,
     pattern ToFPTerm,
+    pattern SelectTerm,
+    pattern StoreTerm,
+    pattern ConstArrayTerm,
     pattern XorBitsTerm,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils

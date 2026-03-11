@@ -264,6 +264,9 @@ import Grisette.Internal.SymPrim.Prim.Term
     pattern SymTerm,
     pattern ToFPTerm,
     pattern XorBitsTerm,
+    pattern SelectTerm,
+    pattern StoreTerm,
+    pattern ConstArrayTerm,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 
@@ -796,6 +799,18 @@ lowerSinglePrimCached t' m' = do
         mode <- goCached qs mode
         arg <- goCached qs arg
         return $ \qst -> sbvToFPTerm @b (mode qst) (arg qst)
+      goCachedIntermediate qs (SelectTerm (arr :: Term arr) key) = withPrim @arr $ do
+        arr' <- goCached qs arr
+        key' <- goCached qs key
+        pure $ \qst -> SBV.readArray (arr' qst) (key' qst)
+      goCachedIntermediate qs (StoreTerm arr key val) = withPrim @a $ do
+        arr' <- goCached qs arr
+        key' <- goCached qs key
+        val' <- goCached qs val
+        pure $ \qst -> SBV.writeArray (arr' qst) (key' qst) (val' qst)
+      goCachedIntermediate qs (ConstArrayTerm _ val) = withPrim @a $ do
+        val' <- goCached qs val
+        pure $ \qst -> SBV.constArray $ val' qst
       goCachedIntermediate _ ConTerm {} = error "Should not happen"
       goCachedIntermediate _ SymTerm {} = error "Should not happen"
       goCachedIntermediate _ ForallTerm {} = error "Should not happen"

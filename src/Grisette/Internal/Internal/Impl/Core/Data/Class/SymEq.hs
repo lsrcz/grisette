@@ -80,8 +80,9 @@ import Grisette.Internal.SymPrim.FP
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( SupportedPrim (pevalDistinctTerm),
+    LinkedRep (underlyingTerm, wrapTerm),
+    SupportedNonFuncPrim,
     pevalEqTerm,
-    underlyingTerm,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
@@ -95,6 +96,7 @@ import Grisette.Internal.SymPrim.SymFP
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.TH.Derivation.Derive (derive)
+import Grisette.Internal.SymPrim.SymArray (SymArray)
 
 #define CONCRETE_SEQ(type) \
 instance SymEq type where \
@@ -184,6 +186,15 @@ SEQ_BV(SymWordN)
 instance (ValidFP eb sb) => SymEq (SymFP eb sb) where
   (SymFP l) .== (SymFP r) = SymBool $ pevalEqTerm l r
   {-# INLINE (.==) #-}
+
+instance
+  ( SupportedNonFuncPrim ck,
+    SupportedNonFuncPrim cv,
+    LinkedRep ck sk,
+    LinkedRep cv sv
+  ) =>
+  SymEq (SymArray sk sv) where
+  lhs .== rhs = wrapTerm $ pevalEqTerm (underlyingTerm lhs) (underlyingTerm rhs)
 
 derive
   [ ''(),

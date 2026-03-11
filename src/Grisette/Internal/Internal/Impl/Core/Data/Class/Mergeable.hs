@@ -90,6 +90,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
     wrapStrategy,
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal, AlgRealPoly, RealPoint)
+import Grisette.Internal.SymPrim.Array (Array)
 import Grisette.Internal.SymPrim.BV
   ( IntN,
     WordN,
@@ -103,6 +104,7 @@ import Grisette.Internal.SymPrim.FP
   )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
+import Grisette.Internal.SymPrim.SymArray (SymArray)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
@@ -111,6 +113,7 @@ import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
 import Grisette.Internal.TH.Derivation.Derive (derive)
 import Unsafe.Coerce (unsafeCoerce)
+import Grisette.Internal.SymPrim.Prim.Internal.Term (SupportedNonFuncPrim, LinkedRep)
 
 #define CONCRETE_ORD_MERGEABLE(type) \
 instance Mergeable type where \
@@ -175,6 +178,9 @@ instance Mergeable (a =-> b) where
 instance Mergeable (a --> b) where
   rootStrategy = SimpleStrategy symIte
 
+instance Mergeable (Array k v) where
+  rootStrategy = NoStrategy
+
 #define MERGEABLE_SIMPLE(symtype) \
 instance Mergeable symtype where \
   rootStrategy = SimpleStrategy symIte
@@ -196,6 +202,15 @@ MERGEABLE_BV(SymWordN)
 MERGEABLE_FUN((=->), (=~>), SymTabularFun)
 MERGEABLE_FUN((-->), (-~>), SymGeneralFun)
 #endif
+
+instance
+  ( SupportedNonFuncPrim ck,
+    SupportedNonFuncPrim cv,
+    LinkedRep ck sk,
+    LinkedRep cv sv
+  ) =>
+  Mergeable (SymArray sk sv) where
+  rootStrategy = SimpleStrategy $ symIte
 
 instance (ValidFP eb sb) => Mergeable (SymFP eb sb) where
   rootStrategy = SimpleStrategy symIte

@@ -100,6 +100,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm (pevalRotateRightTerm),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
+    pevalSelectTerm,
+    pevalStoreTerm,
+    pevalConstArrayTerm,
     SBVRep (SBVType),
     SomeTypedAnySymbol,
     SomeTypedConstantSymbol,
@@ -189,6 +192,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pattern SymTerm,
     pattern ToFPTerm,
     pattern XorBitsTerm,
+    pattern SelectTerm,
+    pattern StoreTerm,
+    pattern ConstArrayTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Pattern (pattern SubTerms)
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm), someTerm)
@@ -542,6 +548,12 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
       _
       (SomeTerm (ToFPTerm mode (arg :: Term a) (_ :: p eb) (_ :: q sb))) =
         goBinary memo (pevalToFPTerm @a @eb @sb) mode arg
+    goSome  memo _ (SomeTerm (SelectTerm arr key)) =
+      goBinary memo pevalSelectTerm arr key
+    goSome  memo _ (SomeTerm (StoreTerm arr key val)) =
+      goTernary memo pevalStoreTerm arr key val
+    goSome  memo _ (SomeTerm (ConstArrayTerm pkey val)) =
+      goUnary memo (pevalConstArrayTerm pkey) val
     goUnary memo f a = SomeTerm $ f (go memo a)
     goBinary memo f a b = SomeTerm $ f (go memo a) (go memo b)
     goTernary memo f a b c =

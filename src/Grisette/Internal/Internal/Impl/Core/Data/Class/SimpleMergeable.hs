@@ -78,10 +78,11 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
 import Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge ()
 import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (freshArgSymbol, substTerm, type (-->) (GeneralFun))
-import Grisette.Internal.SymPrim.Prim.Internal.Term (SupportedPrim (pevalITETerm), symTerm)
+import Grisette.Internal.SymPrim.Prim.Internal.Term (SupportedPrim (pevalITETerm), LinkedRep, symTerm)
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
-import Grisette.Internal.SymPrim.Prim.Term (TypedConstantSymbol)
+import Grisette.Internal.SymPrim.Prim.Term (TypedConstantSymbol, SupportedNonFuncPrim)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
+import Grisette.Internal.SymPrim.SymArray (SymArray (SymArray))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -558,6 +559,15 @@ SIMPLE_MERGEABLE_BV(SymWordN)
 SIMPLE_MERGEABLE_FUN((=->), (=~>), SymTabularFun)
 SIMPLE_MERGEABLE_FUN((-->), (-~>), SymGeneralFun)
 #endif
+
+instance
+  ( SupportedNonFuncPrim ck,
+    SupportedNonFuncPrim cv,
+    LinkedRep ck sk,
+    LinkedRep cv sv
+  ) =>
+  SimpleMergeable (SymArray sk sv) where
+  mrgIte (SymBool c) (SymArray t) (SymArray f) = SymArray $ pevalITETerm c t f
 
 instance SimpleMergeable (a --> b) where
   mrgIte

@@ -3,7 +3,14 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: sbv-13.5@sha256:00aea86ad09dcefb5d5286dd68bfb894709d2874052bcdadf80af3add9596af7,26690
+    pantry-tree:
+      sha256: 65d23f68088ce549e8aa8ae77a35f2ec7c6491facbc4aeae8c2317101d9ddcda
+      size: 93933
+  original:
+    hackage: sbv-13.5
 snapshots:
 - completed:
     sha256: 7a26eba54b469fc72b1e37b881dfec480a2c1cb0636136f96aec7d81be6c762f

@@ -100,10 +100,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
-import Grisette.Internal.SymPrim.SymFP
-  ( SymFP (SymFP),
-    SymFPRoundingMode (SymFPRoundingMode),
-  )
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.TH.Derivation.Derive (derive)
 
@@ -254,7 +251,6 @@ instance SymOrd SymBool where
 #if 1
 SORD_SIMPLE(SymInteger)
 SORD_SIMPLE(SymAlgReal)
-SORD_SIMPLE(SymFPRoundingMode)
 SORD_BV(SymIntN)
 SORD_BV(SymWordN)
 #endif

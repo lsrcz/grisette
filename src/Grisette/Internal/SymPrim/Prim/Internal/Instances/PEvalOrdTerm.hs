@@ -30,9 +30,7 @@ import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP,
-    FPRoundingMode,
     ValidFP,
-    allFPRoundingMode,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -41,10 +39,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ( pevalLeOrdTerm,
         pevalLtOrdTerm,
         sbvLeOrdTerm,
-        sbvLtOrdTerm,
         withSbvOrdTermConstraint
       ),
-    SupportedPrim (conSBVTerm, withPrim),
+    SupportedPrim (withPrim),
     Term,
     conTerm,
     leOrdTerm,
@@ -132,45 +129,6 @@ instance (ValidFP eb sb) => PEvalOrdTerm (FP eb sb) where
   sbvLeOrdTerm x y =
     (SBV.sNot (SBV.fpIsNaN x) SBV..&& SBV.sNot (SBV.fpIsNaN y))
       SBV..&& (x SBV..<= y)
-
--- Use this table to avoid accidental breakage introduced by sbv.
-fpRoundingModeLtTable :: [(SBV.SRoundingMode, SBV.SRoundingMode)]
-fpRoundingModeLtTable =
-  [ ( conSBVTerm @FPRoundingMode a,
-      conSBVTerm @FPRoundingMode b
-    )
-  | a <- allFPRoundingMode,
-    b <- allFPRoundingMode,
-    a < b
-  ]
-
-fpRoundingModeLeTable :: [(SBV.SRoundingMode, SBV.SRoundingMode)]
-fpRoundingModeLeTable =
-  [ ( conSBVTerm @FPRoundingMode a,
-      conSBVTerm @FPRoundingMode b
-    )
-  | a <- allFPRoundingMode,
-    b <- allFPRoundingMode,
-    a <= b
-  ]
-
-sbvTableLookup ::
-  [(SBV.SRoundingMode, SBV.SRoundingMode)] ->
-  SBV.SRoundingMode ->
-  SBV.SRoundingMode ->
-  SBV.SBV Bool
-sbvTableLookup tbl lhs rhs =
-  foldl
-    (\acc (a, b) -> acc SBV..|| ((lhs SBV..== a) SBV..&& (rhs SBV..== b)))
-    SBV.sFalse
-    tbl
-
-instance PEvalOrdTerm FPRoundingMode where
-  pevalLtOrdTerm = pevalGeneralLtOrdTerm
-  pevalLeOrdTerm = pevalGeneralLeOrdTerm
-  withSbvOrdTermConstraint r = withPrim @FPRoundingMode r
-  sbvLtOrdTerm = sbvTableLookup fpRoundingModeLtTable
-  sbvLeOrdTerm = sbvTableLookup fpRoundingModeLeTable
 
 instance PEvalOrdTerm AlgReal where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm

@@ -26,6 +26,7 @@
 module Grisette.Internal.SymPrim.Prim.Internal.Serialize () where
 
 import Control.Monad (replicateM, unless, when)
+import Control.Monad.Identity (Identity (runIdentity))
 import Control.Monad.State (StateT, evalStateT)
 import qualified Control.Monad.State as State
 import qualified Data.Binary as Binary
@@ -38,14 +39,17 @@ import qualified Data.HashSet as HS
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Maybe (isJust, fromMaybe)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Serialize as Cereal
+import Data.Typeable (heqT)
 import Data.Word (Word8)
 import GHC.Generics (Generic)
 import GHC.Natural (Natural)
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, natVal, type (+), type (<=))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
+import Grisette.Internal.SymPrim.Array (Array)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP,
@@ -144,6 +148,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     termId,
     toFPTerm,
     xorBitsTerm,
+    selectTerm,
+    storeTerm,
+    constArrayTerm,
     pattern AbsNumTerm,
     pattern AddNumTerm,
     pattern AndBitsTerm,
@@ -193,6 +200,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pattern SymTerm,
     pattern ToFPTerm,
     pattern XorBitsTerm,
+    pattern SelectTerm,
+    pattern StoreTerm,
+    pattern ConstArrayTerm,
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -213,11 +223,9 @@ import Grisette.Internal.Utils.Parameterized
     unsafeLeqProof,
   )
 import Type.Reflection
-  ( SomeTypeRep (SomeTypeRep),
-    TypeRep,
+  ( TypeRep,
     Typeable,
     eqTypeRep,
-    someTypeRep,
     typeRep,
     pattern App,
     pattern Con,
@@ -233,6 +241,7 @@ data KnownNonFuncType where
   FPType :: (ValidFP eb sb) => Proxy eb -> Proxy sb -> KnownNonFuncType
   FPRoundingModeType :: KnownNonFuncType
   AlgRealType :: KnownNonFuncType
+  ArrayType :: KnownNonFuncType -> KnownNonFuncType -> KnownNonFuncType
 
 instance Eq KnownNonFuncType where
   BoolType == BoolType = True
@@ -255,6 +264,8 @@ instance Hashable KnownNonFuncType where
     s `hashWithSalt` (4 :: Int) `hashWithSalt` natVal p `hashWithSalt` natVal q
   hashWithSalt s FPRoundingModeType = s `hashWithSalt` (5 :: Int)
   hashWithSalt s AlgRealType = s `hashWithSalt` (6 :: Int)
+  hashWithSalt s (ArrayType k v) =
+    s `hashWithSalt` k `hashWithSalt` v `hashWithSalt` (7 :: Int)
 
 data KnownNonFuncTypeWitness where
   KnownNonFuncTypeWitness ::
@@ -280,6 +291,10 @@ witnessKnownNonFuncType (FPType (Proxy :: Proxy eb) (Proxy :: Proxy sb)) =
 witnessKnownNonFuncType FPRoundingModeType =
   KnownNonFuncTypeWitness (Proxy @FPRoundingMode)
 witnessKnownNonFuncType AlgRealType = KnownNonFuncTypeWitness (Proxy @AlgReal)
+witnessKnownNonFuncType (ArrayType k v) = runIdentity $ do
+  KnownNonFuncTypeWitness (_ :: Proxy k) <- pure $ witnessKnownNonFuncType k
+  KnownNonFuncTypeWitness (_ :: Proxy v) <- pure $ witnessKnownNonFuncType v
+  pure $ KnownNonFuncTypeWitness @(Array k v) Proxy
 
 data KnownType where
   NonFuncType :: KnownNonFuncType -> KnownType
@@ -496,91 +511,90 @@ instance Show KnownNonFuncType where
       <> show (natVal (Proxy @sb))
   show FPRoundingModeType = "FPRoundingMode"
   show AlgRealType = "AlgReal"
+  show (ArrayType key val) = "Array (" ++ show key ++ ") (" ++ show val ++ ")"
 
 instance Show KnownType where
   show (NonFuncType t) = show t
   show (TabularFunType ts) = intercalate " =-> " $ show <$> ts
   show (GeneralFunType ts) = intercalate " --> " $ show <$> ts
 
-knownNonFuncType ::
-  forall a p. (SupportedNonFuncPrim a) => p a -> KnownNonFuncType
-knownNonFuncType _ =
-  case tr of
-    _ | SomeTypeRep tr == someTypeRep (Proxy @Bool) -> BoolType
-    _ | SomeTypeRep tr == someTypeRep (Proxy @Integer) -> IntegerType
-    _
-      | SomeTypeRep tr == someTypeRep (Proxy @FPRoundingMode) ->
-          FPRoundingModeType
-    _ | SomeTypeRep tr == someTypeRep (Proxy @AlgReal) -> AlgRealType
-    App (ta@(Con _) :: TypeRep w) (_ :: TypeRep n) ->
-      case ( eqTypeRep ta (typeRep @WordN),
-             eqTypeRep ta (typeRep @IntN)
-           ) of
-        (Just HRefl, _) -> withPrim @a $ WordNType (Proxy @n)
-        (_, Just HRefl) -> withPrim @a $ IntNType (Proxy @n)
-        _ -> err
-    App (App (tf :: TypeRep f) (_ :: TypeRep a0)) (_ :: TypeRep a1) ->
-      case eqTypeRep tf (typeRep @FP) of
-        Just HRefl -> withPrim @a $ FPType (Proxy @a0) (Proxy @a1)
-        _ -> err
-    _ -> err
+knownNonFuncTypeMaybe ::
+  forall a p. SupportedPrim a => p a -> Maybe KnownNonFuncType
+knownNonFuncTypeMaybe _ = withPrim @a $ case tr of
+  _ | isTy @Bool Proxy -> pure BoolType
+    | isTy @Integer Proxy -> pure IntegerType
+    | isTy @FPRoundingMode Proxy -> pure FPRoundingModeType
+    | isTy @AlgReal Proxy -> pure AlgRealType
+  App (ta@(Con _) :: TypeRep w) (_ :: TypeRep n)
+    | Just HRefl <- eqTypeRep ta $ typeRep @WordN -> pure $ WordNType @n Proxy
+    | Just HRefl <- eqTypeRep ta $ typeRep @IntN -> pure $ IntNType @n Proxy
+  App (App (tf :: TypeRep f) (_ :: TypeRep eb)) (_ :: TypeRep es)
+    | Just HRefl <- eqTypeRep tf $ typeRep @FP -> do
+      pure $ FPType (Proxy @eb) (Proxy @es)
+  App (App arrR (_ :: TypeRep k)) (_ :: TypeRep v)
+    | Just HRefl <- eqTypeRep arrR $ typeRep @Array -> do
+      keyTy <- knownNonFuncTypeMaybe @k Proxy
+      valTy <- knownNonFuncTypeMaybe @v Proxy
+      pure $ ArrayType keyTy valTy
+  _ -> Nothing
   where
-    tr = primTypeRep @a
-    err = error $ "knownNonFuncType: unsupported type: " <> show tr
+    tr = typeRep @a
 
-knownType ::
-  forall a p. (SupportedPrim a) => p a -> KnownType
-knownType _ =
-  case tr of
-    _ | SomeTypeRep tr == someTypeRep (Proxy @Bool) -> NonFuncType BoolType
-    _
-      | SomeTypeRep tr == someTypeRep (Proxy @Integer) ->
-          NonFuncType IntegerType
-    _
-      | SomeTypeRep tr == someTypeRep (Proxy @FPRoundingMode) ->
-          NonFuncType FPRoundingModeType
-    _
-      | SomeTypeRep tr == someTypeRep (Proxy @AlgReal) ->
-          NonFuncType AlgRealType
-    App (ta@(Con _) :: TypeRep w) (_ :: TypeRep n) ->
-      case ( eqTypeRep ta (typeRep @WordN),
-             eqTypeRep ta (typeRep @IntN)
-           ) of
-        (Just HRefl, _) -> withPrim @a $ NonFuncType $ WordNType (Proxy @n)
-        (_, Just HRefl) -> withPrim @a $ NonFuncType $ IntNType (Proxy @n)
-        _ -> err
-    App (App (tf :: TypeRep f) (_ :: TypeRep a0)) (_ :: TypeRep a1) ->
-      case ( eqTypeRep tf (typeRep @FP),
-             eqTypeRep tf (typeRep @(=->)),
-             eqTypeRep tf (typeRep @(-->))
-           ) of
-        (Just HRefl, _, _) ->
-          withPrim @a $ NonFuncType $ FPType (Proxy @a0) (Proxy @a1)
-        (_, Just HRefl, _) ->
-          withPrim @a $
-            let arg = knownType (Proxy @a0)
-                ret = knownType (Proxy @a1)
-             in case arg of
-                  NonFuncType n -> case ret of
-                    NonFuncType m -> TabularFunType [n, m]
-                    TabularFunType ns -> TabularFunType (n : ns)
-                    _ -> err
-                  _ -> err
-        (_, _, Just HRefl) ->
-          withPrim @a $
-            let arg = knownType (Proxy @a0)
-                ret = knownType (Proxy @a1)
-             in case arg of
-                  NonFuncType n -> case ret of
-                    NonFuncType m -> GeneralFunType [n, m]
-                    GeneralFunType ns -> GeneralFunType (n : ns)
-                    _ -> err
-                  _ -> err
-        _ -> err
-    _ -> err
+    isTy :: forall b. Typeable b => Proxy b -> Bool
+    isTy _ = isJust . eqTypeRep tr $ typeRep @b
+
+knownNonFuncType ::
+  forall a p. SupportedPrim a => p a -> KnownNonFuncType
+knownNonFuncType proxy = do
+  let err = error $ "knownNonFuncType: unsupported type: " <> show (typeRep @a)
+  fromMaybe err $ knownNonFuncTypeMaybe proxy
+
+knownTypeMaybe :: forall a p. SupportedPrim a => p a -> Maybe KnownType
+knownTypeMaybe proxy = withPrim @a $ case tr of
+  _ | Just result <- knownNonFuncTypeMaybe proxy -> pure $ NonFuncType result
+  App (App (funR :: TypeRep f) (_ :: TypeRep arg)) (_ :: TypeRep res)
+    | Just HRefl <- eqTypeRep funR $ typeRep @(=->) -> do
+      -- Gather the argument type.
+      arg <- knownTypeMaybe @arg Proxy
+      n <- case arg of
+        NonFuncType n -> pure n
+        _ -> Nothing
+
+      -- Gather the result type.
+      ret <- knownTypeMaybe @res Proxy
+      ns <- case ret of
+        NonFuncType m -> pure [m]
+        TabularFunType ns -> pure ns
+        _ -> Nothing
+
+      -- Create the tabular function type.
+      pure $ TabularFunType (n : ns)
+
+    | Just HRefl <- eqTypeRep funR $ typeRep @(-->) -> do
+      -- Gather the argument type.
+      arg <- knownTypeMaybe @arg Proxy
+      n <- case arg of
+        NonFuncType n -> pure n
+        _ -> Nothing
+
+      -- Gather the result type.
+      ret <- knownTypeMaybe @res Proxy
+      ns <- case ret of
+        NonFuncType m -> pure [m]
+        GeneralFunType ns -> pure ns
+        _ -> Nothing
+
+      -- Create the general function type.
+      pure $ GeneralFunType (n : ns)
+
+  _ -> Nothing
   where
-    tr = primTypeRep @a
-    err = error $ "knownType: unsupported type: " <> show tr
+    tr = typeRep @a
+
+knownType :: forall a p. SupportedPrim a => p a -> KnownType
+knownType proxy = do
+  let err = error $ "knownType: unsupported type: " <> show (typeRep @a)
+  fromMaybe err $ knownTypeMaybe proxy
 
 -- Bool: 0
 -- Integer: 1
@@ -589,6 +603,7 @@ knownType _ =
 -- FP: 4
 -- FPRoundingMode: 5
 -- AlgReal: 6
+-- Array: 7
 serializeKnownNonFuncType :: (MonadPut m) => KnownNonFuncType -> m ()
 serializeKnownNonFuncType BoolType = putWord8 0
 serializeKnownNonFuncType IntegerType = putWord8 1
@@ -600,6 +615,10 @@ serializeKnownNonFuncType (FPType (Proxy :: Proxy eb) (Proxy :: Proxy sb)) =
   putWord8 4 >> serialize (natVal (Proxy @eb)) >> serialize (natVal (Proxy @sb))
 serializeKnownNonFuncType FPRoundingModeType = putWord8 5
 serializeKnownNonFuncType AlgRealType = putWord8 6
+serializeKnownNonFuncType (ArrayType key val) = do
+  putWord8 7
+  serializeKnownNonFuncType key
+  serializeKnownNonFuncType val
 
 serializeKnownType :: (MonadPut m) => KnownType -> m ()
 serializeKnownType (NonFuncType t) = putWord8 0 >> serializeKnownNonFuncType t
@@ -639,6 +658,10 @@ deserializeKnownNonFuncType = do
             withUnsafeValidFP @eb @sb $ return $ FPType (Proxy @eb) (Proxy @sb)
     5 -> return FPRoundingModeType
     6 -> return AlgRealType
+    7 -> do
+      keyT <- deserializeKnownNonFuncType
+      valT <- deserializeKnownNonFuncType
+      pure $ ArrayType keyT valT
     _ -> fail "deserializeKnownNonFuncType: Unknown type tag"
 
 deserializeKnownType :: (MonadGet m) => m KnownType
@@ -877,6 +900,15 @@ fromFPOrTermTag = 46
 toFPTermTag :: Word8
 toFPTermTag = 47
 
+selectTermTag :: Word8
+selectTermTag = 48
+
+storeTermTag :: Word8
+storeTermTag = 49
+
+constArrayTermTag :: Word8
+constArrayTermTag = 50
+
 terminalTag :: Word8
 terminalTag = 255
 
@@ -931,33 +963,18 @@ asNumTypeTerm (SomeTerm (t1 :: Term a)) f =
     err = error $ "asNumTypeTerm: unsupported type: " <> show ta
 
 asOrdTypeTerm ::
-  (HasCallStack) => SomeTerm -> (forall n. (PEvalOrdTerm n) => Term n -> r) -> r
-asOrdTypeTerm (SomeTerm (t1 :: Term a)) f =
-  case ( eqTypeRep ta (typeRep @Integer),
-         eqTypeRep ta (typeRep @AlgReal),
-         eqTypeRep ta (typeRep @FPRoundingMode)
-       ) of
-    (Just HRefl, _, _) -> f t1
-    (_, Just HRefl, _) -> f t1
-    (_, _, Just HRefl) -> f t1
-    _ ->
-      case ta of
-        App (ta@(Con _) :: TypeRep w) (_ :: TypeRep n) ->
-          case ( eqTypeRep ta (typeRep @WordN),
-                 eqTypeRep ta (typeRep @IntN)
-               ) of
-            (Just HRefl, _) -> withPrim @a $ f t1
-            (_, Just HRefl) -> withPrim @a $ f t1
-            _ -> err
-        App (App (tf :: TypeRep f) (_ :: TypeRep a0)) (_ :: TypeRep a1) ->
-          case eqTypeRep tf (typeRep @FP) of
-            Just HRefl ->
-              withPrim @a $ withPrim @a $ f t1
-            _ -> err
-        _ -> err
+  HasCallStack => SomeTerm -> (forall n. PEvalOrdTerm n => Term n -> r) -> r
+asOrdTypeTerm (SomeTerm (t1 :: Term a)) f = case ta of
+  _ | Just HRefl <- eqTypeRep ta $ typeRep @Integer -> f t1
+  _ | Just HRefl <- eqTypeRep ta $ typeRep @AlgReal -> f t1
+  App bvR _nR
+    | Just HRefl <- eqTypeRep bvR $ typeRep @WordN -> withPrim @a $ f t1
+    | Just HRefl <- eqTypeRep bvR $ typeRep @IntN -> withPrim @a $ f t1
+  App (App fpR _ebR) _esR
+    | Just HRefl <- eqTypeRep fpR $ typeRep @FP -> withPrim @a $ f t1
+  _ -> error $ "asNumTypeTerm: unsupported type: " <> show ta
   where
     ta = primTypeRep @a
-    err = error $ "asOrdTypeTerm: unsupported type: " <> show ta
 
 asBitsTypeTerm ::
   (HasCallStack) =>
@@ -1527,6 +1544,67 @@ statefulDeserializeSomeTerm = do
                             ktTmId
                           )
             else error "statefulDeserializeSomeTerm: invalid FP type"
+      | tag == selectTermTag -> do
+          -- Deserialize the array and key.
+          SomeTerm (arr :: Term a) <- deserializeTerm
+          SomeTerm (key :: Term k) <- deserializeTerm
+
+          -- Deserialize the resulting value type and get the required
+          -- dictionaries for this type.
+          -- TODO: How do I know I get the correct known type here?
+          valType <- deserializeKnownType
+          KnownTypeWitness (_ :: Proxy v) <- pure $ witnessKnownType valType
+
+          -- Ensure that the key is indeed a valid key for the array and that
+          -- the resulting value matches the value type such that we can provide
+          -- the dictionary. Using this, we construct the final term.
+          let term = case typeRep @a of
+                App (App aRep kRep) vRep
+                  | Just HRefl <- eqTypeRep aRep $ typeRep @Array
+                  , Just HRefl <- eqTypeRep kRep $ typeRep @k
+                  , Just HRefl <- eqTypeRep vRep $ typeRep @v -> do
+                    someTerm $ selectTerm @k @v arr key
+                _ -> error "statefulDeserializeSomeTerm: invalid Array type"
+
+          pure $ Just (term, ktTmId)
+      | tag == storeTermTag -> do
+          -- Deserialize the array, key and value.
+          SomeTerm (arr :: Term a) <- deserializeTerm
+          SomeTerm (key :: Term k) <- deserializeTerm
+          SomeTerm (val :: Term v) <- deserializeTerm
+
+          -- Ensure the types match up such that we can construct the term.
+          let term = case typeRep @a of
+                App (App aRep kRep) vRep
+                  | Just HRefl <- eqTypeRep aRep $ typeRep @Array
+                  , Just HRefl <- eqTypeRep kRep $ typeRep @k
+                  , Just HRefl <- eqTypeRep vRep $ typeRep @v -> do
+                    someTerm $ storeTerm @k @v arr key val
+                _ -> error "statefulDeserializeSomeTerm: invalid Array type"
+
+          pure $ Just (term, ktTmId)
+      | tag == constArrayTermTag -> do
+          -- Get the value term and non-function primitive dictionary.
+          SomeTerm (val :: Term v) <- deserializeTerm
+          let valType = knownNonFuncType @v Proxy
+          KnownNonFuncTypeWitness (_ :: p v') <- do
+            pure $ witnessKnownNonFuncType valType
+
+          -- Gather the key type and its non-function primitive dictionary
+          -- TODO: How do I know I get the correct known type for the key?
+          keyType <- deserializeKnownNonFuncType
+          KnownNonFuncTypeWitness (_ :: p k) <- do
+            pure $ witnessKnownNonFuncType keyType
+
+          -- Really, this should never fail but I guess we can check instead of
+          -- coercing unsafely.
+          HRefl <- case heqT @v @v' of
+            Just refl -> pure refl
+            Nothing -> error "statefulDeserializeSomeTerm: non-injective type translation"
+
+          let term = someTerm $ constArrayTerm @k Proxy val
+
+          pure $ Just (term, ktTmId)
       | otherwise ->
           error $ "statefulDeserializeSomeTerm: unknown tag: " <> show tag
   case r of
@@ -1811,6 +1889,14 @@ serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
           serialize $ natVal sb
           serialize $ knownTypeTermId rd
           serialize $ knownTypeTermId t
+        SelectTerm arr key -> do
+          serializeBinary ktTmId selectTermTag arr key
+          serializeKnownType $ knownType @t Proxy
+        StoreTerm arr key val -> do
+          serializeTernary ktTmId storeTermTag arr key val
+        ConstArrayTerm pkey val -> withPrim @t $ do
+          serializeUnary ktTmId constArrayTermTag val
+          serializeKnownType $ knownType pkey
   State.put $ HS.insert ktTmId st
   where
     serializeQuantified ::
